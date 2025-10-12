@@ -1,5 +1,5 @@
 import { reactive, computed } from 'vue';
-import type { GameState } from './GameState';
+import type { GameState, RaidOutcome } from './GameState';
 import type { RaidDefinition } from './RaidLib';
 import { computeRaidStats, type EquipmentType as CalcEquipmentType } from './Raid';
 
@@ -17,6 +17,7 @@ export const uiState = reactive({
   strength: 0,
   speed: 0,
   volume: 0,
+  looting: 0,
 
   raids: [] as UIRaidDef[],
   raidOrder: [] as string[],
@@ -29,6 +30,25 @@ export const uiState = reactive({
 
   activeRaidId: '',
   activeRaidProgress: 0,
+
+  // modal outcome + levelups
+  lastOutcome: null as RaidOutcome | null,
+  levelupsAvailable: 0,
+
+  // global tab state
+  activeTab: 'raid' as 'raid' | 'refine' | 'research',
+
+  // level-up modal state
+  levelUpOpen: false,
+
+  // cheat overlay state
+  cheatOpen: false,
+  devAtlasKey: '' as '' | 'items',
+
+  // refine tab mirrors
+  refineries: [] as Array<{ health: number; hasRecipe: boolean }>,
+  items: [] as Array<{ id: string; quantity: number }>,
+  recipes: [] as string[],
 });
 
 // Formatted time display: "X days, HH:MM"
@@ -58,6 +78,7 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.strength = game.strength;
   uiState.speed = game.speed;
   uiState.volume = game.volume;
+  uiState.looting = game.looting;
 
   const raids: UIRaidDef[] = [];
   const order: string[] = [];
@@ -78,6 +99,18 @@ export function SyncUIFromGameState(game: GameState): void {
 
   uiState.activeRaidId = game.raid.id;
   uiState.activeRaidProgress = game.raid.progress;
+
+  // sync outcome and levelups
+  uiState.lastOutcome = game.lastRaidOutcome;
+  uiState.levelupsAvailable = game.levelupsAvailable;
+
+  // refine tab basics
+  uiState.refineries = (game.refineries || []).map(r => ({
+    health: r.health,
+    hasRecipe: !!r.loadedRecipe,
+  }));
+  uiState.items = (game.items || []).map(it => ({ id: it.id, quantity: it.quantity }));
+  uiState.recipes = Array.isArray((game as any).recipes) ? [...(game as any).recipes] : [];
 }
 
 // Ensure sliders exist with default 50/50/50 for a raid id
@@ -117,6 +150,17 @@ export function computeRaidStatsUI(
   loot: number,
   equipment: EquipmentType,
 ): UIRaidStats {
+  // Touch reactive player stats so callers' computed() re-evaluates when they change
+  // This keeps raid stats in sync after level-ups or other stat updates.
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.strength; // reactive dependency
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.volume;   // future use if formula uses volume
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.speed;    // future use if formula uses speed
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.looting;  // future use if UI depends on it
+
   if (!gameRef) {
     return { effectiveStrength: 0, survivalChancePct: 0, lootRatePct: 0, questDeltaPct: 0, equipmentPrice: 0 };
   }

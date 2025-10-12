@@ -25,3 +25,17 @@ export class CmdStartRaid implements CmdInput {
     this.cost = args.cost;
   }
 }
+
+export class CmdAknowledgeOutcome implements CmdInput {
+  readonly name = 'CmdAknowledgeOutcome';
+}
+
+export type LevelupStat = 'strength' | 'volume' | 'looting';
+
+export class CmdLevelup implements CmdInput {
+  readonly name = 'CmdLevelup';
+  readonly stat: LevelupStat;
+  constructor(stat: LevelupStat) {
+    this.stat = stat;
+  }
+}

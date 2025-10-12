@@ -42,7 +42,8 @@ function selectEquipment(id: string, equipment: EquipmentType) {
 .raids { display: block; }
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, 320px);
   gap: 16px;
+  justify-content: start;
 }
 </style>

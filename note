@@ -2,7 +2,7 @@ october 10
   base project
   raid view
 october 12
-  deploy -> advance loop, items, icons
+  deploy -> advance loop, image generation pipeline, items, leveling up, recipes, refinery loading
 
 
 
@@ -13,9 +13,55 @@ october 12
 
 
 
-Raid status: SUCCESS
+Raid status: SUCCESS / FAILURE
 
-Quest advanced by 46% [progress bar] [Level up]
+Quest advanced by 46% [current progress bar]
+
+
+
+Big green buttons at the bottom:
+[Raid more] [Refine] [Level up (if level ups are available)]
+
+Each button sends CmdAknowledgeOutcome input, which deletes the raidOutcome from game state
+Refine switches to Refine tab
+Raid more switches to Raid tab
+Level up does nothing (for now)
+
+
+ [Level up button is levelups are available]
+
+
 
 items looted:
 grid list
+
+
+crude
+50% reward
+
+corrupted
+
+flawed 50% // 35% chance to yield nothing, positive effects don't apply
+improvised 60% // 25% chance to yield nothing, positive effects don't apply
+crude 70% // 15% chance to yield nothing, only speed positive effects may apply
+patched 85% //only speed positive effects may apply
+standard 100%
+enhanced 120%
+refined 150%
+special 200% //negative effects don't apply
+exceptional 300% //negative effects don't apply
+
+military
+scientific
+anomalous
+prototype
+salvaged
+worn
+industrial
+professional
+modified
+experimental
+classified
+purified
+reinforced
+masterwork

@@ -8,3 +8,5 @@ data
 *.log
 .idea
 .vscode
+/data/
+/public/

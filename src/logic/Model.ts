@@ -4,8 +4,9 @@ import { processEvt } from './evt/EvtProcessor';
 import { Evt } from "./evt/Evt";
 import { EvtRaidComplete } from './evt/Evt';
 
-const TIME_SPEED_MAX = 1000;
-const TIME_SPEED_RAMP_SEC = 5;
+const TIME_SPEED_MAX = 3800;
+const TIME_SPEED_MIN = 30;
+const TIME_SPEED_RAMP_SEC = 3;
 
 export const globalInputQueue: CmdInput[] = [];
 
@@ -50,7 +51,7 @@ export function update(gs: GameState, deltaTime: number): void {
     const nextSpeed = (gs.timeSpeed || 1) * growth;
     gs.timeSpeed = Math.min(TIME_SPEED_MAX, nextSpeed);
   } else {
-    gs.timeSpeed = 1;
+    gs.timeSpeed = TIME_SPEED_MIN;
   }
 }
 

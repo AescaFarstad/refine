@@ -8,9 +8,9 @@
     <div v-if="locked" class="locked-banner">Locked</div>
 
     <template v-else>
-      <div class="quest-progress" v-if="showQuestProgress">
+      <div class="quest-progress" :class="{ hidden: !showQuestProgress }">
         <div class="bar">
-          <div class="fill" :style="{ width: questProgressPct + '%' }" />
+          <div class="fill" :style="{ width: showQuestProgress ? (questProgressPct + '%') : '0%' }" />
           <div class="label">Quest {{ questProgress }} / {{ questTarget }}</div>
         </div>
       </div>
@@ -153,6 +153,9 @@ function deploy() {
   border: 1px solid var(--panel-border);
   border-radius: 4px;
   padding: 14px;
+  box-sizing: border-box;
+  height: 360px; /* fixed card height for consistent grid size */
+  width: 320px;  /* fixed card width */
 }
 .raid-header { display: flex; align-items: baseline; justify-content: space-between; }
 .raid-title { margin: 0; font-size: 16px; letter-spacing: 0.03em; }
@@ -176,6 +179,7 @@ function deploy() {
   background: rgba(255,255,255,0.04);
   overflow: hidden;
 }
+.quest-progress.hidden { visibility: hidden; }
 .quest-progress .fill { height: 100%; background: var(--accent-warm); }
 .active-progress .fill.active { height: 100%; background: var(--accent); }
 .bar .label { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 700; font-size: 12px; }
@@ -223,7 +227,7 @@ function deploy() {
   color: var(--accent);
 }
 
-.actions { margin-top: 4px; }
+.actions { margin-top: auto; padding-top: 4px; }
 .ingress, .wait {
   width: 100%;
   padding: 10px 12px;

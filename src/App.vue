@@ -1,43 +1,66 @@
 <template>
   <TopPanel />
   <main class="content">
-    <div class="terminal">
-    <nav class="tabs">
-      <button
-        class="tab"
-        :class="{ active: activeTab === 'raids' }"
-        @click="activeTab = 'raids'"
-      >Raids</button>
-      <button
-        class="tab"
-        :class="{ active: activeTab === 'refine' }"
-        @click="activeTab = 'refine'"
-      >Refine</button>
-      <button
-        class="tab"
-        :class="{ active: activeTab === 'research' }"
-        @click="activeTab = 'research'"
-      >Research</button>
-    </nav>
-
     <section class="tab-content">
-      <Raids v-if="activeTab === 'raids'" />
+      <Raids v-if="activeTab === 'raid'" />
       <Refine v-else-if="activeTab === 'refine'" />
       <Research v-else />
     </section>
-    </div>
   </main>
+  <OutcomeModal />
+  <LevelUpModal />
+  <CheatOverlay />
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, onMounted, onBeforeUnmount } from 'vue';
 import TopPanel from './components/TopPanel.vue';
 import Raids from './components/Raids.vue';
 import Refine from './components/Refine.vue';
 import Research from './components/Research.vue';
+import OutcomeModal from './components/OutcomeModal.vue';
+import LevelUpModal from './components/LevelUpModal.vue';
+import CheatOverlay from './components/CheatOverlay.vue';
+import { uiState } from './logic/UIState';
 
-type TabKey = 'raids' | 'refine' | 'research';
-const activeTab = ref<TabKey>('raids');
+type TabKey = 'raid' | 'refine' | 'research';
+const activeTab = computed<TabKey>({
+  get: () => uiState.activeTab,
+  set: (v: TabKey) => { uiState.activeTab = v; },
+});
+
+// Cheat key sequence: q w e d
+const seq = ['q', 'w', 'e', 'd'];
+let seqIndex = 0;
+
+function onKeydown(ev: KeyboardEvent) {
+  // ignore if any modifier is held or target is an input/textarea
+  if (ev.altKey || ev.ctrlKey || ev.metaKey) return;
+  const target = ev.target as HTMLElement | null;
+  const tag = (target?.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || target?.isContentEditable) return;
+
+  const k = (ev.key || '').toLowerCase();
+  if (!k) return;
+
+  if (k === seq[seqIndex]) {
+    seqIndex += 1;
+    if (seqIndex >= seq.length) {
+      seqIndex = 0;
+      uiState.cheatOpen = true;
+    }
+  } else {
+    // allow restart if key matches first position, else reset
+    seqIndex = (k === seq[0]) ? 1 : 0;
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onKeydown);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeydown);
+});
 </script>
 
 <style>
@@ -67,56 +90,11 @@ body {
   background-attachment: fixed;
   letter-spacing: 0.015em;
 }
-.content { padding: 16px; }
+.content { padding: 16px; box-sizing: border-box; flex: 1 1 auto; }
 
-.terminal {
-  max-width: 1100px;
-  margin: 0 auto; /* center */
-  background: linear-gradient(180deg, var(--panel-bg), rgba(10, 15, 26, 0.88));
-  border: 1px solid var(--panel-border);
-  border-radius: 4px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7), 
-              0 4px 12px rgba(0, 0, 0, 0.5),
-              inset 0 1px 0 var(--panel-shine);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
+#app { display: flex; flex-direction: column; min-height: 100%; }
 
-.tabs {
-  display: flex;
-  width: 100%;
-  gap: 0;
-  border-bottom: 1px solid var(--panel-border);
-  background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
-  border-top-left-radius: 4px;
-  border-top-right-radius: 4px;
-}
-
-.tab {
-  background: transparent;
-  border: none;
-  padding: 14px 8px;
-  font-weight: 600;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-secondary);
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  flex: 1 1 0;     /* stretch equally */
-  text-align: center;
-  transition: all 0.2s ease;
-}
-
-.tab:hover { 
-  color: var(--text-primary); 
-  background: rgba(79, 209, 197, 0.08); 
-}
-.tab.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-  background: linear-gradient(180deg, rgba(79, 209, 197, 0.12), rgba(79, 209, 197, 0.04));
-}
+/* Removed the old bordered sub-window container */
 
 .tab-content {
   padding: 20px;

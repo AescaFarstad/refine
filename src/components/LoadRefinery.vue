@@ -33,6 +33,45 @@
         </div>
       </div>
     </div>
+
+    <!-- Summary below essence bars -->
+    <div class="summary" v-if="hasAnyItems">
+      <div class="sum-line">Expected credits: <span class="hl">{{ expectedCredits }}</span></div>
+      <div class="sum-line">Expected chronotraces: <span class="hl">{{ expectedChrono }}</span></div>
+
+      <div class="yield-line">
+        Yield: <span class="hl">{{ totalYieldPct }}%</span>
+        <span class="subtle">
+          ({{ qualityYieldPct }}% from <span class="hl">{{ qualityName }}</span> recipe quality<template v-if="refineryConditionPct < 100">, {{ refineryConditionPct }}% from refinery condition</template>)
+        </span>
+      </div>
+
+      <!-- Chance of failure (reserve vertical space even when 0) -->
+      <div class="failure-line" :class="{ invisible: !failureChancePct }">
+        Chance of failure: <span class="hl">{{ failureChancePct }}% </span>
+        <span class="subtle"> (from <span class="hl">{{ qualityName }}</span> recipe quality)</span>
+      </div>
+
+      <!-- Waste row: reserve vertical space, hide label entirely when none -->
+      <div class="waste-row">
+        <template v-if="hasWaste">
+          <div>Waste</div>
+          <div class="waste-list">
+            <template v-for="(qty, k) in wasteByKey" :key="'w-' + k">
+              <span class="waste-item">
+                <span v-if="getEssenceFrame(k) && source" class="ess-icon16" :style="essenceIconStyle(16, k)" />
+                <span v-else class="ess-letter32" style="width:16px;height:16px;font-size:12px;line-height:16px;border-radius:3px;">{{ essenceLetter(k) }}</span>
+                {{ qty }}
+              </span>
+            </template>
+          </div>
+        </template>
+      </div>
+
+      <div class="actions" v-if="helpText">
+        <div class="muted">{{ helpText }}</div>
+      </div>
+    </div>
   </div>
   
 </template>
@@ -43,6 +82,9 @@ import { computed, onMounted, ref } from 'vue';
 import atlasStorage from '../logic/AtlasStorage';
 import itemsData from '../data/items';
 import recipesData from '../data/recipes';
+import { computeRefinePreview } from '../logic/Refine';
+import { Lib } from '../logic/Lib';
+import { uiState } from '../logic/UIState';
 
 const props = defineProps<{ recipeId: string; items: Array<{ id: string; quantity: number }> }>();
 const emit = defineEmits<{ (e: 'clear'): void; (e: 'unpick-item', id: string): void }>();
@@ -142,6 +184,57 @@ function countLabel(k: string): string {
   if (need > 0) return `${Math.min(have, need)}/${need}`;
   return `${have}/0`;
 }
+
+// --- Summary metrics (via shared Refine.ts) ---
+const lib = new Lib();
+
+const selectedRefineryIndex = computed(() => uiState.selectedRefineryIndex);
+const hasSelectedRefinery = computed(() => (selectedRefineryIndex.value ?? -1) >= 0);
+const refineryConditionPct = computed(() => {
+  if (!hasSelectedRefinery.value) return 100; // neutral when none selected
+  const r = uiState.refineries[selectedRefineryIndex.value] || { health: 100 };
+  return Math.max(0, Math.min(100, Math.round(r.health || 0)));
+});
+
+const preview = computed(() => computeRefinePreview(
+  lib,
+  props.recipeId,
+  refineryConditionPct.value,
+  stagedEssences.value,
+));
+const qualityName = computed(() => preview.value.qualityName);
+const qualityYieldPct = computed(() => preview.value.qualityYieldPct);
+const failureChancePct = computed(() => preview.value.failureChancePct);
+const totalYieldPct = computed(() => preview.value.totalYieldPct);
+const matchedEssences = computed(() => preview.value.matchedEssences);
+const expectedCredits = computed(() => preview.value.expectedCredits);
+const expectedChrono = computed(() => preview.value.expectedChrono);
+
+// Completion check
+const isEssenceComplete = computed(() => {
+  for (const [k, needAny] of Object.entries(requirements.value)) {
+    const need = Math.max(0, needAny || 0);
+    const have = Math.max(0, stagedEssences.value[k] || 0);
+    if (have < need) return false;
+  }
+  return true;
+});
+
+// Waste (excess over needed)
+const wasteByKey = computed<Record<string, number>>(() => preview.value.wasteByKey);
+const hasWaste = computed(() => Object.keys(wasteByKey.value).length > 0);
+
+const helpText = computed(() => {
+  if (!isEssenceComplete.value) return 'Add more items to fulfill recipe essence requirements';
+  return '';
+});
+
+// selection handled in the parent view; keep this focused on loading
+
+
+
+// Hide summary when nothing is staged in the grid
+const hasAnyItems = computed(() => (props.items || []).some(it => Math.max(0, it.quantity || 0) > 0));
 </script>
 
 <style scoped>
@@ -166,4 +259,25 @@ function countLabel(k: string): string {
 
 .ess-icon32 { display: inline-block; width: 32px; height: 32px; filter: drop-shadow(0 1px 0 rgba(0,0,0,0.4)); }
 .ess-letter32 { display: inline-grid; place-items: center; width: 32px; height: 32px; font-weight: 900; font-size: 18px; opacity: 0.9; border-radius: 4px; background: rgba(255,255,255,0.04); }
+
+/* Summary */
+.summary { margin-top: 12px; display: grid; grid-template-columns: 1fr; gap: 10px; }
+.sum-line { display: flex; align-items: baseline; gap: 6px; }
+.sum-label { color: inherit; font-weight: 400; }
+.hl { color: var(--accent-hover); font-weight: 900; font-variant-numeric: tabular-nums; }
+.muted { color: var(--text-secondary); }
+.invisible { visibility: hidden; }
+
+.yield-line { font-weight: 400; }
+.subtle { color: var(--text-secondary); font-weight: 400; font-size: 12px; }
+
+.waste-row { display: flex; align-items: center; gap: 10px; min-height: 24px; }
+.waste-list { display: inline-flex; align-items: center; gap: 8px; }
+.ess-icon16 { display: inline-block; width: 16px; height: 16px; vertical-align: middle; }
+.waste-item { display: inline-flex; align-items: center; gap: 4px; font-weight: 800; }
+
+.actions { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.start-btn { padding: 10px 12px; font-weight: 800; letter-spacing: 0.05em; border-radius: 4px; border: 1px solid var(--panel-border); background: rgba(79, 209, 197, 0.14); color: var(--accent); cursor: pointer; }
+.start-btn:hover:enabled { background: rgba(79, 209, 197, 0.22); }
+.start-btn:disabled { background: rgba(255,255,255,0.04); color: var(--text-secondary); cursor: not-allowed; }
 </style>

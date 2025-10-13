@@ -30,6 +30,10 @@ export class CmdAknowledgeOutcome implements CmdInput {
   readonly name = 'CmdAknowledgeOutcome';
 }
 
+export class CmdAcknowledgeRefineryOutcome implements CmdInput {
+  readonly name = 'CmdAcknowledgeRefineryOutcome';
+}
+
 export type LevelupStat = 'strength' | 'volume' | 'looting';
 
 export class CmdLevelup implements CmdInput {
@@ -37,5 +41,18 @@ export class CmdLevelup implements CmdInput {
   readonly stat: LevelupStat;
   constructor(stat: LevelupStat) {
     this.stat = stat;
+  }
+}
+
+// Refining start command (handled later)
+export class CmdStartRefining implements CmdInput {
+  readonly name = 'CmdStartRefining';
+  readonly recipeId: string;
+  readonly refineryIndex: number;
+  readonly items: Array<{ id: string; quantity: number }>;
+  constructor(args: { recipeId: string; refineryIndex: number; items: Array<{ id: string; quantity: number }>; }) {
+    this.recipeId = args.recipeId;
+    this.refineryIndex = args.refineryIndex;
+    this.items = args.items;
   }
 }

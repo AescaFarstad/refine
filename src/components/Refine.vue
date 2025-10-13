@@ -8,6 +8,15 @@
         :index="i"
         :health="r.health"
         :has-recipe="r.hasRecipe"
+        :recipe-id="r.recipeId"
+        :ingredients="r.ingredients"
+        :progress-pct="r.progressPct"
+        :time-remaining-sec="r.timeRemainingSec"
+        :overflow-waste="r.overflowWaste"
+        :expected-credits="r.expectedCredits"
+        :expected-chrono="r.expectedChrono"
+        :failure-chance-pct="r.failureChancePct"
+        :can-start-here="canStartAnywhere && !r.hasRecipe"
         :selected="i === selectedRefinery"
         @select="onSelectRefinery(i)"
       />
@@ -16,17 +25,17 @@
     <!-- Main area: left 3/4 content, right 1/4 all items -->
     <div class="main-split">
       <div class="left">
-        <Recipes v-if="!selectedRecipeId" @select-recipe="onSelectRecipe" />
         <LoadRefinery
-          v-else
+          v-if="selectedRecipeId"
           :recipe-id="selectedRecipeId"
           :items="stagedItems"
           @unpick-item="onUnpickItem"
           @clear="onClearRecipe"
         />
+        <Recipes v-else-if="!allRefineriesLoaded" @select-recipe="onSelectRecipe" />
       </div>
       <div class="right">
-        <AllItems :items="availableItems" @pick-item="onPickItem" />
+        <AllItems :items="availableItems" :required-essences="selectedIngredients" @pick-item="onPickItem" />
       </div>
     </div>
   </div>
@@ -39,11 +48,19 @@ import Refinery from './Refinery.vue';
 import Recipes from './Recipes.vue';
 import LoadRefinery from './LoadRefinery.vue';
 import AllItems from './AllItems.vue';
+import recipesData from '../data/recipes';
+import itemsData from '../data/items';
+import { globalInputQueue } from '../logic/Model';
+import { CmdStartRefining } from '../logic/input/InputCommands';
 
-const selectedRefinery = ref(0);
+const selectedRefinery = computed<number>({
+  get: () => uiState.selectedRefineryIndex,
+  set: (v: number) => { uiState.selectedRefineryIndex = v; },
+});
 const selectedRecipeId = ref('');
 
 const refineries = computed(() => uiState.refineries);
+const allRefineriesLoaded = computed(() => refineries.value.length > 0 && refineries.value.every(r => r.hasRecipe));
 
 // UI-only staged items to load into the refinery
 const stagedById = ref<Record<string, number>>({});
@@ -68,8 +85,66 @@ const availableItems = computed(() => {
   return res;
 });
 
+// Ingredients of the currently selected recipe (for dimming in AllItems)
+const selectedIngredients = computed<Record<string, number>>(() => {
+  const id = selectedRecipeId.value;
+  if (!id) return {};
+  const rec = (recipesData as any)[id] as { ingredients?: Record<string, number> } | undefined;
+  return (rec?.ingredients || {}) as Record<string, number>;
+});
+
+// Compute essence totals for staged items
+const stagedEssences = computed<Record<string, number>>(() => {
+  const totals: Record<string, number> = {};
+  for (const it of stagedItems.value) {
+    const def = (itemsData as any)[it.id] as { essence?: Record<string, number> } | undefined;
+    const ess = def?.essence || {};
+    const q = Math.max(1, it.quantity || 1);
+    for (const k of Object.keys(ess)) {
+      const v = (ess as any)[k] || 0;
+      totals[k] = (totals[k] || 0) + v * q;
+    }
+  }
+  return totals;
+});
+
+const isEssenceComplete = computed(() => {
+  const req = selectedIngredients.value || {};
+  const have = stagedEssences.value || {};
+  const keys = Object.keys(req);
+  if (!keys.length) return false;
+  for (const k of keys) {
+    const need = Math.max(0, (req as any)[k] || 0);
+    const got = Math.max(0, (have as any)[k] || 0);
+    if (got < need) return false;
+  }
+  return true;
+});
+
+const canStartAnywhere = computed(() => !!selectedRecipeId.value && isEssenceComplete.value);
+
 function onSelectRefinery(i: number) {
-  selectedRefinery.value = i;
+  const r = refineries.value[i];
+  if (!r) return;
+  if (canStartAnywhere.value && !r.hasRecipe) {
+    // Auto-start refinement in this refinery
+    startRefiningAt(i);
+    return;
+  }
+  // Otherwise, toggle selection
+  selectedRefinery.value = (selectedRefinery.value === i) ? -1 : i;
+}
+function startRefiningAt(i: number) {
+  if (!canStartAnywhere.value) return;
+  globalInputQueue.push(new CmdStartRefining({
+    recipeId: selectedRecipeId.value,
+    refineryIndex: i,
+    items: stagedItems.value.map(x => ({ id: x.id, quantity: x.quantity })),
+  }));
+  // Clear UI state after enqueue
+  selectedRecipeId.value = '';
+  stagedById.value = {};
+  selectedRefinery.value = -1;
 }
 function onSelectRecipe(id: string) {
   selectedRecipeId.value = id;

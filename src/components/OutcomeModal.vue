@@ -30,19 +30,28 @@
           </h4>
           <ItemGrid :items="lootedRaw" />
 
-          <div v-if="discardedByLuckRaw.length" class="discard-group">
-            <div class="discard-title">Discarded by luck</div>
-            <ItemGrid :items="discardedByLuckRaw" :minor="true" />
+          <div v-if="discardedByVolumeRaw.length" class="discard-group">
+            <div class="discard-title">Discarded because your bags were already full</div>
+            <ItemGrid :items="discardedByVolumeRaw" :minor="true" />
           </div>
 
-          <div v-if="discardedByVolumeRaw.length" class="discard-group">
-            <div class="discard-title">Discarded by volume (Your bags were full)</div>
-            <ItemGrid :items="discardedByVolumeRaw" :minor="true" />
+          <div v-if="discardedByLuckRaw.length" class="discard-group">
+            <div class="discard-title">Missed because the looting skill was too low</div>
+            <ItemGrid :items="discardedByLuckRaw" :minor="true" />
           </div>
         </div>
       </section>
 
       <footer class="modal-actions">
+        <button
+          v-if="canContinue"
+          class="time-advance-btn btn-left"
+          type="button"
+          @click="continueFlow"
+        >
+          <span class="btn-label">Continue</span>
+          <span class="icon-play" aria-hidden="true">▶</span>
+        </button>
         <button class="btn primary" @click="raidMore">Raid more</button>
         <button class="btn primary" @click="goRefine">Refine</button>
         <button v-if="hasLevelups" class="btn primary" @click="levelUp">Level up</button>
@@ -57,7 +66,7 @@ import { computed, onMounted, ref } from 'vue';
 import { uiState } from '../logic/UIState';
 import { QUEST_POINTS } from '../logic/GameState';
 import { globalInputQueue } from '../logic/Model';
-import { CmdAknowledgeOutcome } from '../logic/input/InputCommands';
+import { CmdAknowledgeOutcome, CmdAdvanceTime } from '../logic/input/InputCommands';
 import ItemGrid from './ItemGrid.vue';
 import itemsData from '../data/items';
 import atlasStorage from '../logic/AtlasStorage';
@@ -90,6 +99,7 @@ const progressPct = computed(() => {
 });
 
 const hasLevelups = computed(() => (uiState.levelupsAvailable || 0) > 0);
+const canContinue = computed(() => !!uiState.canAdvanceTime);
 
 const lootedRaw = computed(() => outcome.value?.looted || []);
 const discardedByLuckRaw = computed(() => outcome.value?.discardedByLuck || []);
@@ -185,6 +195,12 @@ function levelUp() {
   ack();
   uiState.levelUpOpen = true;
 }
+
+function continueFlow() {
+  // Acknowledge current outcome and immediately advance time to next event
+  ack();
+  globalInputQueue.push(new CmdAdvanceTime());
+}
 </script>
 
 <style scoped>
@@ -244,4 +260,31 @@ function levelUp() {
 .ess-s-sp { width: 8px; display: inline-block; }
 .discard-group { margin-top: 12px; }
 .discard-title { margin-bottom: 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.8; }
+
+/* Match TopPanel advance-time button styling */
+.time-advance-btn {
+  height: 32px;
+  padding: 0 14px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-radius: 4px;
+  border: 1px solid rgba(34,197,94,0.35);
+  background: rgba(34,197,94,0.18);
+  color: #86efac;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.time-advance-btn:hover { background: rgba(34,197,94,0.28); }
+.time-advance-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  background: rgba(34,197,94,0.10);
+  border-color: rgba(34,197,94,0.22);
+}
+.time-advance-btn:disabled:hover { background: rgba(34,197,94,0.10); }
+.time-advance-btn .icon-play { display: inline-block; font-size: 18px; line-height: 1; transform: translateY(-2px); }
+.btn-left { margin-right: auto; }
 </style>

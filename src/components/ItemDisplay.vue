@@ -8,9 +8,9 @@
 
       <div class="essences" v-if="!minor && essencesToShow.length">
         <template v-for="(e, idx) in essencesToShow" :key="e.key">
-          <span class="ess-num">{{ e.value }}</span>
           <span v-if="getEssenceFrame(e.key) && source" class="ess-icon" :style="essenceIconStyle(e.key)" />
           <span v-else class="ess-letter">{{ essenceLetter(e.key) }}</span>
+          <span class="ess-num">{{ e.value }}</span>
           <span v-if="idx < essencesToShow.length - 1" class="sp" />
         </template>
       </div>
@@ -170,13 +170,13 @@ function essenceIconStyle(k: string): Record<string, string> {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1px;
+  gap: 2px;
   padding: 2px 3px;
   background: linear-gradient(180deg, rgba(0,0,0,0.0), rgba(0,0,0,0.55));
   font-weight: 800;
   font-size: 12px;
 }
-.ess-num { margin-right: 1px; }
+.ess-num { margin-left: 2px; }
 .ess-letter { opacity: 0.9; font-size: 11px; }
 .ess-icon {
   display: inline-block;

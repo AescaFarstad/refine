@@ -1,8 +1,10 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAknowledgeOutcome, CmdLevelup } from './InputCommands';
+import { CmdStartRaid, CmdAdvanceTime, CmdAknowledgeOutcome, CmdLevelup, CmdStartRefining, CmdAcknowledgeRefineryOutcome } from './InputCommands';
 import { LEVEL_UP_STRENGTH, LEVEL_UP_LOOTING, LEVEL_UP_VOLUME } from '../Const';
+import { computeNextEvt } from '../Model';
+import { computeLoadedEssencesFromItems, computeOverflowEssences } from '../Refine';
 
 type Handler = (gs: GameState, cmd: CmdInput) => void;
 const handlersByName = new Map<string, Handler>();
@@ -17,7 +19,6 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
   gs.raid.id = c.id;
   gs.raid.progress = 0;
   // copy player stats at deployment time
-  gs.raid.speed = gs.speed;
   gs.raid.strength = gs.strength;
   gs.raid.volume = gs.volume;
   gs.raid.looting = gs.looting;
@@ -27,6 +28,8 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
   gs.raid.lootWeight = c.loot;
   gs.raid.equipment = c.equipment;
   gs.credits -= c.cost;
+
+  computeNextEvt(gs);
 });
 
 handlersByName.set('CmdAknowledgeOutcome', (gs, cmd) => {
@@ -51,9 +54,40 @@ handlersByName.set('CmdLevelup', (gs, cmd) => {
   gs.levelupsAvailable = Math.max(0, gs.levelupsAvailable - 1);
 });
 
+handlersByName.set('CmdStartRefining', (gs, cmd) => {
+  const c = cmd as CmdStartRefining;
+  const idx = c.refineryIndex ?? -1;
+  if (idx < 0 || idx >= gs.refineries.length) return;
+  const r = gs.refineries[idx];
+  if (r.loadedRecipe) return; // already running
+
+  // Remove specified items from inventory
+  for (const it of c.items || []) {
+    const inv = gs.items;
+    const entry = inv.find(x => x.id === it.id);
+    if (!entry) continue;
+    const q = Math.max(0, it.quantity || 0);
+    entry.quantity = Math.max(0, (entry.quantity || 0) - q);
+    if (entry.quantity <= 0) {
+      const i = inv.indexOf(entry);
+      if (i >= 0) inv.splice(i, 1);
+    }
+  }
+
+  const totals = computeLoadedEssencesFromItems(gs.lib, c.items || []);
+  r.overflowEssences = computeOverflowEssences(gs.lib, c.recipeId, totals);
+  r.loadedRecipe = c.recipeId;
+  r.startedAt = gs.time;
+
+  computeNextEvt(gs);
+});
+
+handlersByName.set('CmdAcknowledgeRefineryOutcome', (gs, cmd) => {
+  gs.lastRefineryOutcome = null;
+});
+
 export function processInputs(gameState: GameState): void {
   for (const command of globalInputQueue) {
-    console.log(`Input: ${command.name}`);
     const handler = handlersByName.get(command.name);
     if (handler) {
       handler(gameState, command);

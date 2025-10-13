@@ -1,9 +1,11 @@
 import type { GameState } from '../GameState';
 import { QUEST_POINTS, Raid } from '../GameState';
 import type { Evt } from './Evt';
-import { EvtRaidComplete } from './Evt';
+import { EvtRaidComplete, EvtRefineryDone } from './Evt';
 import { computeRaidStats } from '../Raid';
 import type { ItemDefinition } from '../ItemLib';
+import { computeRefinePreview } from '../Refine';
+import { RefineryOutcome } from '../GameState';
 
 type EvtHandler = (gs: GameState, evt: Evt) => void;
 const handlersByName = new Map<string, EvtHandler>();
@@ -114,12 +116,12 @@ handlersByName.set('EvtRaidComplete', (gs, evt) => {
     }
 
     function pickCategory(): Cat | null {
-      const entries: Array<[Cat, number]> = [
+      const entries = ([
         ['common', weights.common],
         ['uncommon', weights.uncommon],
         ['rare', weights.rare],
         ['legendary', weights.legendary],
-      ].filter(([, w]) => w > 0);
+      ] as Array<[Cat, number]>).filter(([, w]) => w > 0);
       if (entries.length === 0) return null;
       const total = entries.reduce((a, [, w]) => a + w, 0);
       let r = gs.random.get() * total;
@@ -183,6 +185,36 @@ handlersByName.set('EvtRaidComplete', (gs, evt) => {
 
   gs.raid.id = '';
   gs.raid.progress = 0;
+});
+
+handlersByName.set('EvtRefineryDone', (gs, evt) => {
+  const e = evt as EvtRefineryDone;
+  const idx = e.refineryIndex;
+  const r = gs.refineries[idx];
+  if (!r || !r.loadedRecipe) return;
+
+  const recipe = gs.lib.recipes.get(r.loadedRecipe)!;
+  const preview = computeRefinePreview(gs.lib, r.loadedRecipe, r.health, recipe.ingredients as any);
+  const successChance = Math.max(0, 100 - (preview.failureChancePct || 0));
+  const roll = gs.random.get() * 100;
+  const success = roll <= successChance;
+
+  const outcome = new RefineryOutcome();
+  outcome.refineryIndex = idx;
+  outcome.recipeId = r.loadedRecipe;
+  outcome.success = success;
+  if (success) {
+    gs.credits += preview.expectedCredits;
+    gs.chronotraces += preview.expectedChrono;
+    outcome.creditsGained = preview.expectedCredits;
+    outcome.chronotracesGained = preview.expectedChrono;
+  }
+
+  gs.lastRefineryOutcome = outcome;
+
+  r.loadedRecipe = '';
+  r.startedAt = 0;
+  r.overflowEssences = {} as any;
 });
 
 export function processEvt(gs: GameState, evt: Evt): void {

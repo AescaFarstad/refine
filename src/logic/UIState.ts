@@ -1,11 +1,28 @@
 import { reactive, computed } from 'vue';
-import type { GameState, RaidOutcome } from './GameState';
+import { formatDurationHM } from './StringUtils';
+import type { GameState, RaidOutcome, RefineryOutcome } from './GameState';
 import type { RaidDefinition } from './RaidLib';
 import { computeRaidStats, type EquipmentType as CalcEquipmentType } from './Raid';
+import { computeRefinePreview } from './Refine';
 
 // Reactive UI-facing state (kept separate from logical GameState)
 export interface UIRaidDef extends RaidDefinition {}
 export type EquipmentType = 'light' | 'medium' | 'overprice';
+
+export interface UIRefinery {
+  health: number;
+  hasRecipe: boolean;
+  // When loaded
+  recipeId?: string;
+  startedAtSec?: number;
+  timeRemainingSec?: number;
+  progressPct?: number;
+  ingredients?: Record<string, number>;
+  overflowWaste?: Record<string, number>;
+  expectedCredits?: number;
+  expectedChrono?: number;
+  failureChancePct?: number;
+}
 
 export const uiState = reactive({
   // top bar
@@ -13,6 +30,8 @@ export const uiState = reactive({
   chronotraces: 0,
   timeMinutes: 0,
   canAdvanceTime: false,
+  // reactive identity for next scheduled event (forces recompute on change)
+  nextEvtKey: '' as string,
 
   strength: 0,
   speed: 0,
@@ -33,6 +52,7 @@ export const uiState = reactive({
 
   // modal outcome + levelups
   lastOutcome: null as RaidOutcome | null,
+  lastRefineryOutcome: null as RefineryOutcome | null,
   levelupsAvailable: 0,
 
   // global tab state
@@ -46,26 +66,56 @@ export const uiState = reactive({
   devAtlasKey: '' as '' | 'items',
 
   // refine tab mirrors
-  refineries: [] as Array<{ health: number; hasRecipe: boolean }>,
+  refineries: [] as UIRefinery[],
   items: [] as Array<{ id: string; quantity: number }>,
   recipes: [] as string[],
+  // refine UI state
+  selectedRefineryIndex: -1 as number,
 });
 
 // Formatted time display: "X days, HH:MM"
 export const timeDisplay = computed(() => {
-  const total = Math.max(0, Math.floor(uiState.timeMinutes || 0));
-  const minutesPerDay = 24 * 60;
-  const days = Math.floor(total / minutesPerDay);
-  const remainder = total % minutesPerDay;
-  const hours = Math.floor(remainder / 60);
-  const minutes = remainder % 60;
-  const hh = String(hours).padStart(2, '0');
-  const mm = String(minutes).padStart(2, '0');
-  return `${days} days, ${hh}:${mm}`;
+  // Keep dependency reactive while sourcing precise seconds from gameRef when available
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.timeMinutes;
+  const seconds = Math.max(0, Math.floor((gameRef?.time ?? (uiState.timeMinutes * 60)) || 0));
+  return formatDurationHM(seconds);
+});
+
+// Next event display string, e.g., "Shegolskoe raid in 25m" or "Refinery 1 in 2h 40m"
+export const nextEventText = computed(() => {
+  // Touch reactive deps so this recomputes as time and queue change
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.timeMinutes;
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.canAdvanceTime;
+  // Also track identity changes of the next event
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.nextEvtKey;
+
+  if (!gameRef || !gameRef.nextEvt) return '';
+  const evt = gameRef.nextEvt;
+  const remaining = Math.max(0, Math.round((evt.at || 0) - (gameRef.time || 0)));
+  const when = formatDurationHM(remaining);
+
+  if (evt.name === 'EvtRaidComplete') {
+    const id = gameRef.raid.id;
+    const def = id ? gameRef.lib.raids.get(id) : undefined;
+    const title = def?.name ?? (id || 'Raid');
+    return `${title} raid in ${when}`;
+  }
+  if (evt.name === 'EvtRefineryDone') {
+    const idx = ((evt as any).refineryIndex ?? 0) as number;
+    return `Refinery ${idx + 1} in ${when}`;
+  }
+  return '';
 });
 
 // Internal game reference for write-backs
 let gameRef: GameState | null = null;
+
+// Track last seen next event identity to update reactive key only on change
+let lastNextEvtKey = '' as string;
 
 export function SyncUIFromGameState(game: GameState): void {
   gameRef = game;
@@ -75,8 +125,23 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.timeMinutes = Math.floor((game.time || 0) / 60);
   uiState.canAdvanceTime = !!game.nextEvt;
 
+  // Update reactive next event identity so dependent UI recomputes when it changes
+  const key = game.nextEvt
+    ? `${game.nextEvt.name}|${game.nextEvt.at ?? ''}|${
+        game.nextEvt.name === 'EvtRefineryDone'
+          ? `ridx:${(game.nextEvt as any).refineryIndex ?? ''}`
+          : game.nextEvt.name === 'EvtRaidComplete'
+            ? `raid:${game.raid.id ?? ''}`
+            : ''
+      }`
+    : '';
+  if (key !== lastNextEvtKey) {
+    uiState.nextEvtKey = key;
+    lastNextEvtKey = key;
+  }
+
   uiState.strength = game.strength;
-  uiState.speed = game.speed;
+  uiState.looting = game.looting;
   uiState.volume = game.volume;
   uiState.looting = game.looting;
 
@@ -102,13 +167,42 @@ export function SyncUIFromGameState(game: GameState): void {
 
   // sync outcome and levelups
   uiState.lastOutcome = game.lastRaidOutcome;
+  uiState.lastRefineryOutcome = game.lastRefineryOutcome;
   uiState.levelupsAvailable = game.levelupsAvailable;
 
   // refine tab basics
-  uiState.refineries = (game.refineries || []).map(r => ({
-    health: r.health,
-    hasRecipe: !!r.loadedRecipe,
-  }));
+  uiState.refineries = (game.refineries || []).map(r => {
+    const hasRecipe = !!r.loadedRecipe;
+    const entry: UIRefinery = {
+      health: r.health,
+      hasRecipe,
+    };
+    if (hasRecipe) {
+      entry.recipeId = r.loadedRecipe;
+      entry.startedAtSec = r.startedAt;
+      const recipe = game.lib.recipes.get(r.loadedRecipe);
+      const duration = Math.max(0, recipe?.duration || 0);
+      if (duration > 0) {
+        const elapsed = Math.max(0, (game.time || 0) - (r.startedAt || 0));
+        const progressPct = Math.max(0, Math.min(100, Math.round((elapsed / duration) * 100)));
+        const remaining = Math.max(0, Math.round(duration - elapsed));
+        entry.progressPct = progressPct;
+        entry.timeRemainingSec = remaining;
+      } else {
+        entry.progressPct = 0;
+        entry.timeRemainingSec = 0;
+      }
+      const ingredients = (recipe?.ingredients || {}) as Record<string, number>;
+      entry.ingredients = ingredients;
+      entry.overflowWaste = (r.overflowEssences || {}) as Record<string, number>;
+
+      const preview = computeRefinePreview(game.lib, r.loadedRecipe, r.health, ingredients);
+      entry.expectedCredits = preview.expectedCredits;
+      entry.expectedChrono = preview.expectedChrono;
+      entry.failureChancePct = preview.failureChancePct;
+    }
+    return entry;
+  });
   uiState.items = (game.items || []).map(it => ({ id: it.id, quantity: it.quantity }));
   uiState.recipes = Array.isArray((game as any).recipes) ? [...(game as any).recipes] : [];
 }
@@ -215,7 +309,7 @@ export function startRaid(id: string): void {
   gameRef.raid.id = id;
   gameRef.raid.progress = 0;
   // copy player stats
-  gameRef.raid.speed = gameRef.speed;
+  gameRef.raid.looting = gameRef.looting;
   gameRef.raid.strength = gameRef.strength;
   gameRef.raid.volume = gameRef.volume;
   // copy focus weights

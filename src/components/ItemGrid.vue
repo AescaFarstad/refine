@@ -4,7 +4,7 @@
       v-for="it in items"
       :key="it.id"
       class="grid-item"
-      :class="{ clickable }"
+      :class="{ clickable, dim: !!dimIds && !!dimIds[it.id] }"
       @click="onItemClick(it.id)"
     >
       <ItemDisplay
@@ -21,7 +21,7 @@
 <script setup lang="ts">
 import ItemDisplay from './ItemDisplay.vue';
 
-const props = defineProps<{ items: Array<{ id: string; quantity: number }>; minor?: boolean; clickable?: boolean }>();
+const props = defineProps<{ items: Array<{ id: string; quantity: number }>; minor?: boolean; clickable?: boolean; dimIds?: Record<string, boolean> }>();
 const emit = defineEmits<{ (e: 'item-click', id: string): void }>();
 
 function onItemClick(id: string) {
@@ -42,4 +42,5 @@ function onItemClick(id: string) {
   gap: 6px;
 }
 .grid-item.clickable { cursor: pointer; }
+.grid-item.dim { opacity: 0.38; }
 </style>

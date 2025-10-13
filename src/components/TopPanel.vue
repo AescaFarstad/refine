@@ -26,6 +26,15 @@
       <div class="metric"><span class="label">Chronotraces</span><span class="value">{{ uiState.chronotraces.toLocaleString() }}</span></div>
       <div class="metric"><span class="label">Time</span><span class="value">{{ timeDisplay }}</span></div>
 
+      <div v-if="hasNextEvent" class="next-event">
+        <div class="next-event-title">Next event:</div>
+        <div class="next-event-desc">
+          <span class="next-event-dim">{{ nextEventParts.label }} in </span>
+          <span> </span>
+          <span class="next-event-time">{{ nextEventParts.time }}</span>
+        </div>
+      </div>
+
       <div class="spacer"></div>
 
       <div class="time-advance" @mouseenter="hoverHint = true" @mouseleave="hoverHint = false">
@@ -53,12 +62,11 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { uiState, timeDisplay } from '../logic/UIState';
+import { uiState, timeDisplay, nextEventText } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
 import { CmdAdvanceTime } from '../logic/input/InputCommands';
 
 function advanceTime() {
-  console.log('Advance time');
   globalInputQueue.push(new CmdAdvanceTime());
 }
 
@@ -69,6 +77,15 @@ const activeTab = computed<TabKey>({
 });
 
 const hoverHint = ref(false);
+
+const hasNextEvent = computed(() => !!(uiState.canAdvanceTime && nextEventText.value && nextEventText.value.length > 0));
+const nextEventParts = computed(() => {
+  const t = nextEventText.value || '';
+  const sep = ' in ';
+  const i = t.indexOf(sep);
+  if (i === -1) return { label: '', time: t };
+  return { label: t.slice(0, i), time: t.slice(i + sep.length) };
+});
 </script>
 
 <style scoped>
@@ -171,6 +188,28 @@ const hoverHint = ref(false);
 .value {
   font-weight: 600;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.next-event {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.next-event-title {
+  font-size: 12px;
+  color: #94a3b8; /* slate-400 */
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+.next-event-desc {
+  font-weight: 600;
+}
+.next-event-dim {
+  color: #94a3b8; /* slate-400 */
+  font-weight: 500;
+}
+.next-event-time {
+  font-weight: 700;
 }
 
 /* Tabs bar under the top metrics */

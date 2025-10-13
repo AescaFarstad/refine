@@ -1,5 +1,6 @@
 <template>
   <div class="recipes-panel">
+    <div class="recipes-header"><span class="caption">Select recipe</span></div>
     <div class="recipes-grid">
       <div
         v-for="r in displayRecipes"
@@ -10,7 +11,7 @@
         @click="onSelect(r.id)"
       >
         <div class="rc-title">
-          <div class="rc-duration"><span class="duration-badge">{{ formatDuration(r.durationSec) }}</span></div>
+          <div class="rc-duration"><span class="duration-badge">{{ formatDurationHM(r.durationSec) }}</span></div>
           <div class="rc-quality">
             <span class="quality-badge">{{ r.qualityDef?.name || r.qualityId }}</span>
             <div class="rc-tooltip" aria-hidden="true">
@@ -34,9 +35,9 @@
         <div class="rc-body">
           <div class="ess-need" v-if="r.essList.length">
             <div class="ess-unit" v-for="e in r.essList" :key="e.key">
-              <span class="ess-num48" :class="{ insufficient: isInsufficient(e.key, e.value) }">{{ e.value }}</span>
               <span v-if="getEssenceFrame(e.key) && source" class="ess-icon48" :style="essenceIconStyle48(e.key)" />
               <span v-else class="ess-letter48">{{ essenceLetter(e.key) }}</span>
+              <span class="ess-num48" :class="{ insufficient: isInsufficient(e.key, e.value) }">{{ e.value }}</span>
             </div>
           </div>
         </div>
@@ -49,6 +50,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { uiState } from '../logic/UIState';
+import { formatDurationHM } from '../logic/StringUtils';
 import recipesData from '../data/recipes';
 import qualitiesData from '../data/recipe_qualities';
 import itemsData from '../data/items';
@@ -129,14 +131,7 @@ function effectScopeLabel(e: RecipeEffectScope): string {
   }
 }
 
-function formatDuration(seconds: number): string {
-  const min = Math.max(0, Math.round((seconds || 0) / 60));
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  if (h > 0 && m > 0) return `${h}h ${m}m`;
-  if (h > 0) return `${h}h`;
-  return `${m}m`;
-}
+// Duration formatting now shared via StringUtils.formatDurationHM
 
 // Build display list from player's recipe ids
 type DisplayRecipe = {
@@ -173,7 +168,15 @@ function onSelect(id: string) {
 </script>
 
 <style scoped>
-.recipes-panel { height: 100%; }
+.recipes-panel { height: 100%; display: flex; flex-direction: column; }
+.recipes-header { text-align: center; margin-bottom: 10px; }
+.caption {
+  display: inline-block;
+  font-weight: 900;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  color: inherit;
+}
 
 .recipes-grid {
   display: grid;

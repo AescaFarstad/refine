@@ -8,6 +8,7 @@
     </section>
   </main>
   <OutcomeModal />
+  <RefineryOutcomeModal />
   <LevelUpModal />
   <CheatOverlay />
 </template>
@@ -19,6 +20,7 @@ import Raids from './components/Raids.vue';
 import Refine from './components/Refine.vue';
 import Research from './components/Research.vue';
 import OutcomeModal from './components/OutcomeModal.vue';
+import RefineryOutcomeModal from './components/RefineryOutcomeModal.vue';
 import LevelUpModal from './components/LevelUpModal.vue';
 import CheatOverlay from './components/CheatOverlay.vue';
 import { uiState } from './logic/UIState';
@@ -29,12 +31,10 @@ const activeTab = computed<TabKey>({
   set: (v: TabKey) => { uiState.activeTab = v; },
 });
 
-// Cheat key sequence: q w e d
 const seq = ['q', 'w', 'e', 'd'];
 let seqIndex = 0;
 
 function onKeydown(ev: KeyboardEvent) {
-  // ignore if any modifier is held or target is an input/textarea
   if (ev.altKey || ev.ctrlKey || ev.metaKey) return;
   const target = ev.target as HTMLElement | null;
   const tag = (target?.tagName || '').toLowerCase();
@@ -94,13 +94,6 @@ body {
 
 #app { display: flex; flex-direction: column; min-height: 100%; }
 
-/* Removed the old bordered sub-window container */
-
-.tab-content {
-  padding: 20px;
-}
-
-/* Shared small panel styling for inner blocks */
 .panel {
   background: rgba(25, 35, 50, 0.65);
   border: 1px solid var(--panel-border);

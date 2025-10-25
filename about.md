@@ -83,3 +83,18 @@ White - 0 yeild, fixes refinery
 Gray - -1% refinery health
 Orange +1% refinery health
 Indigo - 
+
+
+
+
+Escape the time loop:
+
+Player has to navigate labirinths of increasing difficulty and size.
+Each move in the labirinth costs time jumps.
+
+Red essences = money => raiding equipment
+Green essences = time jumps => labirinth navigation
+Blue essences = chronotraces => research
+Yellow essences = % bonus to yield
+Magents essences = fail chance
+Cyan essences = success chance

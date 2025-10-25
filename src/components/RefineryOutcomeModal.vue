@@ -9,7 +9,6 @@
         <div class="recipe-row" v-if="recipeName">
           <div class="recipe-title">
             <span class="label">Recipe:</span>
-            <span class="value">{{ recipeName }}</span>
             <span class="quality-badge" v-if="qualityName">{{ qualityName }}</span>
           </div>
           <div class="ess-need" v-if="essList.length">
@@ -23,6 +22,10 @@
         <div class="result-line">
           <span class="label">Credits:</span>
           <span class="value">{{ credits }}</span>
+        </div>
+        <div class="result-line">
+          <span class="label">Time Flux:</span>
+          <span class="value">{{ flux }}</span>
         </div>
         <div class="result-line">
           <span class="label">Chronotraces:</span>
@@ -52,24 +55,33 @@ import { computed, onMounted, ref } from 'vue';
 import { uiState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
 import { CmdAcknowledgeRefineryOutcome, CmdAdvanceTime } from '../logic/input/InputCommands';
-import recipesData from '../data/recipes';
-import qualitiesData from '../data/recipe_qualities';
+import { getGameLib } from '../logic/UIState';
 import atlasStorage from '../logic/AtlasStorage';
 
 const visible = computed(() => !!uiState.lastRefineryOutcome);
 const outcome = computed(() => uiState.lastRefineryOutcome);
 const statusText = computed(() => outcome.value?.success ? 'SUCCESS' : 'FAILURE');
 const credits = computed(() => Math.max(0, outcome.value?.creditsGained || 0));
+const flux = computed(() => Math.max(0, outcome.value?.timeFluxGained || 0));
 const chrono = computed(() => Math.max(0, outcome.value?.chronotracesGained || 0));
 const showLoadRefinery = computed(() => uiState.activeTab !== 'refine');
 const canContinue = computed(() => !!uiState.canAdvanceTime);
 
 // Recipe/quality derived from outcome
 const recipeId = computed(() => outcome.value?.recipeId || '');
-const recipe = computed(() => (recipeId.value ? (recipesData as any)[recipeId.value] : undefined) as any);
-const recipeName = computed(() => (recipe.value?.name || recipeId.value || ''));
-const qualityId = computed(() => (recipe.value?.quality || 'standard') as string);
-const qualityName = computed(() => ((qualitiesData as any)[qualityId.value]?.name || qualityId.value));
+const recipe = computed(() => {
+  // Depend on recipesVersion so upgrades reflect immediately
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.recipesVersion;
+  const lib = getGameLib();
+  return recipeId.value && lib ? lib.recipes.get(recipeId.value) : undefined;
+});
+const recipeName = computed(() => ((recipe.value as any)?.name || recipeId.value || ''));
+const qualityId = computed(() => (((recipe.value as any)?.quality || 'standard') as string));
+const qualityName = computed(() => {
+  const lib = getGameLib();
+  return (lib?.recipeQualities.get(qualityId.value)?.name || qualityId.value);
+});
 
 // Essence list for display
 const orderedKeys: string[] = ['red', 'green', 'blue', 'yellow'];

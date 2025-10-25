@@ -5,6 +5,7 @@ import SeededRandom from "./core/SeededRandom";
 import { Essence } from "./ItemLib";
 import type { CheatInput } from './cheat/CheatCommands';
 import { CheatAddRaidItems } from './cheat/CheatCommands';
+import type { IceMaze } from "../maze/IceMaze";
 
 export const QUEST_POINTS : number = 100
 
@@ -19,12 +20,15 @@ export class GameState {
   public random: SeededRandom = new SeededRandom();
 
 
-  public credits: number = 20000;
-  public chronotraces: number = 0;
+  public credits: number = 500;
+  public chronotraces: number = 500;
+  public timeFlux: number = 150;
   public strength: number = 120;
   public volume: number = 50;
   public looting: number = 100;
-  public refineries : Array<Refinery> = [new Refinery(), new Refinery()];
+  public loadedRecipe: string = "";
+  public recipeStartedAt: number = 0;
+  public overflowEssences: Essence = {};
   public raid : ActiveRaid = new ActiveRaid();
 
   public unlockedRaids : Array<Raid> = [new Raid("shegolskoe")];
@@ -36,6 +40,16 @@ export class GameState {
   public levelupsAvailable : number = 0;
   
   public items: Array<Item> = [];
+  public research : Set<string> = new Set(["tier_0"]);
+
+  // Ice Maze persistent state
+  public maze: IceMaze | null = null;
+  public mazeLevelIndex: number = 0;
+  // Internal: flag set by inputs to request a rebuild at current level (handled in Model)
+  public _labirinthResetRequested?: boolean;
+
+
+
   public cheats: Array<CheatInput> = [
     new CheatAddRaidItems({ id: "shegolskoe", count: 10 })
   ];
@@ -80,18 +94,10 @@ export class Item {
   public quantity: number = 0;
 }
 
-export class Refinery {
-  public health: number = 100;
-  public loadedRecipe: string = "";
-  public startedAt: number = 0;
-  // overflow essences that exceeded recipe requirements at load time
-  public overflowEssences: Essence = {};
-}
-
 export class RefineryOutcome {
-  public refineryIndex: number = -1;
   public recipeId: string = "";
   public success: boolean = false;
   public creditsGained: number = 0;
   public chronotracesGained: number = 0;
+  public timeFluxGained: number = 0;
 }

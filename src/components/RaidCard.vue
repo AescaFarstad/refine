@@ -26,7 +26,7 @@
       <div class="equipment">
         <div class="eq-top">
           <div class="eq-title">Equipment:</div>
-          <div class="eq-price">{{ equipmentPrice }} Credits</div>
+          <div class="eq-price">{{ equipmentPrice }}◈ Credits</div>
         </div>
         <div class="eq-buttons">
           <button class="eq" :class="{ active: equipment === 'light' }" :disabled="disabled" @click="$emit('select-equipment', def.id, 'light')">Light</button>
@@ -68,9 +68,13 @@
         <template v-else>
           <button
             v-if="!anyActive"
-            class="ingress"
+            class="time-advance-btn"
+            type="button"
             @click="deploy"
-          >Deploy</button>
+          >
+            <span class="btn-label">Deploy</span>
+            <span class="icon-play" aria-hidden="true">▶</span>
+          </button>
           <button v-else class="wait" disabled>Wait</button>
         </template>
       </div>
@@ -84,7 +88,7 @@ import type { UIRaidDef } from '../logic/UIState';
 import { computeRaidStatsUI } from '../logic/UIState';
 import { QUEST_POINTS } from '../logic/GameState';
 import { globalInputQueue } from '../logic/Model';
-import { CmdStartRaid } from '../logic/input/InputCommands';
+import { CmdAdvanceTime, CmdStartRaid } from '../logic/input/InputCommands';
 
 const props = defineProps<{
   def: UIRaidDef;
@@ -141,6 +145,8 @@ function deploy() {
     equipment: props.equipment,
     cost: equipmentPrice.value,
   }));
+  // Immediately advance time after deploying to the raid
+  globalInputQueue.push(new CmdAdvanceTime());
 }
 </script>
 
@@ -228,7 +234,7 @@ function deploy() {
 }
 
 .actions { margin-top: auto; padding-top: 4px; }
-.ingress, .wait {
+.wait {
   width: 100%;
   padding: 10px 12px;
   font-weight: 800;
@@ -237,7 +243,38 @@ function deploy() {
   border-radius: 4px;
   border: 1px solid var(--panel-border);
 }
-.ingress { background: rgba(79, 209, 197, 0.14); color: var(--accent); cursor: pointer; }
-.ingress:hover { background: rgba(79, 209, 197, 0.22); }
 .wait { background: rgba(255,255,255,0.04); color: var(--text-secondary); }
+
+/* Shared advance-style button to match TopPanel */
+.time-advance-btn {
+  height: 32px;
+  padding: 0 14px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-radius: 4px;
+  border: 1px solid rgba(34,197,94,0.35);
+  background: rgba(34,197,94,0.18);
+  color: #86efac;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  justify-content: center;
+}
+.time-advance-btn:hover { background: rgba(34,197,94,0.28); }
+.time-advance-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  background: rgba(34,197,94,0.10);
+  border-color: rgba(34,197,94,0.22);
+}
+.time-advance-btn:disabled:hover { background: rgba(34,197,94,0.10); }
+.time-advance-btn .icon-play {
+  display: inline-block;
+  font-size: 18px;
+  line-height: 1;
+  transform: translateY(-2px);
+}
 </style>

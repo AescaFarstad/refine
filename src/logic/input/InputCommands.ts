@@ -48,11 +48,46 @@ export class CmdLevelup implements CmdInput {
 export class CmdStartRefining implements CmdInput {
   readonly name = 'CmdStartRefining';
   readonly recipeId: string;
-  readonly refineryIndex: number;
   readonly items: Array<{ id: string; quantity: number }>;
-  constructor(args: { recipeId: string; refineryIndex: number; items: Array<{ id: string; quantity: number }>; }) {
+  constructor(args: { recipeId: string; items: Array<{ id: string; quantity: number }>; }) {
     this.recipeId = args.recipeId;
-    this.refineryIndex = args.refineryIndex;
     this.items = args.items;
   }
+}
+
+export class CmdPurchaseResearch implements CmdInput {
+  readonly name = 'CmdPurchaseResearch';
+  readonly id: string;
+  readonly price: number;
+  constructor(args: { id: string; price: number }) {
+    this.id = args.id;
+    this.price = args.price;
+  }
+}
+
+export class CmdUpgradeRecipe implements CmdInput {
+  readonly name = 'CmdUpgradeRecipe';
+  readonly researchId: string; // research node id (to validate purchase and resolve upgradeId)
+  readonly recipeId: string;   // target recipe to apply upgrade to
+  constructor(args: { researchId: string; recipeId: string }) {
+    this.researchId = args.researchId;
+    this.recipeId = args.recipeId;
+  }
+}
+
+// Maze controls
+export type MazeDir = 'up' | 'left' | 'down' | 'right';
+
+export class CmdMazeMove implements CmdInput {
+  readonly name = 'CmdMazeMove';
+  readonly dir: MazeDir;
+  constructor(dir: MazeDir) { this.dir = dir; }
+}
+
+export class CmdMazeReset implements CmdInput {
+  readonly name = 'CmdMazeReset';
+}
+
+export class CmdMazeRestart implements CmdInput {
+  readonly name = 'CmdMazeRestart';
 }

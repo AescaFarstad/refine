@@ -1,6 +1,6 @@
 import type { Lib } from './Lib';
 import type { Essence } from './ItemLib';
-import { ESSENCE_CHRONOTRACES, ESSENCE_CREDITS } from './Const';
+import { ESSENCE_CHRONOTRACES, ESSENCE_CREDITS, ESSENCE_TEMPORAL_FLUX } from './Const';
 
 export interface RefinePreview {
   qualityName: string;
@@ -11,6 +11,7 @@ export interface RefinePreview {
   matchedEssences: number;
   expectedCredits: number;
   expectedChrono: number;
+  expectedFlux: number;
   wasteByKey: Record<string, number>;
 }
 
@@ -48,17 +49,27 @@ export function computeRefinePreview(
   const requirements = (recipe?.ingredients || {}) as Record<string, number>;
   const keys = new Set<string>([...Object.keys(requirements), ...Object.keys(stagedEssences)]);
   let matchedEssences = 0;
+  const matchedByKey: Record<string, number> = {};
   const wasteByKey: Record<string, number> = {};
   for (const k of keys) {
     const need = Math.max(0, requirements[k] || 0);
     const have = Math.max(0, stagedEssences[k] || 0);
-    matchedEssences += Math.min(need, have);
+    const matched = Math.min(need, have);
+    matchedEssences += matched;
+    if (matched > 0) matchedByKey[k] = matched;
     const excess = Math.max(0, have - need);
     if (excess > 0) wasteByKey[k] = excess;
   }
 
-  const expectedCredits = Math.round(matchedEssences * (totalYieldPct / 100) * ESSENCE_CREDITS);
-  const expectedChrono = Math.round(matchedEssences * (totalYieldPct / 100) * ESSENCE_CHRONOTRACES);
+  // Rewards per essence color
+  const red = Math.max(0, matchedByKey['red'] || 0);
+  const green = Math.max(0, matchedByKey['green'] || 0);
+  const blue = Math.max(0, matchedByKey['blue'] || 0);
+
+  const yieldMultiplier = (totalYieldPct / 100);
+  const expectedCredits = Math.round(red * yieldMultiplier * ESSENCE_CREDITS);
+  const expectedChrono = Math.round(blue * yieldMultiplier * ESSENCE_CHRONOTRACES);
+  const expectedFlux = Math.round(green * yieldMultiplier * ESSENCE_TEMPORAL_FLUX);
 
   return {
     qualityName,
@@ -69,6 +80,7 @@ export function computeRefinePreview(
     matchedEssences,
     expectedCredits,
     expectedChrono,
+    expectedFlux,
     wasteByKey,
   };
 }

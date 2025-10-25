@@ -5,43 +5,14 @@ october 12
   deploy -> advance loop, image generation pipeline, items, leveling up, recipes, refinery loading
 october 13
   refinement loop
+october 18
+  research, escape time loop concept
+october 19
+  maze, maze gen
+october 25
+  maze animation, raid overall idea, planning
 
 
-
-
-
-
-
-
-
-
-Raid status: SUCCESS / FAILURE
-
-Quest advanced by 46% [current progress bar]
-
-
-
-Big green buttons at the bottom:
-[Raid more] [Refine] [Level up (if level ups are available)]
-
-Each button sends CmdAknowledgeOutcome input, which deletes the raidOutcome from game state
-Refine switches to Refine tab
-Raid more switches to Raid tab
-Level up does nothing (for now)
-
-
- [Level up button is levelups are available]
-
-
-
-items looted:
-grid list
-
-
-crude
-50% reward
-
-corrupted
 
 flawed 50% // 35% chance to yield nothing, positive effects don't apply
 improvised 60% // 25% chance to yield nothing, positive effects don't apply
@@ -67,3 +38,31 @@ classified
 purified
 reinforced
 masterwork
+
+
+
++refinery
++recipe
++strength
++looting
++bags
+recipe upgrade
+
+
+let's redo how weights are calculated and add another focus option - speed.
+the plan:
+
+all categories have their min and their max and default contributions 
+[min ... default ... max]
+
+For quest:
+the values are calculated just like they are now - based on the base strength and raid difficulty
+this calculation becomes the 'default', min = 10, max = default * 2
+
+For survival:
+base strength is default. min = default * 0.5 max = default * 1.5
+
+for looting default = raid.loot difficulty 
+
+
+calculate the max possible sum - all weights are 25 to 100 except for survival - 

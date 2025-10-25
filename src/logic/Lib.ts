@@ -1,11 +1,17 @@
 import { RaidDefinition } from "./RaidLib";
 import { ItemDefinition } from "./ItemLib";
-import { RecipeDefinition } from "./RecipeLib";
+import { RecipeDefinition, computeRecipeDurationSec } from "./RecipeLib";
 import { RecipeQualityDefinition } from "./RecipeQualityLib";
+import type { RecipeUpgradeDefinition } from './RecipeUpgradeLib';
+import { parseResearchTiers, type ResearchTier, type ResearchDataFile } from './ResearchLib';
+import type { MazeDefinition } from './MazeLib';
 import raidsData from '../data/raids';
 import itemsData from '../data/items';
 import recipesData from '../data/recipes';
 import recipeQualitiesData from '../data/recipe_qualities';
+import researchData from '../data/research';
+import recipeUpgradesData from '../data/recipe_upgrades';
+import mazeData from '../data/maze';
 
 export interface LibItem {
   id: string;
@@ -17,8 +23,18 @@ export class Lib {
   public isLoaded: boolean = false;
   public raids: Map<string, RaidDefinition> = new Map();
   public items: Map<string, ItemDefinition> = new Map();
+  // Base recipes (immutable copy of data definitions)
+  public baseRecipes: Map<string, RecipeDefinition> = new Map();
+  // Active recipes (modifiable at runtime via upgrades)
   public recipes: Map<string, RecipeDefinition> = new Map();
+  // Bumped whenever a recipe is upgraded to help UI react to changes
+  public recipesVersion: number = 0;
   public recipeQualities: Map<string, RecipeQualityDefinition> = new Map();
+  public recipeUpgrades: Map<string, RecipeUpgradeDefinition> = new Map();
+  public research: ResearchTier[] = [];
+  public mazes: Map<string, MazeDefinition> = new Map();
+  // Ordered levels array (sorted by numeric prefix lN_)
+  public mazeLevels: MazeDefinition[] = [];
 
   constructor() {
     this.loadAllDefinitions();
@@ -32,8 +48,20 @@ export class Lib {
     try {
       this.raids = this._processDataDefinitions<RaidDefinition>(raidsData);
       this.items = this._processDataDefinitions<ItemDefinition>(itemsData);
-      this.recipes = this._processDataDefinitions<RecipeDefinition>(recipesData);
+      // Keep base copy and modded working copy
+      this.baseRecipes = this._processDataDefinitions<RecipeDefinition>(recipesData as unknown as Record<string, RecipeDefinition>);
+      // Compute derived durations based on time class and ingredients
+      this.baseRecipes.forEach((rec) => {
+        const tc = ((rec as any).timeClass || 'normal') as any;
+        (rec as any).timeClass = tc;
+        (rec as any).duration = computeRecipeDurationSec((rec as any).ingredients || {}, tc);
+      });
+      this.recipes = new Map<string, RecipeDefinition>(this.baseRecipes);
       this.recipeQualities = this._processDataDefinitions<RecipeQualityDefinition>(recipeQualitiesData);
+      this.recipeUpgrades = this._processDataDefinitions<RecipeUpgradeDefinition>(recipeUpgradesData);
+      this.research = parseResearchTiers(researchData as ResearchDataFile);
+      this.mazes = this._processDataDefinitions<MazeDefinition>(mazeData);
+      this.mazeLevels = this._buildOrderedMazeLevels(this.mazes);
       this.isLoaded = true;
     } catch (error) {
       console.error("Failed to process library definitions:", error);
@@ -51,5 +79,16 @@ export class Lib {
       }
     }
     return items;
+  }
+
+  private _buildOrderedMazeLevels(map: Map<string, MazeDefinition>): MazeDefinition[] {
+    const arr: Array<{ idx: number; id: string; def: MazeDefinition }> = [];
+    map.forEach((def, id) => {
+      const m = /^l(\d+)_/.exec(id);
+      const idx = m ? parseInt(m[1] || '0', 10) : Number.POSITIVE_INFINITY;
+      arr.push({ idx: isNaN(idx) ? Number.POSITIVE_INFINITY : idx, id, def });
+    });
+    arr.sort((a, b) => (a.idx === b.idx ? (a.id < b.id ? -1 : 1) : a.idx - b.idx));
+    return arr.map(o => o.def);
   }
 }

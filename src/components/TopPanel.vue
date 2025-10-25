@@ -20,11 +20,17 @@
           @click="activeTab = 'research'"
           type="button"
         >Research</button>
+        <button
+          class="tab"
+          :class="{ active: activeTab === 'maze' }"
+          @click="activeTab = 'maze'"
+          type="button"
+        >Maze</button>
       </nav>
 
-      <div class="metric"><span class="label">Credits</span><span class="value">{{ uiState.credits.toLocaleString() }}</span></div>
-      <div class="metric"><span class="label">Chronotraces</span><span class="value">{{ uiState.chronotraces.toLocaleString() }}</span></div>
-      <div class="metric"><span class="label">Time</span><span class="value">{{ timeDisplay }}</span></div>
+      <div class="metric"><span class="label">Credits</span><span class="value">{{ uiState.credits.toLocaleString() }}◈</span></div>
+      <div class="metric"><span class="label">Chronotraces</span><span class="value">{{ uiState.chronotraces.toLocaleString() }}⧖</span></div>
+      <div class="metric"><span class="label">Time Flux</span><span class="value">{{ uiState.timeFlux.toLocaleString() }}∿</span></div>
 
       <div v-if="hasNextEvent" class="next-event">
         <div class="next-event-title">Next event:</div>
@@ -36,6 +42,9 @@
       </div>
 
       <div class="spacer"></div>
+
+      <!-- Move time display to the right, just left of the advance button -->
+      <div class="metric time-metric"><span class="label">Time</span><span class="value time-value">{{ timeDisplay }}</span></div>
 
       <div class="time-advance" @mouseenter="hoverHint = true" @mouseleave="hoverHint = false">
         <button
@@ -70,7 +79,7 @@ function advanceTime() {
   globalInputQueue.push(new CmdAdvanceTime());
 }
 
-type TabKey = 'raid' | 'refine' | 'research';
+type TabKey = 'raid' | 'refine' | 'research' | 'maze';
 const activeTab = computed<TabKey>({
   get: () => uiState.activeTab,
   set: (v: TabKey) => { uiState.activeTab = v; },
@@ -188,6 +197,14 @@ const nextEventParts = computed(() => {
 .value {
   font-weight: 600;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* Reserve stable width for time to avoid layout shift as it changes */
+.time-metric .time-value {
+  display: inline-block;
+  min-width: 5ch;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .next-event {

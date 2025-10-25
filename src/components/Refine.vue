@@ -1,26 +1,5 @@
 <template>
   <div class="refine-root">
-    <!-- Top row: refineries -->
-    <div class="refineries-row">
-      <Refinery
-        v-for="(r, i) in refineries"
-        :key="i"
-        :index="i"
-        :health="r.health"
-        :has-recipe="r.hasRecipe"
-        :recipe-id="r.recipeId"
-        :ingredients="r.ingredients"
-        :progress-pct="r.progressPct"
-        :time-remaining-sec="r.timeRemainingSec"
-        :overflow-waste="r.overflowWaste"
-        :expected-credits="r.expectedCredits"
-        :expected-chrono="r.expectedChrono"
-        :failure-chance-pct="r.failureChancePct"
-        :can-start-here="canStartAnywhere && !r.hasRecipe"
-        :selected="i === selectedRefinery"
-        @select="onSelectRefinery(i)"
-      />
-    </div>
 
     <!-- Main area: left 3/4 content, right 1/4 all items -->
     <div class="main-split">
@@ -48,10 +27,9 @@ import Refinery from './Refinery.vue';
 import Recipes from './Recipes.vue';
 import LoadRefinery from './LoadRefinery.vue';
 import AllItems from './AllItems.vue';
-import recipesData from '../data/recipes';
+import { getGameLib } from '../logic/UIState';
 import itemsData from '../data/items';
-import { globalInputQueue } from '../logic/Model';
-import { CmdStartRefining } from '../logic/input/InputCommands';
+// start is now triggered from LoadRefinery component
 
 const selectedRefinery = computed<number>({
   get: () => uiState.selectedRefineryIndex,
@@ -89,8 +67,12 @@ const availableItems = computed(() => {
 const selectedIngredients = computed<Record<string, number>>(() => {
   const id = selectedRecipeId.value;
   if (!id) return {};
-  const rec = (recipesData as any)[id] as { ingredients?: Record<string, number> } | undefined;
-  return (rec?.ingredients || {}) as Record<string, number>;
+  // Depend on recipesVersion so upgrades update the panel
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.recipesVersion;
+  const lib = getGameLib();
+  const rec = lib?.recipes.get(id);
+  return ((rec?.ingredients || {}) as Record<string, number>);
 });
 
 // Compute essence totals for staged items
@@ -121,30 +103,11 @@ const isEssenceComplete = computed(() => {
   return true;
 });
 
-const canStartAnywhere = computed(() => !!selectedRecipeId.value && isEssenceComplete.value);
-
 function onSelectRefinery(i: number) {
   const r = refineries.value[i];
   if (!r) return;
-  if (canStartAnywhere.value && !r.hasRecipe) {
-    // Auto-start refinement in this refinery
-    startRefiningAt(i);
-    return;
-  }
   // Otherwise, toggle selection
   selectedRefinery.value = (selectedRefinery.value === i) ? -1 : i;
-}
-function startRefiningAt(i: number) {
-  if (!canStartAnywhere.value) return;
-  globalInputQueue.push(new CmdStartRefining({
-    recipeId: selectedRecipeId.value,
-    refineryIndex: i,
-    items: stagedItems.value.map(x => ({ id: x.id, quantity: x.quantity })),
-  }));
-  // Clear UI state after enqueue
-  selectedRecipeId.value = '';
-  stagedById.value = {};
-  selectedRefinery.value = -1;
 }
 function onSelectRecipe(id: string) {
   selectedRecipeId.value = id;

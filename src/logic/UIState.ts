@@ -4,6 +4,7 @@ import type { GameState, RaidOutcome, RefineryOutcome } from './GameState';
 import type { RaidDefinition } from './RaidLib';
 import { computeRaidStats, type EquipmentType as CalcEquipmentType } from './Raid';
 import { computeRefinePreview } from './Refine';
+import type { Lib } from './Lib';
 
 // Reactive UI-facing state (kept separate from logical GameState)
 export interface UIRaidDef extends RaidDefinition {}
@@ -21,6 +22,7 @@ export interface UIRefinery {
   overflowWaste?: Record<string, number>;
   expectedCredits?: number;
   expectedChrono?: number;
+  expectedFlux?: number;
   failureChancePct?: number;
 }
 
@@ -28,6 +30,7 @@ export const uiState = reactive({
   // top bar
   credits: 0,
   chronotraces: 0,
+  timeFlux: 0,
   timeMinutes: 0,
   canAdvanceTime: false,
   // reactive identity for next scheduled event (forces recompute on change)
@@ -56,10 +59,14 @@ export const uiState = reactive({
   levelupsAvailable: 0,
 
   // global tab state
-  activeTab: 'raid' as 'raid' | 'refine' | 'research',
+  activeTab: 'raid' as 'raid' | 'refine' | 'research' | 'maze',
 
   // level-up modal state
   levelUpOpen: false,
+
+  // recipe upgrade modal state
+  recipeUpgradeOpen: false,
+  recipeUpgradeCtx: null as null | { researchId: string; price: number; effect: 'modifyEssences' | 'increaseQuality'; params?: Record<string, number> },
 
   // cheat overlay state
   cheatOpen: false,
@@ -69,8 +76,19 @@ export const uiState = reactive({
   refineries: [] as UIRefinery[],
   items: [] as Array<{ id: string; quantity: number }>,
   recipes: [] as string[],
+  research: [] as string[],
+  recipesVersion: 0,
   // refine UI state
   selectedRefineryIndex: -1 as number,
+
+  // maze UI state
+  mazeLevelIndex: 0,
+  mazeMovesMade: 0,
+  mazeMaxMoves: 0,
+  mazeKeysCollected: 0,
+  mazeTotalKeys: 0,
+  mazeFailed: false,
+  mazeSolved: false,
 });
 
 // Formatted time display: "X days, HH:MM"
@@ -104,10 +122,7 @@ export const nextEventText = computed(() => {
     const title = def?.name ?? (id || 'Raid');
     return `${title} raid in ${when}`;
   }
-  if (evt.name === 'EvtRefineryDone') {
-    const idx = ((evt as any).refineryIndex ?? 0) as number;
-    return `Refinery ${idx + 1} in ${when}`;
-  }
+  if (evt.name === 'EvtRefineryDone') return `Refinery in ${when}`;
   return '';
 });
 
@@ -121,6 +136,7 @@ export function SyncUIFromGameState(game: GameState): void {
   gameRef = game;
   uiState.credits = game.credits;
   uiState.chronotraces = game.chronotraces;
+  uiState.timeFlux = (game as any).timeFlux ?? 0;
   // Model tracks time in seconds; UI needs minutes for display
   uiState.timeMinutes = Math.floor((game.time || 0) / 60);
   uiState.canAdvanceTime = !!game.nextEvt;
@@ -128,11 +144,9 @@ export function SyncUIFromGameState(game: GameState): void {
   // Update reactive next event identity so dependent UI recomputes when it changes
   const key = game.nextEvt
     ? `${game.nextEvt.name}|${game.nextEvt.at ?? ''}|${
-        game.nextEvt.name === 'EvtRefineryDone'
-          ? `ridx:${(game.nextEvt as any).refineryIndex ?? ''}`
-          : game.nextEvt.name === 'EvtRaidComplete'
-            ? `raid:${game.raid.id ?? ''}`
-            : ''
+        game.nextEvt.name === 'EvtRaidComplete'
+          ? `raid:${game.raid.id ?? ''}`
+          : ''
       }`
     : '';
   if (key !== lastNextEvtKey) {
@@ -170,41 +184,78 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.lastRefineryOutcome = game.lastRefineryOutcome;
   uiState.levelupsAvailable = game.levelupsAvailable;
 
-  // refine tab basics
-  uiState.refineries = (game.refineries || []).map(r => {
-    const hasRecipe = !!r.loadedRecipe;
-    const entry: UIRefinery = {
-      health: r.health,
-      hasRecipe,
-    };
-    if (hasRecipe) {
-      entry.recipeId = r.loadedRecipe;
-      entry.startedAtSec = r.startedAt;
-      const recipe = game.lib.recipes.get(r.loadedRecipe);
-      const duration = Math.max(0, recipe?.duration || 0);
-      if (duration > 0) {
-        const elapsed = Math.max(0, (game.time || 0) - (r.startedAt || 0));
-        const progressPct = Math.max(0, Math.min(100, Math.round((elapsed / duration) * 100)));
-        const remaining = Math.max(0, Math.round(duration - elapsed));
-        entry.progressPct = progressPct;
-        entry.timeRemainingSec = remaining;
-      } else {
-        entry.progressPct = 0;
-        entry.timeRemainingSec = 0;
-      }
-      const ingredients = (recipe?.ingredients || {}) as Record<string, number>;
-      entry.ingredients = ingredients;
-      entry.overflowWaste = (r.overflowEssences || {}) as Record<string, number>;
-
-      const preview = computeRefinePreview(game.lib, r.loadedRecipe, r.health, ingredients);
-      entry.expectedCredits = preview.expectedCredits;
-      entry.expectedChrono = preview.expectedChrono;
-      entry.failureChancePct = preview.failureChancePct;
+  // refine tab basics (single refinery)
+  const entries: UIRefinery[] = [];
+  const loadedId = (game as any).loadedRecipe as string;
+  const startedAt = (game as any).recipeStartedAt as number;
+  const hasRecipe = !!loadedId;
+  const base: UIRefinery = { health: 100, hasRecipe };
+  if (hasRecipe) {
+    base.recipeId = loadedId;
+    base.startedAtSec = startedAt;
+    const recipe = game.lib.recipes.get(loadedId);
+    const duration = Math.max(0, recipe?.duration || 0);
+    if (duration > 0) {
+      const elapsed = Math.max(0, (game.time || 0) - (startedAt || 0));
+      const progressPct = Math.max(0, Math.min(100, Math.round((elapsed / duration) * 100)));
+      const remaining = Math.max(0, Math.round(duration - elapsed));
+      base.progressPct = progressPct;
+      base.timeRemainingSec = remaining;
+    } else {
+      base.progressPct = 0;
+      base.timeRemainingSec = 0;
     }
-    return entry;
-  });
+    const ingredients = (recipe?.ingredients || {}) as Record<string, number>;
+    base.ingredients = ingredients;
+    base.overflowWaste = ((game as any).overflowEssences || {}) as Record<string, number>;
+
+    const preview = computeRefinePreview(game.lib, loadedId, 100, ingredients);
+    base.expectedCredits = preview.expectedCredits;
+    base.expectedChrono = preview.expectedChrono;
+    base.expectedFlux = preview.expectedFlux;
+    base.failureChancePct = preview.failureChancePct;
+  }
+  // Always present a single panel so layout stays consistent
+  entries.push(base);
+  uiState.refineries = entries;
   uiState.items = (game.items || []).map(it => ({ id: it.id, quantity: it.quantity }));
   uiState.recipes = Array.isArray((game as any).recipes) ? [...(game as any).recipes] : [];
+  const r: any = (game as any).research;
+  if (Array.isArray(r)) uiState.research = [...r];
+  else if (r && typeof r.forEach === 'function' && typeof r.has === 'function') uiState.research = Array.from(r as Set<string>);
+  else uiState.research = [];
+
+  // Propagate lib recipes version for UI reactivity on upgrades
+  uiState.recipesVersion = (game.lib as any).recipesVersion || 0;
+
+  // Sync maze state for reactivity
+  uiState.mazeLevelIndex = game.mazeLevelIndex || 0;
+  const maze = game.maze;
+  if (maze) {
+    uiState.mazeMovesMade = maze.movesMade || 0;
+    uiState.mazeMaxMoves = maze.maxMoves || 0;
+    uiState.mazeKeysCollected = maze.state?.keysCollected || 0;
+    uiState.mazeTotalKeys = maze.state?.keys?.length || 0;
+    uiState.mazeFailed = !!maze.state?.failed;
+    uiState.mazeSolved = (maze.state?.keys?.length || 0) === (maze.state?.keysCollected || 0);
+  } else {
+    uiState.mazeMovesMade = 0;
+    uiState.mazeMaxMoves = 0;
+    uiState.mazeKeysCollected = 0;
+    uiState.mazeTotalKeys = 0;
+    uiState.mazeFailed = false;
+    uiState.mazeSolved = false;
+  }
+}
+
+// Expose current game lib for UI components that need live definitions (e.g., modded recipes)
+export function getGameLib(): Lib | null {
+  return gameRef?.lib ?? null;
+}
+
+// Provide read-only access to the current GameState (for UI components that need live instances)
+export function getGameState(): GameState | null {
+  return gameRef;
 }
 
 // Ensure sliders exist with default 50/50/50 for a raid id

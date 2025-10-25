@@ -2,11 +2,7 @@
   <div class="panel load-panel">
     <div class="header">
       <div class="left">
-        <button class="link" @click="$emit('clear')">← Back</button>
-        <span class="title">Load Refinery</span>
-      </div>
-      <div class="right">
-        <span class="recipe">Recipe: {{ recipeId }}</span>
+        <button class="link" @click="$emit('clear')">← Choose a different recipe</button>
       </div>
     </div>
 
@@ -36,8 +32,9 @@
 
     <!-- Summary below essence bars -->
     <div class="summary" v-if="hasAnyItems">
-      <div class="sum-line">Expected credits: <span class="hl">{{ expectedCredits }}</span></div>
-      <div class="sum-line">Expected chronotraces: <span class="hl">{{ expectedChrono }}</span></div>
+      <div class="sum-line">Expected credits: <span class="hl">{{ expectedCredits }}◈</span></div>
+      <div class="sum-line">Expected time flux: <span class="hl">{{ expectedFlux }}∿</span></div>
+      <div class="sum-line">Expected chronotraces: <span class="hl">{{ expectedChrono }}⧖</span></div>
 
       <div class="yield-line">
         Yield: <span class="hl">{{ totalYieldPct }}%</span>
@@ -68,9 +65,18 @@
         </template>
       </div>
 
-      <div class="actions" v-if="helpText">
-        <div class="muted">{{ helpText }}</div>
-      </div>
+    </div>
+    <div class="actions">
+      <button
+        class="time-advance-btn"
+        :disabled="!canStart"
+        type="button"
+        @click="startRefining"
+      >
+        <span class="btn-label">Start Refining</span>
+        <span class="icon-play" aria-hidden="true">▶</span>
+      </button>
+      <div v-if="!canStart && helpText" class="muted">{{ helpText }}</div>
     </div>
   </div>
   
@@ -81,10 +87,11 @@ import ItemGrid from './ItemGrid.vue';
 import { computed, onMounted, ref } from 'vue';
 import atlasStorage from '../logic/AtlasStorage';
 import itemsData from '../data/items';
-import recipesData from '../data/recipes';
 import { computeRefinePreview } from '../logic/Refine';
-import { Lib } from '../logic/Lib';
+import { getGameLib } from '../logic/UIState';
 import { uiState } from '../logic/UIState';
+import { globalInputQueue } from '../logic/Model';
+import { CmdAdvanceTime, CmdStartRefining } from '../logic/input/InputCommands';
 
 const props = defineProps<{ recipeId: string; items: Array<{ id: string; quantity: number }> }>();
 const emit = defineEmits<{ (e: 'clear'): void; (e: 'unpick-item', id: string): void }>();
@@ -133,8 +140,10 @@ function essenceLetter(k: string): string {
 
 // Requirements from recipe
 const requirements = computed<Record<string, number>>(() => {
-  const rec = (recipesData as any)[props.recipeId] as { ingredients?: Record<string, number> } | undefined;
-  return (rec?.ingredients || {}) as Record<string, number>;
+  const lib = getGameLib();
+  const rec = lib?.recipes.get(props.recipeId);
+  const ing = (rec?.ingredients || {}) as Record<string, number>;
+  return ing;
 });
 
 // Totals loaded from staged items
@@ -186,22 +195,38 @@ function countLabel(k: string): string {
 }
 
 // --- Summary metrics (via shared Refine.ts) ---
-const lib = new Lib();
+const lib = computed(() => getGameLib());
 
-const selectedRefineryIndex = computed(() => uiState.selectedRefineryIndex);
-const hasSelectedRefinery = computed(() => (selectedRefineryIndex.value ?? -1) >= 0);
+// With a single refinery, use its health directly; default to 100 if none
 const refineryConditionPct = computed(() => {
-  if (!hasSelectedRefinery.value) return 100; // neutral when none selected
-  const r = uiState.refineries[selectedRefineryIndex.value] || { health: 100 };
-  return Math.max(0, Math.min(100, Math.round(r.health || 0)));
+  const r = uiState.refineries?.[0];
+  return Math.max(0, Math.min(100, Math.round((r?.health ?? 100))));
 });
 
-const preview = computed(() => computeRefinePreview(
-  lib,
-  props.recipeId,
-  refineryConditionPct.value,
-  stagedEssences.value,
-));
+const preview = computed(() => {
+  const L = lib.value;
+  // Fallback: if lib is not yet available, return neutral values
+  if (!L) {
+    return {
+      qualityName: 'Standard',
+      qualityYieldPct: 100,
+      failureChancePct: 0,
+      refineryConditionPct: refineryConditionPct.value,
+      totalYieldPct: refineryConditionPct.value,
+      matchedEssences: 0,
+      expectedCredits: 0,
+      expectedChrono: 0,
+      expectedFlux: 0,
+      wasteByKey: {} as Record<string, number>,
+    };
+  }
+  return computeRefinePreview(
+    L,
+    props.recipeId,
+    refineryConditionPct.value,
+    stagedEssences.value,
+  );
+});
 const qualityName = computed(() => preview.value.qualityName);
 const qualityYieldPct = computed(() => preview.value.qualityYieldPct);
 const failureChancePct = computed(() => preview.value.failureChancePct);
@@ -209,6 +234,7 @@ const totalYieldPct = computed(() => preview.value.totalYieldPct);
 const matchedEssences = computed(() => preview.value.matchedEssences);
 const expectedCredits = computed(() => preview.value.expectedCredits);
 const expectedChrono = computed(() => preview.value.expectedChrono);
+const expectedFlux = computed(() => preview.value.expectedFlux);
 
 // Completion check
 const isEssenceComplete = computed(() => {
@@ -224,10 +250,26 @@ const isEssenceComplete = computed(() => {
 const wasteByKey = computed<Record<string, number>>(() => preview.value.wasteByKey);
 const hasWaste = computed(() => Object.keys(wasteByKey.value).length > 0);
 
+// Start conditions
+const isRefineryBusy = computed(() => (uiState.refineries || []).some(r => r.hasRecipe));
+const canStart = computed(() => !!props.recipeId && isEssenceComplete.value && !isRefineryBusy.value);
+
 const helpText = computed(() => {
   if (!isEssenceComplete.value) return 'Add more items to fulfill recipe essence requirements';
+  if (isRefineryBusy.value) return 'Refinery is already running';
   return '';
 });
+
+function startRefining() {
+  if (!canStart.value) return;
+  globalInputQueue.push(new CmdStartRefining({
+    recipeId: props.recipeId,
+    items: (props.items || []).map(x => ({ id: x.id, quantity: x.quantity })),
+  }));
+  globalInputQueue.push(new CmdAdvanceTime());
+  // Ask parent to clear staged state and return to recipes
+  emit('clear');
+}
 
 // selection handled in the parent view; keep this focused on loading
 
@@ -277,7 +319,35 @@ const hasAnyItems = computed(() => (props.items || []).some(it => Math.max(0, it
 .waste-item { display: inline-flex; align-items: center; gap: 4px; font-weight: 800; }
 
 .actions { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
-.start-btn { padding: 10px 12px; font-weight: 800; letter-spacing: 0.05em; border-radius: 4px; border: 1px solid var(--panel-border); background: rgba(79, 209, 197, 0.14); color: var(--accent); cursor: pointer; }
-.start-btn:hover:enabled { background: rgba(79, 209, 197, 0.22); }
-.start-btn:disabled { background: rgba(255,255,255,0.04); color: var(--text-secondary); cursor: not-allowed; }
+
+/* Shared advance-style button to match TopPanel */
+.time-advance-btn {
+  height: 32px;
+  padding: 0 14px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-radius: 4px;
+  border: 1px solid rgba(34,197,94,0.35);
+  background: rgba(34,197,94,0.18);
+  color: #86efac;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.time-advance-btn:hover { background: rgba(34,197,94,0.28); }
+.time-advance-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  background: rgba(34,197,94,0.10);
+  border-color: rgba(34,197,94,0.22);
+}
+.time-advance-btn:disabled:hover { background: rgba(34,197,94,0.10); }
+.time-advance-btn .icon-play {
+  display: inline-block;
+  font-size: 18px;
+  line-height: 1;
+  transform: translateY(-2px);
+}
 </style>

@@ -4,7 +4,8 @@
     <section class="tab-content">
       <Raids v-if="activeTab === 'raid'" />
       <Refine v-else-if="activeTab === 'refine'" />
-      <Research v-else />
+      <Research v-else-if="activeTab === 'research'" />
+      <Maze v-else-if="activeTab === 'maze'" />
     </section>
   </main>
   <OutcomeModal />
@@ -19,13 +20,14 @@ import TopPanel from './components/TopPanel.vue';
 import Raids from './components/Raids.vue';
 import Refine from './components/Refine.vue';
 import Research from './components/Research.vue';
+import Maze from './components/Maze.vue';
 import OutcomeModal from './components/OutcomeModal.vue';
 import RefineryOutcomeModal from './components/RefineryOutcomeModal.vue';
 import LevelUpModal from './components/LevelUpModal.vue';
 import CheatOverlay from './components/CheatOverlay.vue';
 import { uiState } from './logic/UIState';
 
-type TabKey = 'raid' | 'refine' | 'research';
+type TabKey = 'raid' | 'refine' | 'research' | 'maze';
 const activeTab = computed<TabKey>({
   get: () => uiState.activeTab,
   set: (v: TabKey) => { uiState.activeTab = v; },
@@ -68,6 +70,7 @@ onBeforeUnmount(() => {
   --bg-0: #0a0f1a;          /* darkest - nearly black */
   --bg-1: #151d2b;          /* dark blue-gray */
   --bg-2: #1a2332;          /* slightly lighter */
+  --bg-2-op: #1a2332e9;          /* slightly lighter */
   --panel-bg: rgba(20, 28, 40, 0.92); /* dark tactical panel */
   --panel-border: rgba(100, 120, 140, 0.25); /* subtle blue-gray border */
   --panel-shine: rgba(255, 255, 255, 0.03);

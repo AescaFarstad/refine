@@ -1,49 +1,65 @@
 <template>
-  <div class="raids">
-    <div class="grid">
-      <RaidCard
-        v-for="item in displayRaids"
-        :key="item.def.id"
-        :def="item.def"
-        :locked="item.locked"
-        :quest-progress="item.questProgress"
-        :quests-done="item.questsDone"
-        :sliders="slidersFor(item.def.id)"
-        :is-active="isRaidActive(item.def.id)"
-        :any-active="isAnyRaidActive"
-        :active-progress="activeProgress"
-        :equipment="equipmentFor(item.def.id)"
-        @select-equipment="selectEquipment"
-      />
+  <div class="raids-view">
+    <RaidSelection />
+    <div class="raid-main-bg">
+      <RaidSetup v-if="hasSelection" />
+      <RaidGear />
     </div>
+    <RaidDeploy />
   </div>
-  
 </template>
 
 <script setup lang="ts">
-import RaidCard from './RaidCard.vue';
-import { computed } from 'vue';
-import { displayRaids, uiState, ensureSliders, isRaidActive, isAnyRaidActive, getEquipment, setEquipment, type EquipmentType } from '../logic/UIState';
+import { computed, onMounted, watch } from 'vue';
+import { uiState, getGameState } from '../logic/UIState';
+import RaidSelection from './RaidSelection.vue';
+import RaidSetup from './RaidSetup.vue';
+import RaidGear from './RaidGear.vue';
+import RaidDeploy from './RaidDeploy.vue';
+import { globalInputQueue } from '../logic/Model';
+import { CmdSelectRaid } from '../logic/input/InputCommands';
 
-const slidersFor = (id: string) => {
-  ensureSliders(id);
-  return uiState.sliders[id];
-};
+const hasSelection = computed(() => !!(uiState.activeRaidId || uiState.raidOrder[0]));
 
-const activeProgress = computed(() => uiState.activeRaidProgress);
-const equipmentFor = (id: string) => getEquipment(id);
-
-function selectEquipment(id: string, equipment: EquipmentType) {
-  setEquipment(id, equipment);
+function isLockedById(id: string): boolean {
+  const def = uiState.raids.find(r => r.id === id);
+  if (!def) return true;
+  const gs = getGameState();
+  const reach = gs?.reach || 0;
+  return reach < Math.max(0, (def as any).reachRequired || 0);
 }
+
+function firstUnlockedRaidId(): string | null {
+  for (const id of uiState.raidOrder) {
+    if (!isLockedById(id)) return id;
+  }
+  return null;
+}
+
+function onSelectRaid(id: string) {
+  if (!id) return;
+  if (isLockedById(id)) return;
+  globalInputQueue.push(new CmdSelectRaid({ id }));
+}
+
+// Ensure a default selection exists once raids are loaded
+onMounted(() => {
+  if (!uiState.activeRaidId) {
+    const id = firstUnlockedRaidId();
+    if (id) onSelectRaid(id);
+  }
+});
+watch(() => uiState.raidOrder.join('|'), () => {
+  if (!uiState.activeRaidId) {
+    const id = firstUnlockedRaidId();
+    if (id) onSelectRaid(id);
+  }
+});
 </script>
 
 <style scoped>
-.raids { display: block; }
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, 320px);
-  gap: 16px;
-  justify-content: start;
-}
+.raids-view { display: flex; flex-direction: column; gap: 14px; }
+.raids-view :deep(.panel) { background: transparent !important; box-shadow: none !important; border: none !important; }
+/* Unified background for raid details, quests, and gear */
+.raid-main-bg { background: var(--panel-bg); border-radius: 6px; padding: 0px; display: flex; flex-direction: column; gap: 14px; }
 </style>

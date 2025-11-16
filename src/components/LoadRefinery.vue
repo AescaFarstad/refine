@@ -32,7 +32,7 @@
 
     <!-- Summary below essence bars -->
     <div class="summary" v-if="hasAnyItems">
-      <div class="sum-line">Expected credits: <span class="hl">{{ expectedCredits }}◈</span></div>
+      <div class="sum-line">Expected credits: <span class="hl">{{ expectedCredits }}✦</span></div>
       <div class="sum-line">Expected time flux: <span class="hl">{{ expectedFlux }}∿</span></div>
       <div class="sum-line">Expected chronotraces: <span class="hl">{{ expectedChrono }}⧖</span></div>
 

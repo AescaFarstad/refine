@@ -1,0 +1,10 @@
+export interface MonsterDefinition {
+  id: string;
+  name: string;
+  hp: number;
+  dodge: number;    // percent
+  accuracy: number; // percent
+  damage: number;
+  lootItemId: string; // item dropped for MonsterLootEncounter
+}
+

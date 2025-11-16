@@ -1,9 +1,7 @@
 import type { GameState } from '../GameState';
-import { QUEST_POINTS, Raid } from '../GameState';
 import type { Evt } from './Evt';
 import { EvtRaidComplete, EvtRefineryDone } from './Evt';
-import { computeRaidStats } from '../Raid';
-import type { ItemDefinition } from '../ItemLib';
+// Stage 1: legacy raid handling removed. No computeRaidStats or loot logic.
 import { computeRefinePreview } from '../Refine';
 import { RefineryOutcome } from '../GameState';
 
@@ -11,85 +9,64 @@ type EvtHandler = (gs: GameState, evt: Evt) => void;
 const handlersByName = new Map<string, EvtHandler>();
 
 handlersByName.set('EvtRaidComplete', (gs, evt) => {
-  const e = evt as EvtRaidComplete;
-
+  // Stage 1: No-op outcome to clear active raid; no rewards, no progress.
   const raidId = gs.raid.id;
-  const def = gs.lib.raids.get(raidId)!;
-
-  const stats = computeRaidStats(
-    gs,
-    def,
-    gs.raid.questWeight,
-    gs.raid.surviveWeight,
-    gs.raid.lootWeight,
-    gs.raid.equipment,
-  );
-
-  const roll = gs.random.get() * 100;
-  const success = roll <= stats.survivalChancePct;
-
   const outcome = {
     id: raidId,
     questsDone: 0,
-    success,
-    questDeltaPct: success ? (stats.questDeltaPct || 0) : 0,
+    success: false,
+    questDeltaPct: 0,
     unlockedRaidId: null as string | null,
     looted: [] as { id: string; quantity: number }[],
     discardedByVolume: [] as { id: string; quantity: number }[],
     discardedByLuck: [] as { id: string; quantity: number }[],
   };
 
+  gs.lastRaidOutcome = outcome;
+  gs.raid.id = '';
+});
+
+handlersByName.set('EvtRefineryDone', (gs, evt) => {
+  if (!gs.loadedRecipe) return;
+  const recipeId = gs.loadedRecipe;
+  const recipe = gs.lib.recipes.get(recipeId)!;
+  const health = 100; // single refinery, full condition
+  const preview = computeRefinePreview(gs.lib, recipeId, health, recipe.ingredients as Record<string, number>);
+  const successChance = Math.max(0, 100 - (preview.failureChancePct || 0));
+  const roll = gs.random.get() * 100;
+  const success = roll <= successChance;
+
+  const outcome = new RefineryOutcome();
+  outcome.recipeId = recipeId;
+  outcome.success = success;
   if (success) {
-    const raidState = gs.unlockedRaids.find(r => r.id === raidId);
-    if (raidState) {
-      const gainPoints = Math.max(0, Math.round((stats.questDeltaPct || 0) * QUEST_POINTS / 100));
-      let progress = Math.max(0, raidState.questProgress) + gainPoints;
-      let done = Math.max(0, raidState.questsDone);
-      const doneBefore = done;
+    gs.credits += preview.expectedCredits;
+    gs.chronotraces += preview.expectedChrono;
+    gs.timeFlux = Math.max(0, (gs.timeFlux || 0) + preview.expectedFlux);
+    outcome.creditsGained = preview.expectedCredits;
+    outcome.chronotracesGained = preview.expectedChrono;
+    outcome.timeFluxGained = preview.expectedFlux;
+  }
 
-      let levelupsGained = 0;
-      while (true) {
-        const target = Math.round(QUEST_POINTS * Math.pow(2, done));
-        if (progress < target) break;
-        progress -= target;
-        done += 1;
-        levelupsGained += 1;
-      }
+  gs.lastRefineryOutcome = outcome;
 
-      raidState.questProgress = progress;
-      raidState.questsDone = done;
+  gs.loadedRecipe = '';
+  gs.recipeStartedAt = 0;
+  gs.overflowEssences = {};
+});
 
-      if (levelupsGained > 0) {
-        gs.levelupsAvailable += levelupsGained;
-      }
+export function processEvt(gs: GameState, evt: Evt): void {
+  const handler = handlersByName.get(evt.name);
+  if (handler) {
+    handler(gs, evt);
+  }
+  else {
+    throw new Error(`No handler for event: ${evt.name}`);
+  }
+}
 
-      outcome.questsDone = done;
 
-      // If this raid was completed for the first time (0 -> 1), unlock the next raid
-      if (doneBefore === 0 && done >= 1) {
-        const ids = Array.from(gs.lib.raids.keys());
-        const idx = ids.indexOf(raidId);
-        const nextId = (idx >= 0 && idx + 1 < ids.length) ? ids[idx + 1] : null;
-        if (nextId) {
-          const alreadyUnlocked = gs.unlockedRaids.some(r => r.id === nextId);
-          if (!alreadyUnlocked) {
-            gs.unlockedRaids.push(new Raid(nextId));
-            outcome.unlockedRaidId = nextId;
-          }
-        }
-      }
-    }
-
-    const raidDef = def;
-    const itemPools = raidDef.items;
-    const durationMin = raidDef.durationMin;
-    const lootRate = stats.lootRatePct;
-    const totalItemValueBudget = lootRate * durationMin;
-
-    // Effective looting skill
-    const baseLooting = gs.raid.looting;
-    const lootingDifficulty = raidDef.itemDropDifficulty;
-    const effLooting = Math.max(10, baseLooting - lootingDifficulty);
+/* reference of looting probabilities
 
     let remainingVolume = gs.raid.volume;
 
@@ -142,86 +119,4 @@ handlersByName.set('EvtRaidComplete', (gs, evt) => {
       if (existing) existing.quantity += qty;
       else arr.push({ id, quantity: qty });
     }
-
-    function addToInventory(id: string, qty: number): void {
-      const inv = gs.items;
-      const existing = inv.find(x => x.id === id);
-      if (existing) existing.quantity += qty;
-      else inv.push({ id, quantity: qty });
-    }
-
-    // Direct lookup of item defs
-    const getItemDef = (id: string): ItemDefinition => gs.lib.items.get(id)!;
-
-    let collectedValue = 0;
-    while (collectedValue < totalItemValueBudget) {
-      const cat = pickCategory();
-      if (!cat) break;
-      const pool = itemPools[cat];
-      const id = pickFromPool(pool)!;
-      const defItem = getItemDef(id);
-      const itemVal = sumEssenceValue(defItem);
-      collectedValue += itemVal;
-
-      // Loot roll vs effective looting
-      const roll = gs.random.get() * 100;
-      if (roll < effLooting) {
-        // Check bag volume
-        const vol = defItem.volume;
-        if (vol <= remainingVolume) {
-          remainingVolume -= vol;
-          pushItem(outcome.looted, id, 1);
-          addToInventory(id, 1);
-        } else {
-          pushItem(outcome.discardedByVolume, id, 1);
-        }
-      } else {
-        pushItem(outcome.discardedByLuck, id, 1);
-      }
-    }
-  }
-
-  gs.lastRaidOutcome = outcome;
-
-  gs.raid.id = '';
-  gs.raid.progress = 0;
-});
-
-handlersByName.set('EvtRefineryDone', (gs, evt) => {
-  if (!(gs as any).loadedRecipe) return;
-  const recipeId = (gs as any).loadedRecipe as string;
-  const recipe = gs.lib.recipes.get(recipeId)!;
-  const health = 100; // single refinery, full condition
-  const preview = computeRefinePreview(gs.lib, recipeId, health, recipe.ingredients as any);
-  const successChance = Math.max(0, 100 - (preview.failureChancePct || 0));
-  const roll = gs.random.get() * 100;
-  const success = roll <= successChance;
-
-  const outcome = new RefineryOutcome();
-  outcome.recipeId = recipeId;
-  outcome.success = success;
-  if (success) {
-    gs.credits += preview.expectedCredits;
-    gs.chronotraces += preview.expectedChrono;
-    gs.timeFlux = Math.max(0, (gs.timeFlux || 0) + preview.expectedFlux);
-    outcome.creditsGained = preview.expectedCredits;
-    outcome.chronotracesGained = preview.expectedChrono;
-    outcome.timeFluxGained = preview.expectedFlux;
-  }
-
-  gs.lastRefineryOutcome = outcome;
-
-  (gs as any).loadedRecipe = '';
-  (gs as any).recipeStartedAt = 0;
-  (gs as any).overflowEssences = {} as any;
-});
-
-export function processEvt(gs: GameState, evt: Evt): void {
-  const handler = handlersByName.get(evt.name);
-  if (handler) {
-    handler(gs, evt);
-  }
-  else {
-    throw new Error(`No handler for event: ${evt.name}`);
-  }
-}
+      */

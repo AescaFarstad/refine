@@ -9,5 +9,6 @@ export interface ItemDefinition {
   name: string;
   volume: number;
   essence: Essence;
+  // Rarity used for loot tables (always normalized to string values)
+  rarity: 'common' | 'uncommon' | 'rare' | 'legendary';
 }
-

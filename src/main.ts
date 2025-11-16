@@ -6,12 +6,16 @@ import * as Model from './logic/Model';
 import { SyncUIFromGameState } from './logic/UIState';
 import atlasStorage from './logic/AtlasStorage';
 
-const app = createApp(App);
-app.mount('#app');
-
+// Create GameState first so UI state can assume its presence
 const gameState = new GameState();
 
 void atlasStorage.loadItemsAtlas();
+
+// Sync UI immediately so initial values render before mounting
+SyncUIFromGameState(gameState);
+
+const app = createApp(App);
+app.mount('#app');
 
 let lastTimestamp = 0;
 function gameLoop(timestamp: number) {

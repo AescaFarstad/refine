@@ -1,12 +1,15 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAknowledgeOutcome, CmdLevelup, CmdStartRefining, CmdAcknowledgeRefineryOutcome, CmdPurchaseResearch, CmdUpgradeRecipe, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart } from './InputCommands';
+import { CmdStartRaid, CmdAdvanceTime, CmdAknowledgeOutcome, CmdLevelup, CmdStartRefining, CmdAcknowledgeRefineryOutcome, CmdPurchaseResearch, CmdUpgradeRecipe, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest } from './InputCommands';
 import { LEVEL_UP_STRENGTH, LEVEL_UP_LOOTING, LEVEL_UP_VOLUME, RESEARCH_TIER_PRICE, RESEARCH_TIER_ITEM_PRICE } from '../Const';
-import { computeNextEvt } from '../Model';
+import { EvtRefineryDone } from '../evt/Evt';
 import { computeLoadedEssencesFromItems, computeOverflowEssences } from '../Refine';
 import { applyRecipeUpgrade } from '../Recipe';
 import type { Point2 } from '../core/math';
+import { runRaid, recomputeActiveRaidParams, toggleGearForRaid, recomputeActiveRaidEstimates } from '../Raid';
+import type { QuestDefinition } from '../QuestLib';
+import { getEffectiveRaidDefinition, pickAndApplyRaidSuccessMutation, describeMutation } from '../RaidMutation';
 
 type Handler = (gs: GameState, cmd: CmdInput) => void;
 const handlersByName = new Map<string, Handler>();
@@ -17,21 +20,70 @@ handlersByName.set('CmdAdvanceTime', (gs, cmd) => {
 
 handlersByName.set('CmdStartRaid', (gs, cmd) => {
   const c = cmd as CmdStartRaid;
-  if (!c.id || gs.raid.id) return;
-  gs.raid.id = c.id;
-  gs.raid.progress = 0;
-  // copy player stats at deployment time
-  gs.raid.strength = gs.strength;
-  gs.raid.volume = gs.volume;
-  gs.raid.looting = gs.looting;
-  // copy focus weights from UI-provided values
-  gs.raid.questWeight = c.quest;
-  gs.raid.surviveWeight = c.survive;
-  gs.raid.lootWeight = c.loot;
-  gs.raid.equipment = c.equipment;
-  gs.credits -= c.cost;
+  if (!c.id) return;
 
-  computeNextEvt(gs);
+  // Resolve selected raid as an effective copy (modded + active quest overlays)
+  const def = getEffectiveRaidDefinition(gs, c.id);
+  if (!def) return;
+
+  if ((gs.reach || 0) < Math.max(0, def.reachRequired || 0)) {
+    return;
+  }
+
+  // Ensure gs.raid reflects the selected raid and its current loadout
+  recomputeActiveRaidParams(gs, c.id);
+
+  // Run raid immediately
+  const result = runRaid(gs, def);
+
+  // Advance time by the computed total
+  gs.time = Math.max(0, (gs.time || 0) + Math.max(0, result.timeSpentSec || 0));
+
+  // End-of-raid quest processing (reach + skill points)
+  let reachGained = 0;
+  let skillPointsGained = 0;
+  const completedNow: string[] = [];
+  let zoneChange: string | null = null;
+  if (result.success) {
+    const allQuests = gs.lib.quests || new Map<string, QuestDefinition>();
+    allQuests.forEach((q, id) => {
+      const already = (gs.completedQuests || []).includes(id);
+      const applies = (!q.raidRestriction || q.raidRestriction.includes(c.id)) && (!!q.autoaccept);
+      if (!already && applies) {
+        const r = q.rewards || {};
+        const incReach = Math.max(0, r.reach || 0);
+        if (incReach > 0) {
+          gs.reach = Math.max(0, (gs.reach || 0) + incReach);
+          reachGained += incReach;
+        }
+        const incSP = Math.max(0, (r as any).skillPoints || 0);
+        if (incSP > 0) {
+          gs.skillPoints = Math.max(0, (gs.skillPoints || 0) + incSP);
+          skillPointsGained += incSP;
+        }
+        (gs.completedQuests || (gs.completedQuests = [])).push(id);
+        completedNow.push(id);
+      }
+    });
+
+    // Apply one permanent raid mutation based on weighted candidates
+    const chosen = pickAndApplyRaidSuccessMutation(gs, c.id);
+    if (chosen) {
+      zoneChange = describeMutation(gs, chosen.mutation);
+    }
+  }
+
+  // Store outcome/log (shape will evolve later with more details)
+  (gs as any).lastRaidOutcome = {
+    id: c.id,
+    success: !!result.success,
+    log: result.log,
+    timeSpentSec: result.timeSpentSec,
+    reachGained,
+    skillPointsGained,
+    questsCompleted: completedNow,
+    zoneChange,
+  };
 });
 
 handlersByName.set('CmdAknowledgeOutcome', (gs, cmd) => {
@@ -78,7 +130,11 @@ handlersByName.set('CmdStartRefining', (gs, cmd) => {
   (gs as any).loadedRecipe = c.recipeId;
   (gs as any).recipeStartedAt = gs.time;
 
-  computeNextEvt(gs);
+  // Directly schedule refinery completion (single refinery)
+  const recipe = gs.lib.recipes.get(c.recipeId);
+  const duration = Math.max(0, recipe?.duration || 0);
+  gs.nextEvt = new EvtRefineryDone({ at: gs.time + duration });
+  gs.timeActive = true;
 });
 
 handlersByName.set('CmdAcknowledgeRefineryOutcome', (gs, cmd) => {
@@ -197,6 +253,49 @@ handlersByName.set('CmdMazeReset', (gs, cmd) => {
 handlersByName.set('CmdMazeRestart', (gs, cmd) => {
   // Restart current level without regenerating layout (same seed/settings)
   if (gs.maze) gs.maze.reset();
+});
+
+// Raid UI commands
+handlersByName.set('CmdSelectRaid', (gs, cmd) => {
+  const c = cmd as CmdSelectRaid;
+  if (!c.id) return;
+  // Prevent selecting locked raids based on reach requirement
+  const def = gs.lib.raids.get(c.id);
+  if (!def) return;
+  const reachReq = Math.max(0, (def as any).reachRequired || 0);
+  if ((gs as any).reach < reachReq) return;
+  recomputeActiveRaidParams(gs, c.id);
+  recomputeActiveRaidEstimates(gs, 100);
+});
+
+handlersByName.set('CmdToggleGear', (gs, cmd) => {
+  const c = cmd as CmdToggleGear;
+  toggleGearForRaid(gs, c.raidId, c.gearId, c.selected);
+  recomputeActiveRaidEstimates(gs, 100);
+});
+
+// Removed: unlocking gear slots logic
+
+// Quests: toggle manual activation for non-autoaccept quests
+handlersByName.set('CmdToggleQuest', (gs, cmd) => {
+  const c = cmd as CmdToggleQuest;
+  const id = (c.id || '').trim();
+  if (!id) return;
+  const q = gs.lib.quests.get(id);
+  if (!q) return;
+  // Ignore if quest is autoaccepted or completed
+  if (q.autoaccept) return;
+  if ((gs.completedQuests || []).includes(id)) return;
+  const list = (gs.activeQuests || (gs.activeQuests = []));
+  const i = list.indexOf(id);
+  const want = !!c.active;
+  if (want) {
+    if (i === -1) list.push(id);
+  } else {
+    if (i !== -1) list.splice(i, 1);
+  }
+  // Active quests can mutate encounter composition; refresh estimates for active raid
+  recomputeActiveRaidEstimates(gs, 100);
 });
 
 export function processInputs(gameState: GameState): void {

@@ -8,9 +8,8 @@
       <Maze v-else-if="activeTab === 'maze'" />
     </section>
   </main>
-  <OutcomeModal />
+  <RaidOutcomeModal />
   <RefineryOutcomeModal />
-  <LevelUpModal />
   <CheatOverlay />
 </template>
 
@@ -21,9 +20,8 @@ import Raids from './components/Raids.vue';
 import Refine from './components/Refine.vue';
 import Research from './components/Research.vue';
 import Maze from './components/Maze.vue';
-import OutcomeModal from './components/OutcomeModal.vue';
+import RaidOutcomeModal from './components/RaidOutcomeModal.vue';
 import RefineryOutcomeModal from './components/RefineryOutcomeModal.vue';
-import LevelUpModal from './components/LevelUpModal.vue';
 import CheatOverlay from './components/CheatOverlay.vue';
 import { uiState } from './logic/UIState';
 
@@ -71,16 +69,20 @@ onBeforeUnmount(() => {
   --bg-1: #151d2b;          /* dark blue-gray */
   --bg-2: #1a2332;          /* slightly lighter */
   --bg-2-op: #1a2332e9;          /* slightly lighter */
-  --panel-bg: rgba(20, 28, 40, 0.92); /* dark tactical panel */
+  --panel-bg: rgba(23, 33, 47, 0.62); /* dark tactical panel */
   --panel-border: rgba(100, 120, 140, 0.25); /* subtle blue-gray border */
   --panel-shine: rgba(255, 255, 255, 0.03);
   --accent: #4fd1c5;         /* teal/cyan - primary interactive color */
   --accent-strong: #38b2ac;  /* stronger teal */
   --accent-hover: #81e6d9;   /* lighter teal for hover */
-  --accent-warm: #f59e0b;    /* amber/orange accent */
+  --accent-warm: #9f6707;    /* amber/orange accent */
   --text-primary: #e8edf3;   /* light gray-blue */
   --text-secondary: #8b98a8; /* muted gray */
   --text-disabled: #5a6477;  /* darker muted */
+
+  /* Distinct tooltip palette (deep indigo theme) */
+  --hint-bg: #1a1640;        /* deep indigo, fully opaque */
+  --hint-border: rgba(122, 92, 255, 0.45); /* soft violet border */
 }
 
 html, body, #app { height: 100%; }
@@ -93,7 +95,7 @@ body {
   background-attachment: fixed;
   letter-spacing: 0.015em;
 }
-.content { padding: 16px; box-sizing: border-box; flex: 1 1 auto; }
+.content { padding: 12px; box-sizing: border-box; flex: 1 1 auto; }
 
 #app { display: flex; flex-direction: column; min-height: 100%; }
 

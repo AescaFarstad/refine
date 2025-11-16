@@ -26,7 +26,7 @@ They may be of multiple types:
     You have hp, chance to hit, chance to block, damage
     Each turn you're going to roll for a hit.
     finalHit = clamp(hit chance - dodge, 0, 100)
-      if success - they lose hp = your 'damage'. If hp < 0 they die, the encounter ends. If they die and you have the Aspirator Probe perk, a new encounter is inserted into the queue next: LootMonsterEncounter(monster type)
+      if success - they lose hp = your 'damage'. Also they don't get to hit you in this case. If hp < 0 they die, the encounter ends. If they die and you have the Aspirator Probe perk, a new encounter is inserted into the queue next: LootMonsterEncounter(monster type)
       if failure - you roll for a block chance
         if success - you take no damage
         if failure you lose the monster's 'damage' hp
@@ -219,7 +219,7 @@ Remove the old state and lib:
 
 
 Raid mutation on success:
-(here 'original' refers to the value based on RaidSourceLib (as opposed to RaidLib))
+(here 'original' refers to the initial values loaded from data, as opposed to the mutated runtime raid)
 LootDifficultyMutation
   decreases loot chance by 5% flat
   weight = current loot chance / original loot chance
@@ -241,12 +241,7 @@ UpgradeMonsterMutation
       weight = original strengthSum / strengthSum
 When a raid is successfully completed, it's modified based on the mutation chosen randomly according to their weights.
 The weight of a mutation can't be greater than 1. If it's 0, the mutation is excluded from the list of possibilities.
-
-There may be more positive mutations for quests - to be added later...
-
-The old, irrelevant information (i.e. raid itemDropChance or raid difficulty, focus sliders) must be deleted.
-
-The UI will be designed and handled separately. The old UI that is incompatible with this vision should be deleted.
+QuestMutation - never added automatically, but can be added by quests. Adds  QuestEncounter(time)
 
 
 RaidEventLog
@@ -256,6 +251,7 @@ WalkEncounter:
   hpBefore
   hpAfter
   timeSpent
+  speed
 QuestEncounter:
   questId
   success:bool
@@ -358,7 +354,6 @@ Stage 8 — Reach and Unlocks via Quests Only
 - Acceptance
   - Increasing reach occurs exclusively as part of end‑of‑raid quest resolution; newly unlocked raids become available thereafter.
 
-
 Backlog (post‑WalkEncounter)
 - FightEncounter: stats, turn loop, overtime death, Aspirator perk hook, log entries.
 - LootEncounter + LootMonsterEncounter: roll logic, bag volume, perks, log entries.
@@ -366,3 +361,73 @@ Backlog (post‑WalkEncounter)
 - Gear/Perks/Weight/Volume systems and loadouts; save per‑raid gear choice.
 - Mutations on success: weights and application per spec.
 - UI/UX polish and art direction for the new raid flow.
+
+
+Progress
+
+- Stages 1–8 completed via straight-through migration. Incompatible legacy raid UI (cards, sliders, equipment selectors) was removed to avoid stubs.
+
+
+Part 2: UI
+
+Raids ui:
+RaidSelection.vue:
+At the top - a screen-wide carousel of raid cards. Each card is the name, + unlock info if it is locked. unlock info is reach required + a big lock icon overlayed on top of the card.
+RaidSetup.vue:
+The rest of the tab shows the raid setup.
+RaidDetails.vue:
+On the left half:
+Your Health and Damage are shown (with respect to selected gear)
+A line which states the distance that needs to be covered, then progress bar representing weight/maxWeight, then speed, then 'Walking time: 10m'. This info is based on WalkEncounters of the raid
+On the right half - RaidQuests.vue (see below)
+
+Then the table of enemy encounters based on FightEncounter.
+Each row is name, 'Health', 'Chance to hit them', 'Chance to block their attack'
+The values shown are calculated based on the monster stats and the chosen gear. This will be teh actual values for when the raid starts.
+
+Then a similar table (of a single row for LootEncounters
+titles: '' (blank), 'Count', 'Find item chance'
+info: 'Scavenge sites', actual count, looting chance with respect to chosen gear
+
+RaidGear.vue:
+Then a table with GearCategories for columns. If a category has no unlocked items it is not shown.
+Unlocked gear items are displayed there. Clicking them selects/unselects them and the stats are recalculated.
+Each items is GearItem.vue.
+it has a picture, a name, a price and a hint.
+the hint shows everything this item does
+selecting an item adds its price to gameState.selectedGearPrice. Unselecting it subtracts it from selectedGearPrice.
+items you can't afford are shows in red but are NOT disabled. But the deploy button (see below) is disabled if you can't affford the selected gear. This is done to allow the player to preview the effects of gear they can't afford yet.
+
+Then there are estimations:
+survival chance approximation, time approximation. (For now these must be stubbed)
+Then there is a big 'Deploy' button.
+
+
+RaidQuests.vue:
+each quest for which prerequisits are unlocked and which fits the selected raid is shown as a card in a tile grid.
+This card shows the name. Hovering it shows hint with more info - what exactly does the quest change in the raid and what condition it requires, how much time (based on added QuestEncounters) is will add.
+selecting it applies its mutations and stats to the raid.
+
+Deploying to raid is cmd which copies the stats to ActiveRaid and runs the raid.
+Selecting/unselecting a agear item is cmd which adds/subtracts selectedGearPrice. Also the selected gear is stored in gameState.loadouts.
+Selecting a raid is cmd which updates selectedGearPrice based on the stored loadout of that new raid. UI updates which items are selected.
+
+gameState.raid should be modified by cmds so that the resulting stats from gear would already be computed for UI to show.
+
+Due to the fact that selecting raids switches loadout, we can end up in a situation where the loadout is more expensive than the credits teh player has. This is a valid situation. We should disable the deploy button in this case.
+
+
+RaidOutcomeModal.vue
+
+This will be displaying the raid log.
+It is going display events one thing at a time, let them animate for some time and continue to net item.
+There is goign to be fast-forward button which displays the log in its entirety.
+At the top there is goign to be a special progress bar: for each Encounter there is going to be ◌ symbol which converts to ◉ when the encounter is added to the log.
+The log is a list of items with sub-items.
+We need to handle WalkEncounter for now, this is a single item.
+"Walked 1 km in 10m 45s." Optionally, if hpBefore != hpAfter, "Regenerated X health"
+
+The default timing for this is 1 second * clamp(DEFAULT_SPEED / speed, 1, 2)
+Speed at the time of travel should be specified in the WalkEncounter log entry.
+
+Once all log entries are shown, the fast-forward button is replaced with Raid More, and Refine buttons

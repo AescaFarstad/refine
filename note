@@ -11,8 +11,22 @@ october 19
   maze, maze gen
 october 25
   maze animation, raid overall idea, planning
+october 26
+  base encounter implementations
+november 2
+  fight encounter, mutations
+november 4
+  raid UI visuals
+novermber 9
+  raid outcome UI visuals
+november 16
+  chem refining design
 
 
+Images:
+lock symbol
+damage symbol
+speed symbol
 
 flawed 50% // 35% chance to yield nothing, positive effects don't apply
 improvised 60% // 25% chance to yield nothing, positive effects don't apply
@@ -40,29 +54,4 @@ reinforced
 masterwork
 
 
-
-+refinery
-+recipe
-+strength
-+looting
-+bags
-recipe upgrade
-
-
-let's redo how weights are calculated and add another focus option - speed.
-the plan:
-
-all categories have their min and their max and default contributions 
-[min ... default ... max]
-
-For quest:
-the values are calculated just like they are now - based on the base strength and raid difficulty
-this calculation becomes the 'default', min = 10, max = default * 2
-
-For survival:
-base strength is default. min = default * 0.5 max = default * 1.5
-
-for looting default = raid.loot difficulty 
-
-
-calculate the max possible sum - all weights are 25 to 100 except for survival - 
+items display what they do

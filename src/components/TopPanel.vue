@@ -7,30 +7,41 @@
           :class="{ active: activeTab === 'raid' }"
           @click="activeTab = 'raid'"
           type="button"
-        >Raids</button>
+        >
+          <span class="tab-title">Raids</span>
+          <span class="tab-sub"><span class="tab-label">Credits</span><span class="tab-value">{{ creditsDisplay }}</span></span>
+        </button>
         <button
           class="tab"
           :class="{ active: activeTab === 'refine' }"
           @click="activeTab = 'refine'"
           type="button"
-        >Refine</button>
+        >
+          <span class="tab-title">Refine</span>
+          <span class="tab-sub"><span class="tab-label">Items</span><span class="tab-value">{{ inventoryCountDisplay }}</span></span>
+        </button>
         <button
           class="tab"
           :class="{ active: activeTab === 'research' }"
           @click="activeTab = 'research'"
           type="button"
-        >Research</button>
+        >
+          <span class="tab-title">Research</span>
+          <span class="tab-sub"><span class="tab-label">Chronotraces</span><span class="tab-value">{{ chronoDisplay }}</span></span>
+        </button>
         <button
           class="tab"
           :class="{ active: activeTab === 'maze' }"
           @click="activeTab = 'maze'"
           type="button"
-        >Maze</button>
+        >
+          <span class="tab-title">Maze</span>
+          <span class="tab-sub"><span class="tab-label">Time Flux</span><span class="tab-value">{{ fluxDisplay }}</span></span>
+        </button>
       </nav>
 
-      <div class="metric"><span class="label">Credits</span><span class="value">{{ uiState.credits.toLocaleString() }}◈</span></div>
-      <div class="metric"><span class="label">Chronotraces</span><span class="value">{{ uiState.chronotraces.toLocaleString() }}⧖</span></div>
-      <div class="metric"><span class="label">Time Flux</span><span class="value">{{ uiState.timeFlux.toLocaleString() }}∿</span></div>
+      <!-- Current time display moved to replace metrics -->
+      <div class="metric time-metric"><span class="label">Time</span><span class="value time-value">{{ timeDisplay }}</span></div>
 
       <div v-if="hasNextEvent" class="next-event">
         <div class="next-event-title">Next event:</div>
@@ -42,50 +53,19 @@
       </div>
 
       <div class="spacer"></div>
-
-      <!-- Move time display to the right, just left of the advance button -->
-      <div class="metric time-metric"><span class="label">Time</span><span class="value time-value">{{ timeDisplay }}</span></div>
-
-      <div class="time-advance" @mouseenter="hoverHint = true" @mouseleave="hoverHint = false">
-        <button
-          class="time-advance-btn"
-          :disabled="!uiState.canAdvanceTime"
-          type="button"
-          @click="advanceTime"
-        >
-          <span class="btn-label">Advance Time Continium</span>
-          <span class="icon-play" aria-hidden="true">▶</span>
-        </button>
-        <div
-          v-if="!uiState.canAdvanceTime && hoverHint"
-          class="time-advance-hint"
-          role="tooltip"
-        >
-          <div class="hint-title">Nothing is queued up.</div>
-          <div class="hint-sub">Deploy into a raid or load a refinery</div>
-        </div>
-      </div>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { uiState, timeDisplay, nextEventText } from '../logic/UIState';
-import { globalInputQueue } from '../logic/Model';
-import { CmdAdvanceTime } from '../logic/input/InputCommands';
-
-function advanceTime() {
-  globalInputQueue.push(new CmdAdvanceTime());
-}
 
 type TabKey = 'raid' | 'refine' | 'research' | 'maze';
 const activeTab = computed<TabKey>({
   get: () => uiState.activeTab,
   set: (v: TabKey) => { uiState.activeTab = v; },
 });
-
-const hoverHint = ref(false);
 
 const hasNextEvent = computed(() => !!(uiState.canAdvanceTime && nextEventText.value && nextEventText.value.length > 0));
 const nextEventParts = computed(() => {
@@ -95,6 +75,13 @@ const nextEventParts = computed(() => {
   if (i === -1) return { label: '', time: t };
   return { label: t.slice(0, i), time: t.slice(i + sep.length) };
 });
+
+// Tab sub-line resource displays
+const creditsDisplay = computed(() => `${uiState.credits}✦`);
+const chronoDisplay = computed(() => `${uiState.chronotraces}⧖`);
+const fluxDisplay = computed(() => `${uiState.timeFlux}∿`);
+const inventoryCount = computed(() => (uiState.items || []).reduce((acc, it) => acc + (it?.quantity || 0), 0));
+const inventoryCountDisplay = computed(() => `${inventoryCount.value}`);
 </script>
 
 <style scoped>
@@ -106,7 +93,7 @@ const nextEventParts = computed(() => {
 }
 
 .bar {
-  height: 48px;
+  height: 64px;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -230,29 +217,60 @@ const nextEventParts = computed(() => {
 }
 
 /* Tabs bar under the top metrics */
+
 .tabs {
   display: inline-flex;
   align-items: stretch;
-  height: 48px;
+  height: 64px;
   gap: 0;
 }
 
 .tab {
   background: transparent;
   border: none;
-  padding: 0 12px;
-  font-weight: 600;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  padding: 6px 14px;
+  font-size: 12px;
   color: #94a3b8; /* slate-400 */
   cursor: pointer;
   border-bottom: 2px solid transparent;
   flex: 0 0 auto;     /* size to content */
   text-align: center;
   display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
+  line-height: 1.05;
+  gap: 2px;
   transition: all 0.2s ease;
+}
+
+.tab-title {
+  font-size: 18px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding-bottom: 6px;
+}
+/* Sub-line container mirrors metric layout */
+.tab-sub {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  letter-spacing: normal; /* don't inherit tab letter spacing */
+  text-transform: none;   /* don't inherit uppercase */
+}
+.tab-sub .tab-value {
+  font-size: 1rem; /* match metrics value size */
+  color: #e2e8f0;  /* match metrics value brightness */
+  font-weight: 700; /* make highlighted number bolder */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+.tab-sub .tab-label {
+  font-size: 12px;
+  color: #94a3b8; /* slate-400 */
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 400; /* avoid inheriting boldness from header */
 }
 
 .tab:hover { 

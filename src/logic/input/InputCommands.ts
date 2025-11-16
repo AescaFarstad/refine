@@ -1,5 +1,3 @@
-import type { EquipmentType } from '../Raid';
-
 export interface CmdInput {
   name: string;
 }
@@ -11,19 +9,7 @@ export class CmdAdvanceTime implements CmdInput {
 export class CmdStartRaid implements CmdInput {
   readonly name = 'CmdStartRaid';
   readonly id: string;
-  readonly quest: number;
-  readonly survive: number;
-  readonly loot: number;
-  readonly equipment: EquipmentType;
-  readonly cost: number;
-  constructor(args: { id: string; quest: number; survive: number; loot: number; equipment: EquipmentType; cost: number; }) {
-    this.id = args.id;
-    this.quest = args.quest;
-    this.survive = args.survive;
-    this.loot = args.loot;
-    this.equipment = args.equipment;
-    this.cost = args.cost;
-  }
+  constructor(args: { id: string }) { this.id = args.id; }
 }
 
 export class CmdAknowledgeOutcome implements CmdInput {
@@ -90,4 +76,37 @@ export class CmdMazeReset implements CmdInput {
 
 export class CmdMazeRestart implements CmdInput {
   readonly name = 'CmdMazeRestart';
+}
+
+// Raids UI: selection and gear toggling
+export class CmdSelectRaid implements CmdInput {
+  readonly name = 'CmdSelectRaid';
+  readonly id: string;
+  constructor(args: { id: string }) { this.id = args.id; }
+}
+
+export class CmdToggleGear implements CmdInput {
+  readonly name = 'CmdToggleGear';
+  readonly raidId: string;
+  readonly gearId: string;
+  readonly selected: boolean; // true = select, false = unselect
+  constructor(args: { raidId: string; gearId: string; selected: boolean }) {
+    this.raidId = args.raidId;
+    this.gearId = args.gearId;
+    this.selected = !!args.selected;
+  }
+}
+
+// Unlock one additional slot for a gear category by spending skill points
+// Removed: unlocking gear slots logic
+
+// Quests UI: toggle manual quest activation (non-autoaccept quests)
+export class CmdToggleQuest implements CmdInput {
+  readonly name = 'CmdToggleQuest';
+  readonly id: string;
+  readonly active: boolean;
+  constructor(args: { id: string; active: boolean }) {
+    this.id = args.id;
+    this.active = !!args.active;
+  }
 }

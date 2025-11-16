@@ -2,13 +2,12 @@ import { reactive, computed } from 'vue';
 import { formatDurationHM } from './StringUtils';
 import type { GameState, RaidOutcome, RefineryOutcome } from './GameState';
 import type { RaidDefinition } from './RaidLib';
-import { computeRaidStats, type EquipmentType as CalcEquipmentType } from './Raid';
 import { computeRefinePreview } from './Refine';
+import { getEffectiveRaidDefinition } from './RaidMutation';
 import type { Lib } from './Lib';
 
 // Reactive UI-facing state (kept separate from logical GameState)
 export interface UIRaidDef extends RaidDefinition {}
-export type EquipmentType = 'light' | 'medium' | 'overprice';
 
 export interface UIRefinery {
   health: number;
@@ -35,6 +34,8 @@ export const uiState = reactive({
   canAdvanceTime: false,
   // reactive identity for next scheduled event (forces recompute on change)
   nextEvtKey: '' as string,
+  // reactive identity for active raid (forces recompute on change)
+  raidKey: '' as string,
 
   strength: 0,
   speed: 0,
@@ -44,14 +45,16 @@ export const uiState = reactive({
   raids: [] as UIRaidDef[],
   raidOrder: [] as string[],
   unlockedRaidIds: [] as string[],
+  unlockedGear: [] as string[],
+  activeQuests: [] as string[],
   questProgressById: {} as Record<string, number>,
 
-  sliders: {} as Record<string, { quest: number; survive: number; loot: number }>,
-
-  equipmentById: {} as Record<string, EquipmentType>,
-
   activeRaidId: '',
-  activeRaidProgress: 0,
+  selectedGearPrice: 0,
+
+  // Estimates for active raid
+  raidSurvivalPct: 0,
+  raidTimeEstimateSec: 0,
 
   // modal outcome + levelups
   lastOutcome: null as RaidOutcome | null,
@@ -131,12 +134,14 @@ let gameRef: GameState | null = null;
 
 // Track last seen next event identity to update reactive key only on change
 let lastNextEvtKey = '' as string;
+// Track last seen raid snapshot identity to notify UI when gear/params change
+let lastRaidKey = '' as string;
 
 export function SyncUIFromGameState(game: GameState): void {
   gameRef = game;
   uiState.credits = game.credits;
   uiState.chronotraces = game.chronotraces;
-  uiState.timeFlux = (game as any).timeFlux ?? 0;
+  uiState.timeFlux = game.timeFlux ?? 0;
   // Model tracks time in seconds; UI needs minutes for display
   uiState.timeMinutes = Math.floor((game.time || 0) / 60);
   uiState.canAdvanceTime = !!game.nextEvt;
@@ -154,30 +159,45 @@ export function SyncUIFromGameState(game: GameState): void {
     lastNextEvtKey = key;
   }
 
+  // Update reactive identity for active raid to drive UI recomputation
+  const rk = game.raid
+    ? `${game.raid.id}|${game.raid.hp}|${game.raid.maxHp}|${game.raid.baseSpeed}|${game.raid.speedBonusPct}|${game.raid.regenPerKm}|${game.raid.weight}|${game.raid.maxWeight}|${(game.raid.damage ?? game.damage ?? 1)}|${game.raid.bagsVolume}|${game.raid.usedVolume}`
+    : '';
+  if (rk !== lastRaidKey) {
+    uiState.raidKey = rk;
+    lastRaidKey = rk;
+  }
+
   uiState.strength = game.strength;
-  uiState.looting = game.looting;
+  uiState.speed = game.speed ?? 0;
   uiState.volume = game.volume;
   uiState.looting = game.looting;
 
+  // Present effective raid definitions (permanent + active quest overlays) to the UI
   const raids: UIRaidDef[] = [];
   const order: string[] = [];
-  game.lib.raids.forEach((def, id) => {
-    raids.push(def);
-    order.push(id);
-    ensureSliders(id);
-    ensureEquipment(id);
+  game.lib.raids.forEach((_, id) => {
+    const eff = getEffectiveRaidDefinition(game, id) as UIRaidDef | null;
+    if (eff) {
+      raids.push(eff);
+      order.push(id);
+    }
   });
   uiState.raids = raids;
   uiState.raidOrder = order;
 
   // unlocked raids and their quest progress
   uiState.unlockedRaidIds = game.unlockedRaids.map(r => r.id);
+  uiState.unlockedGear = Array.isArray(game.unlockedGear) ? [...game.unlockedGear] : [];
+  uiState.activeQuests = Array.isArray((game as any).activeQuests) ? [...(game as any).activeQuests] : [];
   const progress: Record<string, number> = {};
   game.unlockedRaids.forEach(r => { progress[r.id] = r.questProgress; });
   uiState.questProgressById = progress;
 
   uiState.activeRaidId = game.raid.id;
-  uiState.activeRaidProgress = game.raid.progress;
+  uiState.selectedGearPrice = game.selectedGearPrice ?? 0;
+  uiState.raidSurvivalPct = (game as any).raidSurvivalEstimatePct || 0;
+  uiState.raidTimeEstimateSec = (game as any).raidTimeEstimateSec || 0;
 
   // sync outcome and levelups
   uiState.lastOutcome = game.lastRaidOutcome;
@@ -186,8 +206,8 @@ export function SyncUIFromGameState(game: GameState): void {
 
   // refine tab basics (single refinery)
   const entries: UIRefinery[] = [];
-  const loadedId = (game as any).loadedRecipe as string;
-  const startedAt = (game as any).recipeStartedAt as number;
+  const loadedId = game.loadedRecipe;
+  const startedAt = game.recipeStartedAt;
   const hasRecipe = !!loadedId;
   const base: UIRefinery = { health: 100, hasRecipe };
   if (hasRecipe) {
@@ -207,7 +227,7 @@ export function SyncUIFromGameState(game: GameState): void {
     }
     const ingredients = (recipe?.ingredients || {}) as Record<string, number>;
     base.ingredients = ingredients;
-    base.overflowWaste = ((game as any).overflowEssences || {}) as Record<string, number>;
+    base.overflowWaste = (game.overflowEssences || {}) as Record<string, number>;
 
     const preview = computeRefinePreview(game.lib, loadedId, 100, ingredients);
     base.expectedCredits = preview.expectedCredits;
@@ -219,14 +239,12 @@ export function SyncUIFromGameState(game: GameState): void {
   entries.push(base);
   uiState.refineries = entries;
   uiState.items = (game.items || []).map(it => ({ id: it.id, quantity: it.quantity }));
-  uiState.recipes = Array.isArray((game as any).recipes) ? [...(game as any).recipes] : [];
-  const r: any = (game as any).research;
-  if (Array.isArray(r)) uiState.research = [...r];
-  else if (r && typeof r.forEach === 'function' && typeof r.has === 'function') uiState.research = Array.from(r as Set<string>);
+  uiState.recipes = Array.isArray(game.recipes) ? [...game.recipes] : [];
+  if (game.research && typeof (game.research as Set<string>).forEach === 'function' && typeof (game.research as Set<string>).has === 'function') uiState.research = Array.from(game.research as Set<string>);
   else uiState.research = [];
 
   // Propagate lib recipes version for UI reactivity on upgrades
-  uiState.recipesVersion = (game.lib as any).recipesVersion || 0;
+  uiState.recipesVersion = game.lib.recipesVersion || 0;
 
   // Sync maze state for reactivity
   uiState.mazeLevelIndex = game.mazeLevelIndex || 0;
@@ -249,133 +267,12 @@ export function SyncUIFromGameState(game: GameState): void {
 }
 
 // Expose current game lib for UI components that need live definitions (e.g., modded recipes)
-export function getGameLib(): Lib | null {
-  return gameRef?.lib ?? null;
+export function getGameLib(): Lib {
+  return gameRef!.lib;
 }
 
 // Provide read-only access to the current GameState (for UI components that need live instances)
-export function getGameState(): GameState | null {
-  return gameRef;
+export function getGameState(): GameState {
+  return gameRef!;
 }
-
-// Ensure sliders exist with default 50/50/50 for a raid id
-export function ensureSliders(id: string): void {
-  if (!uiState.sliders[id]) {
-    uiState.sliders[id] = { quest: 100, survive: 100, loot: 100 };
-  }
-}
-
-export function ensureEquipment(id: string): void {
-  if (!uiState.equipmentById[id]) {
-    uiState.equipmentById[id] = 'medium';
-  }
-}
-
-export function getEquipment(id: string): EquipmentType {
-  ensureEquipment(id);
-  return uiState.equipmentById[id];
-}
-
-export function setEquipment(id: string, type: EquipmentType): void {
-  uiState.equipmentById[id] = type;
-}
-
-export interface UIRaidStats {
-  effectiveStrength: number;
-  survivalChancePct: number;
-  lootRatePct: number;
-  questDeltaPct: number;
-  equipmentPrice: number;
-}
-
-export function computeRaidStatsUI(
-  def: UIRaidDef,
-  quest: number,
-  survive: number,
-  loot: number,
-  equipment: EquipmentType,
-): UIRaidStats {
-  // Touch reactive player stats so callers' computed() re-evaluates when they change
-  // This keeps raid stats in sync after level-ups or other stat updates.
-  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-  uiState.strength; // reactive dependency
-  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-  uiState.volume;   // future use if formula uses volume
-  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-  uiState.speed;    // future use if formula uses speed
-  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-  uiState.looting;  // future use if UI depends on it
-
-  if (!gameRef) {
-    return { effectiveStrength: 0, survivalChancePct: 0, lootRatePct: 0, questDeltaPct: 0, equipmentPrice: 0 };
-  }
-  const r = computeRaidStats(
-    gameRef,
-    def,
-    quest,
-    survive,
-    loot,
-    equipment as CalcEquipmentType,
-  );
-  return {
-    effectiveStrength: r.strength,
-    survivalChancePct: r.survivalChancePct,
-    lootRatePct: r.lootRatePct,
-    questDeltaPct: r.questDeltaPct,
-    equipmentPrice: r.price,
-  };
-}
-
-// Display list: all unlocked raids followed by only the next locked one
-export const displayRaids = computed(() => {
-  const unlockedSet = new Set(uiState.unlockedRaidIds);
-  const items = [] as Array<{ def: UIRaidDef; locked: boolean; questProgress: number; questsDone: number }>;
-  let showedLocked = false;
-  for (const id of uiState.raidOrder) {
-    const def = uiState.raids.find(r => r.id === id);
-    if (!def) continue;
-    const isUnlocked = unlockedSet.has(id);
-    if (isUnlocked) {
-      // find matching raid in game to get questsDone; fall back to 0
-      const raid = gameRef?.unlockedRaids.find(r => r.id === id);
-      const questsDone = raid?.questsDone ?? 0;
-      items.push({ def, locked: false, questProgress: uiState.questProgressById[id] ?? 0, questsDone });
-    } else if (!showedLocked) {
-      items.push({ def, locked: true, questProgress: 0, questsDone: 0 });
-      showedLocked = true;
-    }
-  }
-  return items;
-});
-
-export const isAnyRaidActive = computed(() => !!uiState.activeRaidId);
-export function isRaidActive(id: string): boolean {
-  return uiState.activeRaidId === id;
-}
-
-export function startRaid(id: string): void {
-  if (!gameRef) return;
-  if (gameRef.raid.id) return; // already running something
-  const s = uiState.sliders[id] ?? { quest: 100, survive: 100, loot: 100 };
-  gameRef.raid.id = id;
-  gameRef.raid.progress = 0;
-  // copy player stats
-  gameRef.raid.looting = gameRef.looting;
-  gameRef.raid.strength = gameRef.strength;
-  gameRef.raid.volume = gameRef.volume;
-  // copy focus weights
-  gameRef.raid.questWeight = s.quest;
-  gameRef.raid.surviveWeight = s.survive;
-  gameRef.raid.lootWeight = s.loot;
-
-  // reflect in UI mirror
-  uiState.activeRaidId = gameRef.raid.id;
-  uiState.activeRaidProgress = gameRef.raid.progress;
-}
-
-// Helper labels for sliders
-export function questDeltaLabel(value: number): string {
-  const delta = Math.round(value - 100);
-  const sign = delta > 0 ? '+' : '';
-  return `${sign}${delta}%`;
-}
+// Raids UI helpers were removed during migration to the new raid system.

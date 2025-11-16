@@ -17,7 +17,6 @@ export const globalInputQueue: CmdInput[] = [];
 
 // deltaTime is in seconds
 export function update(gs: GameState, deltaTime: number): void {
-  // Maze init/progress handled in the model (Vue is render-only)
   initOrAdvanceMaze(gs);
   // Tick persistent Maze instance when present
   gs.maze?.update(deltaTime);
@@ -35,7 +34,6 @@ export function update(gs: GameState, deltaTime: number): void {
     gs.time = evt.at;
     gs.nextEvt = null;
     processEvt(gs, evt);
-    computeNextEvt(gs);
     gs.timeActive = false;
     return;
   }
@@ -49,18 +47,6 @@ export function update(gs: GameState, deltaTime: number): void {
     const oldTime = gs.time;
     gs.time += dt * Math.max(1, gs.timeSpeed || 1);
 
-    if (gs.raid.id && gs.nextEvt) {
-      const def = gs.lib.raids.get(gs.raid.id);
-      if (def) {
-        const totalDurationSec = Math.max(0, (def.durationMin || 0) * 60);
-        if (totalDurationSec > 0) {
-          const timeElapsed = gs.time - oldTime;
-          const progressGain = (timeElapsed / totalDurationSec) * 100;
-          gs.raid.progress = Math.min(100, gs.raid.progress + progressGain);
-        }
-      }
-    }
-
     // exponential ramp: multiply by MAX^(dt/T)
     const growth = Math.pow(TIME_SPEED_MAX, Math.min(1, dt / TIME_SPEED_RAMP_SEC));
     const nextSpeed = (gs.timeSpeed || 1) * growth;
@@ -68,41 +54,6 @@ export function update(gs: GameState, deltaTime: number): void {
   } else {
     gs.timeSpeed = TIME_SPEED_MIN;
   }
-}
-
-export function computeNextEvt(gs: GameState): number | null {
-  // Candidate: raid completion
-  let bestAt: number | null = null;
-  let bestEvt: Evt | null = null;
-
-  const raidId = gs.raid.id;
-  if (raidId) {
-    const def = gs.lib.raids.get(raidId)!;
-    const totalDurationSec = Math.max(0, (def.durationMin || 0) * 60);
-    const progressPct = Math.max(0, Math.min(100, gs.raid.progress || 0));
-    const remainingSec = Math.round(totalDurationSec * (100 - progressPct) / 100);
-    const at = gs.time + remainingSec;
-    bestAt = at;
-    bestEvt = new EvtRaidComplete({ at });
-  }
-
-  // Candidate: single refinery finishing
-  if ((gs as any).loadedRecipe) {
-    const recipeId = (gs as any).loadedRecipe as string;
-    const recipe = gs.lib.recipes.get(recipeId);
-    if (recipe) {
-      const at = ((gs as any).recipeStartedAt || 0) + Math.max(0, recipe.duration || 0);
-      if (bestAt === null || at < bestAt) {
-        bestAt = at;
-        bestEvt = new EvtRefineryDone({ at });
-      }
-    }
-  }
-
-  gs.nextEvt = bestEvt;
-  if (bestAt === null) return null;
-  const remaining = Math.max(0, Math.round(bestAt - gs.time));
-  return remaining;
 }
 
 function initOrAdvanceMaze(gs: GameState) {

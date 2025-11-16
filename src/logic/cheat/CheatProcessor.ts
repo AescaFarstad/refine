@@ -18,12 +18,19 @@ handlersByName.set('CheatAddRaidItems', (gs, cheat) => {
   const count = Math.max(0, c.count || 0);
   if (count <= 0) return;
 
+  // Collect item ids: prefer raid-specific pools if present; otherwise fallback to a sample of all items
   const ids = new Set<string>();
-  const items = def.items;
-  items.common.forEach(id => ids.add(id));
-  items.uncommon.forEach(id => ids.add(id));
-  items.rare.forEach(id => ids.add(id));
-  items.legendary.forEach(id => ids.add(id));
+  const items = (def as any).items as (undefined | { common: string[]; uncommon: string[]; rare: string[]; legendary: string[] });
+  if (items && items.common && items.uncommon && items.rare && items.legendary) {
+    items.common.forEach(id => ids.add(id));
+    items.uncommon.forEach(id => ids.add(id));
+    items.rare.forEach(id => ids.add(id));
+    items.legendary.forEach(id => ids.add(id));
+  } else {
+    // Fallback: take the first 24 item ids from the item library for quick testing
+    const all = Array.from(gs.lib.items.keys());
+    for (let i = 0; i < Math.min(24, all.length); i++) ids.add(all[i]);
+  }
 
   function addToInventory(id: string, qty: number): void {
     const inv = gs.items;
@@ -50,4 +57,3 @@ export function processCheats(gs: GameState): void {
     }
   }
 }
-

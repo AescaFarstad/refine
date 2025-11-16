@@ -117,6 +117,7 @@ function essenceIconStyle(k: string): Record<string, string> {
 }
 .item-cell {
   position: relative;
+  box-sizing: border-box;
   width: 96px;
   height: 96px;
   border: 1px solid var(--panel-border);

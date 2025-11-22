@@ -24,7 +24,7 @@ import mazeData from '../data/maze';
 
 export interface LibItem {
   id: string;
-} 
+}
 
 
 export class Lib {
@@ -82,9 +82,7 @@ export class Lib {
         this.raids = raidsCopy;
       }
       this.gearCategories = this._processDataDefinitions<GearCategoryDefinition>(gearCategoriesData as unknown as Record<string, GearCategoryDefinition>);
-      // Normalize gear: ensure all numeric fields are present with defaults
       this.gear = parseGearDefinitions(gearData as unknown as Record<string, RawGearDefinition>);
-      // Normalize items: convert optional numeric rarity (1..4) to string rarity and ensure presence
       {
         const raw: Record<string, any> = itemsData as unknown as Record<string, any>;
         const map = new Map<string, ItemDefinition>();

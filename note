@@ -17,10 +17,12 @@ november 2
   fight encounter, mutations
 november 4
   raid UI visuals
-novermber 9
+november 9
   raid outcome UI visuals
 november 16
   chem refining design
+november 19-21
+  chem refining implementation, UI tweaks
 
 
 Images:
@@ -53,5 +55,51 @@ purified
 reinforced
 masterwork
 
+Let's create refining animation.
 
-items display what they do
+Refining should save in gameState info about its duration (if it doesn't already). Even though its constant atm, it may not be in the future.
+Based on that information we can calculate t from 0 to 1 which defines animation progress.
+
+RefineAnim.vue is the component which is goign to display it. It sists on top of Wafer view and matches its size.
+
+It creates a canvas for each atom from the placed molecules and places them at the extact spots where they are on the wafer.
+
+Wafer view is cleared for the duration of the animation.
+
+the atom canvases do the following:
+
+(timings should be decleared as global constants at teh top of the file)
+
+t=0:
+Each receives an impulse from each other atom. Double if they are of the same color. The impulse is proportional to the distance. 1px per 0.01 t (we measure time here relative to t) when the distance is 1 hex size.
+
+t from 0 to 0.2
+  they continue to move with their velocities, not interacting with each other, but interacting with the boundaries (bounces off). They lose speed due to drag. The coefficient is calculated such that the speed should drop by half by t=0.2
+
+t from 0.2 to 1.0
+  in addition to what was going on, they receive acceleration towards center. the acceleration increses. 1px per 0.01 t in the begining, 1 px per 0.1 t at the end.
+
+When refining ends, the atoms are cleared.
+
+In case of refining success, shards are created by the refining processor. They are part of the game state. Each shard is resource name + amount + position + velocity.
+
+For each resource that was created, the amount of resource is split into shards according to getHypRepresentation(amount)
+
+all shards are created as a bold symbol representing the resource: ✦ ⧖ ∿
+the size matches the amount of the shard. font size  = (amount + 11)/2
+
+the shards are spawned in the middle of the wafer and are given a random velocity in range (10-50 px per second (these use the real seconds, not game time)
+They collide with boundaries.
+
+Note that due to the nature of this animation, this whole thing should update each frame unconditionally and should not be reactive. Even if we closed the tab, they still update their positions. (GameState should be made aware of the size of the wafer. When wafer is created, it should set the size in gameState by direct access.
+Shards update in Model.ts in a separate function called from update, which is called even if time is not active.
+
+The shards should be transparent to mouse events.
+But when user hovers over RefineAnim, we check which shards it intersects and they display animation of flying into corresponding resource display in the TopPanel.vue.
+Logic-wise, we send input CmdPickUpShard(idx) and that shard is nulled in the game state and the resources are added.
+Refining result on its own doesn't add resources, it simply creates the shards.
+
+Once all shards are cleared - the shard arrays is cleared and RefineAnim is removed.
+Placing items on wafer is impossible untill RefineAnim is removed and it doesn't display anything.
+
+UI can expect that shards array may increase to arbitrary length, then some values may turn null, then length becomes 0.

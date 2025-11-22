@@ -1,163 +1,107 @@
 <template>
   <div class="refine-root">
-
-    <!-- Main area: left 3/4 content, right 1/4 all items -->
     <div class="main-split">
-      <div class="left">
-        <LoadRefinery
-          v-if="selectedRecipeId"
-          :recipe-id="selectedRecipeId"
-          :items="stagedItems"
-          @unpick-item="onUnpickItem"
-          @clear="onClearRecipe"
-        />
-        <Recipes v-else-if="!allRefineriesLoaded" @select-recipe="onSelectRecipe" />
+      <div class="items-bg">
+        <AllItems :items="availableItems" @pick-item="onPickItem" @drag-end="onDragEnd" />
       </div>
-      <div class="right">
-        <AllItems :items="availableItems" :required-essences="selectedIngredients" @pick-item="onPickItem" />
+      <div class="center">
+        <Wafer 
+          :dragging-item="draggingItem" 
+          @refine-start="onRefineStart" 
+          @clear-dragging="clearDragging" 
+          @pickup-item="onPickupItem"
+        />
       </div>
     </div>
+    <RefineryOutcomeModal />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { uiState } from '../logic/UIState';
-import Refinery from './Refinery.vue';
-import Recipes from './Recipes.vue';
-import LoadRefinery from './LoadRefinery.vue';
+import Wafer from './Wafer.vue';
 import AllItems from './AllItems.vue';
+import RefineryOutcomeModal from './RefineryOutcomeModal.vue';
 import { getGameLib } from '../logic/UIState';
 import itemsData from '../data/items';
-// start is now triggered from LoadRefinery component
+import type { Molecule } from '../logic/ItemLib';
+import { CmdStartRefining } from '../logic/input/InputCommands';
+import { globalInputQueue } from '../logic/Model';
 
-const selectedRefinery = computed<number>({
-  get: () => uiState.selectedRefineryIndex,
-  set: (v: number) => { uiState.selectedRefineryIndex = v; },
-});
-const selectedRecipeId = ref('');
+const draggingItem = ref<{ id: string; molecule: Molecule } | null>(null);
 
-const refineries = computed(() => uiState.refineries);
-const allRefineriesLoaded = computed(() => refineries.value.length > 0 && refineries.value.every(r => r.hasRecipe));
-
-// UI-only staged items to load into the refinery
-const stagedById = ref<Record<string, number>>({});
-
-const stagedItems = computed(() => {
-  const out: Array<{ id: string; quantity: number }> = [];
-  for (const [id, qty] of Object.entries(stagedById.value)) {
-    const q = Math.max(0, qty || 0);
-    if (q > 0) out.push({ id, quantity: q });
-  }
-  return out;
-});
-
-// Available items list for the right panel subtracting staged quantities
 const availableItems = computed(() => {
-  const res: Array<{ id: string; quantity: number }> = [];
-  for (const it of uiState.items) {
-    const staged = stagedById.value[it.id] || 0;
-    const q = Math.max(0, (it.quantity || 0) - staged);
-    if (q > 0) res.push({ id: it.id, quantity: q });
-  }
-  return res;
+  return uiState.items.map(it => ({
+    id: it.id,
+    quantity: it.quantity,
+  }));
 });
-
-// Ingredients of the currently selected recipe (for dimming in AllItems)
-const selectedIngredients = computed<Record<string, number>>(() => {
-  const id = selectedRecipeId.value;
-  if (!id) return {};
-  // Depend on recipesVersion so upgrades update the panel
-  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-  uiState.recipesVersion;
-  const lib = getGameLib();
-  const rec = lib?.recipes.get(id);
-  return ((rec?.ingredients || {}) as Record<string, number>);
-});
-
-// Compute essence totals for staged items
-const stagedEssences = computed<Record<string, number>>(() => {
-  const totals: Record<string, number> = {};
-  for (const it of stagedItems.value) {
-    const def = (itemsData as any)[it.id] as { essence?: Record<string, number> } | undefined;
-    const ess = def?.essence || {};
-    const q = Math.max(1, it.quantity || 1);
-    for (const k of Object.keys(ess)) {
-      const v = (ess as any)[k] || 0;
-      totals[k] = (totals[k] || 0) + v * q;
-    }
-  }
-  return totals;
-});
-
-const isEssenceComplete = computed(() => {
-  const req = selectedIngredients.value || {};
-  const have = stagedEssences.value || {};
-  const keys = Object.keys(req);
-  if (!keys.length) return false;
-  for (const k of keys) {
-    const need = Math.max(0, (req as any)[k] || 0);
-    const got = Math.max(0, (have as any)[k] || 0);
-    if (got < need) return false;
-  }
-  return true;
-});
-
-function onSelectRefinery(i: number) {
-  const r = refineries.value[i];
-  if (!r) return;
-  // Otherwise, toggle selection
-  selectedRefinery.value = (selectedRefinery.value === i) ? -1 : i;
-}
-function onSelectRecipe(id: string) {
-  selectedRecipeId.value = id;
-}
-
-function onClearRecipe() {
-  selectedRecipeId.value = '';
-  stagedById.value = {};
-}
 
 function onPickItem(id: string) {
-  // Only allow pick when a recipe is selected
-  if (!selectedRecipeId.value) return;
-  // Check availability
-  const available = (uiState.items.find(x => x.id === id)?.quantity || 0) - (stagedById.value[id] || 0);
-  if (available <= 0) return;
-  stagedById.value = { ...stagedById.value, [id]: (stagedById.value[id] || 0) + 1 };
+  const itemDef = (itemsData as any)[id];
+  if (!itemDef || !itemDef.molecule) {
+    return;
+  }
+
+  draggingItem.value = {
+    id,
+    molecule: itemDef.molecule,
+  };
 }
 
-function onUnpickItem(id: string) {
-  const cur = stagedById.value[id] || 0;
-  if (cur <= 0) return;
-  const next = { ...stagedById.value, [id]: cur - 1 } as Record<string, number>;
-  if (next[id] <= 0) delete next[id];
-  stagedById.value = next;
+function clearDragging() {
+  draggingItem.value = null;
+}
+
+function onDragEnd() {
+  clearDragging();
+}
+
+function onRefineStart() {
+  globalInputQueue.push(new CmdStartRefining());
+}
+
+function onPickupItem(item: { id: string; molecule: Molecule }) {
+  draggingItem.value = item;
 }
 </script>
 
 <style scoped>
-.refine-root { display: flex; flex-direction: column; gap: 16px; }
-
-.refineries-row {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-}
+.refine-root { display: flex; flex-direction: column; gap: 14px; }
+.refine-root :deep(.panel) { background: transparent !important; box-shadow: none !important; border: none !important; }
 
 .main-split {
-  display: grid;
-  grid-template-columns: 3fr 1fr; /* 3/4 left, 1/4 right */
-  gap: 16px;
-  min-height: 420px;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
 }
 
-.left, .right { min-height: 300px; }
-.left { display: block; }
-.right { display: block; }
+/* Unified background for items section */
+.items-bg { 
+  background: var(--panel-bg); 
+  border-radius: 6px; 
+  padding: 0px; 
+  flex: 1 1 auto;
+  min-width: 300px; /* Minimum width for 3 columns */
+  max-width: 600px; /* Reasonable maximum */
+}
 
-@media (max-width: 960px) {
-  .main-split { grid-template-columns: 1fr; }
+.center {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+}
+
+@media (max-width: 1200px) {
+  .main-split { 
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .items-bg {
+    max-width: 100%;
+    width: 100%;
+  }
 }
 </style>

@@ -5,8 +5,10 @@ import { Essence } from "./ItemLib";
 import type { CheatInput } from './cheat/CheatCommands';
 import { CheatAddRaidItems } from './cheat/CheatCommands';
 import type { IceMaze } from "../maze/IceMaze";
+import type { Wafer } from "./Wafer";
+import { createWafer } from "./Wafer";
 
-export const DEFAULT_SPEED : number = 6;
+export const DEFAULT_SPEED: number = 6;
 export const MIN_WALK_SPEED: number = 1; // km/h
 
 export class GameState {
@@ -33,21 +35,20 @@ export class GameState {
   public chanceToHit: number = 60;
   public chanceToBlock: number = 30;
   public health: number = 10;
-  public loadedRecipe: string = "";
-  public recipeStartedAt: number = 0;
   public overflowEssences: Essence = {};
-  public raid : ActiveRaid = new ActiveRaid();
+  public wafer: Wafer = createWafer(2);
+  public raid: ActiveRaid = new ActiveRaid();
 
-  public unlockedRaids : Array<Raid> = [new Raid("shegolskoe")];
-  public recipes : Array<string> = ["c1", "c2", "c3", "c4"];
+  public unlockedRaids: Array<Raid> = [new Raid("shegolskoe")];
+  public recipes: Array<string> = ["c1", "c2", "c3", "c4"];
 
   public nextEvt: Evt | null = null;
-  public lastRaidOutcome : RaidOutcome | null = null;
+  public lastRaidOutcome: RaidOutcome | null = null;
   public lastRefineryOutcome: RefineryOutcome | null = null;
-  public levelupsAvailable : number = 0;
-  
+  public levelupsAvailable: number = 0;
+
   public items: Array<Item> = [];
-  public research : Set<string> = new Set(["tier_0"]);
+  public research: Set<string> = new Set(["tier_0"]);
 
   // Ice Maze persistent state
   public maze: IceMaze | null = null;

@@ -10,6 +10,7 @@ import type { Point2 } from '../core/math';
 import { runRaid, recomputeActiveRaidParams, toggleGearForRaid, recomputeActiveRaidEstimates } from '../Raid';
 import type { QuestDefinition } from '../QuestLib';
 import { getEffectiveRaidDefinition, pickAndApplyRaidSuccessMutation, describeMutation } from '../RaidMutation';
+import { createWafer, placeMolecule, removeMolecule } from '../Wafer';
 
 type Handler = (gs: GameState, cmd: CmdInput) => void;
 const handlersByName = new Map<string, Handler>();
@@ -109,30 +110,34 @@ handlersByName.set('CmdLevelup', (gs, cmd) => {
 });
 
 handlersByName.set('CmdStartRefining', (gs, cmd) => {
-  const c = cmd as CmdStartRefining;
-  if (gs.loadedRecipe) return; // already running
+  // Check if already refining
+  if (gs.nextEvt && gs.nextEvt.name === 'EvtRefineryDone') return;
+  // Check if wafer is empty (nothing to refine)
+  if (!gs.wafer || gs.wafer.items.length === 0) return;
 
-  // Remove specified items from inventory
-  for (const it of c.items || []) {
+  const itemCounts = new Map<string, number>();
+  // Use gs.wafer as the source of truth
+  for (const placed of gs.wafer.items) {
+    if (!placed) continue;
+    const id = placed.id;
+    itemCounts.set(id, (itemCounts.get(id) || 0) + 1);
+  }
+
+  for (const [itemId, count] of itemCounts) {
     const inv = gs.items;
-    const entry = inv.find(x => x.id === it.id);
+    const entry = inv.find(x => x.id === itemId);
     if (!entry) continue;
-    const q = Math.max(0, it.quantity || 0);
-    entry.quantity = Math.max(0, (entry.quantity || 0) - q);
+    entry.quantity = Math.max(0, (entry.quantity || 0) - count);
     if (entry.quantity <= 0) {
       const i = inv.indexOf(entry);
       if (i >= 0) inv.splice(i, 1);
     }
   }
 
-  const totals = computeLoadedEssencesFromItems(gs.lib, c.items || []);
-  (gs as any).overflowEssences = computeOverflowEssences(gs.lib, c.recipeId, totals);
-  (gs as any).loadedRecipe = c.recipeId;
-  (gs as any).recipeStartedAt = gs.time;
+  // gs.wafer is already set and persistent
 
-  // Directly schedule refinery completion (single refinery)
-  const recipe = gs.lib.recipes.get(c.recipeId);
-  const duration = Math.max(0, recipe?.duration || 0);
+
+  const duration = 4 * 3600;
   gs.nextEvt = new EvtRefineryDone({ at: gs.time + duration });
   gs.timeActive = true;
 });
@@ -297,6 +302,24 @@ handlersByName.set('CmdToggleQuest', (gs, cmd) => {
   // Active quests can mutate encounter composition; refresh estimates for active raid
   recomputeActiveRaidEstimates(gs, 100);
 });
+
+// Wafer manipulation handlers
+handlersByName.set('CmdPlaceMolecule', (gs, cmd) => {
+  const c = cmd as any; // CmdPlaceMolecule
+  if (!gs.wafer) {
+    gs.wafer = createWafer(3);
+  }
+  placeMolecule(gs.wafer, c.itemId, c.molecule, c.rotation ?? 0);
+});
+
+handlersByName.set('CmdRemoveMolecule', (gs, cmd) => {
+  const c = cmd as any; // CmdRemoveMolecule
+  if (!gs.wafer) return;
+  removeMolecule(gs.wafer, c.itemIdx);
+});
+
+
+
 
 export function processInputs(gameState: GameState): void {
   for (const command of globalInputQueue) {

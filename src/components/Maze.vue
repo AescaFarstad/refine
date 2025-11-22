@@ -39,7 +39,7 @@
     </div>
     <div class="hint">Use WASD to move. R to reset.</div>
   </div>
-  
+
 </template>
 
 <script setup lang="ts">
@@ -172,7 +172,7 @@ function layoutCanvas() {
     canvas.style.width = cw + 'px';
     canvas.style.height = ch + 'px';
   }
-  
+
   needsStaticRedraw = true;
 }
 
@@ -371,33 +371,33 @@ function drawDynamic() {
 
 function frameLoop(ts: number) {
   ensureInit();
-  
+
   const game = getGameState()?.maze;
   if (!game) {
     rafId = requestAnimationFrame(frameLoop);
     return;
   }
-  
+
   // Check if visual key state or artifacts have changed
   // (these change asynchronously after animations, so watchers won't catch them)
   const currentVisualKeyState = game.visualTakenKeys.join(',') + '|' + 
     game.state.artefacts.map((a: any) => a.taken ? '1' : '0').join('');
-  
+
   if (currentVisualKeyState !== lastVisualKeyState) {
     needsStaticRedraw = true;
     lastVisualKeyState = currentVisualKeyState;
     topBarVisualKeys.value = game.visualTakenKeys.slice();
   }
-  
+
   // Draw static canvas only when needed
   if (needsStaticRedraw) {
     drawStatic();
     needsStaticRedraw = false;
   }
-  
+
   // Always draw dynamic canvas (player and demons)
   drawDynamic();
-  
+
   rafId = requestAnimationFrame(frameLoop);
 }
 
@@ -408,7 +408,7 @@ function ensureInit() {
 onMounted(() => {
   ensureInit();
   needsStaticRedraw = true; // Force initial draw
-  
+
   // Initialize visual key state tracking
   const game = getGameState()?.maze;
   if (game) {
@@ -416,7 +416,7 @@ onMounted(() => {
       game.state.artefacts.map((a: any) => a.taken ? '1' : '0').join('');
     topBarVisualKeys.value = game.visualTakenKeys.slice();
   }
-  
+
   layoutCanvas();
   window.addEventListener('resize', layoutCanvas);
   window.addEventListener('keydown', onKeydown);

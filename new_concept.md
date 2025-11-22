@@ -270,7 +270,7 @@ FightEncounter
     myHp:number
     timeSpent:number
     encounterCreated:bool
-  
+
   LootEncounter/LootMonsterEncounter:
     myRoll:number
     checkValue:number

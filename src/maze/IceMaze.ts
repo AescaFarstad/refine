@@ -170,11 +170,11 @@ export class IceMaze {
     });
 
     const moved = Chase.move(this.state, direction);
-    
+
     if (moved) {
       // Deduct move budget by distance traveled
       this.movesMade += requiredDist;
-      
+
       // Start player animation with distance-based duration (with minimum)
       const playerDist = Math.abs(this.state.player.cell.x - playerPrev.x) + Math.abs(this.state.player.cell.y - playerPrev.y);
       const animSpeed = this.animationSpeed - PER_CELL_DISCOUNT * playerDist;
@@ -201,7 +201,7 @@ export class IceMaze {
         }
       });
     }
-    
+
     return moved;
   }
 

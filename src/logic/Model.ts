@@ -18,7 +18,6 @@ export const globalInputQueue: CmdInput[] = [];
 // deltaTime is in seconds
 export function update(gs: GameState, deltaTime: number): void {
   initOrAdvanceMaze(gs);
-  // Tick persistent Maze instance when present
   gs.maze?.update(deltaTime);
 
   if (gs.cheats && gs.cheats.length > 0) {

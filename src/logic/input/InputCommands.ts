@@ -31,14 +31,11 @@ export class CmdLevelup implements CmdInput {
 }
 
 // Refining start command (handled later)
+import type { Wafer } from '../Wafer';
+
 export class CmdStartRefining implements CmdInput {
   readonly name = 'CmdStartRefining';
-  readonly recipeId: string;
-  readonly items: Array<{ id: string; quantity: number }>;
-  constructor(args: { recipeId: string; items: Array<{ id: string; quantity: number }>; }) {
-    this.recipeId = args.recipeId;
-    this.items = args.items;
-  }
+  constructor() { }
 }
 
 export class CmdPurchaseResearch implements CmdInput {
@@ -108,5 +105,28 @@ export class CmdToggleQuest implements CmdInput {
   constructor(args: { id: string; active: boolean }) {
     this.id = args.id;
     this.active = !!args.active;
+  }
+}
+
+// Wafer manipulation commands
+import type { Molecule, Point2 } from '../ItemLib';
+
+export class CmdPlaceMolecule implements CmdInput {
+  readonly name = 'CmdPlaceMolecule';
+  readonly itemId: string;
+  readonly molecule: Molecule;
+  readonly rotation: number;
+  constructor(args: { itemId: string; molecule: Molecule; rotation?: number }) {
+    this.itemId = args.itemId;
+    this.molecule = args.molecule;
+    this.rotation = args.rotation ?? 0;
+  }
+}
+
+export class CmdRemoveMolecule implements CmdInput {
+  readonly name = 'CmdRemoveMolecule';
+  readonly itemIdx: number;
+  constructor(args: { itemIdx: number }) {
+    this.itemIdx = args.itemIdx;
   }
 }

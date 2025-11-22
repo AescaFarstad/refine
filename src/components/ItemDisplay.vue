@@ -1,12 +1,13 @@
 <template>
   <div class="item-cell-wrap">
     <div class="item-cell" :class="{ minor }">
-      <div class="sprite" v-if="source && frame" :style="spriteStyle" />
+      <div class="molecule-view" v-if="moleculeUrl" :style="{ backgroundImage: `url(${moleculeUrl})` }" />
+      <div class="sprite" v-else-if="source && frame" :style="spriteStyle" />
       <div v-else class="placeholder">{{ id }}</div>
 
       <div v-if="quantity > 1" class="qty">x{{ quantity }}</div>
 
-      <div class="essences" v-if="!minor && essencesToShow.length">
+      <div class="essences" v-if="!minor && essencesToShow.length && !moleculeUrl">
         <template v-for="(e, idx) in essencesToShow" :key="e.key">
           <span v-if="getEssenceFrame(e.key) && source" class="ess-icon" :style="essenceIconStyle(e.key)" />
           <span v-else class="ess-letter">{{ essenceLetter(e.key) }}</span>
@@ -16,7 +17,7 @@
       </div>
     </div>
 
-    <div class="tooltip-panel" aria-hidden="true">
+    <div v-if="!noTooltip" class="tooltip-panel" aria-hidden="true">
       <div class="tp-title">{{ displayName }}</div>
       <div v-if="displayVolume != null" class="tp-row">
         <span class="tp-label">Volume</span>
@@ -27,11 +28,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import atlasStorage from '../logic/AtlasStorage';
 import itemsData from '../data/items';
 
-const props = defineProps<{ id: string; quantity?: number; minor?: boolean }>();
+const props = defineProps<{ id: string; quantity?: number; minor?: boolean; noTooltip?: boolean; showMolecule?: boolean }>();
 
 const quantity = computed(() => Math.max(1, props.quantity ?? 1));
 const minor = computed(() => !!props.minor);
@@ -48,6 +49,20 @@ onMounted(async () => {
     source.value = atlasStorage.getItemsSource();
   }
 });
+
+const moleculeUrl = ref<string | null>(null);
+watch(() => [props.showMolecule, props.id, ready.value], () => {
+  try {
+    if (props.showMolecule && ready.value) {
+      moleculeUrl.value = atlasStorage.getMoleculeImage(props.id);
+    } else {
+      moleculeUrl.value = null;
+    }
+  } catch (e) {
+    console.error('Error updating molecule image:', e);
+    moleculeUrl.value = null;
+  }
+}, { immediate: true });
 
 const frame = computed(() => atlasStorage.getItemsFrame(props.id));
 
@@ -138,7 +153,16 @@ function essenceIconStyle(k: string): Record<string, string> {
 }
 .item-cell.minor .sprite {
   transform: translate(-50%, -50%) scale(0.5);
+  transform: translate(-50%, -50%) scale(0.5);
   filter: grayscale(1) brightness(0.9);
+}
+.molecule-view {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  image-rendering: auto;
 }
 .placeholder {
   position: absolute;

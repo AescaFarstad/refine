@@ -31,7 +31,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { getGameLib } from '../logic/UIState';
-import { RECIPE_TIME, RECIPE_TIME_NAME } from '../logic/Const';
+import { REFINE_TIME, REFINE_TIME_NAME } from '../logic/Const';
 import type { TimeClass } from '../logic/RecipeLib';
 import type { RecipeEffectScope } from '../logic/RecipeQualityLib';
 
@@ -48,11 +48,11 @@ const qualityDisplay = computed(() => qd.value?.name || props.qualityId);
 const tc = computed<TimeClass | undefined>(() => props.timeClass);
 const timeClassName = computed<string | ''>(() => {
   const id = (tc.value || '') as string;
-  return (RECIPE_TIME_NAME as any)[id] || '';
+  return (REFINE_TIME_NAME as any)[id] || '';
 });
 const minutesPerEssenceValue = computed<number>(() => {
   const id = (tc.value || 'normal') as string;
-  const v = (RECIPE_TIME as any)[id] || 1;
+  const v = (REFINE_TIME as any)[id] || 1;
   return Math.round(v * 10) / 10;
 });
 const minutesPerEssenceText = computed<string>(() => {

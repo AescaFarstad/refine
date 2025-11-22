@@ -4,10 +4,12 @@ import type { GameState, RaidOutcome, RefineryOutcome } from './GameState';
 import type { RaidDefinition } from './RaidLib';
 import { computeRefinePreview } from './Refine';
 import { getEffectiveRaidDefinition } from './RaidMutation';
+import { computeRefinePreviewChem } from './RefinePreview';
 import type { Lib } from './Lib';
+import { createWafer, type Wafer } from './Wafer';
 
 // Reactive UI-facing state (kept separate from logical GameState)
-export interface UIRaidDef extends RaidDefinition {}
+export interface UIRaidDef extends RaidDefinition { }
 
 export interface UIRefinery {
   health: number;
@@ -32,8 +34,7 @@ export const uiState = reactive({
   timeFlux: 0,
   timeMinutes: 0,
   canAdvanceTime: false,
-  // reactive identity for next scheduled event (forces recompute on change)
-  nextEvtKey: '' as string,
+  timeActive: false,
   // reactive identity for active raid (forces recompute on change)
   raidKey: '' as string,
 
@@ -83,6 +84,9 @@ export const uiState = reactive({
   recipesVersion: 0,
   // refine UI state
   selectedRefineryIndex: -1 as number,
+  // wafer state exposed to UI
+  wafer: createWafer(2) as Wafer,
+  waferVersion: 0, // Increment to force reactivity
 
   // maze UI state
   mazeLevelIndex: 0,
@@ -103,39 +107,18 @@ export const timeDisplay = computed(() => {
   return formatDurationHM(seconds);
 });
 
-// Next event display string, e.g., "Shegolskoe raid in 25m" or "Refinery 1 in 2h 40m"
-export const nextEventText = computed(() => {
-  // Touch reactive deps so this recomputes as time and queue change
-  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-  uiState.timeMinutes;
-  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-  uiState.canAdvanceTime;
-  // Also track identity changes of the next event
-  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-  uiState.nextEvtKey;
-
-  if (!gameRef || !gameRef.nextEvt) return '';
-  const evt = gameRef.nextEvt;
-  const remaining = Math.max(0, Math.round((evt.at || 0) - (gameRef.time || 0)));
-  const when = formatDurationHM(remaining);
-
-  if (evt.name === 'EvtRaidComplete') {
-    const id = gameRef.raid.id;
-    const def = id ? gameRef.lib.raids.get(id) : undefined;
-    const title = def?.name ?? (id || 'Raid');
-    return `${title} raid in ${when}`;
-  }
-  if (evt.name === 'EvtRefineryDone') return `Refinery in ${when}`;
-  return '';
-});
+// Next-event UI removed: no computed nextEventText
 
 // Internal game reference for write-backs
 let gameRef: GameState | null = null;
 
-// Track last seen next event identity to update reactive key only on change
-let lastNextEvtKey = '' as string;
+// Next-event identity tracking removed with next-event UI
 // Track last seen raid snapshot identity to notify UI when gear/params change
 let lastRaidKey = '' as string;
+// Track wafer state to detect changes
+let lastWaferItemCount = 0;
+let lastWaferEnabledCount = 0;
+
 
 export function SyncUIFromGameState(game: GameState): void {
   gameRef = game;
@@ -145,19 +128,8 @@ export function SyncUIFromGameState(game: GameState): void {
   // Model tracks time in seconds; UI needs minutes for display
   uiState.timeMinutes = Math.floor((game.time || 0) / 60);
   uiState.canAdvanceTime = !!game.nextEvt;
+  uiState.timeActive = game.timeActive;
 
-  // Update reactive next event identity so dependent UI recomputes when it changes
-  const key = game.nextEvt
-    ? `${game.nextEvt.name}|${game.nextEvt.at ?? ''}|${
-        game.nextEvt.name === 'EvtRaidComplete'
-          ? `raid:${game.raid.id ?? ''}`
-          : ''
-      }`
-    : '';
-  if (key !== lastNextEvtKey) {
-    uiState.nextEvtKey = key;
-    lastNextEvtKey = key;
-  }
 
   // Update reactive identity for active raid to drive UI recomputation
   const rk = game.raid
@@ -206,17 +178,14 @@ export function SyncUIFromGameState(game: GameState): void {
 
   // refine tab basics (single refinery)
   const entries: UIRefinery[] = [];
-  const loadedId = game.loadedRecipe;
-  const startedAt = game.recipeStartedAt;
-  const hasRecipe = !!loadedId;
-  const base: UIRefinery = { health: 100, hasRecipe };
-  if (hasRecipe) {
-    base.recipeId = loadedId;
-    base.startedAtSec = startedAt;
-    const recipe = game.lib.recipes.get(loadedId);
-    const duration = Math.max(0, recipe?.duration || 0);
+  const hasWafer = !!game.wafer;
+  const base: UIRefinery = { health: 100, hasRecipe: hasWafer };
+  if (hasWafer && game.nextEvt?.name === 'EvtRefineryDone') {
+    base.recipeId = '';
+    base.startedAtSec = (game.nextEvt.at || 0) - (4 * 3600);
+    const duration = 4 * 3600;
     if (duration > 0) {
-      const elapsed = Math.max(0, (game.time || 0) - (startedAt || 0));
+      const elapsed = Math.max(0, (game.time || 0) - base.startedAtSec);
       const progressPct = Math.max(0, Math.min(100, Math.round((elapsed / duration) * 100)));
       const remaining = Math.max(0, Math.round(duration - elapsed));
       base.progressPct = progressPct;
@@ -225,11 +194,7 @@ export function SyncUIFromGameState(game: GameState): void {
       base.progressPct = 0;
       base.timeRemainingSec = 0;
     }
-    const ingredients = (recipe?.ingredients || {}) as Record<string, number>;
-    base.ingredients = ingredients;
-    base.overflowWaste = (game.overflowEssences || {}) as Record<string, number>;
-
-    const preview = computeRefinePreview(game.lib, loadedId, 100, ingredients);
+    const preview = computeRefinePreviewChem(game.wafer!);
     base.expectedCredits = preview.expectedCredits;
     base.expectedChrono = preview.expectedChrono;
     base.expectedFlux = preview.expectedFlux;
@@ -245,6 +210,20 @@ export function SyncUIFromGameState(game: GameState): void {
 
   // Propagate lib recipes version for UI reactivity on upgrades
   uiState.recipesVersion = game.lib.recipesVersion || 0;
+
+  // Sync wafer state
+  uiState.wafer = game.wafer;
+  // Increment version if wafer content changed (for reactivity)
+  if (game.wafer) {
+    const currentItemCount = Array.isArray(game.wafer.items) ? game.wafer.items.filter(item => item !== null).length : 0;
+    const currentEnabledCount = game.wafer.enabledCount;
+    if (currentItemCount !== lastWaferItemCount || currentEnabledCount !== lastWaferEnabledCount) {
+      uiState.waferVersion++;
+      lastWaferItemCount = currentItemCount;
+      lastWaferEnabledCount = currentEnabledCount;
+    }
+  }
+
 
   // Sync maze state for reactivity
   uiState.mazeLevelIndex = game.mazeLevelIndex || 0;

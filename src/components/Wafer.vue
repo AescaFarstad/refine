@@ -1,0 +1,646 @@
+<template>
+  <div class="wafer-container">
+    <div class="wafer-section">
+      <WaferView
+        :wafer="wafer"
+        :version="waferVersion"
+        :ghost-molecule="ghostMolecule"
+        :ghost-position="ghostPosition"
+        :ghost-valid="ghostValid"
+        :highlight-item-idx="highlightItemIdx"
+        @hover="onHover"
+        @click="onClick"
+        @pickup="onPickup"
+        @rotate="onRotate"
+      />
+      <div v-if="draggingItem" class="rotate-hint">
+        Right-Click or Space to rotate ⟳
+      </div>
+      <div v-if="placedItemEntries.length === 0 && !draggingItem" class="empty-state-message">
+        Drag items here to refine them into resources
+      </div>
+    </div>
+
+    <div class="placed-items-row">
+      <div
+        v-for="(entry, idx) in placedItemEntries"
+        :key="entry.idx"
+        class="placed-item-cell"
+        :class="{ highlighted: highlightItemIdx === entry.idx }"
+        @click="removeItem(entry.idx)"
+        @mouseenter="setHighlight(entry.idx)"
+        @mouseleave="clearHighlight()"
+      >
+        <ItemDisplay :id="entry.item.id" :quantity="1" minor no-tooltip />
+        <div class="remove-overlay">
+          <span class="remove-cross">×</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-panel">
+      <div class="stats-table">
+        <div class="stat-row">
+          <span class="stat-label">Expected Credits:</span>
+          <span class="stat-value hl">{{ preview.expectedCredits }}✦</span>
+          <span class="stat-source" v-if="preview.creditsEssences > 0">
+            from {{ preview.creditsEssences }}
+            <template v-for="(key, idx) in creditsEssenceKeys" :key="key">
+              <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
+              <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
+            </template>
+          </span>
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-label">Expected Chronotraces:</span>
+          <span class="stat-value hl">{{ preview.expectedChrono }}⧗</span>
+          <span class="stat-source" v-if="preview.chronoEssences > 0">
+            from {{ preview.chronoEssences }}
+            <template v-for="(key, idx) in chronoEssenceKeys" :key="key">
+              <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
+              <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
+            </template>
+          </span>
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-label">Expected Time Flux:</span>
+          <span class="stat-value hl">{{ preview.expectedFlux }}∿</span>
+          <span class="stat-source" v-if="preview.fluxEssences > 0">
+            from {{ preview.fluxEssences }}
+            <template v-for="(key, idx) in fluxEssenceKeys" :key="key">
+              <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
+              <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
+            </template>
+          </span>
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-label">Failure Chance:</span>
+          <span class="stat-value" :class="failureClass">{{ preview.failureChancePct }}%</span>
+          <span class="stat-source" v-if="preview.emptyCells > 0">
+            from {{ preview.emptyCells }} empty cells
+          </span>
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-label">Time:</span>
+          <span class="stat-value">4 hours</span>
+          <span class="stat-source"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="action-section">
+      <button
+        v-if="!isRefining"
+        class="start-btn"
+        :disabled="!canRefine"
+        @click="startRefining"
+      >
+        Start Refining
+      </button>
+
+      <div v-if="isRefining" class="progress-status">
+        <div class="progress-bar">
+          <div class="progress-fill" :style="{ width: refineProgress + '%' }"></div>
+        </div>
+        <div class="time-remaining">{{ timeRemaining }} remaining</div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from 'vue';
+import WaferView from './WaferView.vue';
+import ItemDisplay from './ItemDisplay.vue';
+import type { Wafer } from '../logic/Wafer';
+import type { Molecule, Point2 } from '../logic/ItemLib';
+import { canPlaceMolecule, getCell } from '../logic/Wafer';
+import { computeRefinePreviewChem } from '../logic/RefinePreview';
+import { uiState } from '../logic/UIState';
+import { formatDurationHM } from '../logic/StringUtils';
+import { globalInputQueue } from '../logic/Model';
+import { CmdPlaceMolecule, CmdRemoveMolecule } from '../logic/input/InputCommands';
+import atlasStorage from '../logic/AtlasStorage';
+// All snapping handled via MoleculeUtils.translateForSnap
+import { translateForSnap, rotateMolecule } from '../logic/MoleculeUtils';
+import { HEX_SIZE, WAFER_CANVAS_WIDTH, WAFER_CANVAS_HEIGHT } from '../logic/RefineUIBehaviour';
+import { updateManualDragMolecule } from '../logic/ManualDrag';
+
+
+const props = defineProps<{
+  draggingItem?: { id: string; molecule: Molecule } | null;
+}>();
+
+const emit = defineEmits<{
+  (e: 'refine-start'): void;
+  (e: 'clear-dragging'): void;
+  (e: 'pickup-item', item: { id: string; molecule: Molecule }): void;
+}>();
+
+// Wafer comes from UIState (synced from GameState)
+const wafer = computed(() => uiState.wafer);
+
+// Touch waferVersion to ensure reactivity when wafer contents change
+const waferVersion = computed(() => uiState.waferVersion);
+
+const ghostMolecule = ref<Molecule | null>(null);
+const ghostPosition = ref<Point2 | null>(null);
+const ghostValid = ref(false);
+const highlightItemIdx = ref<number | null>(null);
+const lastHoverPos = ref<Point2 | null>(null);
+const rotation = ref(0);
+
+
+const activeRefinery = computed(() => uiState.refineries[0]);
+const isRefining = computed(() => {
+  return activeRefinery.value && activeRefinery.value.timeRemainingSec !== undefined && activeRefinery.value.timeRemainingSec > 0;
+});
+
+const refineProgress = computed(() => activeRefinery.value?.progressPct || 0);
+const timeRemaining = computed(() => formatDurationHM(activeRefinery.value?.timeRemainingSec || 0));
+
+const preview = computed(() => {
+  // Touch waferVersion for reactivity
+  waferVersion.value;
+
+  if (!wafer.value) {
+    return {
+      essenceTotals: {},
+      expectedCredits: 0,
+      expectedChrono: 0,
+      expectedFlux: 0,
+      failureChancePct: 0,
+      creditsEssences: 0,
+      chronoEssences: 0,
+      fluxEssences: 0,
+      emptyCells: 0,
+    };
+  }
+
+  const basePreview = computeRefinePreviewChem(wafer.value);
+
+  // Calculate essence counts for each resource type
+  const essenceTotals = basePreview.essenceTotals || {};
+  const creditsEssences = (essenceTotals.red || 0);
+  const chronoEssences = (essenceTotals.blue || 0);
+  const fluxEssences = (essenceTotals.green || 0);
+
+  // Use the pre-calculated empty count from wafer
+  const emptyCells = wafer.value.emptyCount || 0;
+
+  return {
+    ...basePreview,
+    creditsEssences,
+    chronoEssences,
+    fluxEssences,
+    emptyCells,
+  };
+});
+
+const creditsEssenceKeys = computed(() => {
+  return preview.value.creditsEssences > 0 ? ['red'] : [];
+});
+
+const chronoEssenceKeys = computed(() => {
+  return preview.value.chronoEssences > 0 ? ['blue'] : [];
+});
+
+const fluxEssenceKeys = computed(() => {
+  return preview.value.fluxEssences > 0 ? ['green'] : [];
+});
+
+const failureClass = computed(() => {
+  const pct = preview.value.failureChancePct;
+  if (pct === 0) return 'success';
+  if (pct <= 25) return 'warning';
+  return 'danger';
+});
+
+const placedItems = computed(() => {
+  // Touch waferVersion for reactivity
+  waferVersion.value;
+  if (!wafer.value) return [];
+  if (!wafer.value || !Array.isArray(wafer.value.items)) return [];
+  return wafer.value.items.filter((item: any) => item !== null);
+});
+
+// Keep original indices for mapping list entries back to wafer.items
+const placedItemEntries = computed(() => {
+  waferVersion.value;
+  if (!wafer.value) return [] as Array<{ item: any; idx: number }>;
+  const out: Array<{ item: any; idx: number }> = [];
+  wafer.value.items.forEach((it: any, i: number) => { if (it) out.push({ item: it, idx: i }); });
+  return out;
+});
+
+const canRefine = computed(() => {
+  return placedItems.value.length > 0;
+});
+
+// Atlas state for essence icons
+const source = ref<HTMLImageElement | null>(atlasStorage.getItemsSource());
+const ready = ref<boolean>(atlasStorage.isItemsAtlasLoaded());
+onMounted(async () => {
+  if (!ready.value) {
+    try { await atlasStorage.loadItemsAtlas(); } catch (_e) { /* noop */ }
+    ready.value = atlasStorage.isItemsAtlasLoaded();
+    source.value = atlasStorage.getItemsSource();
+  }
+});
+
+
+function getEssenceFrame(k: string) {
+  return atlasStorage.getItemsFrame(k);
+}
+
+function essenceIconStyle(k: string): Record<string, string> {
+  const f = atlasStorage.getItemsFrame(k);
+  if (!source.value || !f) return {} as Record<string, string>;
+  const scale = 16 / Math.max(f.w, f.h);
+  const atlasW = source.value.naturalWidth;
+  const atlasH = source.value.naturalHeight;
+  return {
+    width: '16px',
+    height: '16px',
+    backgroundImage: `url(${source.value.src})`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
+    backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
+  } as Record<string, string>;
+}
+
+function essenceLetter(k: string): string {
+  const m: Record<string, string> = { red: 'R', green: 'G', blue: 'B', yellow: 'Y' };
+  return m[k] || k?.[0]?.toUpperCase?.() || '?';
+}
+
+
+watch(() => props.draggingItem, (newVal) => {
+  if (newVal) {
+    rotation.value = 0;
+    if (lastHoverPos.value) {
+      onHover(lastHoverPos.value);
+    }
+  } else {
+    ghostMolecule.value = null;
+    ghostPosition.value = null;
+    rotation.value = 0;
+  }
+});
+
+function onHover(pos: Point2 | null) {
+  lastHoverPos.value = pos;
+  // Sync list highlight with wafer hover
+  if (!pos || props.draggingItem) {
+    highlightItemIdx.value = null;
+  } else if (wafer.value) {
+    const cell = getCell(wafer.value, pos as Point2);
+    highlightItemIdx.value = (cell && cell.itemIdx != null) ? cell.itemIdx : null;
+  }
+
+  if (isRefining.value) return;
+  // Ghost preview only when dragging an item
+  if (!props.draggingItem || !pos) {
+    ghostMolecule.value = null;
+    ghostPosition.value = null;
+    return;
+  }
+
+  const origin: Point2 = { x: WAFER_CANVAS_WIDTH / 2, y: WAFER_CANVAS_HEIGHT / 2 };
+  const rotated = rotateMolecule(props.draggingItem.molecule, rotation.value);
+  const { translated } = translateForSnap(rotated, pos, HEX_SIZE, origin);
+  ghostMolecule.value = translated;
+  ghostPosition.value = pos;
+  ghostValid.value = canPlaceMolecule(wafer.value, translated);
+}
+
+function onClick(pos: Point2) {
+  if (isRefining.value) return;
+
+  if (props.draggingItem) {
+    const origin: Point2 = { x: WAFER_CANVAS_WIDTH / 2, y: WAFER_CANVAS_HEIGHT / 2 };
+    const rotated = rotateMolecule(props.draggingItem.molecule, rotation.value);
+    const { translated } = translateForSnap(rotated, pos, HEX_SIZE, origin);
+
+    // Dispatch command to place molecule in GameState
+    globalInputQueue.push(new CmdPlaceMolecule({
+      itemId: props.draggingItem.id,
+      molecule: translated,
+      rotation: rotation.value,
+    }));
+
+    ghostMolecule.value = null;
+    ghostPosition.value = null;
+    emit('clear-dragging');
+  }
+}
+
+function onPickup(itemIdx: number) {
+  if (isRefining.value) return;
+  if (!wafer.value) return;
+
+  const item = wafer.value.items[itemIdx];
+  if (item) {
+    emit('pickup-item', { id: item.id, molecule: item.molecule });
+    globalInputQueue.push(new CmdRemoveMolecule({ itemIdx }));
+  }
+}
+
+function removeItem(idx: number) {
+  if (isRefining.value) return;
+  // Dispatch command to remove molecule from GameState
+  globalInputQueue.push(new CmdRemoveMolecule({ itemIdx: idx }));
+}
+
+function setHighlight(idx: number) {
+  if (props.draggingItem) return;
+  highlightItemIdx.value = idx;
+}
+
+function clearHighlight() {
+  highlightItemIdx.value = null;
+}
+
+function startRefining() {
+  if (!canRefine.value) return;
+  emit('refine-start');
+}
+
+function onRotate() {
+  if (!props.draggingItem) return;
+
+  rotation.value = (rotation.value + 1) % 6;
+
+  // Update the manual drag follower if active
+  const rotated = rotateMolecule(props.draggingItem.molecule, rotation.value);
+  updateManualDragMolecule(rotated);
+
+  if (lastHoverPos.value) {
+    onHover(lastHoverPos.value);
+  }
+}
+</script>
+
+<style scoped>
+.wafer-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.wafer-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.empty-state-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 32px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+  pointer-events: none;
+  user-select: none;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 10;
+}
+
+.rotate-hint {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.2);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  pointer-events: none;
+  user-select: none;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  min-width: 450px;
+  justify-content: center;
+}
+
+.placed-items-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  min-height: 56px;
+  width: 804px;
+}
+
+.placed-item-cell {
+  position: relative;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+
+
+.placed-item-cell .remove-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.placed-item-cell:hover .remove-overlay {
+  opacity: 1;
+}
+
+.placed-item-cell.highlighted {
+  transform: translateY(-1px) scale(1.04);
+  box-shadow: 0 0 0 2px #4fd1c5 inset, 0 3px 10px rgba(79, 209, 197, 0.25);
+  border-radius: 6px;
+}
+
+.remove-cross {
+  color: white;
+  font-weight: 400;
+  font-size: 60px;
+  line-height: 0.8;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.info-panel {
+  background: var(--panel-bg);
+  border-radius: 6px;
+  padding: 16px;
+  width: 772px;
+}
+
+.stats-table {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.action-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+
+.stat-row {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--panel-border);
+  font-size: 14px;
+  gap: 24px;
+}
+
+.stat-row:last-of-type {
+  border-bottom: none;
+}
+
+.stat-label {
+  color: var(--text-secondary);
+  font-weight: 500;
+  min-width: 180px;
+}
+
+.stat-value {
+  min-width: 50px;
+}
+
+.stat-source {
+  color: var(--text-secondary);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ess-icon {
+  display: inline-block;
+  vertical-align: middle;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+  width: 16px;
+  height: 16px;
+}
+
+.ess-letter {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  font-weight: 900;
+  font-size: 12px;
+  opacity: 0.95;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.08);
+}
+
+.hl {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.success {
+  color: #4fd1c5;
+  font-weight: 500;
+}
+
+.warning {
+  color: #fbbf24;
+  font-weight: 500;
+}
+
+.danger {
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.muted {
+  color: var(--text-secondary);
+}
+
+.small {
+  font-size: 12px;
+}
+
+.start-btn {
+  margin-top: 8px;
+  height: 32px;
+  padding: 0 14px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-radius: 4px;
+  border: 1px solid rgba(34,197,94,0.35);
+  background: rgba(34,197,94,0.18);
+  color: #86efac;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.start-btn:hover {
+  background: rgba(34,197,94,0.28);
+}
+
+.start-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  background: rgba(34,197,94,0.10);
+  border-color: rgba(34,197,94,0.22);
+}
+
+.start-btn:disabled:hover {
+  background: rgba(34,197,94,0.10);
+}
+
+.progress-status {
+  margin-top: 16px;
+  width: 100%;
+}
+
+.progress-bar {
+  width: 150px;
+  height: 8px;
+  background: var(--bg-1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.2s linear;
+}
+
+.time-remaining {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-left: 30px;
+}
+</style>

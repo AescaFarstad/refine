@@ -5,7 +5,11 @@ import { processInputs } from './logic/input/InputProcessor';
 import * as Model from './logic/Model';
 import { SyncUIFromGameState } from './logic/UIState';
 import atlasStorage from './logic/AtlasStorage';
+import { getRepresentation } from './logic/LogNumbers';
+import { getHypRepresentation } from './logic/HypNumbers';
 
+getRepresentation(2000);
+getHypRepresentation(2000);
 // Create GameState first so UI state can assume its presence
 const gameState = new GameState();
 

@@ -22,7 +22,7 @@
 
     <div class="g-price" v-if="price > 0">{{ price.toLocaleString() }}✦</div>
   </button>
-  
+
 </template>
 
 <script setup lang="ts">

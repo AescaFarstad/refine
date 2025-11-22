@@ -9,7 +9,7 @@
     <div class="stat-label">{{ label }}</div>
     <div v-if="!purchased" class="price" :class="{ insufficient: !canAfford }">{{ price }} ⧖</div>
   </div>
-  
+
 </template>
 
 <script setup lang="ts">

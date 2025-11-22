@@ -1,5 +1,5 @@
 import type { Essence } from './ItemLib';
-import { RECIPE_TIME } from './Const';
+import { REFINE_TIME } from './Const';
 
 export interface RecipeDefinition {
   id: string;
@@ -38,6 +38,6 @@ export interface RecipeDataDefinition {
 
 export function computeRecipeDurationSec(ingredients: Essence, timeClass: TimeClass): number {
   const sum = Object.values(ingredients || {}).reduce((a, vAny) => a + Math.max(0, Math.round(Number(vAny) || 0)), 0);
-  const mod = RECIPE_TIME[(timeClass || 'normal') as TimeClass] || 1;
+  const mod = REFINE_TIME[(timeClass || 'normal') as TimeClass] || 1;
   return Math.max(0, Math.round(sum * BASE_SECONDS_PER_ESSENCE * mod));
 }

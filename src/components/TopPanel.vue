@@ -6,6 +6,7 @@
           class="tab"
           :class="{ active: activeTab === 'raid' }"
           @click="activeTab = 'raid'"
+          :disabled="uiState.timeActive"
           type="button"
         >
           <span class="tab-title">Raids</span>
@@ -15,6 +16,7 @@
           class="tab"
           :class="{ active: activeTab === 'refine' }"
           @click="activeTab = 'refine'"
+          :disabled="uiState.timeActive"
           type="button"
         >
           <span class="tab-title">Refine</span>
@@ -24,6 +26,7 @@
           class="tab"
           :class="{ active: activeTab === 'research' }"
           @click="activeTab = 'research'"
+          :disabled="uiState.timeActive"
           type="button"
         >
           <span class="tab-title">Research</span>
@@ -33,6 +36,7 @@
           class="tab"
           :class="{ active: activeTab === 'maze' }"
           @click="activeTab = 'maze'"
+          :disabled="uiState.timeActive"
           type="button"
         >
           <span class="tab-title">Maze</span>
@@ -43,14 +47,7 @@
       <!-- Current time display moved to replace metrics -->
       <div class="metric time-metric"><span class="label">Time</span><span class="value time-value">{{ timeDisplay }}</span></div>
 
-      <div v-if="hasNextEvent" class="next-event">
-        <div class="next-event-title">Next event:</div>
-        <div class="next-event-desc">
-          <span class="next-event-dim">{{ nextEventParts.label }} in </span>
-          <span> </span>
-          <span class="next-event-time">{{ nextEventParts.time }}</span>
-        </div>
-      </div>
+
 
       <div class="spacer"></div>
     </div>
@@ -59,21 +56,12 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { uiState, timeDisplay, nextEventText } from '../logic/UIState';
+import { uiState, timeDisplay } from '../logic/UIState';
 
 type TabKey = 'raid' | 'refine' | 'research' | 'maze';
 const activeTab = computed<TabKey>({
   get: () => uiState.activeTab,
   set: (v: TabKey) => { uiState.activeTab = v; },
-});
-
-const hasNextEvent = computed(() => !!(uiState.canAdvanceTime && nextEventText.value && nextEventText.value.length > 0));
-const nextEventParts = computed(() => {
-  const t = nextEventText.value || '';
-  const sep = ' in ';
-  const i = t.indexOf(sep);
-  if (i === -1) return { label: '', time: t };
-  return { label: t.slice(0, i), time: t.slice(i + sep.length) };
 });
 
 // Tab sub-line resource displays
@@ -194,28 +182,6 @@ const inventoryCountDisplay = computed(() => `${inventoryCount.value}`);
   white-space: nowrap;
 }
 
-.next-event {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
-}
-.next-event-title {
-  font-size: 12px;
-  color: #94a3b8; /* slate-400 */
-  text-transform: none;
-  letter-spacing: 0.02em;
-}
-.next-event-desc {
-  font-weight: 600;
-}
-.next-event-dim {
-  color: #94a3b8; /* slate-400 */
-  font-weight: 500;
-}
-.next-event-time {
-  font-weight: 700;
-}
-
 /* Tabs bar under the top metrics */
 
 .tabs {
@@ -276,6 +242,12 @@ const inventoryCountDisplay = computed(() => `${inventoryCount.value}`);
 .tab:hover { 
   color: #e2e8f0; 
   background: rgba(79, 209, 197, 0.08); 
+}
+.tab:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: transparent;
+  color: #94a3b8;
 }
 .tab.active {
   color: #4fd1c5;

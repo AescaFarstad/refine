@@ -1,5 +1,5 @@
 <template>
-  <div class="panel all-items">
+  <div class="panel all-items" @mouseenter="isHovering = true" @mouseleave="isHovering = false">
     <div class="header">
       <h3>All Items</h3>
       <span class="count" v-if="items?.length">{{ items.length }}</span>
@@ -24,10 +24,21 @@
       </button>
     </div>
     <div class="grid-wrap">
-      <ItemGrid :items="sortedItems" :dim-ids="dimIds" clickable @item-click="onPick" />
+      <ItemGrid
+        :items="sortedItems" 
+        :dim-ids="dimIds" 
+        :draggable-ids="draggableIds"
+        :show-molecule="isHovering"
+        clickable 
+        draggable
+        no-tooltip
+        @item-click="onPick" 
+        @item-drag-start="onPick"
+        @item-drag-end="$emit('drag-end')"
+      />
     </div>
   </div>
-  
+
 </template>
 
 <script setup lang="ts">
@@ -38,7 +49,9 @@ import itemsData from '../data/items';
 import atlasStorage from '../logic/AtlasStorage';
 
 const props = defineProps<{ items: Array<{ id: string; quantity: number }>; requiredEssences?: Record<string, number> }>();
-const emit = defineEmits<{ (e: 'pick-item', id: string): void }>();
+const emit = defineEmits<{ (e: 'pick-item', id: string): void; (e: 'drag-end'): void }>();
+
+const isHovering = ref(false);
 
 // Atlas state for essence icons
 const source = ref<HTMLImageElement | null>(atlasStorage.getItemsSource());
@@ -135,6 +148,17 @@ const dimIds = computed<Record<string, boolean>>(() => {
   return out;
 });
 
+const draggableIds = computed<Record<string, boolean>>(() => {
+  const out: Record<string, boolean> = {};
+  for (const it of props.items || []) {
+    const def = (itemsData as any)[it.id] as { molecule?: any } | undefined;
+    if (def?.molecule) {
+      out[it.id] = true;
+    }
+  }
+  return out;
+});
+
 function onSortBy(k: string) {
   activeSort.value = k;
 }
@@ -163,5 +187,5 @@ h3 { margin: 0; font-size: 16px; letter-spacing: 0.04em; }
 .ess-total { font-variant-numeric: tabular-nums; }
 .sort-arrow { display: inline-block; width: 10px; text-align: center; opacity: 0; transition: opacity 100ms ease; }
 .sort-arrow.active { opacity: 1; }
-.grid-wrap { flex: 1; min-height: 0; overflow: auto; }
+.grid-wrap { flex: 1; min-height: 0; }
 </style>

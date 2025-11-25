@@ -124,3 +124,11 @@ export class CmdRemoveMolecule implements CmdInput {
     this.itemIdx = args.itemIdx;
   }
 }
+
+export class CmdGrowWafer implements CmdInput {
+  readonly name = 'CmdGrowWafer';
+  readonly pos: Point2;
+  constructor(args: { pos: Point2 }) {
+    this.pos = args.pos;
+  }
+}

@@ -1,17 +1,17 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue, SHARD_PICKUP_DELAY_SEC } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAknowledgeOutcome, CmdLevelup, CmdStartRefining,  CmdPurchaseResearch, CmdUpgradeRecipe, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest } from './InputCommands';
+import { CmdStartRaid, CmdAdvanceTime, CmdAknowledgeOutcome, CmdLevelup, CmdStartRefining,  CmdPurchaseResearch, CmdUpgradeRecipe, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer } from './InputCommands';
 import { LEVEL_UP_STRENGTH, LEVEL_UP_LOOTING, LEVEL_UP_VOLUME, RESEARCH_TIER_PRICE, RESEARCH_TIER_ITEM_PRICE } from '../Const';
 import { EvtRefineryDone } from '../evt/Evt';
 import { computeLoadedEssencesFromItems, computeOverflowEssences } from '../Refine';
-import { computeRefinePreviewChem } from '../RefinePreview';
+import { computeRefinePreviewChem, computeEffectiveEssences } from '../RefinePreview';
 import { applyRecipeUpgrade } from '../Recipe';
 import type { Point2 } from '../core/math';
 import { runRaid, recomputeActiveRaidParams, toggleGearForRaid, recomputeActiveRaidEstimates } from '../Raid';
 import type { QuestDefinition } from '../QuestLib';
 import { getEffectiveRaidDefinition, pickAndApplyRaidSuccessMutation, describeMutation } from '../RaidMutation';
-import { createWafer, placeMolecule, removeMolecule } from '../Wafer';
+import { createWafer, placeMolecule, removeMolecule, enableCellWithFloodfill, computeWaferUpgradePrice } from '../Wafer';
 
 type Handler = (gs: GameState, cmd: CmdInput) => void;
 const handlersByName = new Map<string, Handler>();
@@ -282,12 +282,35 @@ handlersByName.set('CmdPlaceMolecule', (gs, cmd) => {
     gs.wafer = createWafer(3);
   }
   placeMolecule(gs.wafer, c.itemId, c.molecule, c.rotation ?? 0);
+  computeEffectiveEssences(gs.wafer);
 });
 
 handlersByName.set('CmdRemoveMolecule', (gs, cmd) => {
   const c = cmd as any; // CmdRemoveMolecule
   if (!gs.wafer) return;
   removeMolecule(gs.wafer, c.itemIdx);
+  computeEffectiveEssences(gs.wafer);
+});
+
+handlersByName.set('CmdGrowWafer', (gs, cmd) => {
+  const c = cmd as CmdGrowWafer;
+  if (!c.pos) return;
+
+  if (!gs.wafer) {
+    gs.wafer = createWafer(3);
+  }
+
+  const upgradesPurchased = (gs as any).waferUpgradesPurchased || 0;
+  const price = computeWaferUpgradePrice(upgradesPurchased);
+  const currentShards = (gs as any).shardDust || 0;
+  if (currentShards < price) return;
+
+  const added = enableCellWithFloodfill(gs.wafer, c.pos);
+  if (added <= 0) return;
+
+  (gs as any).shardDust = Math.max(0, currentShards - price);
+  (gs as any).waferUpgradesPurchased = upgradesPurchased + 1;
+  computeEffectiveEssences(gs.wafer);
 });
 
 

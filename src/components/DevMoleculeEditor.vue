@@ -1,0 +1,466 @@
+<template>
+  <div class="dev-editor-root" @click.stop>
+    <header class="editor-header">
+      <div class="header-actions">
+        <button type="button" class="btn" @click="onClear">Clear</button>
+        <button type="button" class="btn" @click="onClearConnections">
+          Clear connections
+        </button>
+        <button type="button" class="btn" @click="onBreakDown">
+          Break down
+        </button>
+        <button type="button" class="btn" @click="copyToClipboard">
+          Copy molecule code
+        </button>
+        <button type="button" class="btn close" @click="$emit('close')">
+          Close
+        </button>
+      </div>
+    </header>
+
+    <div class="editor-body">
+      <div class="items-panel">
+        <AllItems
+          :items="allItems"
+          @pick-item="onPickItem"
+          @drag-end="onDragEnd"
+        />
+      </div>
+
+      <div class="right-panel">
+        <div class="wafer-panel">
+          <div class="wafer-header">
+            <span>{{ hoverCoords }}</span>
+            <span class="hint">Same layout and hex size as in-game</span>
+          </div>
+          <div class="wafer-view-wrap">
+            <WaferView
+              :wafer="wafer"
+              :version="waferVersion"
+              :ghost-molecule="ghostMolecule"
+              :ghost-position="ghostPosition"
+              :ghost-valid="ghostValid"
+              :highlight-item-idx="highlightItemIdx"
+              :hide-molecules="false"
+              :upgrade-preview-cells="null"
+              :cell-effective-counts="null"
+              :use-effective-essence="false"
+              :show-buff-overlays="false"
+              :show-upgrade-hints="false"
+              @hover="onHover"
+              @click="onClick"
+              @pickup="onPickup"
+              @rotate="onRotate"
+            />
+          </div>
+          <div class="code-preview">
+            <textarea
+              class="code-area"
+              readonly
+              :value="codePreview"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed, ref, watch } from 'vue';
+import AllItems from './AllItems.vue';
+import WaferView from './WaferView.vue';
+import itemsData from '../data/items';
+import { createWafer, type Wafer, getCell, canPlaceMolecule, placeMolecule, removeMolecule, clearWafer } from '../logic/Wafer';
+import { translateForSnap, rotateMolecule } from '../logic/MoleculeUtils';
+import { HEX_SIZE, WAFER_CANVAS_WIDTH, WAFER_CANVAS_HEIGHT } from '../logic/RefineUIBehaviour';
+import type { Molecule, Point2 } from '../logic/ItemLib';
+import { updateManualDragMolecule } from '../logic/ManualDrag';
+
+const emit = defineEmits<{ (e: 'close'): void }>();
+
+type DragItem = { id: string; molecule: Molecule };
+
+const wafer = ref<Wafer>(createWafer(5));
+const waferVersion = ref(0);
+
+const draggingItem = ref<DragItem | null>(null);
+
+const ghostMolecule = ref<Molecule | null>(null);
+const ghostPosition = ref<Point2 | null>(null);
+const ghostValid = ref(false);
+const highlightItemIdx = ref<number | null>(null);
+const lastHoverPos = ref<Point2 | null>(null);
+const rotation = ref(0);
+
+const DEV_ESSENCE_ITEMS: Record<string, string> = {
+  red: 'dev_atom_red',
+  green: 'dev_atom_green',
+  blue: 'dev_atom_blue',
+  yellow: 'dev_atom_yellow',
+  indigo: 'dev_atom_indigo',
+  crimson: 'dev_atom_crimson',
+  emerald: 'dev_atom_emerald',
+  gold: 'dev_atom_gold',
+  orange: 'dev_atom_orange',
+  gray: 'dev_atom_gray',
+};
+
+const allItems = computed(() => {
+  const raw = itemsData as Record<string, any>;
+  const devIds = new Set<string>();
+  for (const id in raw) {
+    if (!Object.prototype.hasOwnProperty.call(raw, id)) continue;
+    if (raw[id]?.devOnly) devIds.add(id);
+  }
+  const list: Array<{ id: string; quantity: number }> = [];
+  for (const id in raw) {
+    if (!Object.prototype.hasOwnProperty.call(raw, id)) continue;
+    list.push({ id, quantity: 1 });
+  }
+  list.sort((a, b) => {
+    const aDev = devIds.has(a.id);
+    const bDev = devIds.has(b.id);
+    if (aDev !== bDev) return aDev ? -1 : 1;
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+  });
+  return list;
+});
+
+const hoverCoords = computed(() => {
+  const p = lastHoverPos.value;
+  if (!p) return 'Hex: -, -';
+  return `Hex: ${p.x}, ${p.y}`;
+});
+
+function onPickItem(id: string) {
+  const def = (itemsData as any)[id];
+  if (!def || !def.molecule) return;
+  draggingItem.value = { id, molecule: def.molecule as Molecule };
+  rotation.value = 0;
+  if (lastHoverPos.value) {
+    onHover(lastHoverPos.value);
+  }
+}
+
+function onDragEnd() {
+  // Defer clearing so WaferView's click handler (from ManualDrag end) can run first.
+  setTimeout(() => {
+    clearDragging();
+  }, 0);
+}
+
+function onClear() {
+  clearWafer(wafer.value);
+  bumpWafer();
+  clearDragging();
+}
+
+function onClearConnections() {
+  const w = wafer.value;
+  if (!w) return;
+  for (const item of w.items) {
+    if (!item || !item.molecule) continue;
+    if (Array.isArray(item.molecule.connections)) {
+      item.molecule.connections = [];
+    }
+  }
+  bumpWafer();
+}
+
+function onBreakDown() {
+  const w = wafer.value;
+  if (!w) return;
+  const placements: Array<{ id: string; molecule: Molecule }> = [];
+
+  for (const item of w.items) {
+    if (!item || !item.molecule) continue;
+    for (const atom of item.molecule.atoms) {
+      const color = atom.color;
+      const devId = DEV_ESSENCE_ITEMS[color] || item.id;
+      placements.push({
+        id: devId,
+        molecule: {
+          atoms: [{ color, x: atom.x, y: atom.y }],
+          connections: [],
+        },
+      });
+    }
+  }
+
+  clearWafer(w);
+
+  for (const p of placements) {
+    placeMolecule(w, p.id, p.molecule, 0);
+  }
+
+  bumpWafer();
+  clearDragging();
+}
+
+const codePreview = computed(() => {
+  waferVersion.value;
+  const w = wafer.value;
+  if (!w) {
+    return [
+      'molecule: {',
+      '  atoms: [',
+      '  ],',
+      '  connections: [',
+      '    // TODO: add connections',
+      '  ],',
+      '},',
+    ].join('\n');
+  }
+  const parts: Array<{ color: string; x: number; y: number }> = [];
+  for (const cell of w.cells.values()) {
+    if (!cell.enabled || !cell.essence) continue;
+    parts.push({ color: cell.essence, x: cell.x, y: cell.y });
+  }
+  parts.sort((a, b) => (a.y === b.y ? a.x - b.x : a.y - b.y));
+
+  const lines: string[] = [];
+  lines.push('molecule: {');
+  lines.push('  atoms: [');
+  for (const atom of parts) {
+    lines.push(`    { color: '${atom.color}', x: ${atom.x}, y: ${atom.y} },`);
+  }
+  lines.push('  ],');
+  lines.push('  connections: [');
+  lines.push('    // TODO: add connections');
+  lines.push('  ],');
+  lines.push('},');
+  return lines.join('\n');
+});
+
+async function copyToClipboard() {
+  const text = codePreview.value;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+  } catch {
+    // fall through to execCommand
+  }
+
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  ta.style.top = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+  } finally {
+    document.body.removeChild(ta);
+  }
+}
+
+function clearDragging() {
+  draggingItem.value = null;
+  ghostMolecule.value = null;
+  ghostPosition.value = null;
+  ghostValid.value = false;
+}
+
+watch(draggingItem, (newVal) => {
+  if (!newVal) {
+    ghostMolecule.value = null;
+    ghostPosition.value = null;
+    ghostValid.value = false;
+    rotation.value = 0;
+    return;
+  }
+  rotation.value = 0;
+  if (lastHoverPos.value) {
+    onHover(lastHoverPos.value);
+  }
+});
+
+function onHover(pos: Point2 | null) {
+  lastHoverPos.value = pos;
+  const w = wafer.value;
+
+  if (!pos || !w) {
+    highlightItemIdx.value = null;
+  } else {
+    const cell = getCell(w, pos);
+    highlightItemIdx.value = cell && cell.itemIdx != null ? cell.itemIdx : null;
+  }
+
+  if (!draggingItem.value || !pos || !w) {
+    ghostMolecule.value = null;
+    ghostPosition.value = null;
+    ghostValid.value = false;
+    return;
+  }
+
+  const origin: Point2 = { x: WAFER_CANVAS_WIDTH / 2, y: WAFER_CANVAS_HEIGHT / 2 };
+  const rotated = rotateMolecule(draggingItem.value.molecule, rotation.value);
+  const { translated } = translateForSnap(rotated, pos, HEX_SIZE, origin);
+  ghostMolecule.value = translated;
+  ghostPosition.value = pos;
+  ghostValid.value = canPlaceMolecule(w, translated, true);
+}
+
+function bumpWafer() {
+  waferVersion.value++;
+}
+
+function onClick(pos: Point2) {
+  const w = wafer.value;
+  if (!w || !draggingItem.value) return;
+
+  const origin: Point2 = { x: WAFER_CANVAS_WIDTH / 2, y: WAFER_CANVAS_HEIGHT / 2 };
+  const rotated = rotateMolecule(draggingItem.value.molecule, rotation.value);
+  const { translated } = translateForSnap(rotated, pos, HEX_SIZE, origin);
+  if (!canPlaceMolecule(w, translated, true)) {
+    return;
+  }
+
+  placeMolecule(w, draggingItem.value.id, translated, rotation.value);
+  bumpWafer();
+  clearDragging();
+}
+
+function onPickup(itemIdx: number) {
+  const w = wafer.value;
+  if (!w) return;
+  const item = w.items[itemIdx];
+  if (!item) return;
+  draggingItem.value = { id: item.id, molecule: item.molecule };
+  removeMolecule(w, itemIdx);
+  bumpWafer();
+}
+
+function onRotate() {
+  if (!draggingItem.value) return;
+
+  rotation.value = (rotation.value + 1) % 6;
+
+  const rotated = rotateMolecule(draggingItem.value.molecule, rotation.value);
+  updateManualDragMolecule(rotated);
+
+  if (lastHoverPos.value) {
+    onHover(lastHoverPos.value);
+  }
+}
+</script>
+
+<style scoped>
+.dev-editor-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 6px 10px;
+  box-sizing: border-box;
+}
+
+.editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-body {
+  display: flex;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+}
+
+.items-panel {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-height: 100%;
+}
+
+.right-panel {
+  flex: 0 0 auto;
+  width: 820px;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  gap: 12px;
+  min-width: 0;
+}
+
+.wafer-panel {
+  background: var(--panel-bg);
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wafer-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.hint {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.wafer-view-wrap {
+  margin-top: 4px;
+  display: flex;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.code-preview {
+  margin-top: 4px;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+
+.code-area {
+  width: 100%;
+  height: 100%;
+  resize: none;
+  min-height: 0;
+  flex: 1 1 auto;
+  font-family: monospace;
+  font-size: 11px;
+  background: rgba(15, 23, 42, 0.9);
+  color: #e5e7eb;
+  border-radius: 4px;
+  border: 1px solid var(--panel-border);
+  padding: 6px 8px;
+  box-sizing: border-box;
+}
+
+.btn {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 4px;
+  border: 1px solid var(--panel-border);
+  background: rgba(15, 23, 42, 0.95);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.btn.close {
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #fecaca;
+}
+
+.btn:hover {
+  background: rgba(30, 64, 175, 0.6);
+}
+</style>

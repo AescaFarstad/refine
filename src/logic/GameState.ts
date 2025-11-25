@@ -26,6 +26,7 @@ export class GameState {
   public credits: number = 5000;
   public chronotraces: number = 500;
   public timeFlux: number = 150;
+  public shardDust: number = 1000;
   public strength: number = 120;
   public reach: number = 0;
   public looting: number = 0;
@@ -39,6 +40,7 @@ export class GameState {
   public overflowEssences: Essence = {};
   public wafer: Wafer = createWafer(2);
   public waferSize: Point2 = { x: 0, y: 0 };
+  public waferUpgradesPurchased: number = 0;
   public waferMouseCoords: Point2 | null = null;
   public refiningDuration: number = 0;
   public shards: Array<Shard> = [];
@@ -169,10 +171,12 @@ export class RefineryOutcome {
 
 export interface Shard {
   id: string;
-  resource: string; // 'credits', 'chronotraces', 'timeFlux'
+  resource: string; // 'credits', 'chronotraces', 'timeFlux', 'shards'
   amount: number;
   pos: Point2;
   vel: Point2;
+  angle: number;
+  omega: number;
   triggered: boolean;
   pickupDelaySec: number;
   size: number;

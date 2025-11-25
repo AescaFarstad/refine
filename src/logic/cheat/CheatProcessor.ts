@@ -1,6 +1,7 @@
 import type { GameState } from '../GameState';
 import type { CheatInput } from './CheatCommands';
 import { CheatAddRaidItems } from './CheatCommands';
+import type { EncounterDef } from '../RaidLib';
 
 type Handler = (gs: GameState, cheat: CheatInput) => void;
 const handlersByName = new Map<string, Handler>();
@@ -18,16 +19,27 @@ handlersByName.set('CheatAddRaidItems', (gs, cheat) => {
   const count = Math.max(0, c.count || 0);
   if (count <= 0) return;
 
-  // Collect item ids: prefer raid-specific pools if present; otherwise fallback to a sample of all items
+  // Collect item ids from the raid definition (items + monster loot), fallback to a sample of all items
   const ids = new Set<string>();
-  const items = (def as any).items as (undefined | { common: string[]; uncommon: string[]; rare: string[]; legendary: string[] });
-  if (items && items.common && items.uncommon && items.rare && items.legendary) {
-    items.common.forEach(id => ids.add(id));
-    items.uncommon.forEach(id => ids.add(id));
-    items.rare.forEach(id => ids.add(id));
-    items.legendary.forEach(id => ids.add(id));
-  } else {
-    // Fallback: take the first 24 item ids from the item library for quick testing
+  const raidItems = Array.isArray(def.items) ? def.items : [];
+  for (const id of raidItems) {
+    ids.add(id);
+  }
+
+  // Add any monster loot items referenced by this raid's encounters
+  for (const step of def.encounters || []) {
+    const enc = step.encounter as EncounterDef;
+    if (enc.type === 'FightEncounter' || enc.type === 'MonsterLootEncounter') {
+      const monsterId = (enc as any).monsterId as string;
+      const monster = gs.lib.monsters.get(monsterId);
+      if (monster && monster.lootItemId) {
+        ids.add(monster.lootItemId);
+      }
+    }
+  }
+
+  // Fallback: if nothing was collected, take the first 24 item ids from the item library for quick testing
+  if (ids.size === 0) {
     const all = Array.from(gs.lib.items.keys());
     for (let i = 0; i < Math.min(24, all.length); i++) ids.add(all[i]);
   }

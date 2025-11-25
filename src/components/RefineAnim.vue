@@ -12,12 +12,14 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
 import type { Wafer } from '../logic/Wafer';
+import { getCell } from '../logic/Wafer';
 import type { GameState, Shard } from '../logic/GameState';
 import { uiState, getGameState } from '../logic/UIState';
 import { WAFER_CANVAS_WIDTH, WAFER_CANVAS_HEIGHT, HEX_SIZE, ESSENCE_SIZE, eventToCanvasPixel } from '../logic/RefineUIBehaviour';
 import { axialToPixel } from '../logic/HexMath';
 import atlasStorage from '../logic/AtlasStorage';
 import { getShardDisplay, calculateShardFontSize } from '../utils/ShardDisplay';
+import { computeRefinePreviewChem } from '../logic/RefinePreview';
 
 // Animation tuning constants (t is 0..1 over refiningDuration)
 const T_DRAG_END = 0.2;
@@ -25,7 +27,7 @@ const SPEED_RATIO_AT_T_DRAG_END = 0.5; // speed should drop by half by t = 0.2
 // Per-unit-t drag base so that v(T_DRAG_END) = SPEED_RATIO_AT_T_DRAG_END * v0
 const DRAG_BASE_PER_T = Math.pow(SPEED_RATIO_AT_T_DRAG_END, 1 / T_DRAG_END);
 
-const INITIAL_IMPULSE_SPEED_PER_HEX = 120; // px per unit t when distance is 1 hex
+const INITIAL_IMPULSE_SPEED_PER_HEX = 80; // px per unit t when distance is 1 hex
 const INITIAL_IMPULSE_SAME_COLOR_MULT = 2;
 const INITIAL_IMPULSE_RANDOMNESS = 0.15;
 
@@ -54,6 +56,7 @@ interface AnimAtom {
   vx: number;
   vy: number;
   color: string;
+  effectiveCount: number; // buffed effective count used for impulse strength/mass
 }
 
 const atoms = ref<AnimAtom[]>([]);
@@ -107,16 +110,25 @@ function initAtoms() {
   if (!props.wafer) return;
   const newAtoms: AnimAtom[] = [];
 
+  const preview = computeRefinePreviewChem(props.wafer);
+  const cellEffectiveCounts = preview.cellEffectiveCounts || {};
+
   for (const item of props.wafer.items) {
     if (!item) continue;
     for (const atom of item.molecule.atoms) {
       const pixel = axialToPixel({ x: atom.x, y: atom.y }, HEX_SIZE, origin);
+      const key = `${atom.x},${atom.y}`;
+      const eff = cellEffectiveCounts[key];
+      const effectiveCount = (typeof eff === 'number' && eff > 0) ? eff : 1;
+      const cell = getCell(props.wafer, { x: atom.x, y: atom.y });
+      const color = (cell && cell.effectiveEssence) || atom.color;
       newAtoms.push({
         x: pixel.x,
         y: pixel.y,
         vx: 0,
         vy: 0,
-        color: atom.color,
+        color,
+        effectiveCount,
       });
     }
   }
@@ -124,9 +136,6 @@ function initAtoms() {
   lastT.value = getCurrentT();
   initialized.value = true;
 
-  // Calculate initial impulses (t=0 logic)
-  // "t=0: Each receives an impulse from each other atom. Double if they are of the same color. 
-  // The impulse is proportional to the distance. 1px per 0.01 t ... when the distance is 1 hex size."
   applyInitialImpulses();
 }
 
@@ -153,7 +162,9 @@ function applyInitialImpulses() {
       if (dist === 0) continue;
 
       const colorFactor = (a.color === b.color) ? INITIAL_IMPULSE_SAME_COLOR_MULT : 1;
-      const velMag = INITIAL_IMPULSE_SPEED_PER_HEX * (dist / distUnit) * colorFactor;
+      const sourceStrength = b.effectiveCount || 1;
+      const targetMass = a.effectiveCount || 1;
+      const velMag = INITIAL_IMPULSE_SPEED_PER_HEX * (dist / distUnit) * colorFactor * (sourceStrength / targetMass);
 
       const nx = dx / dist;
       const ny = dy / dist;
@@ -308,7 +319,13 @@ function drawShard(ctx: CanvasRenderingContext2D, shard: Shard) {
 
   const spriteW = sprite.width;
   const spriteH = sprite.height;
-  ctx.drawImage(sprite, x - spriteW / 2, y - spriteH / 2);
+  const angle = shard.angle || 0;
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  ctx.drawImage(sprite, -spriteW / 2, -spriteH / 2);
+  ctx.restore();
 }
 
 const shardSpriteCache = new Map<string, HTMLCanvasElement>();

@@ -6,7 +6,7 @@ const raids: Record<string, Omit<RaidDefinition, 'id'>> = {
     reachRequired: 0,
     baseLootChance: 55,
     items: [
-      'enamel_mug',
+      'vinyl_record',
       'mechanical_clock',
       'porcelain_figurine',
       'wrench',
@@ -16,6 +16,15 @@ const raids: Record<string, Omit<RaidDefinition, 'id'>> = {
       'lucky_coin',
       'gas_mask_gp5',
       'canvas_tent',
+      'vintage_camera',
+      'window_latch',
+      'door_handle',
+      'padlock',
+      'chain_link',
+      'insulation_tape',
+      'inventory_keys',
+      'ruined_ammo_box',
+      'portable_radio',
     ],
     encounters: [
       { count: 1, encounter: { type: 'WalkEncounter' } },
@@ -37,7 +46,7 @@ const raids: Record<string, Omit<RaidDefinition, 'id'>> = {
       'gas_mask_gp5',
       'chemical_kit',
       'portable_radio',
-      'canvas_tent',
+      'door_handle',
     ],
     encounters: [
       { count: 14, encounter: { type: 'WalkEncounter' } },

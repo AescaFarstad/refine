@@ -129,6 +129,54 @@ export function drawHighlight(
     });
 }
 
+export interface PlusDrawOptions {
+    color?: string;
+    lineWidth?: number;
+    sizeFactor?: number;
+}
+
+export function drawPlus(
+    ctx: CanvasRenderingContext2D,
+    center: Point2,
+    hexSize: number,
+    options: PlusDrawOptions = {}
+): void {
+    const {
+        color = '#ffffff',
+        lineWidth = 2,
+        sizeFactor = 0.4,
+    } = options;
+
+    const r = hexSize * sizeFactor;
+
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.lineCap = 'round';
+
+    ctx.beginPath();
+    // vertical
+    ctx.moveTo(center.x, center.y - r);
+    ctx.lineTo(center.x, center.y + r);
+    // horizontal
+    ctx.moveTo(center.x - r, center.y);
+    ctx.lineTo(center.x + r, center.y);
+    ctx.stroke();
+
+    ctx.restore();
+}
+
+export function drawPlusAt(
+    ctx: CanvasRenderingContext2D,
+    axial: Point2,
+    hexSize: number,
+    origin: Point2,
+    options: PlusDrawOptions = {}
+): void {
+    const pixel = axialToPixel(axial, hexSize, origin);
+    drawPlus(ctx, pixel, hexSize, options);
+}
+
 export function clearRect(
     ctx: CanvasRenderingContext2D,
     x: number,
@@ -149,6 +197,12 @@ export function getEssenceColor(essence: string): string {
         blue: '#4444ff',
         green: '#44ff44',
         yellow: '#ffdd44',
+        indigo: '#4b0082',
+        crimson: '#dc143c',
+        emerald: '#50c878',
+        gold: '#ffd700',
+        gray: '#9ca3af',
+        orange: '#fb923c',
     };
     return colors[essence] || '#888888';
 }

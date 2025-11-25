@@ -1,20 +1,31 @@
 <template>
   <div v-if="open" class="modal-backdrop">
-    <div class="modal" :class="{ full: !!selected }">
-      <header class="modal-header" v-if="!selected">
+    <div class="modal" :class="{ full: hasFullscreen }">
+      <header class="modal-header" v-if="!hasFullscreen">
         <h3>Cheat Tools</h3>
       </header>
 
-      <section class="modal-body" v-if="!selected">
+      <section class="modal-body" v-if="!hasFullscreen">
         <div class="grid">
           <button v-for="k in atlasKeys" :key="k" class="btn primary" @click="openAtlas(k)">
             Open {{ k.toUpperCase() }} Atlas
           </button>
+          <button class="btn primary" type="button" @click="openMoleculeEditor">
+            Open Molecule Editor
+          </button>
         </div>
       </section>
 
-      <section v-else class="viewer" :class="{ fill: !!selected }">
-        <DevAtlasView :atlas="selected" @close="close" />
+      <section v-else class="viewer" :class="{ fill: hasFullscreen }">
+        <DevAtlasView
+          v-if="selectedAtlas"
+          :atlas="selectedAtlas"
+          @close="closeAll"
+        />
+        <DevMoleculeEditor
+          v-else-if="devMoleculeEditorOpen"
+          @close="closeAll"
+        />
       </section>
     </div>
   </div>
@@ -24,19 +35,28 @@
 import { computed } from 'vue';
 import { uiState } from '../logic/UIState';
 import DevAtlasView from './DevAtlasView.vue';
+import DevMoleculeEditor from './DevMoleculeEditor.vue';
 import { listAtlasKeys, type AtlasKey } from '../logic/AtlasStorage';
 
 const open = computed(() => uiState.cheatOpen);
-const selected = computed(() => uiState.devAtlasKey);
+const selectedAtlas = computed(() => uiState.devAtlasKey as AtlasKey | '');
+const devMoleculeEditorOpen = computed(() => uiState.devMoleculeEditorOpen);
+const hasFullscreen = computed(() => !!selectedAtlas.value || devMoleculeEditorOpen.value);
 const atlasKeys = computed<AtlasKey[]>(() => listAtlasKeys());
 
 function openAtlas(key: AtlasKey) {
   uiState.devAtlasKey = key;
 }
 
-function close() {
+function openMoleculeEditor() {
+  uiState.devAtlasKey = '';
+  uiState.devMoleculeEditorOpen = true;
+}
+
+function closeAll() {
   uiState.cheatOpen = false;
   uiState.devAtlasKey = '';
+  uiState.devMoleculeEditorOpen = false;
 }
 </script>
 

@@ -30,6 +30,7 @@ export const uiState = reactive({
   credits: 0,
   chronotraces: 0,
   timeFlux: 0,
+  shardDust: 0,
   timeMinutes: 0,
   canAdvanceTime: false,
   timeActive: false,
@@ -66,12 +67,14 @@ export const uiState = reactive({
 
   cheatOpen: false,
   devAtlasKey: '' as '' | 'items',
+  devMoleculeEditorOpen: false,
 
   refineries: [] as UIRefinery[],
   items: [] as Array<{ id: string; quantity: number }>,
   recipes: [] as string[],
   research: [] as string[],
   recipesVersion: 0,
+  waferUpgradesPurchased: 0,
   selectedRefineryIndex: -1 as number,
   wafer: createWafer(2) as Wafer,
   waferSize: { x: 0, y: 0 } as Point2,
@@ -108,6 +111,7 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.credits = game.credits;
   uiState.chronotraces = game.chronotraces;
   uiState.timeFlux = game.timeFlux ?? 0;
+  uiState.shardDust = (game as any).shardDust || 0;
   // Model tracks time in seconds; UI needs minutes for display
   uiState.timeMinutes = Math.floor((game.time || 0) / 60);
   uiState.canAdvanceTime = !!game.nextEvt;
@@ -191,6 +195,7 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.wafer = game.wafer;
   uiState.waferSize = game.waferSize;
   uiState.shards = game.shards;
+  uiState.waferUpgradesPurchased = (game as any).waferUpgradesPurchased || 0;
 
   if (game.wafer) {
     const currentItemCount = Array.isArray(game.wafer.items) ? game.wafer.items.filter(item => item !== null).length : 0;

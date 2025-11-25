@@ -9,6 +9,11 @@
         :ghost-valid="ghostValid"
         :highlight-item-idx="highlightItemIdx"
         :hide-molecules="showRefineAnim"
+        :upgrade-preview-cells="upgradeHoverCells"
+        :cell-effective-counts="preview.cellEffectiveCounts"
+        :use-effective-essence="!draggingItem"
+        :show-buff-overlays="true"
+        :show-upgrade-hints="true"
         @hover="onHover"
         @click="onClick"
         @pickup="onPickup"
@@ -21,13 +26,24 @@
       <div v-if="draggingItem && !showRefineAnim" class="rotate-hint">
         Right-Click or Space to rotate ⟳
       </div>
-      <div v-if="placedItemEntries.length === 0 && !draggingItem && !showRefineAnim" class="empty-state-message">
+      <div
+        v-if="!hasGrownWafer && placedItemEntries.length === 0 && !draggingItem && !showRefineAnim && !hasUpgradePreview"
+        class="empty-state-message"
+      >
         Drag items here to refine them into resources
+      </div>
+      <div
+        v-if="hasUpgradePreview && !showRefineAnim"
+        class="wafer-upgrade-hint"
+        :class="{ insufficient: !canAffordUpgrade }"
+      >
+        Grow wafer for {{ upgradeCost }} ⌁
       </div>
     </div>
 
     <div class="placed-items-row">
       <div
+        v-if="!failedRefineWithShards"
         v-for="(entry, idx) in placedItemEntries"
         :key="entry.idx"
         class="placed-item-cell"
@@ -40,6 +56,12 @@
         <div class="remove-overlay">
           <span class="remove-cross">×</span>
         </div>
+      </div>
+      <div
+        v-if="failedRefineWithShards"
+        class="refine-fail-note"
+      >
+        Refining <span class="refine-fail-word">FAILED</span>, but the resources can be reclaimed as shards.
       </div>
     </div>
 
@@ -124,12 +146,12 @@ import ItemDisplay from './ItemDisplay.vue';
 import RefineAnim from './RefineAnim.vue';
 import type { Wafer } from '../logic/Wafer';
 import type { Molecule, Point2 } from '../logic/ItemLib';
-import { canPlaceMolecule, getCell } from '../logic/Wafer';
+import { canPlaceMolecule, getCell, computeUpgradeableRegion, computeWaferUpgradePrice } from '../logic/Wafer';
 import { computeRefinePreviewChem } from '../logic/RefinePreview';
 import { uiState, getGameState } from '../logic/UIState';
 import { formatDurationHM } from '../logic/StringUtils';
 import { globalInputQueue } from '../logic/Model';
-import { CmdPlaceMolecule, CmdRemoveMolecule } from '../logic/input/InputCommands';
+import { CmdPlaceMolecule, CmdRemoveMolecule, CmdGrowWafer } from '../logic/input/InputCommands';
 import atlasStorage from '../logic/AtlasStorage';
 // All snapping handled via MoleculeUtils.translateForSnap
 import { translateForSnap, rotateMolecule } from '../logic/MoleculeUtils';
@@ -159,6 +181,7 @@ const ghostValid = ref(false);
 const highlightItemIdx = ref<number | null>(null);
 const lastHoverPos = ref<Point2 | null>(null);
 const rotation = ref(0);
+const upgradeHoverCells = ref<Point2[] | null>(null);
 
 
 const activeRefinery = computed(() => uiState.refineries[0]);
@@ -179,8 +202,22 @@ const showRefineAnim = computed(() => {
   return isRefining.value || hasShards.value || !!uiState.lastRefineryOutcome;
 });
 
+const hasGrownWafer = computed(() => {
+  return uiState.waferUpgradesPurchased > 0;
+});
+
 const refineProgress = computed(() => activeRefinery.value?.progressPct || 0);
 const timeRemaining = computed(() => formatDurationHM(activeRefinery.value?.timeRemainingSec || 0));
+
+const hasUpgradePreview = computed(() => !!upgradeHoverCells.value && upgradeHoverCells.value.length > 0);
+const upgradeCost = computed(() => {
+  if (!hasUpgradePreview.value) return 0;
+  const purchased = (uiState as any).waferUpgradesPurchased || 0;
+  return computeWaferUpgradePrice(purchased);
+});
+const canAffordUpgrade = computed(() => {
+  return hasUpgradePreview.value && upgradeCost.value > 0 && uiState.shardDust >= upgradeCost.value;
+});
 
 onMounted(() => {
   const gs = getGameState();
@@ -205,6 +242,7 @@ const preview = computed(() => {
       chronoEssences: 0,
       fluxEssences: 0,
       emptyCells: 0,
+      cellEffectiveCounts: {},
     };
   }
 
@@ -264,6 +302,13 @@ const placedItemEntries = computed(() => {
   return out;
 });
 
+const failedRefineWithShards = computed(() => {
+  const outcome = uiState.lastRefineryOutcome;
+  const hasFailure = !!outcome && !outcome.success;
+  const hasShards = uiState.shards && uiState.shards.length > 0;
+  return hasFailure && hasShards;
+});
+
 const canRefine = computed(() => {
   return placedItems.value.length > 0 && !hasShards.value;
 });
@@ -309,6 +354,7 @@ function essenceLetter(k: string): string {
 watch(() => props.draggingItem, (newVal) => {
   if (newVal) {
     rotation.value = 0;
+    upgradeHoverCells.value = null;
     if (lastHoverPos.value) {
       onHover(lastHoverPos.value);
     }
@@ -316,6 +362,11 @@ watch(() => props.draggingItem, (newVal) => {
     ghostMolecule.value = null;
     ghostPosition.value = null;
     rotation.value = 0;
+    if (lastHoverPos.value) {
+      onHover(lastHoverPos.value);
+    } else {
+      upgradeHoverCells.value = null;
+    }
   }
 });
 
@@ -326,7 +377,21 @@ function onHover(pos: Point2 | null) {
     ghostMolecule.value = null;
     ghostPosition.value = null;
     highlightItemIdx.value = null;
+    upgradeHoverCells.value = null;
     return;
+  }
+
+  // Wafer growth preview (only when not dragging an item)
+  if (!props.draggingItem && pos && wafer.value) {
+    const cell = getCell(wafer.value, pos as Point2);
+    if (cell && !cell.enabled && cell.canBeUpgraded) {
+      const region = computeUpgradeableRegion(wafer.value, pos as Point2);
+      upgradeHoverCells.value = region.length ? region : null;
+    } else {
+      upgradeHoverCells.value = null;
+    }
+  } else if (!pos) {
+    upgradeHoverCells.value = null;
   }
 
   // Sync list highlight with wafer hover
@@ -341,6 +406,7 @@ function onHover(pos: Point2 | null) {
   if (!props.draggingItem || !pos) {
     ghostMolecule.value = null;
     ghostPosition.value = null;
+    ghostValid.value = false;
     return;
   }
 
@@ -360,7 +426,6 @@ function onClick(pos: Point2) {
     const rotated = rotateMolecule(props.draggingItem.molecule, rotation.value);
     const { translated } = translateForSnap(rotated, pos, HEX_SIZE, origin);
 
-    // Dispatch command to place molecule in GameState
     globalInputQueue.push(new CmdPlaceMolecule({
       itemId: props.draggingItem.id,
       molecule: translated,
@@ -370,6 +435,21 @@ function onClick(pos: Point2) {
     ghostMolecule.value = null;
     ghostPosition.value = null;
     emit('clear-dragging');
+  } else {
+    if (!wafer.value) return;
+    const cell = getCell(wafer.value, pos);
+    if (!cell || cell.enabled || !cell.canBeUpgraded) return;
+
+    const region = computeUpgradeableRegion(wafer.value, pos);
+    if (!region || region.length === 0) return;
+
+    const purchased = (uiState as any).waferUpgradesPurchased || 0;
+    const cost = computeWaferUpgradePrice(purchased);
+    if (cost <= 0) return;
+    if (uiState.shardDust < cost) return;
+
+    globalInputQueue.push(new CmdGrowWafer({ pos }));
+    upgradeHoverCells.value = null;
   }
 }
 
@@ -475,6 +555,30 @@ function onRotate() {
   justify-content: center;
 }
 
+.wafer-upgrade-hint {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  color: rgba(226, 232, 240, 0.95);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  user-select: none;
+  z-index: 25;
+}
+
+.wafer-upgrade-hint.insufficient {
+  opacity: 0.7;
+  color: rgba(248, 113, 113, 0.95);
+  border-color: rgba(248, 113, 113, 0.8);
+}
+
 .placed-items-row {
   display: flex;
   flex-wrap: wrap;
@@ -483,6 +587,19 @@ function onRotate() {
   align-items: center;
   min-height: 56px;
   width: 804px;
+}
+
+.refine-fail-note {
+  padding: 4px 0;
+  color: var(--text-secondary);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+.refine-fail-word {
+  color: #fca5a5;
 }
 
 .placed-item-cell {

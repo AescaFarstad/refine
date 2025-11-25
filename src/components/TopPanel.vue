@@ -20,7 +20,7 @@
           type="button"
         >
           <span class="tab-title">Refine</span>
-          <span class="tab-sub"><span class="tab-label">Items</span><span class="tab-value">{{ inventoryCountDisplay }}</span></span>
+          <span class="tab-sub" :class="{ 'resource-animate': animatingShards }"><span class="tab-label">Shards</span><span class="tab-value" data-resource-display="shards">{{ shardsDisplay }}</span></span>
         </button>
         <button
           class="tab"
@@ -68,6 +68,7 @@ const activeTab = computed<TabKey>({
 const creditsDisplay = computed(() => `${uiState.credits}✦`);
 const chronoDisplay = computed(() => `${uiState.chronotraces}⧖`);
 const fluxDisplay = computed(() => `${uiState.timeFlux}∿`);
+const shardsDisplay = computed(() => `${uiState.shardDust}⌁`);
 const inventoryCount = computed(() => (uiState.items || []).reduce((acc, it) => acc + (it?.quantity || 0), 0));
 const inventoryCountDisplay = computed(() => `${inventoryCount.value}`);
 
@@ -75,15 +76,18 @@ const inventoryCountDisplay = computed(() => `${inventoryCount.value}`);
 const animatingCredits = ref(false);
 const animatingChronotraces = ref(false);
 const animatingTimeFlux = ref(false);
+const animatingShards = ref(false);
 
 const prevCredits = ref(uiState.credits);
 const prevChronotraces = ref(uiState.chronotraces);
 const prevTimeFlux = ref(uiState.timeFlux);
+const prevShards = ref(uiState.shardDust);
 
 // Animation timeout IDs to handle rapid succession
 let creditsTimeout: number | null = null;
 let chronoTimeout: number | null = null;
 let fluxTimeout: number | null = null;
+let shardsTimeout: number | null = null;
 
 watch(() => uiState.credits, (newVal, oldVal) => {
   if (newVal > prevCredits.value) {
@@ -134,6 +138,23 @@ watch(() => uiState.timeFlux, (newVal, oldVal) => {
     }, 10);
   }
   prevTimeFlux.value = newVal;
+});
+
+watch(() => uiState.shardDust, (newVal, oldVal) => {
+  if (newVal > prevShards.value) {
+    if (shardsTimeout !== null) {
+      clearTimeout(shardsTimeout);
+    }
+    animatingShards.value = false;
+    setTimeout(() => {
+      animatingShards.value = true;
+      shardsTimeout = setTimeout(() => {
+        animatingShards.value = false;
+        shardsTimeout = null;
+      }, 600) as any;
+    }, 10);
+  }
+  prevShards.value = newVal;
 });
 </script>
 

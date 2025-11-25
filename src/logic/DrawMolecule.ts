@@ -8,7 +8,15 @@ export function drawMolecule(
   molecule: Molecule,
   hexSize: number,
   origin: { x: number; y: number } = { x: 0, y: 0 },
-  opts?: { bondStroke?: string; bondWidth?: number; essenceSize?: number; radiusMultiplier?: number }
+  opts?: {
+    bondStroke?: string;
+    bondWidth?: number;
+    essenceSize?: number;
+    radiusMultiplier?: number;
+    // Optional callback to resolve per-atom color (e.g., from wafer.effectiveEssence);
+    // falls back to atom.color when not provided.
+    getColor?: (atom: { x: number; y: number; color: string }) => string;
+  }
 ): void {
   const source = atlasStorage.getItemsSource();
   const bondStroke = opts?.bondStroke ?? 'rgba(200, 200, 200, 0.6)';
@@ -16,6 +24,7 @@ export function drawMolecule(
   const essenceSize = opts?.essenceSize ?? 28;
   const radiusMultiplier = opts?.radiusMultiplier ?? 1.0;
   const drawSize = essenceSize * radiusMultiplier;
+  const getColor = opts?.getColor;
 
   // Bonds
   ctx.save();
@@ -35,8 +44,9 @@ export function drawMolecule(
 
   // Atoms
   for (const atom of molecule.atoms) {
+    const color = getColor ? getColor(atom) : atom.color;
     const pixel = axialToPixel({ x: atom.x, y: atom.y }, hexSize, origin);
-    const frame = atlasStorage.getItemsFrame(atom.color);
+    const frame = atlasStorage.getItemsFrame(color);
     if (source && frame) {
       ctx.drawImage(
         source,
@@ -44,7 +54,7 @@ export function drawMolecule(
         pixel.x - drawSize / 2, pixel.y - drawSize / 2, drawSize, drawSize
       );
     } else {
-      ctx.fillStyle = getEssenceColorFallback(atom.color);
+      ctx.fillStyle = getEssenceColorFallback(color);
       ctx.beginPath();
       ctx.arc(pixel.x, pixel.y, drawSize / 2, 0, Math.PI * 2);
       ctx.fill();
@@ -52,7 +62,7 @@ export function drawMolecule(
       ctx.font = 'bold 14px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(atom.color[0].toUpperCase(), pixel.x, pixel.y);
+      ctx.fillText(color[0].toUpperCase(), pixel.x, pixel.y);
     }
   }
 }
@@ -178,6 +188,12 @@ function getEssenceColorFallback(essence: string): string {
     blue: '#4444ff',
     green: '#44ff44',
     yellow: '#ffdd44',
+    indigo: '#4b0082',
+    crimson: '#dc143c',
+    emerald: '#50c878',
+    gold: '#ffd700',
+    gray: '#9ca3af',
+    orange: '#fb923c',
   };
   return colors[essence] || '#888888';
 }

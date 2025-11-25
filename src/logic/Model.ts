@@ -6,6 +6,7 @@ import { EvtRaidComplete, EvtRefineryDone } from './evt/Evt';
 import { processCheats } from './cheat/CheatProcessor';
 // IceMaze instance is persisted on GameState
 import { IceMaze } from "../maze/IceMaze";
+import { distancePointToSegment } from "./core/math";
 import { ArtefactType, Chase } from "../maze/Chase";
 import generateIceMaze from "../maze/IceMazeGen";
 import { clearWafer } from "./Wafer";
@@ -14,16 +15,25 @@ const TIME_SPEED_MAX = 3800;
 const TIME_SPEED_MIN = 300;
 const TIME_SPEED_RAMP_SEC = 1;
 
+export const SHARD_MIN_OMEGA = 0.1;
+export const SHARD_MAX_OMEGA = 20;
+export const SHARD_OMEGA_POWER = 5;
+export const SHARD_OMEGA_TO_SPEED_K = 4;
+export const SHARD_OMEGA_TRANSFER_FRACTION = 0.5;
+
 export const globalInputQueue: CmdInput[] = [];
 
 // Duration of the shard pickup animation in seconds;
 export const SHARD_PICKUP_DELAY_SEC = 0.6;
 
-const SHARD_ATTRACTION_RANGE_PX = 200;
+const SHARD_ATTRACTION_RANGE_PX = 250;
 const SHARD_BASE_GRAV_ACCEL = 180;
+const SHARD_ATTRACTION_BASE_AMOUNT = 5;
 const SHARD_DRAG_STRENGTH_PER_SEC = 0.05;
-const SHARD_RADIUS_MULT = 1.0
+const SHARD_RADIUS_MULT = 1.2
 export const SHARD_LAUNCH_SPEED = { x: 20, y: 100 }
+
+let lastWaferMouse: { x: number; y: number } | null = null;
 
 // deltaTime is in seconds
 export function update(gs: GameState, deltaTime: number): void {
@@ -68,7 +78,15 @@ export function update(gs: GameState, deltaTime: number): void {
 }
 
 function updateShards(gs: GameState, dt: number) {
-  if (!gs.shards || gs.shards.length === 0) return;
+  // If there are no shards but we still have a refinery
+  // outcome, treat the outcome as fully resolved so that
+  // the wafer UI can become interactive again.
+  if (!gs.shards || gs.shards.length === 0) {
+    if (gs.lastRefineryOutcome) {
+      gs.lastRefineryOutcome = null;
+    }
+    return;
+  }
 
   const halfW = gs.waferSize.x / 2;
   const halfH = gs.waferSize.y / 2;
@@ -95,6 +113,8 @@ function updateShards(gs: GameState, dt: number) {
           gs.chronotraces += shard.amount;
         } else if (shard.resource === 'timeFlux') {
           gs.timeFlux = Math.max(0, (gs.timeFlux || 0) + shard.amount);
+        } else if (shard.resource === 'shards') {
+          (gs as any).shardDust = Math.max(0, ((gs as any).shardDust || 0) + shard.amount);
         }
         gs.shards[i] = null as any;
       }
@@ -119,20 +139,31 @@ function updateShards(gs: GameState, dt: number) {
           resourceFactor = 0.33;
         }
 
-        const gravAccel = SHARD_BASE_GRAV_ACCEL * resourceFactor * falloff;
+        const sizeFactor = SHARD_ATTRACTION_BASE_AMOUNT / Math.max(1, shard.amount);
+        const gravAccel = SHARD_BASE_GRAV_ACCEL * resourceFactor * falloff * sizeFactor;
         const nx = dxMouse / distMouse;
         const ny = dyMouse / distMouse;
         shard.vel.x += nx * gravAccel * dt;
         shard.vel.y += ny * gravAccel * dt;
+      }
 
-        const pickupRadius = shard.size * SHARD_RADIUS_MULT;
-        if (distMouse < pickupRadius) {
-          shard.triggered = true;
-          shard.pickupDelaySec = SHARD_PICKUP_DELAY_SEC;
-          shard.vel.x = 0;
-          shard.vel.y = 0;
-          continue;
-        }
+      const pickupRadius = shard.size * SHARD_RADIUS_MULT;
+
+      let pickupDistance = distMouse;
+      if (lastWaferMouse) {
+        pickupDistance = distancePointToSegment(
+          shard.pos,
+          lastWaferMouse,
+          mouse,
+        );
+      }
+
+      if (pickupDistance < pickupRadius) {
+        shard.triggered = true;
+        shard.pickupDelaySec = SHARD_PICKUP_DELAY_SEC;
+        shard.vel.x = 0;
+        shard.vel.y = 0;
+        continue;
       }
     }
 
@@ -140,35 +171,78 @@ function updateShards(gs: GameState, dt: number) {
       const drag = Math.exp(-SHARD_DRAG_STRENGTH_PER_SEC * dt);
       shard.vel.x *= drag;
       shard.vel.y *= drag;
+      shard.omega *= drag;
     }
 
     shard.pos.x += shard.vel.x * dt;
     shard.pos.y += shard.vel.y * dt;
+    shard.angle += shard.omega * dt;
 
-
-    const margin = shard.size;
+    const margin = shard.size * 0.5;
 
     if (shard.pos.x < -halfW + margin) {
       shard.pos.x = -halfW + margin;
       shard.vel.x *= -1;
+
+      const omegaMag = Math.abs(shard.omega);
+      if (omegaMag > 0) {
+        const omegaSign = shard.omega > 0 ? 1 : -1;
+        const transferredOmega = omegaMag * SHARD_OMEGA_TRANSFER_FRACTION;
+        const deltaSpeed = transferredOmega * SHARD_OMEGA_TO_SPEED_K;
+        shard.vel.y += omegaSign * deltaSpeed;
+        shard.omega -= omegaSign * transferredOmega;
+      }
     } else if (shard.pos.x > halfW - margin) {
       shard.pos.x = halfW - margin;
       shard.vel.x *= -1;
+
+      const omegaMag = Math.abs(shard.omega);
+      if (omegaMag > 0) {
+        const omegaSign = shard.omega > 0 ? 1 : -1;
+        const transferredOmega = omegaMag * SHARD_OMEGA_TRANSFER_FRACTION;
+        const deltaSpeed = transferredOmega * SHARD_OMEGA_TO_SPEED_K;
+        shard.vel.y += omegaSign * deltaSpeed;
+        shard.omega -= omegaSign * transferredOmega;
+      }
     }
 
     if (shard.pos.y < -halfH + margin) {
       shard.pos.y = -halfH + margin;
       shard.vel.y *= -1;
+
+      const omegaMag = Math.abs(shard.omega);
+      if (omegaMag > 0) {
+        const omegaSign = shard.omega > 0 ? 1 : -1;
+        const transferredOmega = omegaMag * SHARD_OMEGA_TRANSFER_FRACTION;
+        const deltaSpeed = transferredOmega * SHARD_OMEGA_TO_SPEED_K;
+        shard.vel.x += omegaSign * deltaSpeed;
+        shard.omega -= omegaSign * transferredOmega;
+      }
     } else if (shard.pos.y > halfH - margin) {
       shard.pos.y = halfH - margin;
       shard.vel.y *= -1;
+
+      const omegaMag = Math.abs(shard.omega);
+      if (omegaMag > 0) {
+        const omegaSign = shard.omega > 0 ? 1 : -1;
+        const transferredOmega = omegaMag * SHARD_OMEGA_TRANSFER_FRACTION;
+        const deltaSpeed = transferredOmega * SHARD_OMEGA_TO_SPEED_K;
+        shard.vel.x += omegaSign * deltaSpeed;
+        shard.omega -= omegaSign * transferredOmega;
+      }
     }
   }
 
   const hasAnyShards = gs.shards.some(s => s !== null);
-  if (!hasAnyShards && gs.shards.length > 0) {
+  if (!hasAnyShards) {
     gs.shards.length = 0;
     gs.lastRefineryOutcome = null;
+  }
+
+  if (mouse) {
+    lastWaferMouse = { x: mouse.x, y: mouse.y };
+  } else {
+    lastWaferMouse = null;
   }
 }
 

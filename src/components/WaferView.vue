@@ -29,6 +29,7 @@ import { axialToPixel, pixelToAxial } from '../logic/HexMath';
 import atlasStorage from '../logic/AtlasStorage';
 import { drawMolecule, drawGhostMolecule } from '../logic/DrawMolecule';
 import { HEX_SIZE, ESSENCE_SIZE, WAFER_CANVAS_WIDTH, WAFER_CANVAS_HEIGHT, eventToCanvasPixel, setHiddenDragImage, setMoleculeDragImage } from '../logic/RefineUIBehaviour';
+import { waferBuffCells } from '../logic/waferLayout';
 import itemsData from '../data/items';
 import { ManualDragEvents, setManualDragFollowerVisible, startManualDrag } from '../logic/ManualDrag';
 import {
@@ -37,6 +38,8 @@ import {
   clearCanvas,
   getEssenceColor,
   drawHighlight,
+  drawHexagon,
+  drawPlus,
 } from '../logic/DrawHex';
 
 const props = defineProps<{
@@ -47,6 +50,12 @@ const props = defineProps<{
   ghostValid?: boolean;
   highlightItemIdx?: number | null;
   hideMolecules?: boolean;
+  upgradePreviewCells?: Point2[] | null;
+  // Per-cell effective counts for buffed atoms; key = "x,y"
+  cellEffectiveCounts?: Record<string, number> | null;
+  useEffectiveEssence?: boolean;
+  showBuffOverlays?: boolean;
+  showUpgradeHints?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -63,11 +72,8 @@ const overlayCanvas = ref<HTMLCanvasElement | null>(null);
 
 const origin: Point2 = { x: WAFER_CANVAS_WIDTH / 2, y: WAFER_CANVAS_HEIGHT / 2 };
 
-// Local hover state: which placed molecule (by wafer.items index) is under the cursor
 const hoverItemIdx = ref<number | null>(null);
 
-// Drag detection state
-// (Removed complex drag tracking)
 
 onMounted(async () => {
   await atlasStorage.loadItemsAtlas();
@@ -85,12 +91,13 @@ onUnmounted(() => {
   window.removeEventListener('keydown', onKeyDown);
 });
 
-watch(() => [props.wafer, props.version, props.hideMolecules], () => {
+watch(() => [props.wafer, props.version, props.hideMolecules, props.useEffectiveEssence], () => {
   renderGrid();
   renderMolecules();
+  renderOverlay();
 }, { deep: true });
 
-watch(() => [props.ghostMolecule, props.ghostPosition, props.ghostValid, props.hideMolecules], () => {
+watch(() => [props.ghostMolecule, props.ghostPosition, props.ghostValid, props.hideMolecules, props.upgradePreviewCells], () => {
   renderOverlay();
 }, { deep: true });
 
@@ -143,7 +150,24 @@ function renderMolecules() {
 
   for (const item of props.wafer.items) {
     if (!item) continue;
-    drawMolecule(ctx, item.molecule, HEX_SIZE, origin, { bondStroke: 'rgba(200, 200, 200, 0.6)', bondWidth: 3, essenceSize: ESSENCE_SIZE });
+    const useEffective = props.useEffectiveEssence !== false;
+    if (useEffective) {
+      drawMolecule(ctx, item.molecule, HEX_SIZE, origin, {
+        bondStroke: 'rgba(200, 200, 200, 0.6)',
+        bondWidth: 3,
+        essenceSize: ESSENCE_SIZE,
+        getColor: (atom) => {
+          const cell = getCell(props.wafer, { x: atom.x, y: atom.y });
+          return (cell && cell.effectiveEssence) || atom.color;
+        },
+      });
+    } else {
+      drawMolecule(ctx, item.molecule, HEX_SIZE, origin, {
+        bondStroke: 'rgba(200, 200, 200, 0.6)',
+        bondWidth: 3,
+        essenceSize: ESSENCE_SIZE,
+      });
+    }
   }
 }
 
@@ -154,6 +178,107 @@ function renderOverlay() {
   if (!ctx) return;
 
   clearCanvas(ctx);
+
+  const showBuffOverlays = props.showBuffOverlays !== false;
+  const showUpgradeHints = props.showUpgradeHints !== false;
+
+  if (!props.hideMolecules && props.wafer && props.cellEffectiveCounts && showBuffOverlays) {
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 14px sans-serif';
+    for (const [key, count] of Object.entries(props.cellEffectiveCounts)) {
+      if (!count || count <= 1) continue;
+      const [sx, sy] = key.split(',');
+      const x = Number(sx);
+      const y = Number(sy);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+
+      const center = axialToPixel({ x, y }, HEX_SIZE, origin);
+
+      if (count === 2) {
+        const r = HEX_SIZE * 0.18;
+        ctx.fillStyle = 'rgba(248, 250, 252, 0.95)';
+        ctx.strokeStyle = 'rgba(15, 23, 42, 0.95)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      } else if (count > 2) {
+        const text = String(count);
+        ctx.strokeStyle = 'rgba(15, 23, 42, 0.95)';
+        ctx.lineWidth = 3;
+        ctx.fillStyle = 'rgba(248, 250, 252, 0.97)';
+        ctx.strokeText(text, center.x, center.y);
+        ctx.fillText(text, center.x, center.y);
+      }
+    }
+    ctx.restore();
+  }
+
+  if (!props.hideMolecules && props.wafer && showBuffOverlays) {
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '10px sans-serif';
+    for (const buff of waferBuffCells) {
+      const cell = getCell(props.wafer, { x: buff.x, y: buff.y });
+      // Only show buff labels on enabled, empty cells.
+      if (!cell || !cell.enabled || cell.itemIdx != null) continue;
+
+      let label = '';
+      if (buff.mul && buff.mul !== 1) {
+        label = `x${buff.mul}`;
+      } else if (buff.add && buff.add !== 0) {
+        label = `+${buff.add}`;
+      }
+      if (!label) continue;
+
+      const center = axialToPixel({ x: buff.x, y: buff.y }, HEX_SIZE, origin);
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.95)';
+      ctx.lineWidth = 2;
+      ctx.fillStyle = 'rgba(248, 250, 252, 0.96)';
+      ctx.strokeText(label, center.x, center.y);
+      ctx.fillText(label, center.x, center.y);
+    }
+    ctx.restore();
+  }
+
+  if (!props.hideMolecules && props.wafer && showUpgradeHints) {
+    const preview = props.upgradePreviewCells || [];
+    const previewSet = new Set<string>();
+    for (const p of preview) {
+      previewSet.add(`${p.x},${p.y}`);
+    }
+    const hasPreview = previewSet.size > 0;
+
+    for (const cell of props.wafer.cells.values()) {
+      if (cell.enabled || !cell.canBeUpgraded) continue;
+
+      const key = `${cell.x},${cell.y}`;
+      const inPreview = hasPreview && previewSet.has(key);
+
+      const radius = inPreview ? HEX_SIZE : HEX_SIZE * 0.8;
+      const fillColor = inPreview
+        ? 'rgba(79, 209, 197, 0.28)'
+        : 'rgba(79, 209, 197, 0.10)';
+
+      const center = axialToPixel({ x: cell.x, y: cell.y }, HEX_SIZE, origin);
+
+      drawHexagon(ctx, center, radius, {
+        fillColor,
+        strokeColor: 'rgba(0, 0, 0, 0)',
+        lineWidth: 0,
+      });
+
+      drawPlus(ctx, center, HEX_SIZE, {
+        color: inPreview ? 'rgba(248, 250, 252, 0.95)' : 'rgba(248, 250, 252, 0.45)',
+        lineWidth: inPreview ? 2.4 : 1.6,
+        sizeFactor: 0.35,
+      });
+    }
+  }
 
   if (props.ghostMolecule && props.ghostPosition) {
     const color = props.ghostValid ? 'rgba(79, 209, 197, 0.28)' : 'rgba(239, 68, 68, 0.28)';

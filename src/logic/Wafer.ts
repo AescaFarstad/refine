@@ -1,7 +1,7 @@
 import type { Point2, Molecule } from './ItemLib';
 import { axialNeighbors } from './HexMath';
 import { getMoleculeEssences } from './MoleculeUtils';
-import { WAFER_HEIGHT, WAFER_WIDTH } from './Const';
+import { WAFER_HEIGHT, WAFER_WIDTH, WAFER_UPGRADE_BASE_COST } from './Const';
 
 export interface WaferCell {
   x: number; // axial q
@@ -9,6 +9,8 @@ export interface WaferCell {
   enabled: boolean; // Is this cell part of the active grid?
   itemIdx: number | null;
   essence: string | null;
+  // Effective essence after color-changing atoms are applied; derived each time preview is computed.
+  effectiveEssence?: string | null;
   canBeUpgraded: boolean; // Cached: can this cell be enabled?
   signatures: number[];
 }
@@ -70,6 +72,7 @@ export function createWafer(initialRadius: number = 3): Wafer {
         enabled,
         itemIdx: null,
         essence: null,
+        effectiveEssence: null,
         canBeUpgraded: false,
         signatures: [],
       });
@@ -208,6 +211,7 @@ export function clearWafer(wafer: Wafer): void {
   for (const cell of wafer.cells.values()) {
     cell.itemIdx = null;
     cell.essence = null;
+    cell.effectiveEssence = null;
     cell.signatures = [];
   }
 
@@ -251,11 +255,11 @@ function updateDerivedValues(wafer: Wafer): void {
   wafer.enabledCount = enabledCount;
 }
 
-export function enableCellWithFloodfill(wafer: Wafer, pos: Point2): number {
-  const cell = getCell(wafer, pos);
-  if (!cell || cell.enabled || !cell.canBeUpgraded) return 0;
+export function computeUpgradeableRegion(wafer: Wafer, pos: Point2): Point2[] {
+  const startCell = getCell(wafer, pos);
+  if (!startCell || startCell.enabled || !startCell.canBeUpgraded) return [];
 
-  let count = 0;
+  const region: Point2[] = [];
   const queue: Point2[] = [pos];
   const visited = new Set<string>();
 
@@ -269,19 +273,39 @@ export function enableCellWithFloodfill(wafer: Wafer, pos: Point2): number {
     const currentCell = getCell(wafer, current);
     if (!currentCell || currentCell.enabled || !currentCell.canBeUpgraded) continue;
 
-    currentCell.enabled = true;
-    count++;
+    region.push({ x: currentCell.x, y: currentCell.y });
 
-    // Add eligible neighbors to queue
     const neighbors = axialNeighbors(current);
     for (const n of neighbors) {
       const nCell = getCell(wafer, n);
       if (nCell && !nCell.enabled && nCell.canBeUpgraded) {
-        queue.push(n);
+        const nKey = cellKey(n.x, n.y);
+        if (!visited.has(nKey)) {
+          queue.push(n);
+        }
       }
     }
   }
 
+  return region;
+}
+
+export function enableCellWithFloodfill(wafer: Wafer, pos: Point2): number {
+  const region = computeUpgradeableRegion(wafer, pos);
+  if (region.length === 0) return 0;
+
+  for (const p of region) {
+    const cell = getCell(wafer, p);
+    if (cell && !cell.enabled) {
+      cell.enabled = true;
+    }
+  }
+
   updateDerivedValues(wafer);
-  return count;
+  return region.length;
+}
+
+export function computeWaferUpgradePrice(upgradesPurchased: number): number {
+  const count = Math.max(0, upgradesPurchased | 0);
+  return WAFER_UPGRADE_BASE_COST * (count + 1);
 }

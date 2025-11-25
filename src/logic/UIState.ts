@@ -1,20 +1,19 @@
 import { reactive, computed } from 'vue';
 import { formatDurationHM } from './StringUtils';
-import type { GameState, RaidOutcome, RefineryOutcome } from './GameState';
+import type { GameState, RaidOutcome, RefineryOutcome, Shard } from './GameState';
 import type { RaidDefinition } from './RaidLib';
 import { computeRefinePreview } from './Refine';
 import { getEffectiveRaidDefinition } from './RaidMutation';
 import { computeRefinePreviewChem } from './RefinePreview';
 import type { Lib } from './Lib';
 import { createWafer, type Wafer } from './Wafer';
+import type { Point2 } from './ItemLib';
 
-// Reactive UI-facing state (kept separate from logical GameState)
 export interface UIRaidDef extends RaidDefinition { }
 
 export interface UIRefinery {
   health: number;
   hasRecipe: boolean;
-  // When loaded
   recipeId?: string;
   startedAtSec?: number;
   timeRemainingSec?: number;
@@ -28,14 +27,12 @@ export interface UIRefinery {
 }
 
 export const uiState = reactive({
-  // top bar
   credits: 0,
   chronotraces: 0,
   timeFlux: 0,
   timeMinutes: 0,
   canAdvanceTime: false,
   timeActive: false,
-  // reactive identity for active raid (forces recompute on change)
   raidKey: '' as string,
 
   strength: 0,
@@ -53,42 +50,34 @@ export const uiState = reactive({
   activeRaidId: '',
   selectedGearPrice: 0,
 
-  // Estimates for active raid
   raidSurvivalPct: 0,
   raidTimeEstimateSec: 0,
 
-  // modal outcome + levelups
   lastOutcome: null as RaidOutcome | null,
   lastRefineryOutcome: null as RefineryOutcome | null,
   levelupsAvailable: 0,
 
-  // global tab state
   activeTab: 'raid' as 'raid' | 'refine' | 'research' | 'maze',
 
-  // level-up modal state
   levelUpOpen: false,
 
-  // recipe upgrade modal state
   recipeUpgradeOpen: false,
   recipeUpgradeCtx: null as null | { researchId: string; price: number; effect: 'modifyEssences' | 'increaseQuality'; params?: Record<string, number> },
 
-  // cheat overlay state
   cheatOpen: false,
   devAtlasKey: '' as '' | 'items',
 
-  // refine tab mirrors
   refineries: [] as UIRefinery[],
   items: [] as Array<{ id: string; quantity: number }>,
   recipes: [] as string[],
   research: [] as string[],
   recipesVersion: 0,
-  // refine UI state
   selectedRefineryIndex: -1 as number,
-  // wafer state exposed to UI
   wafer: createWafer(2) as Wafer,
-  waferVersion: 0, // Increment to force reactivity
+  waferSize: { x: 0, y: 0 } as Point2,
+  shards: [] as Shard[],
+  waferVersion: 0,
 
-  // maze UI state
   mazeLevelIndex: 0,
   mazeMovesMade: 0,
   mazeMaxMoves: 0,
@@ -107,15 +96,9 @@ export const timeDisplay = computed(() => {
   return formatDurationHM(seconds);
 });
 
-// Next-event UI removed: no computed nextEventText
-
-// Internal game reference for write-backs
 let gameRef: GameState | null = null;
 
-// Next-event identity tracking removed with next-event UI
-// Track last seen raid snapshot identity to notify UI when gear/params change
 let lastRaidKey = '' as string;
-// Track wafer state to detect changes
 let lastWaferItemCount = 0;
 let lastWaferEnabledCount = 0;
 
@@ -130,8 +113,6 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.canAdvanceTime = !!game.nextEvt;
   uiState.timeActive = game.timeActive;
 
-
-  // Update reactive identity for active raid to drive UI recomputation
   const rk = game.raid
     ? `${game.raid.id}|${game.raid.hp}|${game.raid.maxHp}|${game.raid.baseSpeed}|${game.raid.speedBonusPct}|${game.raid.regenPerKm}|${game.raid.weight}|${game.raid.maxWeight}|${(game.raid.damage ?? game.damage ?? 1)}|${game.raid.bagsVolume}|${game.raid.usedVolume}`
     : '';
@@ -145,7 +126,6 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.volume = game.volume;
   uiState.looting = game.looting;
 
-  // Present effective raid definitions (permanent + active quest overlays) to the UI
   const raids: UIRaidDef[] = [];
   const order: string[] = [];
   game.lib.raids.forEach((_, id) => {
@@ -158,7 +138,6 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.raids = raids;
   uiState.raidOrder = order;
 
-  // unlocked raids and their quest progress
   uiState.unlockedRaidIds = game.unlockedRaids.map(r => r.id);
   uiState.unlockedGear = Array.isArray(game.unlockedGear) ? [...game.unlockedGear] : [];
   uiState.activeQuests = Array.isArray((game as any).activeQuests) ? [...(game as any).activeQuests] : [];
@@ -171,21 +150,22 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.raidSurvivalPct = (game as any).raidSurvivalEstimatePct || 0;
   uiState.raidTimeEstimateSec = (game as any).raidTimeEstimateSec || 0;
 
-  // sync outcome and levelups
   uiState.lastOutcome = game.lastRaidOutcome;
   uiState.lastRefineryOutcome = game.lastRefineryOutcome;
   uiState.levelupsAvailable = game.levelupsAvailable;
 
-  // refine tab basics (single refinery)
   const entries: UIRefinery[] = [];
   const hasWafer = !!game.wafer;
   const base: UIRefinery = { health: 100, hasRecipe: hasWafer };
   if (hasWafer && game.nextEvt?.name === 'EvtRefineryDone') {
+    const preview = computeRefinePreviewChem(game.wafer!);
+    const duration = Math.max(0, game.refiningDuration || preview.timeSec || 0);
+    const startedAt = (game.nextEvt.at || 0) - duration;
+
     base.recipeId = '';
-    base.startedAtSec = (game.nextEvt.at || 0) - (4 * 3600);
-    const duration = 4 * 3600;
+    base.startedAtSec = startedAt;
     if (duration > 0) {
-      const elapsed = Math.max(0, (game.time || 0) - base.startedAtSec);
+      const elapsed = Math.max(0, (game.time || 0) - startedAt);
       const progressPct = Math.max(0, Math.min(100, Math.round((elapsed / duration) * 100)));
       const remaining = Math.max(0, Math.round(duration - elapsed));
       base.progressPct = progressPct;
@@ -194,13 +174,11 @@ export function SyncUIFromGameState(game: GameState): void {
       base.progressPct = 0;
       base.timeRemainingSec = 0;
     }
-    const preview = computeRefinePreviewChem(game.wafer!);
     base.expectedCredits = preview.expectedCredits;
     base.expectedChrono = preview.expectedChrono;
     base.expectedFlux = preview.expectedFlux;
     base.failureChancePct = preview.failureChancePct;
   }
-  // Always present a single panel so layout stays consistent
   entries.push(base);
   uiState.refineries = entries;
   uiState.items = (game.items || []).map(it => ({ id: it.id, quantity: it.quantity }));
@@ -208,12 +186,12 @@ export function SyncUIFromGameState(game: GameState): void {
   if (game.research && typeof (game.research as Set<string>).forEach === 'function' && typeof (game.research as Set<string>).has === 'function') uiState.research = Array.from(game.research as Set<string>);
   else uiState.research = [];
 
-  // Propagate lib recipes version for UI reactivity on upgrades
   uiState.recipesVersion = game.lib.recipesVersion || 0;
 
-  // Sync wafer state
   uiState.wafer = game.wafer;
-  // Increment version if wafer content changed (for reactivity)
+  uiState.waferSize = game.waferSize;
+  uiState.shards = game.shards;
+
   if (game.wafer) {
     const currentItemCount = Array.isArray(game.wafer.items) ? game.wafer.items.filter(item => item !== null).length : 0;
     const currentEnabledCount = game.wafer.enabledCount;
@@ -224,8 +202,6 @@ export function SyncUIFromGameState(game: GameState): void {
     }
   }
 
-
-  // Sync maze state for reactivity
   uiState.mazeLevelIndex = game.mazeLevelIndex || 0;
   const maze = game.maze;
   if (maze) {
@@ -254,4 +230,3 @@ export function getGameLib(): Lib {
 export function getGameState(): GameState {
   return gameRef!;
 }
-// Raids UI helpers were removed during migration to the new raid system.

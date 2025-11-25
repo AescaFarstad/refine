@@ -9,7 +9,6 @@
     </section>
   </main>
   <RaidOutcomeModal />
-  <RefineryOutcomeModal />
   <CheatOverlay />
 </template>
 
@@ -21,7 +20,6 @@ import Refine from './components/Refine.vue';
 import Research from './components/Research.vue';
 import Maze from './components/Maze.vue';
 import RaidOutcomeModal from './components/RaidOutcomeModal.vue';
-import RefineryOutcomeModal from './components/RefineryOutcomeModal.vue';
 import CheatOverlay from './components/CheatOverlay.vue';
 import { uiState } from './logic/UIState';
 

@@ -4,6 +4,9 @@ import { EvtRaidComplete, EvtRefineryDone } from './Evt';
 import { computeRefinePreviewChem, rollSuccess, calculateOutputs } from '../RefinePreview';
 import { RefineryOutcome } from '../GameState';
 import { clearWafer } from '../Wafer';
+import { getHypRepresentation } from '../HypNumbers';
+import { SHARD_LAUNCH_SPEED } from '../Model';
+import { calculateShardFontSize } from '../../utils/ShardDisplay';
 
 type EvtHandler = (gs: GameState, evt: Evt) => void;
 const handlersByName = new Map<string, EvtHandler>();
@@ -39,9 +42,11 @@ handlersByName.set('EvtRefineryDone', (gs, evt) => {
 
   const outputs = calculateOutputs(preview, succeeded);
   if (succeeded) {
-    gs.credits += outputs.credits;
-    gs.chronotraces += outputs.chrono;
-    gs.timeFlux = Math.max(0, (gs.timeFlux || 0) + outputs.flux);
+
+    createShards(gs, 'credits', outputs.credits);
+    createShards(gs, 'chronotraces', outputs.chrono);
+    createShards(gs, 'timeFlux', outputs.flux);
+
     outcome.creditsGained = outputs.credits;
     outcome.chronotracesGained = outputs.chrono;
     outcome.timeFluxGained = outputs.flux;
@@ -50,6 +55,31 @@ handlersByName.set('EvtRefineryDone', (gs, evt) => {
   gs.lastRefineryOutcome = outcome;
   clearWafer(gs.wafer);
 });
+
+function createShards(gs: GameState, resource: string, amount: number) {
+  if (amount <= 0) return;
+  const representation = getHypRepresentation(amount);
+
+  // Representation index i corresponds to value i+1
+  for (let i = 0; i < representation.length; i++) {
+    const count = representation[i];
+    const value = i + 1;
+    for (let j = 0; j < count; j++) {
+      const angle = gs.random.get_in_range(0, Math.PI * 2);
+      const speed = gs.random.get_in_range(SHARD_LAUNCH_SPEED.x, SHARD_LAUNCH_SPEED.y);
+      gs.shards.push({
+        id: Math.random().toString(36).substr(2, 9),
+        resource,
+        amount: value,
+        pos: { x: 0, y: 0 }, // Spawn in middle (will be relative to wafer center in UI, but here 0,0)
+        vel: { x: Math.cos(angle) * speed, y: Math.sin(angle) * speed },
+        triggered: false,
+        pickupDelaySec: 0,
+        size: calculateShardFontSize(value),
+      });
+    }
+  }
+}
 
 export function processEvt(gs: GameState, evt: Evt): void {
   const handler = handlersByName.get(evt.name);

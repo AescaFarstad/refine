@@ -8,12 +8,22 @@ import { processCheats } from './cheat/CheatProcessor';
 import { IceMaze } from "../maze/IceMaze";
 import { ArtefactType, Chase } from "../maze/Chase";
 import generateIceMaze from "../maze/IceMazeGen";
+import { clearWafer } from "./Wafer";
 
 const TIME_SPEED_MAX = 3800;
 const TIME_SPEED_MIN = 300;
 const TIME_SPEED_RAMP_SEC = 1;
 
 export const globalInputQueue: CmdInput[] = [];
+
+// Duration of the shard pickup animation in seconds;
+export const SHARD_PICKUP_DELAY_SEC = 0.6;
+
+const SHARD_ATTRACTION_RANGE_PX = 200;
+const SHARD_BASE_GRAV_ACCEL = 180;
+const SHARD_DRAG_STRENGTH_PER_SEC = 0.05;
+const SHARD_RADIUS_MULT = 1.0
+export const SHARD_LAUNCH_SPEED = { x: 20, y: 100 }
 
 // deltaTime is in seconds
 export function update(gs: GameState, deltaTime: number): void {
@@ -23,6 +33,8 @@ export function update(gs: GameState, deltaTime: number): void {
   if (gs.cheats && gs.cheats.length > 0) {
     processCheats(gs);
   }
+
+  updateShards(gs, deltaTime);
 
   if (gs.lastRaidOutcome || gs.lastRefineryOutcome) {
     return;
@@ -52,6 +64,111 @@ export function update(gs: GameState, deltaTime: number): void {
     gs.timeSpeed = Math.min(TIME_SPEED_MAX, nextSpeed);
   } else {
     gs.timeSpeed = TIME_SPEED_MIN;
+  }
+}
+
+function updateShards(gs: GameState, dt: number) {
+  if (!gs.shards || gs.shards.length === 0) return;
+
+  const halfW = gs.waferSize.x / 2;
+  const halfH = gs.waferSize.y / 2;
+  const mouse = gs.waferMouseCoords;
+
+  if (halfW === 0 || halfH === 0) {
+    return;
+  }
+
+  // Shards use real time seconds, so we use dt directly
+  for (let i = 0; i < gs.shards.length; i++) {
+    const shard = gs.shards[i];
+    if (!shard) continue;
+
+    // When a shard is triggered (picked up in UI), we stop physics and
+    // run a real-time delay before granting resources.
+    if (shard.triggered) {
+      const remaining = shard.pickupDelaySec - dt;
+      shard.pickupDelaySec = remaining;
+      if (remaining <= 0) {
+        if (shard.resource === 'credits') {
+          gs.credits += shard.amount;
+        } else if (shard.resource === 'chronotraces') {
+          gs.chronotraces += shard.amount;
+        } else if (shard.resource === 'timeFlux') {
+          gs.timeFlux = Math.max(0, (gs.timeFlux || 0) + shard.amount);
+        }
+        gs.shards[i] = null as any;
+      }
+      continue;
+    }
+
+    // Attraction towards mouse when hovering wafer
+    if (mouse) {
+      const dxMouse = mouse.x - shard.pos.x;
+      const dyMouse = mouse.y - shard.pos.y;
+      const distMouse = Math.sqrt(dxMouse * dxMouse + dyMouse * dyMouse);
+
+      if (distMouse > 0.0001 && distMouse < SHARD_ATTRACTION_RANGE_PX) {
+        // Attraction strength fades linearly to 0 at the edge of the range
+        const rangeT = 1 - (distMouse / SHARD_ATTRACTION_RANGE_PX);
+        const falloff = Math.max(0, rangeT);
+
+        let resourceFactor = 1;
+        if (shard.resource === 'chronotraces') {
+          resourceFactor = 0.66;
+        } else if (shard.resource === 'timeFlux') {
+          resourceFactor = 0.33;
+        }
+
+        const gravAccel = SHARD_BASE_GRAV_ACCEL * resourceFactor * falloff;
+        const nx = dxMouse / distMouse;
+        const ny = dyMouse / distMouse;
+        shard.vel.x += nx * gravAccel * dt;
+        shard.vel.y += ny * gravAccel * dt;
+
+        const pickupRadius = shard.size * SHARD_RADIUS_MULT;
+        if (distMouse < pickupRadius) {
+          shard.triggered = true;
+          shard.pickupDelaySec = SHARD_PICKUP_DELAY_SEC;
+          shard.vel.x = 0;
+          shard.vel.y = 0;
+          continue;
+        }
+      }
+    }
+
+    if (SHARD_DRAG_STRENGTH_PER_SEC > 0 && dt > 0) {
+      const drag = Math.exp(-SHARD_DRAG_STRENGTH_PER_SEC * dt);
+      shard.vel.x *= drag;
+      shard.vel.y *= drag;
+    }
+
+    shard.pos.x += shard.vel.x * dt;
+    shard.pos.y += shard.vel.y * dt;
+
+
+    const margin = shard.size;
+
+    if (shard.pos.x < -halfW + margin) {
+      shard.pos.x = -halfW + margin;
+      shard.vel.x *= -1;
+    } else if (shard.pos.x > halfW - margin) {
+      shard.pos.x = halfW - margin;
+      shard.vel.x *= -1;
+    }
+
+    if (shard.pos.y < -halfH + margin) {
+      shard.pos.y = -halfH + margin;
+      shard.vel.y *= -1;
+    } else if (shard.pos.y > halfH - margin) {
+      shard.pos.y = halfH - margin;
+      shard.vel.y *= -1;
+    }
+  }
+
+  const hasAnyShards = gs.shards.some(s => s !== null);
+  if (!hasAnyShards && gs.shards.length > 0) {
+    gs.shards.length = 0;
+    gs.lastRefineryOutcome = null;
   }
 }
 

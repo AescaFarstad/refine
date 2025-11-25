@@ -16,10 +16,6 @@ export class CmdAknowledgeOutcome implements CmdInput {
   readonly name = 'CmdAknowledgeOutcome';
 }
 
-export class CmdAcknowledgeRefineryOutcome implements CmdInput {
-  readonly name = 'CmdAcknowledgeRefineryOutcome';
-}
-
 export type LevelupStat = 'strength' | 'volume' | 'looting';
 
 export class CmdLevelup implements CmdInput {
@@ -30,8 +26,6 @@ export class CmdLevelup implements CmdInput {
   }
 }
 
-// Refining start command (handled later)
-import type { Wafer } from '../Wafer';
 
 export class CmdStartRefining implements CmdInput {
   readonly name = 'CmdStartRefining';

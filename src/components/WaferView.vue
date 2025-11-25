@@ -45,8 +45,8 @@ const props = defineProps<{
   ghostMolecule?: Molecule | null;
   ghostPosition?: Point2 | null;
   ghostValid?: boolean;
-  // Index in wafer.items to highlight (from parent UI), or null
   highlightItemIdx?: number | null;
+  hideMolecules?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -85,12 +85,12 @@ onUnmounted(() => {
   window.removeEventListener('keydown', onKeyDown);
 });
 
-watch(() => [props.wafer, props.version], () => {
+watch(() => [props.wafer, props.version, props.hideMolecules], () => {
   renderGrid();
   renderMolecules();
 }, { deep: true });
 
-watch(() => [props.ghostMolecule, props.ghostPosition, props.ghostValid], () => {
+watch(() => [props.ghostMolecule, props.ghostPosition, props.ghostValid, props.hideMolecules], () => {
   renderOverlay();
 }, { deep: true });
 
@@ -119,6 +119,8 @@ function renderGrid() {
 
   clearCanvas(ctx);
 
+  if (props.hideMolecules) return;
+
   const enabledCells = getEnabledCells(props.wafer);
   for (const cell of enabledCells) {
     drawHexAt(ctx, { x: cell.x, y: cell.y }, HEX_SIZE, origin, {
@@ -136,6 +138,9 @@ function renderMolecules() {
   if (!ctx) return;
 
   clearCanvas(ctx);
+
+  if (props.hideMolecules) return;
+
   for (const item of props.wafer.items) {
     if (!item) continue;
     drawMolecule(ctx, item.molecule, HEX_SIZE, origin, { bondStroke: 'rgba(200, 200, 200, 0.6)', bondWidth: 3, essenceSize: ESSENCE_SIZE });
@@ -164,7 +169,6 @@ function renderOverlay() {
       });
     }
 
-    // Draw molecule preview (bonds + essence sprites)
     drawGhostMolecule(ctx, props.ghostMolecule, !!props.ghostValid, HEX_SIZE, origin, ESSENCE_SIZE);
   }
 
@@ -196,21 +200,17 @@ function onMouseDown(event: MouseEvent) {
   const canvas = overlayCanvas.value;
   if (!canvas) return;
 
-  // Handle right-click for rotation
   if (event.button === 2) {
     event.preventDefault();
     emit('rotate');
     return;
   }
 
-  // Only left click for pickup
   if (event.button !== 0) return;
 
-  // If we are hovering an item, pick it up immediately
   if (hoverItemIdx.value !== null) {
     const item = props.wafer.items[hoverItemIdx.value];
     if (item) {
-      // Start manual drag so we have a follower if we leave the wafer
       startManualDrag({ id: item.id, molecule: item.molecule }, event);
       emit('pickup', hoverItemIdx.value);
     }
@@ -237,17 +237,11 @@ function onMouseMove(event: MouseEvent) {
 }
 
 function onMouseLeave(_event: MouseEvent) {
-  // Clear hover state when leaving wafer area (manual drag)
   emit('hover', null);
   if (hoverItemIdx.value != null) {
     hoverItemIdx.value = null;
     renderOverlay();
   }
-  // Also clear drag start if leaving canvas? 
-  // Actually, if we drag out, we might want to keep tracking? 
-  // But for now let's clear it to be safe or rely on global mouse up.
-  // If we drag out, we probably want to pickup immediately?
-  // For now, let's just leave it. Global mouseup handles the reset.
 }
 
 function onMouseUp(event: MouseEvent) {
@@ -262,10 +256,6 @@ function onMouseUp(event: MouseEvent) {
   emit('click', axial);
 }
 
-function onClick(event: MouseEvent) {
-  // Handled by mouseup now
-}
-
 function onPointerDown(event: PointerEvent) {
   // Handle right-click for rotation
   if (event.button === 2) {
@@ -277,7 +267,6 @@ function onPointerDown(event: PointerEvent) {
 }
 
 function onKeyDown(event: KeyboardEvent) {
-  // Rotate on Space bar only
   if (event.key === ' ') {
     event.preventDefault();
     emit('rotate');
@@ -285,14 +274,12 @@ function onKeyDown(event: KeyboardEvent) {
 }
 
 function onContextMenu(event: MouseEvent) {
-  // Handle rotation directly in contextmenu event
   event.preventDefault();
   event.stopPropagation();
   emit('rotate');
 }
 
 function onDragEnter(event: DragEvent) {
-  // Hide system drag image when entering wafer; use overlay instead
   setHiddenDragImage(event.dataTransfer);
 }
 
@@ -303,9 +290,7 @@ function onDragOver(event: DragEvent) {
   const { x: pixelX, y: pixelY } = eventToCanvasPixel(event, canvas);
 
   const axial = pixelToAxial({ x: pixelX, y: pixelY }, HEX_SIZE, origin);
-  // Hide system drag image while over wafer to rely on overlay
   setHiddenDragImage(event.dataTransfer);
-  // Always emit snapped axial so overlay can indicate invalid (red) positions too
   emit('hover', axial);
 }
 
@@ -322,7 +307,6 @@ function onDrop(event: DragEvent) {
 }
 
 function onDragLeave(event: DragEvent) {
-  // Restore a visible drag image for outside-wafer dragging
   let mol = props.ghostMolecule as Molecule | null | undefined;
   if (!mol && event.dataTransfer) {
     const id = event.dataTransfer.getData('text/plain');
@@ -332,7 +316,6 @@ function onDragLeave(event: DragEvent) {
   if (mol) {
     setMoleculeDragImage(event.dataTransfer, mol);
   }
-  // Clear hover state when leaving the wafer canvas during a drag
   emit('hover', null);
 }
 
@@ -342,7 +325,6 @@ function onManualDragEnd(e: CustomEvent) {
   if (!canvas || !e?.detail) return;
   const { clientX, clientY, canceled } = e.detail as any;
   if (canceled) return;
-  // On drop, ensure follower is shown again for subsequent drags
   setManualDragFollowerVisible(true);
   const rect = canvas.getBoundingClientRect();
   const within = clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
@@ -360,7 +342,6 @@ function onManualDragMove(e: CustomEvent) {
   const { clientX, clientY } = e.detail as any;
   const rect = canvas.getBoundingClientRect();
   const within = clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
-  // Hide follower when over wafer; show outside
   setManualDragFollowerVisible(!within);
   if (!within) { emit('hover', null); return; }
   const pixelX = clientX - rect.left;

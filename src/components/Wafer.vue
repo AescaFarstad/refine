@@ -8,15 +8,20 @@
         :ghost-position="ghostPosition"
         :ghost-valid="ghostValid"
         :highlight-item-idx="highlightItemIdx"
+        :hide-molecules="showRefineAnim"
         @hover="onHover"
         @click="onClick"
         @pickup="onPickup"
         @rotate="onRotate"
       />
-      <div v-if="draggingItem" class="rotate-hint">
+      <RefineAnim
+        v-if="showRefineAnim"
+        :wafer="wafer"
+      />
+      <div v-if="draggingItem && !showRefineAnim" class="rotate-hint">
         Right-Click or Space to rotate ⟳
       </div>
-      <div v-if="placedItemEntries.length === 0 && !draggingItem" class="empty-state-message">
+      <div v-if="placedItemEntries.length === 0 && !draggingItem && !showRefineAnim" class="empty-state-message">
         Drag items here to refine them into resources
       </div>
     </div>
@@ -116,11 +121,12 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import WaferView from './WaferView.vue';
 import ItemDisplay from './ItemDisplay.vue';
+import RefineAnim from './RefineAnim.vue';
 import type { Wafer } from '../logic/Wafer';
 import type { Molecule, Point2 } from '../logic/ItemLib';
 import { canPlaceMolecule, getCell } from '../logic/Wafer';
 import { computeRefinePreviewChem } from '../logic/RefinePreview';
-import { uiState } from '../logic/UIState';
+import { uiState, getGameState } from '../logic/UIState';
 import { formatDurationHM } from '../logic/StringUtils';
 import { globalInputQueue } from '../logic/Model';
 import { CmdPlaceMolecule, CmdRemoveMolecule } from '../logic/input/InputCommands';
@@ -157,11 +163,32 @@ const rotation = ref(0);
 
 const activeRefinery = computed(() => uiState.refineries[0]);
 const isRefining = computed(() => {
-  return activeRefinery.value && activeRefinery.value.timeRemainingSec !== undefined && activeRefinery.value.timeRemainingSec > 0;
+  // Treat the refinery as "active" for the entire period where the
+  // UI exposes a countdown, including the final 0s state. This avoids
+  // a brief gap where refining has just finished but shards/outcome
+  // have not yet been created, which previously caused the wafer image
+  // to flash back in for a frame.
+  return !!(activeRefinery.value && activeRefinery.value.timeRemainingSec !== undefined);
+});
+
+const hasShards = computed(() => {
+  return uiState.shards && uiState.shards.length > 0;
+});
+
+const showRefineAnim = computed(() => {
+  return isRefining.value || hasShards.value || !!uiState.lastRefineryOutcome;
 });
 
 const refineProgress = computed(() => activeRefinery.value?.progressPct || 0);
 const timeRemaining = computed(() => formatDurationHM(activeRefinery.value?.timeRemainingSec || 0));
+
+onMounted(() => {
+  const gs = getGameState();
+  if (gs && gs.waferSize) {
+    gs.waferSize.x = WAFER_CANVAS_WIDTH;
+    gs.waferSize.y = WAFER_CANVAS_HEIGHT;
+  }
+});
 
 const preview = computed(() => {
   // Touch waferVersion for reactivity
@@ -231,14 +258,14 @@ const placedItems = computed(() => {
 // Keep original indices for mapping list entries back to wafer.items
 const placedItemEntries = computed(() => {
   waferVersion.value;
-  if (!wafer.value) return [] as Array<{ item: any; idx: number }>;
+  if (!wafer.value || isRefining.value) return [] as Array<{ item: any; idx: number }>;
   const out: Array<{ item: any; idx: number }> = [];
   wafer.value.items.forEach((it: any, i: number) => { if (it) out.push({ item: it, idx: i }); });
   return out;
 });
 
 const canRefine = computed(() => {
-  return placedItems.value.length > 0;
+  return placedItems.value.length > 0 && !hasShards.value;
 });
 
 // Atlas state for essence icons
@@ -294,6 +321,14 @@ watch(() => props.draggingItem, (newVal) => {
 
 function onHover(pos: Point2 | null) {
   lastHoverPos.value = pos;
+
+  if (showRefineAnim.value) {
+    ghostMolecule.value = null;
+    ghostPosition.value = null;
+    highlightItemIdx.value = null;
+    return;
+  }
+
   // Sync list highlight with wafer hover
   if (!pos || props.draggingItem) {
     highlightItemIdx.value = null;
@@ -302,7 +337,6 @@ function onHover(pos: Point2 | null) {
     highlightItemIdx.value = (cell && cell.itemIdx != null) ? cell.itemIdx : null;
   }
 
-  if (isRefining.value) return;
   // Ghost preview only when dragging an item
   if (!props.draggingItem || !pos) {
     ghostMolecule.value = null;
@@ -319,7 +353,7 @@ function onHover(pos: Point2 | null) {
 }
 
 function onClick(pos: Point2) {
-  if (isRefining.value) return;
+  if (showRefineAnim.value) return;
 
   if (props.draggingItem) {
     const origin: Point2 = { x: WAFER_CANVAS_WIDTH / 2, y: WAFER_CANVAS_HEIGHT / 2 };
@@ -340,7 +374,7 @@ function onClick(pos: Point2) {
 }
 
 function onPickup(itemIdx: number) {
-  if (isRefining.value) return;
+  if (showRefineAnim.value) return;
   if (!wafer.value) return;
 
   const item = wafer.value.items[itemIdx];
@@ -351,7 +385,7 @@ function onPickup(itemIdx: number) {
 }
 
 function removeItem(idx: number) {
-  if (isRefining.value) return;
+  if (showRefineAnim.value) return;
   // Dispatch command to remove molecule from GameState
   globalInputQueue.push(new CmdRemoveMolecule({ itemIdx: idx }));
 }
@@ -383,6 +417,7 @@ function onRotate() {
     onHover(lastHoverPos.value);
   }
 }
+
 </script>
 
 <style scoped>
@@ -398,6 +433,10 @@ function onRotate() {
   flex-direction: column;
   align-items: center;
   position: relative;
+}
+
+.wafer-hidden {
+  visibility: hidden;
 }
 
 .empty-state-message {

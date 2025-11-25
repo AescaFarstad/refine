@@ -2,6 +2,7 @@ import { Lib } from "./Lib";
 import type { Evt } from './evt/Evt';
 import SeededRandom from "./core/SeededRandom";
 import { Essence } from "./ItemLib";
+import type { Point2 } from "./core/math";
 import type { CheatInput } from './cheat/CheatCommands';
 import { CheatAddRaidItems } from './cheat/CheatCommands';
 import type { IceMaze } from "../maze/IceMaze";
@@ -37,6 +38,10 @@ export class GameState {
   public health: number = 10;
   public overflowEssences: Essence = {};
   public wafer: Wafer = createWafer(2);
+  public waferSize: Point2 = { x: 0, y: 0 };
+  public waferMouseCoords: Point2 | null = null;
+  public refiningDuration: number = 0;
+  public shards: Array<Shard> = [];
   public raid: ActiveRaid = new ActiveRaid();
 
   public unlockedRaids: Array<Raid> = [new Raid("shegolskoe")];
@@ -160,4 +165,15 @@ export class RefineryOutcome {
   public creditsGained: number = 0;
   public chronotracesGained: number = 0;
   public timeFluxGained: number = 0;
+}
+
+export interface Shard {
+  id: string;
+  resource: string; // 'credits', 'chronotraces', 'timeFlux'
+  amount: number;
+  pos: Point2;
+  vel: Point2;
+  triggered: boolean;
+  pickupDelaySec: number;
+  size: number;
 }

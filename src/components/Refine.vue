@@ -13,7 +13,6 @@
         />
       </div>
     </div>
-    <RefineryOutcomeModal />
   </div>
 </template>
 
@@ -22,7 +21,6 @@ import { ref, computed } from 'vue';
 import { uiState } from '../logic/UIState';
 import Wafer from './Wafer.vue';
 import AllItems from './AllItems.vue';
-import RefineryOutcomeModal from './RefineryOutcomeModal.vue';
 import { getGameLib } from '../logic/UIState';
 import itemsData from '../data/items';
 import type { Molecule } from '../logic/ItemLib';

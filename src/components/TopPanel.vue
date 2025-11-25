@@ -10,7 +10,7 @@
           type="button"
         >
           <span class="tab-title">Raids</span>
-          <span class="tab-sub"><span class="tab-label">Credits</span><span class="tab-value">{{ creditsDisplay }}</span></span>
+          <span class="tab-sub" :class="{ 'resource-animate': animatingCredits }"><span class="tab-label">Credits</span><span class="tab-value" data-resource-display="credits">{{ creditsDisplay }}</span></span>
         </button>
         <button
           class="tab"
@@ -30,7 +30,7 @@
           type="button"
         >
           <span class="tab-title">Research</span>
-          <span class="tab-sub"><span class="tab-label">Chronotraces</span><span class="tab-value">{{ chronoDisplay }}</span></span>
+          <span class="tab-sub" :class="{ 'resource-animate': animatingChronotraces }"><span class="tab-label">Chronotraces</span><span class="tab-value" data-resource-display="chronotraces">{{ chronoDisplay }}</span></span>
         </button>
         <button
           class="tab"
@@ -40,7 +40,7 @@
           type="button"
         >
           <span class="tab-title">Maze</span>
-          <span class="tab-sub"><span class="tab-label">Time Flux</span><span class="tab-value">{{ fluxDisplay }}</span></span>
+          <span class="tab-sub" :class="{ 'resource-animate': animatingTimeFlux }"><span class="tab-label">Time Flux</span><span class="tab-value" data-resource-display="timeFlux">{{ fluxDisplay }}</span></span>
         </button>
       </nav>
 
@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { uiState, timeDisplay } from '../logic/UIState';
 
 type TabKey = 'raid' | 'refine' | 'research' | 'maze';
@@ -70,6 +70,71 @@ const chronoDisplay = computed(() => `${uiState.chronotraces}⧖`);
 const fluxDisplay = computed(() => `${uiState.timeFlux}∿`);
 const inventoryCount = computed(() => (uiState.items || []).reduce((acc, it) => acc + (it?.quantity || 0), 0));
 const inventoryCountDisplay = computed(() => `${inventoryCount.value}`);
+
+// Animation state for resource increases
+const animatingCredits = ref(false);
+const animatingChronotraces = ref(false);
+const animatingTimeFlux = ref(false);
+
+const prevCredits = ref(uiState.credits);
+const prevChronotraces = ref(uiState.chronotraces);
+const prevTimeFlux = ref(uiState.timeFlux);
+
+// Animation timeout IDs to handle rapid succession
+let creditsTimeout: number | null = null;
+let chronoTimeout: number | null = null;
+let fluxTimeout: number | null = null;
+
+watch(() => uiState.credits, (newVal, oldVal) => {
+  if (newVal > prevCredits.value) {
+    if (creditsTimeout !== null) {
+      clearTimeout(creditsTimeout);
+    }
+    animatingCredits.value = false;
+    setTimeout(() => {
+      animatingCredits.value = true;
+      creditsTimeout = setTimeout(() => {
+        animatingCredits.value = false;
+        creditsTimeout = null;
+      }, 600) as any; // Match CSS animation duration
+    }, 10);
+  }
+  prevCredits.value = newVal;
+});
+
+watch(() => uiState.chronotraces, (newVal, oldVal) => {
+  if (newVal > prevChronotraces.value) {
+    if (chronoTimeout !== null) {
+      clearTimeout(chronoTimeout);
+    }
+    animatingChronotraces.value = false;
+    setTimeout(() => {
+      animatingChronotraces.value = true;
+      chronoTimeout = setTimeout(() => {
+        animatingChronotraces.value = false;
+        chronoTimeout = null;
+      }, 600) as any;
+    }, 10);
+  }
+  prevChronotraces.value = newVal;
+});
+
+watch(() => uiState.timeFlux, (newVal, oldVal) => {
+  if (newVal > prevTimeFlux.value) {
+    if (fluxTimeout !== null) {
+      clearTimeout(fluxTimeout);
+    }
+    animatingTimeFlux.value = false;
+    setTimeout(() => {
+      animatingTimeFlux.value = true;
+      fluxTimeout = setTimeout(() => {
+        animatingTimeFlux.value = false;
+        fluxTimeout = null;
+      }, 600) as any;
+    }, 10);
+  }
+  prevTimeFlux.value = newVal;
+});
 </script>
 
 <style scoped>
@@ -254,4 +319,74 @@ const inventoryCountDisplay = computed(() => `${inventoryCount.value}`);
   border-bottom-color: #4fd1c5;
   background: linear-gradient(180deg, rgba(79, 209, 197, 0.12), rgba(79, 209, 197, 0.04));
 }
+
+/* Resource increase animation */
+.tab-sub {
+  position: relative;
+  overflow: hidden;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.tab-label,
+.tab-value {
+  position: relative;
+  z-index: 1;
+}
+
+.tab-value {
+  display: inline-block;
+  transition: transform 0.1s ease;
+}
+
+.tab-sub.resource-animate .tab-value {
+  animation: resource-scale-pulse 0.6s ease-out;
+}
+
+.tab-sub.resource-animate::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at center, rgba(79, 209, 197, 0.32) 0%, rgba(79, 209, 197, 0.16) 45%, transparent 80%);
+  opacity: 0;
+  transform: scale(0.96);
+  animation: resource-highlight 0.6s ease-out;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes resource-scale-pulse {
+  0% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.25);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  75% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes resource-highlight {
+  0% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  30% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+}
+
 </style>

@@ -1,10 +1,11 @@
 import type { GameState } from '../GameState';
-import { globalInputQueue } from '../Model';
+import { globalInputQueue, SHARD_PICKUP_DELAY_SEC } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAknowledgeOutcome, CmdLevelup, CmdStartRefining, CmdAcknowledgeRefineryOutcome, CmdPurchaseResearch, CmdUpgradeRecipe, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest } from './InputCommands';
+import { CmdStartRaid, CmdAdvanceTime, CmdAknowledgeOutcome, CmdLevelup, CmdStartRefining,  CmdPurchaseResearch, CmdUpgradeRecipe, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest } from './InputCommands';
 import { LEVEL_UP_STRENGTH, LEVEL_UP_LOOTING, LEVEL_UP_VOLUME, RESEARCH_TIER_PRICE, RESEARCH_TIER_ITEM_PRICE } from '../Const';
 import { EvtRefineryDone } from '../evt/Evt';
 import { computeLoadedEssencesFromItems, computeOverflowEssences } from '../Refine';
+import { computeRefinePreviewChem } from '../RefinePreview';
 import { applyRecipeUpgrade } from '../Recipe';
 import type { Point2 } from '../core/math';
 import { runRaid, recomputeActiveRaidParams, toggleGearForRaid, recomputeActiveRaidEstimates } from '../Raid';
@@ -31,13 +32,10 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
     return;
   }
 
-  // Ensure gs.raid reflects the selected raid and its current loadout
   recomputeActiveRaidParams(gs, c.id);
 
-  // Run raid immediately
   const result = runRaid(gs, def);
 
-  // Advance time by the computed total
   gs.time = Math.max(0, (gs.time || 0) + Math.max(0, result.timeSpentSec || 0));
 
   // End-of-raid quest processing (reach + skill points)
@@ -67,7 +65,6 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
       }
     });
 
-    // Apply one permanent raid mutation based on weighted candidates
     const chosen = pickAndApplyRaidSuccessMutation(gs, c.id);
     if (chosen) {
       zoneChange = describeMutation(gs, chosen.mutation);
@@ -87,32 +84,8 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
   };
 });
 
-handlersByName.set('CmdAknowledgeOutcome', (gs, cmd) => {
-  // Clear last raid outcome from game state
-  gs.lastRaidOutcome = null;
-});
-
-handlersByName.set('CmdLevelup', (gs, cmd) => {
-  if (gs.levelupsAvailable <= 0) return;
-  const c = cmd as CmdLevelup;
-  switch (c.stat) {
-    case 'strength':
-      gs.strength += LEVEL_UP_STRENGTH;
-      break;
-    case 'volume':
-      gs.volume += LEVEL_UP_VOLUME;
-      break;
-    case 'looting':
-      gs.looting += LEVEL_UP_LOOTING;
-      break;
-  }
-  gs.levelupsAvailable = Math.max(0, gs.levelupsAvailable - 1);
-});
-
 handlersByName.set('CmdStartRefining', (gs, cmd) => {
-  // Check if already refining
   if (gs.nextEvt && gs.nextEvt.name === 'EvtRefineryDone') return;
-  // Check if wafer is empty (nothing to refine)
   if (!gs.wafer || gs.wafer.items.length === 0) return;
 
   const itemCounts = new Map<string, number>();
@@ -134,10 +107,10 @@ handlersByName.set('CmdStartRefining', (gs, cmd) => {
     }
   }
 
-  // gs.wafer is already set and persistent
+  const preview = computeRefinePreviewChem(gs.wafer);
+  gs.refiningDuration = Math.max(0, Math.round(preview.timeSec || 0));
 
-
-  const duration = 4 * 3600;
+  const duration = gs.refiningDuration;
   gs.nextEvt = new EvtRefineryDone({ at: gs.time + duration });
   gs.timeActive = true;
 });
@@ -150,11 +123,11 @@ handlersByName.set('CmdPurchaseResearch', (gs, cmd) => {
   const c = cmd as CmdPurchaseResearch;
   const id = (c.id || '').trim();
   if (!id) return;
-  // Prevent double-purchase
+
   if (gs.research && (gs.research as Set<string>).has(id)) return;
   const price = Math.max(0, Math.round(c.price || 0));
   if ((gs.chronotraces || 0) < price) return;
-  // Enforce tier gating for non-tier purchases
+
   const isTier = id.startsWith('tier_');
   let nodeTierIndex = -1;
   let node: any = null;
@@ -174,12 +147,11 @@ handlersByName.set('CmdPurchaseResearch', (gs, cmd) => {
       return; // cannot buy items from locked tier
     }
   }
-  // Deduct and record purchase
+
   gs.chronotraces = Math.max(0, (gs.chronotraces || 0) - price);
   if (!gs.research) (gs as any).research = new Set<string>();
   (gs.research as Set<string>).add(id);
 
-  // Apply effects for certain research nodes
   if (!isTier && node) {
     const eff = (node as any).effect;
     if (eff === 'giveStrength') {
@@ -317,8 +289,6 @@ handlersByName.set('CmdRemoveMolecule', (gs, cmd) => {
   if (!gs.wafer) return;
   removeMolecule(gs.wafer, c.itemIdx);
 });
-
-
 
 
 export function processInputs(gameState: GameState): void {

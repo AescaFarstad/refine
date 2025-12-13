@@ -2,7 +2,6 @@ import { reactive, computed } from 'vue';
 import { formatDurationHM } from './StringUtils';
 import type { GameState, RaidOutcome, RefineryOutcome, Shard } from './GameState';
 import type { RaidDefinition } from './RaidLib';
-import { computeRefinePreview } from './Refine';
 import { getEffectiveRaidDefinition } from './RaidMutation';
 import { computeRefinePreviewChem } from './RefinePreview';
 import type { Lib } from './Lib';
@@ -13,8 +12,6 @@ export interface UIRaidDef extends RaidDefinition { }
 
 export interface UIRefinery {
   health: number;
-  hasRecipe: boolean;
-  recipeId?: string;
   startedAtSec?: number;
   timeRemainingSec?: number;
   progressPct?: number;
@@ -62,18 +59,12 @@ export const uiState = reactive({
 
   levelUpOpen: false,
 
-  recipeUpgradeOpen: false,
-  recipeUpgradeCtx: null as null | { researchId: string; price: number; effect: 'modifyEssences' | 'increaseQuality'; params?: Record<string, number> },
-
   cheatOpen: false,
   devAtlasKey: '' as '' | 'items',
   devMoleculeEditorOpen: false,
 
   refineries: [] as UIRefinery[],
   items: [] as Array<{ id: string; quantity: number }>,
-  recipes: [] as string[],
-  research: [] as string[],
-  recipesVersion: 0,
   waferUpgradesPurchased: 0,
   selectedRefineryIndex: -1 as number,
   wafer: createWafer(2) as Wafer,
@@ -160,13 +151,12 @@ export function SyncUIFromGameState(game: GameState): void {
 
   const entries: UIRefinery[] = [];
   const hasWafer = !!game.wafer;
-  const base: UIRefinery = { health: 100, hasRecipe: hasWafer };
+  const base: UIRefinery = { health: 100 };
   if (hasWafer && game.nextEvt?.name === 'EvtRefineryDone') {
     const preview = computeRefinePreviewChem(game.wafer!);
     const duration = Math.max(0, game.refiningDuration || preview.timeSec || 0);
     const startedAt = (game.nextEvt.at || 0) - duration;
 
-    base.recipeId = '';
     base.startedAtSec = startedAt;
     if (duration > 0) {
       const elapsed = Math.max(0, (game.time || 0) - startedAt);
@@ -186,11 +176,6 @@ export function SyncUIFromGameState(game: GameState): void {
   entries.push(base);
   uiState.refineries = entries;
   uiState.items = (game.items || []).map(it => ({ id: it.id, quantity: it.quantity }));
-  uiState.recipes = Array.isArray(game.recipes) ? [...game.recipes] : [];
-  if (game.research && typeof (game.research as Set<string>).forEach === 'function' && typeof (game.research as Set<string>).has === 'function') uiState.research = Array.from(game.research as Set<string>);
-  else uiState.research = [];
-
-  uiState.recipesVersion = game.lib.recipesVersion || 0;
 
   uiState.wafer = game.wafer;
   uiState.waferSize = game.waferSize;
@@ -226,7 +211,7 @@ export function SyncUIFromGameState(game: GameState): void {
   }
 }
 
-// Expose current game lib for UI components that need live definitions (e.g., modded recipes)
+// Expose current game lib for UI components that need live definitions
 export function getGameLib(): Lib {
   return gameRef!.lib;
 }

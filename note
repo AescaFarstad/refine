@@ -62,4 +62,4 @@ reinforced
 masterwork
 
 
-Let's do a new research screen. STart with 
+Let's do a new research screen. Start with removing the current one and logic related to it. The tab should stay but it should be empty

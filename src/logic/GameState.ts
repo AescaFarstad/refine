@@ -47,7 +47,6 @@ export class GameState {
   public raid: ActiveRaid = new ActiveRaid();
 
   public unlockedRaids: Array<Raid> = [new Raid("shegolskoe")];
-  public recipes: Array<string> = ["c1", "c2", "c3", "c4"];
 
   public nextEvt: Evt | null = null;
   public lastRaidOutcome: RaidOutcome | null = null;
@@ -55,13 +54,11 @@ export class GameState {
   public levelupsAvailable: number = 0;
 
   public items: Array<Item> = [];
-  public research: Set<string> = new Set(["tier_0"]);
 
   // Ice Maze persistent state
   public maze: IceMaze | null = null;
   public mazeLevelIndex: number = 0;
-  // Internal: flag set by inputs to request a rebuild at current level (handled in Model)
-  public _labirinthResetRequested?: boolean;
+  public labirinthResetRequested: boolean = false;
 
 
 
@@ -162,7 +159,6 @@ export class Item {
 }
 
 export class RefineryOutcome {
-  public recipeId: string = "";
   public success: boolean = false;
   public creditsGained: number = 0;
   public chronotracesGained: number = 0;

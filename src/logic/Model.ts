@@ -253,8 +253,8 @@ function initOrAdvanceMaze(gs: GameState) {
   const clampIndex = (i: number) => Math.max(0, Math.min(levels.length - 1, i | 0));
 
   // Reset requested by input
-  if ((gs as any)._labirinthResetRequested) {
-    (gs as any)._labirinthResetRequested = false;
+  if (gs.labirinthResetRequested) {
+    gs.labirinthResetRequested = false;
     const idx = clampIndex(gs.mazeLevelIndex);
     const def = levels[idx];
     const seed = Math.floor(gs.random.get_in_range(1, 0x7fffffff));

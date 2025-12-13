@@ -32,26 +32,6 @@ export class CmdStartRefining implements CmdInput {
   constructor() { }
 }
 
-export class CmdPurchaseResearch implements CmdInput {
-  readonly name = 'CmdPurchaseResearch';
-  readonly id: string;
-  readonly price: number;
-  constructor(args: { id: string; price: number }) {
-    this.id = args.id;
-    this.price = args.price;
-  }
-}
-
-export class CmdUpgradeRecipe implements CmdInput {
-  readonly name = 'CmdUpgradeRecipe';
-  readonly researchId: string; // research node id (to validate purchase and resolve upgradeId)
-  readonly recipeId: string;   // target recipe to apply upgrade to
-  constructor(args: { researchId: string; recipeId: string }) {
-    this.researchId = args.researchId;
-    this.recipeId = args.recipeId;
-  }
-}
-
 // Maze controls
 export type MazeDir = 'up' | 'left' | 'down' | 'right';
 

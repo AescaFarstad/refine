@@ -37,7 +37,6 @@ handlersByName.set('EvtRefineryDone', (gs, evt) => {
   const succeeded = rollSuccess(preview.failureChancePct);
 
   const outcome = new RefineryOutcome();
-  outcome.recipeId = '';
   outcome.success = succeeded;
 
   if (succeeded) {

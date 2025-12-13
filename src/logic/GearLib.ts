@@ -23,6 +23,8 @@ export interface GearDefinition {
   reflectOnBlockPct: number;
   // Utility
   perk?: string;
+  // Visual - key into items.json sprite atlas
+  image?: string;
 }
 
 // Raw data type for data files: allows omitting numbers which will default to 0 at load time
@@ -53,6 +55,7 @@ export function parseGearDefinitions(raw: Record<string, RawGearDefinition>): Ma
       reflectOnHitPct: d.reflectOnHitPct ?? 0,
       reflectOnBlockPct: d.reflectOnBlockPct ?? 0,
       perk: d.perk,
+      image: d.image,
     };
     map.set(key, def);
   }

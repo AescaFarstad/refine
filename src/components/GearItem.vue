@@ -2,11 +2,16 @@
   <button
     type="button"
     class="gear-item"
-    :class="{ selected, unaffordable, blocked, 'hint-right': useRight }"
+    :class="{ selected, unaffordable, blocked, 'hint-right': useRight, 'has-image': !!gearFrame }"
     ref="rootEl"
     @mouseenter="updateHintSide"
     @click="$emit('toggle')"
   >
+    <!-- Gear image sprite -->
+    <div v-if="source && gearFrame" class="g-sprite-wrap">
+      <div class="g-sprite" :style="spriteStyle" />
+    </div>
+
     <div class="g-name">{{ gear.name }}</div>
 
     <!-- Styled tooltip with all effects shown on hover -->
@@ -26,8 +31,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, toRefs, ref } from 'vue';
+import { computed, toRefs, ref, onMounted } from 'vue';
 import type { GearDefinition } from '../logic/GearLib';
+import atlasStorage from '../logic/AtlasStorage';
 
 const props = defineProps<{
   gear: GearDefinition;
@@ -42,6 +48,43 @@ defineEmits<{ (e: 'toggle'): void }>();
 
 // expose individual props to template for convenience
 const { gear, selected, unaffordable, blocked, price, hintRight } = toRefs(props);
+
+// Atlas state for gear images
+const source = ref<HTMLImageElement | null>(atlasStorage.getItemsSource());
+onMounted(async () => {
+  if (!atlasStorage.isItemsAtlasLoaded()) {
+    try {
+      await atlasStorage.loadItemsAtlas();
+    } catch (_e) { /* noop */ }
+    source.value = atlasStorage.getItemsSource();
+  }
+});
+
+const gearFrame = computed(() => {
+  const imageKey = props.gear.image;
+  if (!imageKey) return null;
+  return atlasStorage.getItemsFrame(imageKey);
+});
+
+const spriteStyle = computed(() => {
+  if (!source.value || !gearFrame.value) return {} as Record<string, string>;
+  const f = gearFrame.value;
+  const atlasW = source.value.naturalWidth;
+  const atlasH = source.value.naturalHeight;
+  // Scale to fit within 48x48 container while maintaining aspect ratio
+  const containerSize = 48;
+  const scale = Math.min(containerSize / f.w, containerSize / f.h, 1); // Don't upscale, only downscale
+  const displayW = f.w * scale;
+  const displayH = f.h * scale;
+  return {
+    width: displayW + 'px',
+    height: displayH + 'px',
+    backgroundImage: `url(${source.value.src})`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
+    backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
+  } as Record<string, string>;
+});
 
 // dynamic edge-aware flipping
 const rootEl = ref<HTMLElement | null>(null);
@@ -120,11 +163,35 @@ const hintRows = computed((): Array<{ label: string; value: string }> => {
   cursor: pointer;
   color: var(--text-primary);
   z-index: 0; /* establish baseline stacking */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+}
+.gear-item.has-image {
+  padding-left: 8px;
 }
 .gear-item:hover { z-index: 2000; } /* float hovered card above siblings */
 .gear-item.selected { background: rgba(74, 222, 128, 0.15); }
 .gear-item.unaffordable { /* border removed; keep subtle deemphasis via opacity if needed elsewhere */ }
 .gear-item.blocked > *:not(.hint) { opacity: 0.6; }
+
+.g-sprite-wrap {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.g-sprite {
+  flex-shrink: 0;
+  image-rendering: auto;
+}
+
 .g-name { font-weight: 800; }
 
 /* Styled tooltip shown instantly on hover */

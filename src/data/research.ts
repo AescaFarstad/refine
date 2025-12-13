@@ -14,17 +14,9 @@ const researchData: ResearchDataFile = {
       effect: 'giveVolume',
       amount: 5,
     },
-    blue_up_upgrade_0: {
-      effect: 'recipeUpgrade',
-      upgradeId: 'blue_down',
-    },
-    quality_upgrade_0: {
-      effect: 'recipeUpgrade',
-      upgradeId: 'increase_quality',
-    },
-    give_recipe_c5_0: {
-      effect: 'giveRecipe',
-      upgradeId: 'c5',
+    unlock_medicine_0: {
+      effect: 'unlockGear',
+      gearIds: ['painkillers'],
     },
   },
   tier_1: {
@@ -40,13 +32,9 @@ const researchData: ResearchDataFile = {
       effect: 'giveVolume',
       amount: 7,
     },
-    green_up_upgrade_1: {
-      effect: 'recipeUpgrade',
-      upgradeId: 'green_up',
-    },
-    quality_upgrade_1: {
-      effect: 'recipeUpgrade',
-      upgradeId: 'increase_quality',
+    unlock_support_gear_1: {
+      effect: 'unlockGear',
+      gearIds: ['scout_binoculars', 'trauma_kit'],
     },
   },
 };

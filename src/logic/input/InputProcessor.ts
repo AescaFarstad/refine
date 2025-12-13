@@ -169,6 +169,16 @@ handlersByName.set('CmdPurchaseResearch', (gs, cmd) => {
         if (!Array.isArray(gs.recipes)) gs.recipes = [];
         if (!gs.recipes.includes(recId)) gs.recipes.push(recId);
       }
+    } else if (eff === 'unlockGear') {
+      const ids = Array.isArray((node as any).gearIds) ? (node as any).gearIds as string[] : [];
+      if (!Array.isArray(gs.unlockedGear)) gs.unlockedGear = [];
+      for (const rawId of ids) {
+        const gid = (rawId || '').trim();
+        if (!gid) continue;
+        if (!gs.unlockedGear.includes(gid)) {
+          gs.unlockedGear.push(gid);
+        }
+      }
     }
     // Note: recipeUpgrade has no immediate effect applied here
   }

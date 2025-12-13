@@ -37,3 +37,26 @@ export interface ItemDefinition {
   rarity: 'common' | 'uncommon' | 'rare' | 'legendary';
   molecule?: Molecule; // Optional for now, will be required later
 }
+
+export function processItemDefinitions(
+  defs: Record<string, Omit<ItemDefinition, 'id' | 'essence'> & { essence?: Essence }>
+): Record<string, ItemDefinition> {
+  const result: Record<string, ItemDefinition> = {};
+  for (const [key, def] of Object.entries(defs)) {
+    const essence = { ...def.essence };
+    if (def.molecule) {
+      // Clear any manually defined essence if molecule exists, or just add to it?
+      // Requirement: "essence count should be derived from the molecule"
+      // So we overwrite/calculate it.
+      for (const atom of def.molecule.atoms) {
+        essence[atom.color] = (essence[atom.color] || 0) + 1;
+      }
+    }
+    result[key] = {
+      ...def,
+      id: key,
+      essence,
+    } as ItemDefinition;
+  }
+  return result;
+}

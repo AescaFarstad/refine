@@ -25,6 +25,10 @@ november 19-21
   chem refining implementation, UI tweaks
 november 23, 25
   refining animation, shards, wafer upgrades, negboring bonuses, molecule editor
+november 30
+  gear images using chatgpt, struggling with eroding noise from the images
+december 7
+  fixed noise erorsion, UI tweaks, research, gear, items
 
 
 Images:
@@ -56,3 +60,6 @@ classified
 purified
 reinforced
 masterwork
+
+
+Let's do a new research screen. STart with 

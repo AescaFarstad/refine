@@ -1,11 +1,11 @@
+import { processItemDefinitions } from '../logic/ItemLib';
 import type { Essence, Molecule } from '../logic/ItemLib';
 
 // Data shape: rarity is optional and numeric (1..4). It is normalized in Lib to string rarity.
-export const itemDefinitions: Record<string, { name: string; volume: number; essence: Essence; rarity?: number; molecule?: Molecule; devOnly?: boolean }> = {
+const rawDefinitions: Record<string, { name: string; volume: number; essence?: Essence; rarity?: number; molecule?: Molecule; devOnly?: boolean }> = {
   rat_remains: {
     name: 'Distorted Remains',
     volume: 1,
-    essence: { red: 2 },
     rarity: 1,
     molecule: {
       atoms: [
@@ -20,7 +20,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   flower_remains: {
     name: 'Flower Human Remains',
     volume: 1,
-    essence: { blue: 2 },
     rarity: 1,
     molecule: {
       atoms: [
@@ -41,7 +40,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   mechanical_clock: {
     name: 'Clock',
     volume: 5,
-    essence: { red: 5, green: 1, blue: 5 },
     rarity: 2,
     molecule: {
       atoms: [
@@ -66,7 +64,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   porcelain_figurine: {
     name: 'Figurine',
     volume: 4,
-    essence: { red: 3, blue: 5 },
     rarity: 2,
     molecule: {
       atoms: [
@@ -101,7 +98,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   wrench: {
     name: 'Wrench',
     volume: 1,
-    essence: { red: 2 },
     rarity: 1,
     molecule: {
       atoms: [
@@ -129,7 +125,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   iodine_bottle: {
     name: 'Iodine Solution',
     volume: 1,
-    essence: { green: 1, blue: 2 },
     rarity: 1,
     molecule: {
       atoms: [
@@ -153,7 +148,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   vinyl_record: {
     name: 'Vinyl Record',
     volume: 2,
-    essence: { red: 2, green: 5, blue: 3 },
     rarity: 1,
     molecule: {
       atoms: [
@@ -218,7 +212,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   soviet_watch: {
     name: 'Watch',
     volume: 1,
-    essence: { red: 2, green: 2, blue: 4, yellow: 2 },
     rarity: 2,
     molecule: {
       atoms: [
@@ -243,7 +236,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   vintage_camera: {
     name: 'Camera',
     volume: 5,
-    essence: { red: 4, green: 4, blue: 8, yellow: 3 },
     rarity: 3,
     molecule: {
       atoms: [
@@ -291,7 +283,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   tea_brick: {
     name: 'Tea Brick',
     volume: 3,
-    essence: { red: 1, green: 7, blue: 2 },
     molecule: {
       atoms: [
         { color: 'green', x: 0, y: 0 },
@@ -324,7 +315,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   old_cigarettes: {
     name: 'Cigarettes',
     volume: 1,
-    essence: { red: 2, green: 3, blue: 1 },
     molecule: {
       atoms: [
         { color: 'green', x: 0, y: 0 },
@@ -386,7 +376,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   gas_mask_gp5: {
     name: 'Gas Mask GP-5',
     volume: 8,
-    essence: { red: 4, green: 6, blue: 6, yellow: 2 },
     rarity: 2,
     molecule: {
       atoms: [
@@ -443,7 +432,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   lucky_coin: {
     name: 'Coin',
     volume: 1,
-    essence: { red: 1, green: 1, blue: 3, yellow: 1 },
     molecule: {
       atoms: [
         { color: 'yellow', x: 0, y: 0 },
@@ -479,7 +467,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   canvas_tent: {
     name: 'Tent',
     volume: 25,
-    essence: { red: 6, green: 12, blue: 8 },
     rarity: 4,
     molecule: {
       atoms: [
@@ -532,7 +519,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   door_handle: {
     name: 'Door Handle',
     volume: 2,
-    essence: { red: 2, green: 2, blue: 2 },
     molecule: {
       atoms: [
         { color: 'red', x: 0, y: 0 },
@@ -548,7 +534,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   window_latch: {
     name: 'Window Latch',
     volume: 1,
-    essence: { red: 1, green: 2, blue: 1 },
     molecule: {
       atoms: [
         { color: 'green', x: 0, y: 0 },
@@ -562,7 +547,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   padlock: {
     name: 'Padlock',
     volume: 1,
-    essence: { red: 2, green: 1, blue: 1 },
     molecule: {
       atoms: [
         { color: 'red', x: 0, y: 0 },
@@ -576,7 +560,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   chain_link: {
     name: 'Chain',
     volume: 2,
-    essence: { red: 3, green: 1, blue: 1 },
     molecule: {
       atoms: [
         { color: 'red', x: 0, y: 0 },
@@ -594,7 +577,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   light_bulb: {
     name: 'Lightbulb',
     volume: 1,
-    essence: { red: 1, green: 1, blue: 3 },
     molecule: {
       atoms: [
         { color: 'blue', x: 0, y: 0 },
@@ -615,7 +597,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   insulation_tape: {
     name: 'Tape',
     volume: 1,
-    essence: { red: 1, green: 2, blue: 2 },
     molecule: {
       atoms: [
         { color: 'green', x: 0, y: 0 },
@@ -633,7 +614,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   inventory_keys: {
     name: 'Keys',
     volume: 1,
-    essence: { red: 1, green: 1, blue: 2 },
     molecule: {
       atoms: [
         { color: 'gold', x: 0, y: 0 },
@@ -649,7 +629,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   bicycle_pedal: {
     name: 'Bicycle Pedal',
     volume: 1,
-    essence: { red: 2, green: 1, blue: 1 },
     molecule: {
       atoms: [
         { color: 'red', x: 0, y: 0 },
@@ -685,7 +664,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   ruined_ammo_box: {
     name: 'Ruined Ammo Box',
     volume: 4,
-    essence: { red: 4, green: 1, blue: 1 },
     molecule: {
       atoms: [
         { color: 'red', x: 0, y: 0 },
@@ -722,7 +700,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   portable_radio: {
     name: 'Portable Radio',
     volume: 6,
-    essence: { red: 3, green: 4, blue: 10, yellow: 2 },
     rarity: 3,
     molecule: {
       atoms: [
@@ -771,7 +748,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   dev_atom_red: {
     name: 'Dev Atom (Red)',
     volume: 0,
-    essence: {},
     rarity: 1,
     molecule: {
       atoms: [{ color: 'red', x: 0, y: 0 }],
@@ -782,7 +758,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   dev_atom_green: {
     name: 'Dev Atom (Green)',
     volume: 0,
-    essence: {},
     rarity: 1,
     molecule: {
       atoms: [{ color: 'green', x: 0, y: 0 }],
@@ -793,7 +768,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   dev_atom_blue: {
     name: 'Dev Atom (Blue)',
     volume: 0,
-    essence: {},
     rarity: 1,
     molecule: {
       atoms: [{ color: 'blue', x: 0, y: 0 }],
@@ -804,7 +778,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   dev_atom_yellow: {
     name: 'Dev Atom (Yellow)',
     volume: 0,
-    essence: {},
     rarity: 1,
     molecule: {
       atoms: [{ color: 'yellow', x: 0, y: 0 }],
@@ -815,7 +788,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   dev_atom_indigo: {
     name: 'Dev Atom (Indigo)',
     volume: 0,
-    essence: {},
     rarity: 1,
     molecule: {
       atoms: [{ color: 'indigo', x: 0, y: 0 }],
@@ -826,7 +798,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   dev_atom_crimson: {
     name: 'Dev Atom (Crimson)',
     volume: 0,
-    essence: {},
     rarity: 1,
     molecule: {
       atoms: [{ color: 'crimson', x: 0, y: 0 }],
@@ -837,7 +808,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   dev_atom_emerald: {
     name: 'Dev Atom (Emerald)',
     volume: 0,
-    essence: {},
     rarity: 1,
     molecule: {
       atoms: [{ color: 'emerald', x: 0, y: 0 }],
@@ -848,7 +818,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   dev_atom_gold: {
     name: 'Dev Atom (Gold)',
     volume: 0,
-    essence: {},
     rarity: 1,
     molecule: {
       atoms: [{ color: 'gold', x: 0, y: 0 }],
@@ -859,7 +828,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   dev_atom_orange: {
     name: 'Dev Atom (Orange)',
     volume: 0,
-    essence: {},
     rarity: 1,
     molecule: {
       atoms: [{ color: 'orange', x: 0, y: 0 }],
@@ -870,7 +838,6 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   dev_atom_gray: {
     name: 'Dev Atom (Gray)',
     volume: 0,
-    essence: {},
     rarity: 1,
     molecule: {
       atoms: [{ color: 'gray', x: 0, y: 0 }],
@@ -880,4 +847,7 @@ export const itemDefinitions: Record<string, { name: string; volume: number; ess
   },
 };
 
+
+
+export const itemDefinitions = processItemDefinitions(rawDefinitions);
 export default itemDefinitions;

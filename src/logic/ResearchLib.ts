@@ -3,12 +3,14 @@ export type ResearchEffect =
   | 'giveLooting'
   | 'giveVolume'
   | 'recipeUpgrade'
-  | 'giveRecipe';
+  | 'giveRecipe'
+  | 'unlockGear';
 
 export type ResearchNode =
   | { effect: 'giveStrength' | 'giveLooting' | 'giveVolume'; amount: number }
   | { effect: 'recipeUpgrade'; upgradeId: string }
-  | { effect: 'giveRecipe'; upgradeId: string };
+  | { effect: 'giveRecipe'; upgradeId: string }
+  | { effect: 'unlockGear'; gearIds: string[] };
 
 export type ResearchTier = Record<string, ResearchNode>;
 
@@ -59,6 +61,18 @@ export function parseResearchTiers(data: ResearchDataFile): ResearchTier[] {
         case 'giveRecipe': {
           if (typeof (node as any).upgradeId !== 'string' || !(node as any).upgradeId) {
             throw new Error(`Research node ${key}.${nid} requires upgradeId`);
+          }
+          break;
+        }
+        case 'unlockGear': {
+          const ids = (node as any).gearIds;
+          if (!Array.isArray(ids) || !ids.length) {
+            throw new Error(`Research node ${key}.${nid} requires non-empty gearIds array`);
+          }
+          for (const gid of ids) {
+            if (typeof gid !== 'string' || !gid.trim()) {
+              throw new Error(`Research node ${key}.${nid} has invalid gear id`);
+            }
           }
           break;
         }

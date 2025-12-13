@@ -8,12 +8,24 @@
       <div v-if="quantity > 1" class="qty">x{{ quantity }}</div>
 
       <div class="essences" v-if="!minor && essencesToShow.length && !moleculeUrl">
-        <template v-for="(e, idx) in essencesToShow" :key="e.key">
-          <span v-if="getEssenceFrame(e.key) && source" class="ess-icon" :style="essenceIconStyle(e.key)" />
-          <span v-else class="ess-letter">{{ essenceLetter(e.key) }}</span>
-          <span class="ess-num">{{ e.value }}</span>
-          <span v-if="idx < essencesToShow.length - 1" class="sp" />
-        </template>
+        <div
+          v-for="(row, rowIndex) in essenceRows"
+          :key="rowIndex"
+          class="ess-row"
+        >
+          <template v-for="(e, idx) in row" :key="e.key">
+            <span class="ess-entry">
+              <span
+                v-if="getEssenceFrame(e.key) && source"
+                class="ess-icon"
+                :style="essenceIconStyle(e.key)"
+              />
+              <span v-else class="ess-letter">{{ essenceLetter(e.key) }}</span>
+              <span v-if="e.value !== 1" class="ess-num">{{ e.value }}</span>
+            </span>
+            <span v-if="idx < row.length - 1" class="sp" />
+          </template>
+        </div>
       </div>
     </div>
 
@@ -98,6 +110,16 @@ const essencesToShow = computed(() => {
   return list;
 });
 
+const essenceRows = computed(() => {
+  const list = essencesToShow.value;
+  if (!list.length) return [];
+  if (list.length >= 5) {
+    const split = Math.floor(list.length / 2);
+    return [list.slice(0, split), list.slice(split)];
+  }
+  return [list];
+});
+
 function essenceLetter(k: string): string {
   const m: Record<string, string> = { red: 'R', green: 'G', blue: 'B', yellow: 'Y' };
   return m[k] || k[0]?.toUpperCase() || '?';
@@ -111,12 +133,13 @@ function essenceIconStyle(k: string): Record<string, string> {
   const f = atlasStorage.getItemsFrame(k);
   if (!source.value || !f) return {} as Record<string, string>;
   // Scale the entire atlas proportionally so the essence icon fits in 14x14
-  const scale = 14 / Math.max(f.w, f.h);
+  const size = 16;
+  const scale = size / Math.max(f.w, f.h);
   const atlasW = source.value.naturalWidth;
   const atlasH = source.value.naturalHeight;
   return {
-    width: '14px',
-    height: '14px',
+    width: size + 'px',
+    height: size + 'px',
     backgroundImage: `url(${source.value.src})`,
     backgroundRepeat: 'no-repeat',
     backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
@@ -189,26 +212,60 @@ function essenceIconStyle(k: string): Record<string, string> {
 }
 .essences {
   position: absolute;
-  left: 0;
-  right: 0;
   bottom: 0;
+  right: 2px;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-end;
   justify-content: center;
   gap: 2px;
   padding: 2px 3px;
-  background: linear-gradient(180deg, rgba(0,0,0,0.0), rgba(0,0,0,0.55));
+  background: linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.7));
+  border-radius: 4px;
   font-weight: 800;
   font-size: 12px;
 }
-.ess-num { margin-left: 2px; }
-.ess-letter { opacity: 0.9; font-size: 11px; }
+.ess-entry {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+.ess-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1px;
+}
+.ess-num {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 11px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000;
+}
+.ess-letter {
+  opacity: 0.9;
+  font-size: 11px;
+  width: 100%;
+  text-align: center;
+  line-height: 16px;
+}
 .ess-icon {
   display: inline-block;
   vertical-align: middle;
   filter: drop-shadow(0 1px 0 rgba(0,0,0,0.4));
 }
-.sp { width: 4px; display: inline-block; }
+.sp { width: 3px; display: inline-block; }
 
 .tooltip-panel {
   position: absolute;

@@ -153,6 +153,15 @@ export async function runPackJob(job: PipelineJob, baseDir: string): Promise<voi
     if (!st.isFile()) continue;
     const { width, height } = await identifySize(file);
     const id = path.parse(file).name;
+
+    if (job.settings.include) {
+      const includes = job.settings.include.split(',').map((s) => s.trim());
+      const filename = path.basename(file);
+      if (!includes.includes(filename) && !includes.includes(id)) {
+        continue;
+      }
+    }
+
     images.push({ id, width, height, filePath: file });
   }
 

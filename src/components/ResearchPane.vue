@@ -1,0 +1,415 @@
+<template>
+  <div
+    class="research-root"
+    ref="container"
+    @wheel.prevent="onWheel"
+    @mousedown="onMouseDown"
+    @mousemove="onMouseMove"
+    @mouseup="onMouseUp"
+    @mouseleave="onMouseLeave"
+  >
+    <canvas ref="baseCanvas" class="layer base"></canvas>
+    <canvas ref="highlightCanvas" class="layer highlight"></canvas>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted, watch, computed, defineEmits } from 'vue';
+import { uiState, getGameState, getGameLib } from '../logic/UIState';
+import { clearCanvas, drawHexagon } from '../logic/DrawHex';
+import type { Point2 } from '../logic/ItemLib';
+import { pixelToAxial, axialToPixel } from '../logic/HexMath';
+import { renderResearchBaseLayer } from '../logic/drawResearch';
+import { findCheapestPath, indexToAxial, axialToIndex, calculateVisibility } from '../logic/Research';
+import { globalInputQueue } from '../logic/Model';
+import { CmdResearchNode } from '../logic/input/InputCommands';
+
+const container = ref<HTMLDivElement | null>(null);
+const baseCanvas = ref<HTMLCanvasElement | null>(null);
+const highlightCanvas = ref<HTMLCanvasElement | null>(null);
+
+const HEX_SIZE = 18;
+const BACKGROUND_HEX_SIZE = HEX_SIZE * 0.85;
+const MIN_ZOOM = 0.4;
+const MAX_ZOOM = 3;
+
+const canvasWidth = ref(0);
+const canvasHeight = ref(0);
+
+const origin = computed<Point2>(() => ({
+  x: canvasWidth.value / 2,
+  y: canvasHeight.value / 2,
+}));
+
+const zoom = ref(1);
+const offset = ref<Point2>({ x: 0, y: 0 });
+const isPanning = ref(false);
+const isMouseDown = ref(false);
+const lastPanClient = ref<Point2 | null>(null);
+const hoverAxial = ref<Point2 | null>(null);
+
+const emit = defineEmits<{
+  (e: 'hover-cell', cell: Point2 | null): void;
+}>();
+
+const RESEARCH_PATH_OBSTACLE_ICON_COLOR = '#b1dcff';
+
+onMounted(() => {
+  setupCanvases();
+  renderBaseLayer();
+  renderHighlightLayer();
+  window.addEventListener('resize', onResize);
+  window.addEventListener('mouseup', onWindowMouseUp);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', onResize);
+  window.removeEventListener('mouseup', onWindowMouseUp);
+});
+
+watch(
+  () => [uiState.researchOwnedCount, uiState.researchRevealRadius],
+  () => {
+    renderBaseLayer();
+    renderHighlightLayer();
+  }
+);
+
+function onResize() {
+  setupCanvases();
+  renderBaseLayer();
+  renderHighlightLayer();
+}
+
+function setupCanvases() {
+  const root = container.value;
+  if (!root) return;
+
+  const width = root.clientWidth || root.offsetWidth || 0;
+  const height = root.clientHeight || root.offsetHeight || 0;
+  if (!width || !height) return;
+
+  canvasWidth.value = width;
+  canvasHeight.value = height;
+
+  const canvases = [baseCanvas.value, highlightCanvas.value];
+  canvases.forEach(canvas => {
+    if (!canvas) return;
+    canvas.width = width;
+    canvas.height = height;
+  });
+}
+
+function renderBaseLayer() {
+  const canvas = baseCanvas.value;
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  // Reset transform before clearing
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  clearCanvas(ctx);
+
+  // Apply camera transform (zoom + pan)
+  const z = zoom.value;
+  const off = offset.value;
+  ctx.setTransform(z, 0, 0, z, off.x, off.y);
+
+  const gs = getGameState();
+  const lib = getGameLib();
+  const o = origin.value;
+
+  renderResearchBaseLayer(ctx, gs, lib, o, HEX_SIZE, BACKGROUND_HEX_SIZE);
+}
+
+function renderHighlightLayer() {
+  const canvas = highlightCanvas.value;
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  // Reset transform and clear
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  clearCanvas(ctx);
+
+  const mode = (uiState as any).researchEditMode as '' | 'empty' | 'void' | 'obstacle' | undefined;
+  if (mode) {
+    // In edit mode we do not show purchase paths
+    return;
+  }
+
+  const axial = hoverAxial.value;
+  if (!axial) return;
+
+  const gs = getGameState();
+  const idx = axialToIndex(axial.x, axial.y);
+  if (idx === -1) return;
+  const cell = gs.researchCells[idx];
+  if (!cell || !cell.revealed || cell.owned) return;
+
+  const path = findCheapestPath(gs, axial.x, axial.y);
+  if (!path.reachable || path.pathLength === 0) return;
+
+  // Apply camera transform
+  const z = zoom.value || 1;
+  const off = offset.value;
+  ctx.setTransform(z, 0, 0, z, off.x, off.y);
+
+  const o = origin.value;
+
+  // Highlight all cells that will be converted
+  const pathCells = path.pathCells;
+  const len = path.pathLength;
+
+  for (let i = 0; i < len; i++) {
+    const cellIdx = pathCells[i];
+     const cellData = gs.researchCells[cellIdx];
+     const a = indexToAxial(cellIdx);
+     const center = axialToPixel({ x: a.x, y: a.y }, HEX_SIZE, o);
+     drawHexagon(ctx, center, HEX_SIZE * 0.9, {
+       fillColor: 'rgba(56, 189, 248, 0.22)',
+       strokeColor: 'rgba(56, 189, 248, 0.9)',
+       lineWidth: 2,
+     });
+
+     // Draw ⧖ icon for obstacle cells that will be destroyed (cost > 0)
+     if (cellData && cellData.cost > 0) {
+       ctx.save();
+       ctx.fillStyle = RESEARCH_PATH_OBSTACLE_ICON_COLOR;
+       ctx.textAlign = 'center';
+       ctx.textBaseline = 'middle';
+       ctx.font = `bold ${HEX_SIZE * 1.2}px system-ui, -apple-system, Segoe UI, sans-serif`;
+       ctx.fillText('⧖', center.x, center.y);
+       ctx.restore();
+     }
+  }
+}
+
+function onWheel(event: WheelEvent) {
+  const canvas = baseCanvas.value;
+  if (!canvas) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const px = event.clientX - rect.left;
+  const py = event.clientY - rect.top;
+
+  const oldZoom = zoom.value || 1;
+  const zoomFactor = event.deltaY > 0 ? 0.9 : 1.1;
+  let newZoom = oldZoom * zoomFactor;
+  newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
+
+  if (newZoom === oldZoom) return;
+
+  const off = offset.value;
+  const worldX = (px - off.x) / oldZoom;
+  const worldY = (py - off.y) / oldZoom;
+
+  offset.value = {
+    x: px - worldX * newZoom,
+    y: py - worldY * newZoom,
+  };
+  zoom.value = newZoom;
+
+  renderBaseLayer();
+  renderHighlightLayer();
+}
+
+function onMouseDown(event: MouseEvent) {
+  if (event.button !== 0) return;
+  isMouseDown.value = true;
+  isPanning.value = false;
+  lastPanClient.value = { x: event.clientX, y: event.clientY };
+}
+
+function onMouseMove(event: MouseEvent) {
+  updateHoverCell(event);
+
+  if (!isMouseDown.value || !lastPanClient.value) return;
+  const prev = lastPanClient.value;
+  const dx = event.clientX - prev.x;
+  const dy = event.clientY - prev.y;
+
+  if (!isPanning.value) {
+    const distSq = dx * dx + dy * dy;
+    if (distSq < 9) {
+      return;
+    }
+    isPanning.value = true;
+  }
+
+  lastPanClient.value = { x: event.clientX, y: event.clientY };
+
+  offset.value = {
+    x: offset.value.x + dx,
+    y: offset.value.y + dy,
+  };
+
+  renderBaseLayer();
+  renderHighlightLayer();
+}
+
+function onMouseUp(event: MouseEvent) {
+  if (event.button !== 0) return;
+  if (isMouseDown.value && !isPanning.value) {
+    handleClick(event);
+  }
+  isMouseDown.value = false;
+  isPanning.value = false;
+  lastPanClient.value = null;
+}
+
+function onMouseLeave(_event: MouseEvent) {
+  isMouseDown.value = false;
+  isPanning.value = false;
+  lastPanClient.value = null;
+  if (hoverAxial.value) {
+    hoverAxial.value = null;
+    emit('hover-cell', null);
+  }
+  renderHighlightLayer();
+}
+
+function onWindowMouseUp(event: MouseEvent) {
+  if (event.button !== 0) return;
+  isMouseDown.value = false;
+  isPanning.value = false;
+  lastPanClient.value = null;
+}
+
+function updateHoverCell(event: MouseEvent): void {
+  const canvas = baseCanvas.value;
+  if (!canvas) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const px = event.clientX - rect.left;
+  const py = event.clientY - rect.top;
+
+  const z = zoom.value || 1;
+  const off = offset.value;
+  const worldX = (px - off.x) / z;
+  const worldY = (py - off.y) / z;
+
+  const o = origin.value;
+  const axial = pixelToAxial({ x: worldX, y: worldY }, HEX_SIZE, o);
+
+  const prev = hoverAxial.value;
+  if (!prev || prev.x !== axial.x || prev.y !== axial.y) {
+    hoverAxial.value = axial;
+    emit('hover-cell', axial);
+    renderHighlightLayer();
+  }
+}
+
+function applyEditModeAt(axial: Point2): void {
+  const mode = (uiState as any).researchEditMode as '' | 'empty' | 'void' | 'obstacle' | undefined;
+  if (!mode) return;
+
+  const gs = getGameState();
+  const idx = axialToIndex(axial.x, axial.y);
+  if (idx === -1) return;
+  const cell = gs.researchCells[idx];
+  if (!cell) return;
+
+  let archetypeId: string;
+  if (mode === 'empty') {
+    archetypeId = 'empty';
+  } else if (mode === 'void') {
+    archetypeId = 'void';
+  } else if (mode === 'obstacle') {
+    archetypeId = 'obs';
+  } else {
+    return;
+  }
+
+  cell.archetypeId = archetypeId;
+
+  const lib = getGameLib();
+  const arch = lib.research.archetypes.get(archetypeId) || null;
+
+  if (arch) {
+    if (arch.type === 'void') {
+      cell.blocked = true;
+      cell.cost = 0;
+      cell.owned = false;
+      cell.revealed = false;
+    } else if (arch.type === 'obstacle' || arch.covert) {
+      cell.blocked = false;
+      cell.cost = 1;
+    } else {
+      cell.blocked = false;
+      cell.cost = 0;
+    }
+  } else {
+    cell.blocked = mode === 'void';
+    cell.cost = mode === 'obstacle' ? 1 : 0;
+  }
+
+  calculateVisibility(gs, lib.research);
+
+  // Force local redraw and notify dev tools
+  renderBaseLayer();
+  renderHighlightLayer();
+  (uiState as any).researchEditVersion = ((uiState as any).researchEditVersion || 0) + 1;
+}
+
+function handleClick(event: MouseEvent): void {
+  const canvas = baseCanvas.value;
+  if (!canvas) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const px = event.clientX - rect.left;
+  const py = event.clientY - rect.top;
+
+  const z = zoom.value || 1;
+  const off = offset.value;
+  const worldX = (px - off.x) / z;
+  const worldY = (py - off.y) / z;
+
+  const o = origin.value;
+  const axial = pixelToAxial({ x: worldX, y: worldY }, HEX_SIZE, o);
+
+  const mode = (uiState as any).researchEditMode as '' | 'empty' | 'void' | 'obstacle' | undefined;
+  if (mode) {
+    applyEditModeAt(axial);
+    return;
+  }
+
+  const gs = getGameState();
+  const idx = axialToIndex(axial.x, axial.y);
+  if (idx === -1) return;
+  const cell = gs.researchCells[idx];
+  if (!cell || !cell.revealed || cell.owned) return;
+
+  const path = findCheapestPath(gs, axial.x, axial.y);
+  if (!path.reachable) return;
+
+  globalInputQueue.push(new CmdResearchNode({ pos: axial }));
+}
+</script>
+
+<style scoped>
+.research-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 50% 0%, rgba(15, 23, 42, 0.9), #020617);
+  overflow: hidden;
+}
+
+.layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.base {
+  z-index: 1;
+}
+
+.highlight {
+  z-index: 2;
+  pointer-events: none;
+}
+</style>

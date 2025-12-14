@@ -13,6 +13,7 @@
   "isolatedModules": true,
   "noEmit": true,
   "jsx": "preserve",
+  "preserveSymlinks": true,
 
   /* Linting */
   "strict": true,

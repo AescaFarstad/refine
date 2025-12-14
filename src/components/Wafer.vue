@@ -37,7 +37,10 @@
         class="wafer-upgrade-hint"
         :class="{ insufficient: !canAffordUpgrade }"
       >
-        Grow wafer for {{ upgradeCost }} ⌁
+        Grow wafer for
+        <span class="resource-price" :style="{ color: shardColor }">
+          {{ upgradeCost }} ⌁
+        </span>
       </div>
     </div>
 
@@ -157,6 +160,7 @@ import atlasStorage from '../logic/AtlasStorage';
 import { translateForSnap, rotateMolecule } from '../logic/MoleculeUtils';
 import { HEX_SIZE, WAFER_CANVAS_WIDTH, WAFER_CANVAS_HEIGHT } from '../logic/RefineUIBehaviour';
 import { updateManualDragMolecule } from '../logic/ManualDrag';
+import { getShardDisplay } from '../utils/ShardDisplay';
 
 
 const props = defineProps<{
@@ -168,6 +172,8 @@ const emit = defineEmits<{
   (e: 'clear-dragging'): void;
   (e: 'pickup-item', item: { id: string; molecule: Molecule }): void;
 }>();
+
+const shardColor = getShardDisplay('shards').color;
 
 // Wafer comes from UIState (synced from GameState)
 const wafer = computed(() => uiState.wafer);
@@ -571,6 +577,10 @@ function onRotate() {
   pointer-events: none;
   user-select: none;
   z-index: 25;
+}
+
+.wafer-upgrade-hint .resource-price {
+  font-weight: 700;
 }
 
 .wafer-upgrade-hint.insufficient {

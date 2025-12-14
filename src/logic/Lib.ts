@@ -13,6 +13,7 @@ import gearData from '../data/gear';
 import gearCategoriesData from '../data/gear_categories';
 import itemsData from '../data/items';
 import mazeData from '../data/maze';
+import { ResearchLib } from "./ResearchLib";
 
 export interface LibItem {
   id: string;
@@ -32,6 +33,7 @@ export class Lib {
   public mazes: Map<string, MazeDefinition> = new Map();
   // Ordered levels array (sorted by numeric prefix lN_)
   public mazeLevels: MazeDefinition[] = [];
+  public research: ResearchLib = new ResearchLib();
 
   constructor() {
     this.loadAllDefinitions();

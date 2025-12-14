@@ -1,3 +1,6 @@
+import type { Point2 } from '../core/math';
+import type { Molecule } from '../ItemLib';
+
 export interface CmdInput {
   name: string;
 }
@@ -49,6 +52,15 @@ export class CmdMazeRestart implements CmdInput {
   readonly name = 'CmdMazeRestart';
 }
 
+
+export class CmdResearchNode implements CmdInput {
+  readonly name = 'CmdResearchNode';
+  readonly pos: Point2;
+  constructor(args: { pos: Point2 }) {
+    this.pos = args.pos;
+  }
+}
+
 // Raids UI: selection and gear toggling
 export class CmdSelectRaid implements CmdInput {
   readonly name = 'CmdSelectRaid';
@@ -83,7 +95,6 @@ export class CmdToggleQuest implements CmdInput {
 }
 
 // Wafer manipulation commands
-import type { Molecule, Point2 } from '../ItemLib';
 
 export class CmdPlaceMolecule implements CmdInput {
   readonly name = 'CmdPlaceMolecule';

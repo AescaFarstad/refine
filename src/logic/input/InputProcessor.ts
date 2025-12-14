@@ -1,7 +1,7 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue, SHARD_PICKUP_DELAY_SEC } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAknowledgeOutcome, CmdLevelup, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer } from './InputCommands';
+import { CmdStartRaid, CmdAdvanceTime, CmdAknowledgeOutcome, CmdLevelup, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer, CmdResearchNode } from './InputCommands';
 import { LEVEL_UP_STRENGTH, LEVEL_UP_LOOTING, LEVEL_UP_VOLUME } from '../Const';
 import { EvtRefineryDone } from '../evt/Evt';
 import { computeLoadedEssencesFromItems } from '../Refine';
@@ -11,6 +11,7 @@ import { runRaid, recomputeActiveRaidParams, toggleGearForRaid, recomputeActiveR
 import type { QuestDefinition } from '../QuestLib';
 import { getEffectiveRaidDefinition, pickAndApplyRaidSuccessMutation, describeMutation } from '../RaidMutation';
 import { createWafer, placeMolecule, removeMolecule, enableCellWithFloodfill, computeWaferUpgradePrice } from '../Wafer';
+import { applyResearchPurchase } from '../Research';
 
 type Handler = (gs: GameState, cmd: CmdInput) => void;
 const handlersByName = new Map<string, Handler>();
@@ -35,7 +36,7 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
 
   const result = runRaid(gs, def);
 
-  gs.time = Math.max(0, (gs.time || 0) + Math.max(0, result.timeSpentSec || 0));
+  gs.gameTime = Math.max(0, (gs.gameTime || 0) + Math.max(0, result.timeSpentSec || 0));
 
   // End-of-raid quest processing (reach + skill points)
   let reachGained = 0;
@@ -110,7 +111,7 @@ handlersByName.set('CmdStartRefining', (gs, cmd) => {
   gs.refiningDuration = Math.max(0, Math.round(preview.timeSec || 0));
 
   const duration = gs.refiningDuration;
-  gs.nextEvt = new EvtRefineryDone({ at: gs.time + duration });
+  gs.nextEvt = new EvtRefineryDone({ at: gs.gameTime + duration });
   gs.timeActive = true;
 });
 
@@ -220,6 +221,17 @@ handlersByName.set('CmdGrowWafer', (gs, cmd) => {
   (gs as any).shardDust = Math.max(0, currentShards - price);
   (gs as any).waferUpgradesPurchased = upgradesPurchased + 1;
   computeEffectiveEssences(gs.wafer);
+});
+
+handlersByName.set('CmdResearchNode', (gs, cmd) => {
+  const c = cmd as CmdResearchNode;
+  if (!c.pos) return;
+  const lib = gs.lib.research;
+  const result = applyResearchPurchase(gs, lib, c.pos.x, c.pos.y);
+  if (result.success && gs.raid && gs.raid.id) {
+    recomputeActiveRaidParams(gs, gs.raid.id);
+    recomputeActiveRaidEstimates(gs, 100);
+  }
 });
 
 

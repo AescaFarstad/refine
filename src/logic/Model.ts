@@ -50,9 +50,9 @@ export function update(gs: GameState, deltaTime: number): void {
     return;
   }
 
-  if (gs.timeActive && gs.nextEvt && gs.time >= gs.nextEvt.at) {
+  if (gs.timeActive && gs.nextEvt && gs.gameTime >= gs.nextEvt.at) {
     const evt = gs.nextEvt;
-    gs.time = evt.at;
+    gs.gameTime = evt.at;
     gs.nextEvt = null;
     processEvt(gs, evt);
     gs.timeActive = false;
@@ -65,8 +65,8 @@ export function update(gs: GameState, deltaTime: number): void {
 
   if (gs.timeActive) {
     const dt = Math.max(0, deltaTime);
-    const oldTime = gs.time;
-    gs.time += dt * Math.max(1, gs.timeSpeed || 1);
+    const oldTime = gs.gameTime;
+    gs.gameTime += dt * Math.max(1, gs.timeSpeed || 1);
 
     // exponential ramp: multiply by MAX^(dt/T)
     const growth = Math.pow(TIME_SPEED_MAX, Math.min(1, dt / TIME_SPEED_RAMP_SEC));

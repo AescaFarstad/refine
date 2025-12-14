@@ -140,7 +140,7 @@
               </template>
 
               <template v-else>
-                <div class="note-row">Encounter: {{ entry.kind }}</div>
+                <div class="note-row">Encounter: {{ (entry as any).kind || 'Encounter' }}</div>
               </template>
             </div>
           </li>

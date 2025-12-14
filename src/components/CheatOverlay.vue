@@ -13,6 +13,9 @@
           <button class="btn primary" type="button" @click="openMoleculeEditor">
             Open Molecule Editor
           </button>
+          <button class="btn primary" type="button" @click="openEditResearchPane">
+            Open Edit Research Pane
+          </button>
         </div>
       </section>
 
@@ -51,6 +54,12 @@ function openAtlas(key: AtlasKey) {
 function openMoleculeEditor() {
   uiState.devAtlasKey = '';
   uiState.devMoleculeEditorOpen = true;
+}
+
+function openEditResearchPane() {
+  uiState.activeTab = 'research';
+  uiState.editResearchOpen = true;
+  uiState.cheatOpen = false;
 }
 
 function closeAll() {

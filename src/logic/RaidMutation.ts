@@ -157,6 +157,8 @@ function cloneEncounter(enc: EncounterDef): EncounterDef {
       return { type: 'MonsterLootEncounter', monsterId: (enc as MonsterLootEncounterDef).monsterId };
     case 'FightEncounter':
       return { type: 'FightEncounter', monsterId: (enc as FightEncounterDef).monsterId };
+    case 'QuestEncounter':
+      return { type: 'QuestEncounter', questId: (enc as QuestEncounterDef).questId };
   }
 }
 
@@ -394,6 +396,12 @@ export function describeMutation(gs: GameState, mutation: RaidMutation): string 
       const cnt = Math.max(1, Math.trunc(u.count || 1));
       if (cnt === 1) return `a ${to} came in place of the ${from}`;
       return `${cnt} ${to} replaced ${cnt} ${from}`;
+    }
+    case 'QuestMutation': {
+      const n = Math.trunc(mutation.count);
+      const abs = Math.abs(n);
+      const questName = mutation.questId;
+      return `${sign(n)}${abs} ${questName} quest${abs === 1 ? '' : 's'}`;
     }
   }
 }

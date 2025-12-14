@@ -109,7 +109,7 @@ export function handleLootLikeEncounter(gs: GameState, r: ActiveRaid, ctx: LootE
     ['uncommon', weights.uncommon],
     ['rare', weights.rare],
     ['legendary', weights.legendary],
-  ]).filter(([, w]) => w > 0) as Array<[Cat, number]>;
+  ] as Array<[Cat, number]>).filter(([, w]) => w > 0);
 
   let picked: string | null = null;
   if (entries.length > 0) {

@@ -16,3 +16,7 @@ export const REFINE_TIME_NAME = {
 export const WAFER_HEIGHT = 12;
 export const WAFER_WIDTH = 20;
 export const WAFER_UPGRADE_BASE_COST = 100;
+
+export const RESEARCH_PANE_SIZE = 50;
+export const RESEARCH_OBSTACLE_PRICE = 100;
+export const RESEARCH_OBSTACLE_PRICE_GROWTH = 20;

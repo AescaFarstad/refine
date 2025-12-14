@@ -96,6 +96,10 @@ body {
 .manual-dragging, .manual-dragging * { user-select: none !important; -webkit-user-drag: none !important; }
 .content { padding: 12px; box-sizing: border-box; flex: 1 1 auto; }
 
+.tab-content {
+  height: 100%;
+}
+
 #app { display: flex; flex-direction: column; min-height: 100%; }
 
 .panel {

@@ -53,17 +53,18 @@ function onPointerUp(e: PointerEvent | MouseEvent, canceled: boolean = false) {
   const y = (e as PointerEvent).clientY;
 
   // Remove listeners
+  const win = window as Window & typeof globalThis;
   if ('PointerEvent' in window) {
-    window.removeEventListener('pointermove', onPointerMove as any);
-    window.removeEventListener('pointerup', onPointerUp as any);
-    window.removeEventListener('pointercancel', onPointerCancel as any);
+    win.removeEventListener('pointermove', onPointerMove as any);
+    win.removeEventListener('pointerup', onPointerUp as any);
+    win.removeEventListener('pointercancel', onPointerCancel as any);
   } else {
-    window.removeEventListener('mousemove', onPointerMove as any);
-    window.removeEventListener('mouseup', onPointerUp as any);
+    win.removeEventListener('mousemove', onPointerMove as any);
+    win.removeEventListener('mouseup', onPointerUp as any);
   }
-  window.removeEventListener('keydown', onKeyDown as any);
-  window.removeEventListener('dragstart', onNativeDragStart as any, true);
-  window.removeEventListener('selectstart', onSelectStart as any, true);
+  win.removeEventListener('keydown', onKeyDown as any);
+  win.removeEventListener('dragstart', onNativeDragStart as any, true);
+  win.removeEventListener('selectstart', onSelectStart as any, true);
 
   // Dispatch end event with drop coordinates
   const detail: ManualDragEndDetail = {
@@ -130,19 +131,20 @@ export function startManualDrag(payload: ManualDragPayload, startEvent: PointerE
   if (!ok) { active = false; payloadRef = null; return; }
 
   // Global listeners
+  const win = window as Window & typeof globalThis;
   if ('PointerEvent' in window) {
-    window.addEventListener('pointermove', onPointerMove as any);
-    window.addEventListener('pointerup', onPointerUp as any, { once: false });
-    window.addEventListener('pointercancel', onPointerCancel as any, { once: false });
+    win.addEventListener('pointermove', onPointerMove as any);
+    win.addEventListener('pointerup', onPointerUp as any, { once: false });
+    win.addEventListener('pointercancel', onPointerCancel as any, { once: false });
   } else {
-    window.addEventListener('mousemove', onPointerMove as any);
-    window.addEventListener('mouseup', onPointerUp as any, { once: false });
+    win.addEventListener('mousemove', onPointerMove as any);
+    win.addEventListener('mouseup', onPointerUp as any, { once: false });
   }
-  window.addEventListener('keydown', onKeyDown as any);
+  win.addEventListener('keydown', onKeyDown as any);
 
   // Suppress any native drag and text selection while active
-  window.addEventListener('dragstart', onNativeDragStart as any, true);
-  window.addEventListener('selectstart', onSelectStart as any, true);
+  win.addEventListener('dragstart', onNativeDragStart as any, true);
+  win.addEventListener('selectstart', onSelectStart as any, true);
 }
 
 // Convenience constants for listeners in components

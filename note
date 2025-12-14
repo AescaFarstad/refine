@@ -28,7 +28,9 @@ november 23, 25
 november 30
   gear images using chatgpt, struggling with eroding noise from the images
 december 7
-  fixed noise erorsion, UI tweaks, research, gear, items
+  fixed noise erorsion for refining images, UI tweaks, research, gear, items
+december 13-14
+  web-style research, core split between projects
 
 
 Images:
@@ -61,5 +63,10 @@ purified
 reinforced
 masterwork
 
+npx vue-tsc --noEmit 2>&1
+npx tsc --noEmit --skipLibCheck src/logic/Research.ts 2>&1
 
-Let's do a new research screen. Start with removing the current one and logic related to it. The tab should stay but it should be empty
+
+nodes that unlock gear should draw the corresponding gear icon over them
+but we need to draw it in the center of the combined space of all the cells which correspond to that node
+How do we do that?

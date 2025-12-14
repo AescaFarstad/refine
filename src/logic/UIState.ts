@@ -62,6 +62,7 @@ export const uiState = reactive({
   cheatOpen: false,
   devAtlasKey: '' as '' | 'items',
   devMoleculeEditorOpen: false,
+  editResearchOpen: false,
 
   refineries: [] as UIRefinery[],
   items: [] as Array<{ id: string; quantity: number }>,
@@ -79,6 +80,11 @@ export const uiState = reactive({
   mazeTotalKeys: 0,
   mazeFailed: false,
   mazeSolved: false,
+
+  researchOwnedCount: 0,
+  researchRevealRadius: 0,
+  researchEditMode: '' as '' | 'empty' | 'void' | 'obstacle',
+  researchEditVersion: 0,
 });
 
 // Formatted time display: "X days, HH:MM"
@@ -86,7 +92,7 @@ export const timeDisplay = computed(() => {
   // Keep dependency reactive while sourcing precise seconds from gameRef when available
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   uiState.timeMinutes;
-  const seconds = Math.max(0, Math.floor((gameRef?.time ?? (uiState.timeMinutes * 60)) || 0));
+  const seconds = Math.max(0, Math.floor((gameRef?.gameTime ?? (uiState.timeMinutes * 60)) || 0));
   return formatDurationHM(seconds);
 });
 
@@ -104,7 +110,7 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.timeFlux = game.timeFlux ?? 0;
   uiState.shardDust = (game as any).shardDust || 0;
   // Model tracks time in seconds; UI needs minutes for display
-  uiState.timeMinutes = Math.floor((game.time || 0) / 60);
+  uiState.timeMinutes = Math.floor((game.gameTime || 0) / 60);
   uiState.canAdvanceTime = !!game.nextEvt;
   uiState.timeActive = game.timeActive;
 
@@ -159,7 +165,7 @@ export function SyncUIFromGameState(game: GameState): void {
 
     base.startedAtSec = startedAt;
     if (duration > 0) {
-      const elapsed = Math.max(0, (game.time || 0) - startedAt);
+      const elapsed = Math.max(0, (game.gameTime || 0) - startedAt);
       const progressPct = Math.max(0, Math.min(100, Math.round((elapsed / duration) * 100)));
       const remaining = Math.max(0, Math.round(duration - elapsed));
       base.progressPct = progressPct;
@@ -209,6 +215,13 @@ export function SyncUIFromGameState(game: GameState): void {
     uiState.mazeFailed = false;
     uiState.mazeSolved = false;
   }
+
+  if (game.researchOwnedCount !== uiState.researchOwnedCount) {
+    uiState.researchOwnedCount = game.researchOwnedCount;
+  }
+
+  const radius = (game as any).researchRevealRadius;
+  uiState.researchRevealRadius = typeof radius === 'number' ? radius : 0;
 }
 
 // Expose current game lib for UI components that need live definitions

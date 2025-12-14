@@ -39,7 +39,7 @@ export interface ItemDefinition {
 }
 
 export function processItemDefinitions(
-  defs: Record<string, Omit<ItemDefinition, 'id' | 'essence'> & { essence?: Essence }>
+  defs: Record<string, Omit<ItemDefinition, 'id' | 'essence' | 'rarity'> & { essence?: Essence; rarity?: number | 'common' | 'uncommon' | 'rare' | 'legendary' }>
 ): Record<string, ItemDefinition> {
   const result: Record<string, ItemDefinition> = {};
   for (const [key, def] of Object.entries(defs)) {
@@ -52,10 +52,21 @@ export function processItemDefinitions(
         essence[atom.color] = (essence[atom.color] || 0) + 1;
       }
     }
+
+    // Normalize rarity from number to string
+    let rarity: 'common' | 'uncommon' | 'rare' | 'legendary' = 'common';
+    if (typeof def.rarity === 'number') {
+      const rarityMap = ['common', 'uncommon', 'rare', 'legendary'] as const;
+      rarity = rarityMap[Math.min(Math.max(def.rarity - 1, 0), 3)];
+    } else if (def.rarity) {
+      rarity = def.rarity;
+    }
+
     result[key] = {
       ...def,
       id: key,
       essence,
+      rarity,
     } as ItemDefinition;
   }
   return result;

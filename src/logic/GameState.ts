@@ -8,6 +8,7 @@ import { CheatAddRaidItems } from './cheat/CheatCommands';
 import type { IceMaze } from "../maze/IceMaze";
 import type { Wafer } from "./Wafer";
 import { createWafer } from "./Wafer";
+import { initResearchCells, calculateVisibility } from "./Research";
 
 export const DEFAULT_SPEED: number = 6;
 export const MIN_WALK_SPEED: number = 1; // km/h
@@ -15,16 +16,21 @@ export const MIN_WALK_SPEED: number = 1; // km/h
 export class GameState {
   public lib: Lib = new Lib();
 
-  // Elapsed game time in seconds
-  public time: number = 0;
+  // Elapsed game time in seconds (canonical for /core/ as well)
+  public gameTime: number = 0;
+
   public timeActive: boolean = false;
   public timeSpeed: number = 1;
 
   public random: SeededRandom = new SeededRandom();
 
+  // Properties for /core/ compatibility (not actively used in this project)
+  public hypothetical: { key: string; connections: any } | null = null; // For core Hypothetical system
+  public connections: any = null; // For core Stats system
+
 
   public credits: number = 5000;
-  public chronotraces: number = 500;
+  public chronotraces: number = 500000;
   public timeFlux: number = 150;
   public shardDust: number = 1000;
   public strength: number = 120;
@@ -45,6 +51,10 @@ export class GameState {
   public refiningDuration: number = 0;
   public shards: Array<Shard> = [];
   public raid: ActiveRaid = new ActiveRaid();
+
+  public researchCells: ResearchCell[] = [];
+  public researchOwnedCount: number = 0;
+  public researchRevealRadius: number = 5;
 
   public unlockedRaids: Array<Raid> = [new Raid("shegolskoe")];
 
@@ -84,7 +94,7 @@ export class GameState {
   public unlockedGear: string[] = [
     'boots_basic', 'sprint_boots',
     'stim_patch', 'medkit_basic',
-    'empty_pack', 'ruksack', 'cargo_harness',
+    'empty_pack', 'ruksack',
     'aspirator_probe', 'metal_detector', 'field_scanner',
     'rusty_machete', 'makeshift_spear', 'nail_gun', 'stun_baton',
     'kevlar_helmet', 'kevlar_vest',
@@ -95,7 +105,7 @@ export class GameState {
     'tactics_thorough_search', 'tactics_immovable_wall',
   ];
   public loadouts: Record<string, string[]> = {
-    shegolskoe: ['sprint_boots', 'medkit_basic', 'cargo_harness', 'aspirator_probe', 'makeshift_spear', 'spiked_armor', 'frag_grenade', 'needle_drone'],
+    shegolskoe: ['sprint_boots', 'medkit_basic', 'aspirator_probe', 'makeshift_spear', 'spiked_armor', 'frag_grenade', 'needle_drone'],
     ozernoye: [],
   };
   public selectedGearPrice: number = 0;
@@ -103,6 +113,15 @@ export class GameState {
   // Estimates for the currently active raid (UI mirrors these)
   public raidSurvivalEstimatePct: number = 0;
   public raidTimeEstimateSec: number = 0;
+
+  public setResearchRevealRadius(radius: number): void {
+    this.researchRevealRadius = radius;
+    calculateVisibility(this, this.lib.research);
+  }
+
+  constructor() {
+    initResearchCells(this, this.lib.research);
+  }
 }
 
 export class ActiveRaid {
@@ -176,4 +195,13 @@ export interface Shard {
   triggered: boolean;
   pickupDelaySec: number;
   size: number;
+}
+
+export interface ResearchCell {
+  nodeId: number;
+  archetypeId: string;
+  revealed: boolean;
+  owned: boolean;
+  cost: number;
+  blocked: boolean; // the void cells
 }

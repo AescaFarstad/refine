@@ -15,7 +15,7 @@ const quests: Record<string, Omit<QuestDefinition, 'id'>> = {
     raidRestriction: ['shegolskoe'],
     rewards: { skillPoints: 1 },
     encounters: [
-      { kind: 'AddMonsterMutation', monsterId: 'rat', count: 1 },
+      { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 1 },
     ],
   },
   q_sp_training_2: {
@@ -24,7 +24,7 @@ const quests: Record<string, Omit<QuestDefinition, 'id'>> = {
     raidRestriction: ['shegolskoe'],
     rewards: { skillPoints: 1 },
     encounters: [
-      { kind: 'AddMonsterMutation', monsterId: 'rat', count: 3 },
+      { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 3 },
     ],
   },
   // Ozernoye completion rewards
@@ -34,7 +34,7 @@ const quests: Record<string, Omit<QuestDefinition, 'id'>> = {
     raidRestriction: ['ozernoye'],
     rewards: { reach: 2 },
     encounters: [
-      { kind: 'AddMonsterMutation', monsterId: 'rat', count: 2 },
+      { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 2 },
     ],
   },
   q_sp_oz_advance: {
@@ -43,7 +43,7 @@ const quests: Record<string, Omit<QuestDefinition, 'id'>> = {
     raidRestriction: ['ozernoye'],
     rewards: { skillPoints: 2 },
     encounters: [
-      { kind: 'AddMonsterMutation', monsterId: 'rat', count: 4 },
+      { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 4 },
     ],
   },
   q_combo_oz: {
@@ -52,7 +52,7 @@ const quests: Record<string, Omit<QuestDefinition, 'id'>> = {
     raidRestriction: ['ozernoye'],
     rewards: { skillPoints: 1, reach: 1 },
     encounters: [
-      { kind: 'AddMonsterMutation', monsterId: 'soldier', count: 1 },
+      { kind: 'AddMonsterMutation', monsterId: 'flower', count: 1 },
     ],
   },
   // Quest that injects a timed QuestEncounter into Shegolskoe
@@ -63,14 +63,14 @@ const quests: Record<string, Omit<QuestDefinition, 'id'>> = {
     raidRestriction: ['shegolskoe'],
     rewards: { skillPoints: 1 },
   },
-  // While active, adds a rat encounter to Shegolskoe
+  // While active, adds a distorted encounter to Shegolskoe
   q_add_rat_to_shegolskoe: {
     name: 'Infestation in Shegolskoe',
     encounterTimeMin: 0,
     raidRestriction: ['shegolskoe'],
     rewards: { skillPoints: 1 },
     encounters: [
-      { kind: 'AddMonsterMutation', monsterId: 'rat', count: 1 },
+      { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 1 },
     ],
   },
 };

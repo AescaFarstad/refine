@@ -22,6 +22,7 @@
       <div class="items-panel">
         <AllItems
           :items="allItems"
+          :copy-id-on-click="true"
           @pick-item="onPickItem"
           @drag-end="onDragEnd"
         />
@@ -31,7 +32,14 @@
         <div class="wafer-panel">
           <div class="wafer-header">
             <span>{{ hoverCoords }}</span>
-            <span class="hint">Same layout and hex size as in-game</span>
+            <button
+              type="button"
+              class="btn connect-toggle"
+              :class="{ active: connectMode }"
+              @click="connectMode = !connectMode"
+            >
+              Draw connections: {{ connectMode ? 'ON' : 'OFF' }}
+            </button>
           </div>
           <div class="wafer-view-wrap">
             <WaferView
@@ -47,10 +55,12 @@
               :use-effective-essence="false"
               :show-buff-overlays="false"
               :show-upgrade-hints="false"
+              :connect-mode="connectMode"
               @hover="onHover"
               @click="onClick"
               @pickup="onPickup"
               @rotate="onRotate"
+              @connection="onConnection"
             />
           </div>
           <div class="code-preview">
@@ -70,6 +80,7 @@
 import { computed, ref, watch } from 'vue';
 import AllItems from './AllItems.vue';
 import WaferView from './WaferView.vue';
+import { uiState } from '../logic/UIState';
 import itemsData from '../data/items';
 import { createWafer, type Wafer, getCell, canPlaceMolecule, placeMolecule, removeMolecule, clearWafer } from '../logic/Wafer';
 import { translateForSnap, rotateMolecule } from '../logic/MoleculeUtils';
@@ -92,6 +103,7 @@ const ghostValid = ref(false);
 const highlightItemIdx = ref<number | null>(null);
 const lastHoverPos = ref<Point2 | null>(null);
 const rotation = ref(0);
+const connectMode = ref(false);
 
 const DEV_ESSENCE_ITEMS: Record<string, string> = {
   red: 'dev_atom_red',
@@ -107,23 +119,17 @@ const DEV_ESSENCE_ITEMS: Record<string, string> = {
 };
 
 const allItems = computed(() => {
-  const raw = itemsData as Record<string, any>;
-  const devIds = new Set<string>();
-  for (const id in raw) {
-    if (!Object.prototype.hasOwnProperty.call(raw, id)) continue;
-    if (raw[id]?.devOnly) devIds.add(id);
-  }
+  if (!uiState.lib) return [];
+
   const list: Array<{ id: string; quantity: number }> = [];
-  for (const id in raw) {
-    if (!Object.prototype.hasOwnProperty.call(raw, id)) continue;
+  for (const [id] of uiState.lib.items) {
     list.push({ id, quantity: 1 });
   }
+
   list.sort((a, b) => {
-    const aDev = devIds.has(a.id);
-    const bDev = devIds.has(b.id);
-    if (aDev !== bDev) return aDev ? -1 : 1;
-    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+    return uiState.lib!.items.get(a.id)!.order - uiState.lib!.items.get(b.id)!.order;
   });
+
   return list;
 });
 
@@ -219,6 +225,24 @@ const codePreview = computed(() => {
   }
   parts.sort((a, b) => (a.y === b.y ? a.x - b.x : a.y - b.y));
 
+  const connections: Array<{ from: Point2; to: Point2 }> = [];
+  const seen = new Set<string>();
+  for (const item of w.items) {
+    if (!item || !item.molecule || !Array.isArray(item.molecule.connections)) continue;
+    for (const c of item.molecule.connections) {
+      if (!c || !c.from || !c.to) continue;
+      const a = `${c.from.x},${c.from.y}`;
+      const b = `${c.to.x},${c.to.y}`;
+      const key = a < b ? `${a}|${b}` : `${b}|${a}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      connections.push({
+        from: { x: c.from.x, y: c.from.y },
+        to: { x: c.to.x, y: c.to.y },
+      });
+    }
+  }
+
   const lines: string[] = [];
   lines.push('molecule: {');
   lines.push('  atoms: [');
@@ -227,7 +251,11 @@ const codePreview = computed(() => {
   }
   lines.push('  ],');
   lines.push('  connections: [');
-  lines.push('    // TODO: add connections');
+  for (const c of connections) {
+    lines.push(
+      `    { from: { x: ${c.from.x}, y: ${c.from.y} }, to: { x: ${c.to.x}, y: ${c.to.y} } },`,
+    );
+  }
   lines.push('  ],');
   lines.push('},');
   return lines.join('\n');
@@ -307,6 +335,49 @@ function onHover(pos: Point2 | null) {
 
 function bumpWafer() {
   waferVersion.value++;
+}
+
+function onConnection(payload: { from: Point2; to: Point2 }) {
+  const w = wafer.value;
+  if (!w) return;
+
+  const from = payload.from;
+  const to = payload.to;
+
+  if (from.x === to.x && from.y === to.y) return;
+
+  const fromCell = getCell(w, from);
+  const toCell = getCell(w, to);
+  if (!fromCell || !toCell) return;
+  if (fromCell.itemIdx == null || toCell.itemIdx == null) return;
+
+  const itemIdx = fromCell.itemIdx;
+  const item = w.items[itemIdx];
+  if (!item || !item.molecule) return;
+
+  if (!Array.isArray(item.molecule.connections)) {
+    item.molecule.connections = [];
+  }
+
+  const existing = item.molecule.connections;
+  const already = existing.some((c) => {
+    const fx = c.from.x;
+    const fy = c.from.y;
+    const tx = c.to.x;
+    const ty = c.to.y;
+    return (
+      (fx === from.x && fy === from.y && tx === to.x && ty === to.y) ||
+      (fx === to.x && fy === to.y && tx === from.x && ty === from.y)
+    );
+  });
+  if (already) return;
+
+  existing.push({
+    from: { x: from.x, y: from.y },
+    to: { x: to.x, y: to.y },
+  });
+
+  bumpWafer();
 }
 
 function onClick(pos: Point2) {
@@ -412,6 +483,16 @@ function onRotate() {
 .hint {
   font-size: 11px;
   opacity: 0.7;
+}
+
+.btn.connect-toggle {
+  padding: 3px 8px;
+  font-size: 11px;
+}
+
+.btn.connect-toggle.active {
+  background: rgba(34, 197, 94, 0.3);
+  border-color: rgba(34, 197, 94, 0.9);
 }
 
 .wafer-view-wrap {

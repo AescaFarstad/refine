@@ -6,5 +6,6 @@ export interface MonsterDefinition {
   accuracy: number; // percent
   damage: number;
   lootItemId: string; // item dropped for MonsterLootEncounter
+  features: string[];
 }
 

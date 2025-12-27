@@ -6,6 +6,18 @@
     </div>
     <div class="essence-header" :class="{ reserved: essenceKeys.length === 0 }" :aria-hidden="essenceKeys.length === 0">
       <button
+        class="essence-btn raid-sort-btn"
+        type="button"
+        :aria-pressed="activeSort === '#'"
+        @click="onSortBy('#')"
+        title="Sort by: Dev → Remains → Raid order"
+      >
+        <span class="row-top">
+          <span class="ess-letter14">#</span>
+          <span class="sort-arrow" :class="{ active: activeSort === '#' }">▼</span>
+        </span>
+      </button>
+      <button
         v-for="k in essenceKeys"
         :key="'ess-' + k"
         class="essence-btn"
@@ -45,10 +57,9 @@
 import { computed, onMounted, ref } from 'vue';
 import ItemGrid from './ItemGrid.vue';
 import { uiState } from '../logic/UIState';
-import itemsData from '../data/items';
 import atlasStorage from '../logic/AtlasStorage';
 
-const props = defineProps<{ items: Array<{ id: string; quantity: number }>; requiredEssences?: Record<string, number> }>();
+const props = defineProps<{ items: Array<{ id: string; quantity: number }>; requiredEssences?: Record<string, number>; copyIdOnClick?: boolean }>();
 const emit = defineEmits<{ (e: 'pick-item', id: string): void; (e: 'drag-end'): void }>();
 
 const isHovering = ref(false);
@@ -92,9 +103,12 @@ function essenceLetter(k: string): string {
 // Total essences present in player's items (full inventory, not just available)
 const essenceTotals = computed<Record<string, number>>(() => {
   const totals: Record<string, number> = {};
+  if (!uiState.lib) return totals;
+
   for (const it of uiState.items) {
-    const def = (itemsData as any)[it.id] as { essence?: Record<string, number> } | undefined;
-    const ess = def?.essence || {};
+    const def = uiState.lib.items.get(it.id);
+    if (!def) continue;
+    const ess = def.essence || {};
     const qty = Math.max(1, it.quantity || 1);
     for (const [k, v] of Object.entries(ess)) {
       if (!v) continue;
@@ -113,14 +127,24 @@ const essenceKeys = computed<string[]>(() => {
 const activeSort = ref<string>('');
 
 function essenceInItem(itemId: string, k: string): number {
-  const def = (itemsData as any)[itemId] as { essence?: Record<string, number> } | undefined;
+  if (!uiState.lib) return 0;
+  const def = uiState.lib.items.get(itemId);
   return Math.max(0, def?.essence?.[k] || 0);
 }
 
 const sortedItems = computed(() => {
   const list = [...(props.items || [])];
   const k = activeSort.value;
-  if (!k) return list;
+  if (!k || !uiState.lib) return list;
+
+  if (k === '#') {
+    return list.sort((a, b) => {
+      const aOrder = uiState.lib!.items.get(a.id)!.order;
+      const bOrder = uiState.lib!.items.get(b.id)!.order;
+      return aOrder - bOrder;
+    });
+  }
+
   return list.sort((a, b) => {
     const av = essenceInItem(a.id, k);
     const bv = essenceInItem(b.id, k);
@@ -150,8 +174,10 @@ const dimIds = computed<Record<string, boolean>>(() => {
 
 const draggableIds = computed<Record<string, boolean>>(() => {
   const out: Record<string, boolean> = {};
+  if (!uiState.lib) return out;
+
   for (const it of props.items || []) {
-    const def = (itemsData as any)[it.id] as { molecule?: any } | undefined;
+    const def = uiState.lib.items.get(it.id);
     if (def?.molecule) {
       out[it.id] = true;
     }
@@ -163,10 +189,15 @@ function onSortBy(k: string) {
   activeSort.value = k;
 }
 
-function onPick(id: string) {
-  // Ensure the clicked item exists and has available quantity
+async function onPick(id: string) {
   const it = props.items?.find(x => x.id === id);
   if (!it || (it.quantity || 0) <= 0) return;
+
+  if (props.copyIdOnClick) {
+    if (navigator.clipboard && navigator.clipboard.writeText)
+      await navigator.clipboard.writeText(id);
+  }
+
   emit('pick-item', id);
 }
 </script>
@@ -180,6 +211,9 @@ h3 { margin: 0; font-size: 16px; letter-spacing: 0.04em; }
 .essence-header.reserved { visibility: hidden; }
 .essence-btn { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; padding: 2px 4px; border-radius: 4px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.03); color: inherit; font-size: 12px; font-weight: 800; cursor: pointer; white-space: nowrap; }
 .essence-btn:hover { background: rgba(255,255,255,0.06); }
+.raid-sort-btn { padding: 2px 4px; }
+.raid-sort-btn .row-top { min-height: 32px; }
+.raid-sort-btn .ess-letter14 { width: 24px; height: 24px; font-size: 24px; font-weight: 900; background: none; }
 .row-top { display: inline-flex; align-items: center; gap: 4px; line-height: 1; }
 .row-bottom { line-height: 1; }
 .ess-icon14 { display: inline-block; width: 14px; height: 14px; vertical-align: middle; }

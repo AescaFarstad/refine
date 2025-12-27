@@ -158,7 +158,7 @@ const hintRows = computed((): Array<{ label: string; value: string }> => {
   text-align: left;
   border: none;
   border-radius: 4px;
-  padding: 10px 48px 22px 10px; /* reserve space for price (top-right) and weight (bottom-right) */
+  padding: 10px 10px 10px 10px; /* equal padding - weight/price are absolutely positioned */
   background: rgba(255,255,255,0.02);
   cursor: pointer;
   color: var(--text-primary);

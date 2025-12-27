@@ -31,6 +31,8 @@ december 7
   fixed noise erorsion for refining images, UI tweaks, research, gear, items
 december 13-14
   web-style research, core split between projects
+december 27
+  adding molecules, items, monsters...
 
 
 Images:
@@ -70,3 +72,13 @@ npx tsc --noEmit --skipLibCheck src/logic/Research.ts 2>&1
 nodes that unlock gear should draw the corresponding gear icon over them
 but we need to draw it in the center of the combined space of all the cells which correspond to that node
 How do we do that?
+
+
+Once you were full of regret.
+And fractured time to visit the multiverses of your untaken decisions.
+Yet the entropy creeps fast.
+People vanish, buildings crumble, monsters hatch.
+It is now a struggle to scavenge for the resources needed to rejoin humanity.
+To come back to the universe where your life has meaning.
+Where your loved ones wait.
+Escape the loop through the maze of time!

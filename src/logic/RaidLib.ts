@@ -33,7 +33,7 @@ export interface RaidDefinition {
   name: string;
   reachRequired: number;
   baseLootChance: number;
-  // Items that may drop in this raid (used by LootEncounter)
   items?: string[];
   encounters: Array<{ count: number; encounter: EncounterDef }>;
+  order: number;
 }

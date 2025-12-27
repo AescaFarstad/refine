@@ -46,30 +46,52 @@ export class Lib {
 
     try {
       // Load raids (source of truth) and create a deep, independent working copy
-      this.raidSources = this._processDataDefinitions<RaidDefinition>(raidsData as unknown as Record<string, RaidDefinition>);
       {
+        const rawRaids = raidsData as unknown as Record<string, Omit<RaidDefinition, 'id' | 'order'>>;
+        const raidSources = new Map<string, RaidDefinition>();
         const raidsCopy = new Map<string, RaidDefinition>();
-        this.raidSources.forEach((def, id) => {
-          const cloned: RaidDefinition = {
-            id: def.id,
+        let orderIndex = 0;
+
+        for (const id in rawRaids) {
+          if (!Object.prototype.hasOwnProperty.call(rawRaids, id)) continue;
+          const def = rawRaids[id];
+          const withId: RaidDefinition = {
+            id,
             name: def.name,
             reachRequired: def.reachRequired,
             baseLootChance: def.baseLootChance,
-            items: Array.isArray(def.items) ? [...def.items] : undefined,
-            encounters: (def.encounters || []).map(step => ({
+            items: def.items,
+            encounters: def.encounters,
+            order: orderIndex++,
+          };
+          raidSources.set(id, withId);
+
+          const cloned: RaidDefinition = {
+            id: withId.id,
+            name: withId.name,
+            reachRequired: withId.reachRequired,
+            baseLootChance: withId.baseLootChance,
+            items: Array.isArray(withId.items) ? [...withId.items] : undefined,
+            encounters: (withId.encounters || []).map(step => ({
               count: Math.max(0, step.count | 0),
               // Encounter objects in our union are flat; shallow-clone is sufficient
               encounter: { ...(step.encounter as any) },
             })),
+            order: withId.order,
           };
           raidsCopy.set(id, cloned);
-        });
+        }
+
+        this.raidSources = raidSources;
         this.raids = raidsCopy;
       }
       this.gearCategories = this._processDataDefinitions<GearCategoryDefinition>(gearCategoriesData as unknown as Record<string, GearCategoryDefinition>);
       this.gear = parseGearDefinitions(gearData as unknown as Record<string, RawGearDefinition>);
+
       {
         const raw: Record<string, any> = itemsData as unknown as Record<string, any>;
+
+        // First pass: create items with temporary order
         const map = new Map<string, ItemDefinition>();
         for (const key in raw) {
           if (!Object.prototype.hasOwnProperty.call(raw, key)) continue;
@@ -88,13 +110,106 @@ export class Lib {
             volume: d.volume,
             essence: d.essence || {},
             rarity,
+            order: 999999, // temporary, will be updated below
           };
           map.set(key, def);
         }
+
+        // Second pass: compute item order based on raids and item properties
+        // Build item -> first raid appearance map
+        const itemToRaid = new Map<string, number>();
+        for (const raid of this.raids.values()) {
+          if (!raid || !raid.id) continue;
+          if (Array.isArray(raid.items)) {
+            for (const itemId of raid.items) {
+              if (!itemToRaid.has(itemId)) {
+                itemToRaid.set(itemId, raid.order);
+              }
+            }
+          }
+        }
+
+        // Categorize items into groups
+        const devItems: string[] = [];
+        const remainsItems: string[] = [];
+        const raidItems: Map<number, string[]> = new Map();
+        const otherItems: string[] = [];
+
+        for (const itemId of map.keys()) {
+          const d = raw[itemId] || {};
+          const isDev = d.devOnly === true;
+          const isRemains = itemId.includes('remains');
+          const raidOrder = itemToRaid.get(itemId);
+
+          if (isDev) {
+            devItems.push(itemId);
+          } else if (isRemains) {
+            remainsItems.push(itemId);
+          } else if (raidOrder !== undefined) {
+            if (!raidItems.has(raidOrder)) {
+              raidItems.set(raidOrder, []);
+            }
+            raidItems.get(raidOrder)!.push(itemId);
+          } else {
+            otherItems.push(itemId);
+          }
+        }
+
+        // Sort each group alphabetically
+        devItems.sort();
+        remainsItems.sort();
+        otherItems.sort();
+        for (const items of raidItems.values()) {
+          items.sort();
+        }
+
+        // Assign unique order to each item
+        let currentOrder = 0;
+
+        for (const itemId of devItems) {
+          map.get(itemId)!.order = currentOrder++;
+        }
+
+        for (const itemId of remainsItems) {
+          map.get(itemId)!.order = currentOrder++;
+        }
+
+        // Process raid items in raid order
+        const sortedRaidOrders = Array.from(raidItems.keys()).sort((a, b) => a - b);
+        for (const raidOrder of sortedRaidOrders) {
+          const items = raidItems.get(raidOrder)!;
+          for (const itemId of items) {
+            map.get(itemId)!.order = currentOrder++;
+          }
+        }
+
+        for (const itemId of otherItems) {
+          map.get(itemId)!.order = currentOrder++;
+        }
+
         this.items = map;
       }
       this.quests = this._processDataDefinitions<QuestDefinition>(questsData as unknown as Record<string, QuestDefinition>);
-      this.monsters = this._processDataDefinitions<MonsterDefinition>(monstersData as unknown as Record<string, MonsterDefinition>);
+      {
+        const raw: Record<string, any> = monstersData as unknown as Record<string, any>;
+        const map = new Map<string, MonsterDefinition>();
+        for (const key in raw) {
+          if (!Object.prototype.hasOwnProperty.call(raw, key)) continue;
+          const d = raw[key] || {};
+          const def: MonsterDefinition = {
+            id: key,
+            name: d.name,
+            hp: d.hp,
+            dodge: d.dodge,
+            accuracy: d.accuracy,
+            damage: d.damage,
+            lootItemId: d.lootItemId,
+            features: Array.isArray(d.features) ? d.features : [],
+          };
+          map.set(key, def);
+        }
+        this.monsters = map;
+      }
       this.mazes = this._processDataDefinitions<MazeDefinition>(mazeData);
       this.mazeLevels = this._buildOrderedMazeLevels(this.mazes);
       this.isLoaded = true;

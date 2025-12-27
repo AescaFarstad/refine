@@ -36,10 +36,11 @@ export interface ItemDefinition {
   // Rarity used for loot tables (always normalized to string values)
   rarity: 'common' | 'uncommon' | 'rare' | 'legendary';
   molecule?: Molecule; // Optional for now, will be required later
+  order: number;
 }
 
 export function processItemDefinitions(
-  defs: Record<string, Omit<ItemDefinition, 'id' | 'essence' | 'rarity'> & { essence?: Essence; rarity?: number | 'common' | 'uncommon' | 'rare' | 'legendary' }>
+  defs: Record<string, Omit<ItemDefinition, 'id' | 'essence' | 'rarity' | 'order'> & { essence?: Essence; rarity?: number | 'common' | 'uncommon' | 'rare' | 'legendary' }>
 ): Record<string, ItemDefinition> {
   const result: Record<string, ItemDefinition> = {};
   for (const [key, def] of Object.entries(defs)) {
@@ -67,6 +68,7 @@ export function processItemDefinitions(
       id: key,
       essence,
       rarity,
+      order: 0,
     } as ItemDefinition;
   }
   return result;

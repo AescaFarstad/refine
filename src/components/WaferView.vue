@@ -56,6 +56,8 @@ const props = defineProps<{
   useEffectiveEssence?: boolean;
   showBuffOverlays?: boolean;
   showUpgradeHints?: boolean;
+  // Dev-only: when true, mouse drag over atoms draws connections instead of moving molecules.
+  connectMode?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -63,6 +65,7 @@ const emit = defineEmits<{
   (e: 'click', pos: Point2): void;
   (e: 'pickup', itemIdx: number): void;
   (e: 'rotate'): void;
+  (e: 'connection', payload: { from: Point2; to: Point2 }): void;
 }>();
 
 const container = ref<HTMLDivElement | null>(null);
@@ -73,6 +76,7 @@ const overlayCanvas = ref<HTMLCanvasElement | null>(null);
 const origin: Point2 = { x: WAFER_CANVAS_WIDTH / 2, y: WAFER_CANVAS_HEIGHT / 2 };
 
 const hoverItemIdx = ref<number | null>(null);
+const connectionStart = ref<Point2 | null>(null);
 
 
 onMounted(async () => {
@@ -333,6 +337,18 @@ function onMouseDown(event: MouseEvent) {
 
   if (event.button !== 0) return;
 
+  if (props.connectMode) {
+    const { x: pixelX, y: pixelY } = eventToCanvasPixel(event, canvas);
+    const axial = pixelToAxial({ x: pixelX, y: pixelY }, HEX_SIZE, origin);
+    const cell = getCell(props.wafer, axial);
+    if (cell && cell.itemIdx != null) {
+      connectionStart.value = { x: cell.x, y: cell.y };
+    } else {
+      connectionStart.value = null;
+    }
+    return;
+  }
+
   if (hoverItemIdx.value !== null) {
     const item = props.wafer.items[hoverItemIdx.value];
     if (item) {
@@ -378,6 +394,18 @@ function onMouseUp(event: MouseEvent) {
 
   const { x: pixelX, y: pixelY } = eventToCanvasPixel(event, canvas);
   const axial = pixelToAxial({ x: pixelX, y: pixelY }, HEX_SIZE, origin);
+  if (props.connectMode && connectionStart.value) {
+    const start = connectionStart.value;
+    connectionStart.value = null;
+    const endCell = getCell(props.wafer, axial);
+    if (endCell && endCell.itemIdx != null) {
+      if (start.x !== endCell.x || start.y !== endCell.y) {
+        emit('connection', { from: { x: start.x, y: start.y }, to: { x: endCell.x, y: endCell.y } });
+      }
+    }
+    return;
+  }
+
   emit('click', axial);
 }
 

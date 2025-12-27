@@ -1,9 +1,9 @@
 <template>
   <div class="item-cell-wrap">
     <div class="item-cell" :class="{ minor }">
+      <div class="sprite" v-if="source && frame" :class="{ 'sprite-dimmed': moleculeUrl }" :style="spriteStyle" />
       <div class="molecule-view" v-if="moleculeUrl" :style="{ backgroundImage: `url(${moleculeUrl})` }" />
-      <div class="sprite" v-else-if="source && frame" :style="spriteStyle" />
-      <div v-else class="placeholder">{{ id }}</div>
+      <div v-else-if="!source || !frame" class="placeholder">{{ id }}</div>
 
       <div v-if="quantity > 1" class="qty">x{{ quantity }}</div>
 
@@ -173,6 +173,10 @@ function essenceIconStyle(k: string): Record<string, string> {
   top: 50%;
   transform: translate(-50%, -50%);
   image-rendering: auto;
+}
+.sprite.sprite-dimmed {
+  opacity: 0.5;
+  filter: brightness(0.5);
 }
 .item-cell.minor .sprite {
   transform: translate(-50%, -50%) scale(0.5);

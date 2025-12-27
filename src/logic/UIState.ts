@@ -24,6 +24,8 @@ export interface UIRefinery {
 }
 
 export const uiState = reactive({
+  lib: null as Lib | null,
+
   credits: 0,
   chronotraces: 0,
   timeFlux: 0,
@@ -105,6 +107,7 @@ let lastWaferEnabledCount = 0;
 
 export function SyncUIFromGameState(game: GameState): void {
   gameRef = game;
+  uiState.lib = game.lib;
   uiState.credits = game.credits;
   uiState.chronotraces = game.chronotraces;
   uiState.timeFlux = game.timeFlux ?? 0;

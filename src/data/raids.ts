@@ -1,6 +1,6 @@
 import type { RaidDefinition } from '../logic/RaidLib';
 
-const raids: Record<string, Omit<RaidDefinition, 'id'>> = {
+const raids: Record<string, Omit<RaidDefinition, 'id' | 'order'>> = {
   shegolskoe: {
     name: 'Shegolskoe',
     reachRequired: 0,
@@ -28,8 +28,8 @@ const raids: Record<string, Omit<RaidDefinition, 'id'>> = {
     ],
     encounters: [
       { count: 1, encounter: { type: 'WalkEncounter' } },
-      { count: 3, encounter: { type: 'FightEncounter', monsterId: 'rat' } },
-      { count: 1, encounter: { type: 'FightEncounter', monsterId: 'soldier' } },
+      { count: 3, encounter: { type: 'FightEncounter', monsterId: 'distorted' } },
+      { count: 1, encounter: { type: 'FightEncounter', monsterId: 'flower' } },
       { count: 4, encounter: { type: 'LootEncounter' } }
     ],
   },

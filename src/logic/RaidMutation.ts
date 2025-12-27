@@ -170,6 +170,7 @@ export function cloneRaid(def: RaidDefinition): RaidDefinition {
     baseLootChance: def.baseLootChance,
     items: Array.isArray(def.items) ? [...def.items] : undefined,
     encounters: (def.encounters || []).map(step => ({ count: Math.max(0, step.count | 0), encounter: cloneEncounter(step.encounter) })),
+    order: def.order,
   };
 }
 

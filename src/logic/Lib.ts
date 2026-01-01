@@ -14,6 +14,8 @@ import gearCategoriesData from '../data/gear_categories';
 import itemsData from '../data/items';
 import mazeData from '../data/maze';
 import { ResearchLib } from "./ResearchLib";
+import { researchArchetypes } from '../data/research_archetypes';
+import { researchPane, researchPaneEmptyCells, researchPaneVoidCells } from '../data/research_pane';
 
 export interface LibItem {
   id: string;
@@ -96,14 +98,22 @@ export class Lib {
         for (const key in raw) {
           if (!Object.prototype.hasOwnProperty.call(raw, key)) continue;
           const d = raw[key] || {};
-          const rn = Number.isFinite(d.rarity) ? Number(d.rarity) : 1;
-          const rarity = (rn >= 4
-            ? 'legendary'
-            : rn === 3
-              ? 'rare'
-              : rn === 2
-                ? 'uncommon'
-                : 'common') as ItemDefinition['rarity'];
+
+          // Handle both string and numeric rarities
+          let rarity: ItemDefinition['rarity'];
+          if (typeof d.rarity === 'string') {
+            rarity = d.rarity as ItemDefinition['rarity'];
+          } else {
+            const rn = Number.isFinite(d.rarity) ? Number(d.rarity) : 1;
+            rarity = (rn >= 4
+              ? 'legendary'
+              : rn === 3
+                ? 'rare'
+                : rn === 2
+                  ? 'uncommon'
+                  : 'common') as ItemDefinition['rarity'];
+          }
+
           const def: ItemDefinition = {
             id: key,
             name: d.name,
@@ -212,6 +222,16 @@ export class Lib {
       }
       this.mazes = this._processDataDefinitions<MazeDefinition>(mazeData);
       this.mazeLevels = this._buildOrderedMazeLevels(this.mazes);
+
+      // Initialize research library with gear archetypes
+      this.research.load(
+        researchArchetypes,
+        researchPane,
+        researchPaneEmptyCells,
+        researchPaneVoidCells,
+        this.gear
+      );
+
       this.isLoaded = true;
     } catch (error) {
       console.error("Failed to process library definitions:", error);

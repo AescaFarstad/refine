@@ -41,6 +41,9 @@ export function handleLootLikeEncounter(gs: GameState, r: ActiveRaid, ctx: LootE
       volumeAfter: before,
       discarded: false,
       requiredVolume: 0,
+      biopsyChance: 0,
+      biopsyRoll: 0,
+      biopsySuccess: false,
     };
   }
 
@@ -65,6 +68,9 @@ export function handleLootLikeEncounter(gs: GameState, r: ActiveRaid, ctx: LootE
     volumeAfter: before,
     discarded: false,
     requiredVolume: 0,
+    biopsyChance: 0,
+    biopsyRoll: 0,
+    biopsySuccess: false,
   };
 
   if (myRoll > checkValue) {
@@ -154,10 +160,13 @@ export function handleLootLikeEncounter(gs: GameState, r: ActiveRaid, ctx: LootE
   return entry;
 }
 
-export function handleMonsterLootEncounter(gs: GameState, r: ActiveRaid, itemId: string): LootEncounterLogEntry {
+export function handleMonsterLootEncounter(gs: GameState, r: ActiveRaid, itemId: string, biopsyChance: number): LootEncounterLogEntry {
   const capacity = computeCapacity(gs, r);
   const before = Math.max(0, r.usedVolume || 0);
   const timeSpentSec = 60; // fixed 1 minute to harvest
+
+  const biopsyRoll = Math.floor(gs.random.get() * 100);
+  const biopsySuccess = biopsyRoll < biopsyChance;
 
   const entry: LootEncounterLogEntry = {
     kind: 'LootEncounter',
@@ -172,7 +181,15 @@ export function handleMonsterLootEncounter(gs: GameState, r: ActiveRaid, itemId:
     volumeAfter: before,
     discarded: false,
     requiredVolume: 0,
+    biopsyChance,
+    biopsyRoll,
+    biopsySuccess,
   };
+
+  if (!biopsySuccess) {
+    entry.itemId = '';
+    return entry;
+  }
 
   const def = gs.lib.items.get(itemId)!;
   const vol = Math.max(0, def.volume || 0);

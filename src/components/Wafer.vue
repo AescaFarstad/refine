@@ -13,7 +13,7 @@
         :cell-effective-counts="preview.cellEffectiveCounts"
         :use-effective-essence="!draggingItem"
         :show-buff-overlays="true"
-        :show-upgrade-hints="true"
+        :show-upgrade-hints="canAffordAnyUpgrade"
         @hover="onHover"
         @click="onClick"
         @pickup="onPickup"
@@ -190,7 +190,7 @@ const rotation = ref(0);
 const upgradeHoverCells = ref<Point2[] | null>(null);
 
 
-const activeRefinery = computed(() => uiState.refineries[0]);
+const activeRefinery = computed(() => uiState.refinery);
 const isRefining = computed(() => {
   // Treat the refinery as "active" for the entire period where the
   // UI exposes a countdown, including the final 0s state. This avoids
@@ -223,6 +223,11 @@ const upgradeCost = computed(() => {
 });
 const canAffordUpgrade = computed(() => {
   return hasUpgradePreview.value && upgradeCost.value > 0 && uiState.shardDust >= upgradeCost.value;
+});
+const canAffordAnyUpgrade = computed(() => {
+  const purchased = (uiState as any).waferUpgradesPurchased || 0;
+  const cost = computeWaferUpgradePrice(purchased);
+  return hasGrownWafer.value || uiState.shardDust >= cost;
 });
 
 onMounted(() => {

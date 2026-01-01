@@ -13,7 +13,7 @@
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
 import type { Wafer } from '../logic/Wafer';
 import { getCell } from '../logic/Wafer';
-import type { GameState, Shard } from '../logic/GameState';
+import type { Shard } from '../logic/GameState';
 import { uiState, getGameState } from '../logic/UIState';
 import { WAFER_CANVAS_WIDTH, WAFER_CANVAS_HEIGHT, HEX_SIZE, ESSENCE_SIZE, eventToCanvasPixel } from '../logic/RefineUIBehaviour';
 import { axialToPixel } from '../logic/HexMath';
@@ -41,6 +41,8 @@ const PHYSICS_SUB_STEPS = 4;
 
 const FLASH_DURATION_SEC = 1.25;
 const FLASH_MAX_ALPHA = 0.7;
+const FLASH_COLOR_SUCCESS = 'rgba(255, 255, 255, ';
+const FLASH_COLOR_FAILURE = 'rgba(255, 50, 50, ';
 
 const props = defineProps<{
   wafer: Wafer;
@@ -64,10 +66,11 @@ const lastT = ref<number>(0);
 const initialized = ref(false);
 
 let flashTimeRemaining = 0;
+let flashIsFailure = false;
 let lastFrameTimestamp = 0;
 let lastShardCountForFlash = 0;
 
-const activeRefinery = computed(() => uiState.refineries[0]);
+const activeRefinery = computed(() => uiState.refinery);
 const isRefining = computed(() => activeRefinery.value && activeRefinery.value.timeRemainingSec !== undefined && activeRefinery.value.timeRemainingSec > 0);
 
 // Don't use computed for shards - read directly from GameState each frame
@@ -267,6 +270,7 @@ function draw() {
 
   if (shardCount > 0 && lastShardCountForFlash === 0) {
     flashTimeRemaining = FLASH_DURATION_SEC;
+    flashIsFailure = uiState.lastRefineryOutcome ? !uiState.lastRefineryOutcome.success : false;
     atoms.value = [];
     initialized.value = false;
   }
@@ -300,7 +304,8 @@ function draw() {
   if (flashTimeRemaining > 0) {
     const alpha = FLASH_MAX_ALPHA * (flashTimeRemaining / FLASH_DURATION_SEC);
     ctx.save();
-    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+    const colorPrefix = flashIsFailure ? FLASH_COLOR_FAILURE : FLASH_COLOR_SUCCESS;
+    ctx.fillStyle = `${colorPrefix}${alpha})`;
     ctx.fillRect(0, 0, WAFER_CANVAS_WIDTH, WAFER_CANVAS_HEIGHT);
     ctx.restore();
   }

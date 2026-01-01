@@ -77,10 +77,15 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
     success: !!result.success,
     log: result.log,
     timeSpentSec: result.timeSpentSec,
+    plannedEncounters: result.plannedEncounters,
     reachGained,
     skillPointsGained,
     questsCompleted: completedNow,
     zoneChange,
+    finalHp: gs.raid.hp,
+    finalMaxHp: gs.raid.maxHp,
+    finalBagsUsed: gs.raid.usedVolume,
+    finalBagsCapacity: Math.max(0, gs.volume || 0) + Math.max(0, gs.raid.bagsVolume || 0),
   };
 });
 
@@ -113,6 +118,10 @@ handlersByName.set('CmdStartRefining', (gs, cmd) => {
   const duration = gs.refiningDuration;
   gs.nextEvt = new EvtRefineryDone({ at: gs.gameTime + duration });
   gs.timeActive = true;
+});
+
+handlersByName.set('CmdAknowledgeOutcome', (gs, cmd) => {
+  gs.lastRaidOutcome = null;
 });
 
 handlersByName.set('CmdAcknowledgeRefineryOutcome', (gs, cmd) => {

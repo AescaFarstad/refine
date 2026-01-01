@@ -76,7 +76,12 @@ const gearByCategory = computed<Record<string, GearDefinition[]>>(() => {
     if (!map[g.category]) map[g.category] = [];
     map[g.category].push(g);
   });
-  for (const k of Object.keys(map)) map[k].sort((a, b) => (a.name < b.name ? -1 : 1));
+  for (const k of Object.keys(map)) map[k].sort((a, b) => {
+    const priceA = a.price || 0;
+    const priceB = b.price || 0;
+    if (priceA !== priceB) return priceA - priceB;
+    return a.name < b.name ? -1 : 1;
+  });
   return map;
 });
 
@@ -131,7 +136,7 @@ function toggleItemWithLimit(cat: string, id: string): void {
 
 <style scoped>
 .gear .section-title { font-weight: 800; text-transform: uppercase; font-size: 12px; letter-spacing: 0.08em; margin-bottom: 8px; }
-.gear-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.gear-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 0.75fr)); gap: 12px; }
 .gear-col { display: flex; flex-direction: column; gap: 6px; }
 /* Column headers: single-line, no background, with divider */
 .gear-cat {

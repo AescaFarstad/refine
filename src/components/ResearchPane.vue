@@ -132,7 +132,7 @@ function renderHighlightLayer() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   clearCanvas(ctx);
 
-  const mode = (uiState as any).researchEditMode as '' | 'empty' | 'void' | 'obstacle' | undefined;
+  const mode = (uiState as any).researchEditMode as '' | 'empty' | 'void' | 'obstacle' | 'coordinates' | undefined;
   if (mode) {
     // In edit mode we do not show purchase paths
     return;
@@ -301,7 +301,7 @@ function updateHoverCell(event: MouseEvent): void {
 }
 
 function applyEditModeAt(axial: Point2): void {
-  const mode = (uiState as any).researchEditMode as '' | 'empty' | 'void' | 'obstacle' | undefined;
+  const mode = (uiState as any).researchEditMode as string | undefined;
   if (!mode) return;
 
   const gs = getGameState();
@@ -309,6 +309,14 @@ function applyEditModeAt(axial: Point2): void {
   if (idx === -1) return;
   const cell = gs.researchCells[idx];
   if (!cell) return;
+
+  if (mode === 'coordinates') {
+    const coordText = `{ x: ${axial.x}, y: ${axial.y} }`;
+    navigator.clipboard.writeText(coordText).catch(err => {
+      console.error('Failed to copy coordinates to clipboard:', err);
+    });
+    return;
+  }
 
   let archetypeId: string;
   if (mode === 'empty') {
@@ -318,7 +326,24 @@ function applyEditModeAt(axial: Point2): void {
   } else if (mode === 'obstacle') {
     archetypeId = 'obs';
   } else {
-    return;
+    // Check if mode is a custom archetype ID
+    const lib = getGameLib();
+    if (lib.research.archetypes.has(mode)) {
+      archetypeId = mode;
+
+      // Track newly placed archetype node
+      const radius = (uiState as any).researchPlacementRadius || 0;
+      const newlyPlaced = (uiState as any).researchNewlyPlaced || [];
+      newlyPlaced.push({
+        archetypeId: mode,
+        cells: { x: axial.x, y: axial.y },
+        radius: radius
+      });
+      (uiState as any).researchNewlyPlaced = newlyPlaced;
+      (uiState as any).researchEditVersion = ((uiState as any).researchEditVersion || 0) + 1;
+    } else {
+      return;
+    }
   }
 
   cell.archetypeId = archetypeId;
@@ -368,7 +393,7 @@ function handleClick(event: MouseEvent): void {
   const o = origin.value;
   const axial = pixelToAxial({ x: worldX, y: worldY }, HEX_SIZE, o);
 
-  const mode = (uiState as any).researchEditMode as '' | 'empty' | 'void' | 'obstacle' | undefined;
+  const mode = (uiState as any).researchEditMode as '' | 'empty' | 'void' | 'obstacle' | 'coordinates' | undefined;
   if (mode) {
     applyEditModeAt(axial);
     return;

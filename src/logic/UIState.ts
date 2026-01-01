@@ -7,11 +7,11 @@ import { computeRefinePreviewChem } from './RefinePreview';
 import type { Lib } from './Lib';
 import { createWafer, type Wafer } from './Wafer';
 import type { Point2 } from './ItemLib';
+import { IS_DEBUG } from './Const';
 
 export interface UIRaidDef extends RaidDefinition { }
 
 export interface UIRefinery {
-  health: number;
   startedAtSec?: number;
   timeRemainingSec?: number;
   progressPct?: number;
@@ -64,12 +64,11 @@ export const uiState = reactive({
   cheatOpen: false,
   devAtlasKey: '' as '' | 'items',
   devMoleculeEditorOpen: false,
-  editResearchOpen: false,
+  editResearchOpen: IS_DEBUG,
 
-  refineries: [] as UIRefinery[],
+  refinery: null as UIRefinery | null,
   items: [] as Array<{ id: string; quantity: number }>,
   waferUpgradesPurchased: 0,
-  selectedRefineryIndex: -1 as number,
   wafer: createWafer(2) as Wafer,
   waferSize: { x: 0, y: 0 } as Point2,
   shards: [] as Shard[],
@@ -85,8 +84,10 @@ export const uiState = reactive({
 
   researchOwnedCount: 0,
   researchRevealRadius: 0,
-  researchEditMode: '' as '' | 'empty' | 'void' | 'obstacle',
+  researchEditMode: '' as string,
   researchEditVersion: 0,
+  researchPlacementRadius: 0,
+  researchNewlyPlaced: [] as Array<{ archetypeId: string; cells: { x: number; y: number }; radius: number }>,
 });
 
 // Formatted time display: "X days, HH:MM"
@@ -118,7 +119,7 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.timeActive = game.timeActive;
 
   const rk = game.raid
-    ? `${game.raid.id}|${game.raid.hp}|${game.raid.maxHp}|${game.raid.baseSpeed}|${game.raid.speedBonusPct}|${game.raid.regenPerKm}|${game.raid.weight}|${game.raid.maxWeight}|${(game.raid.damage ?? game.damage ?? 1)}|${game.raid.bagsVolume}|${game.raid.usedVolume}`
+    ? `${game.raid.id}|${game.raid.hp}|${game.raid.maxHp}|${game.raid.baseSpeed}|${game.raid.speedBonusPct}|${game.raid.regenPerKm}|${game.raid.regenAfterEncounter}|${game.raid.weight}|${game.raid.maxWeight}|${(game.raid.damage ?? game.damage ?? 1)}|${game.raid.bagsVolume}|${game.raid.usedVolume}`
     : '';
   if (rk !== lastRaidKey) {
     uiState.raidKey = rk;
@@ -158,32 +159,30 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.lastRefineryOutcome = game.lastRefineryOutcome;
   uiState.levelupsAvailable = game.levelupsAvailable;
 
-  const entries: UIRefinery[] = [];
   const hasWafer = !!game.wafer;
-  const base: UIRefinery = { health: 100 };
+  const refinery: UIRefinery = {};
   if (hasWafer && game.nextEvt?.name === 'EvtRefineryDone') {
     const preview = computeRefinePreviewChem(game.wafer!);
     const duration = Math.max(0, game.refiningDuration || preview.timeSec || 0);
     const startedAt = (game.nextEvt.at || 0) - duration;
 
-    base.startedAtSec = startedAt;
+    refinery.startedAtSec = startedAt;
     if (duration > 0) {
       const elapsed = Math.max(0, (game.gameTime || 0) - startedAt);
       const progressPct = Math.max(0, Math.min(100, Math.round((elapsed / duration) * 100)));
       const remaining = Math.max(0, Math.round(duration - elapsed));
-      base.progressPct = progressPct;
-      base.timeRemainingSec = remaining;
+      refinery.progressPct = progressPct;
+      refinery.timeRemainingSec = remaining;
     } else {
-      base.progressPct = 0;
-      base.timeRemainingSec = 0;
+      refinery.progressPct = 0;
+      refinery.timeRemainingSec = 0;
     }
-    base.expectedCredits = preview.expectedCredits;
-    base.expectedChrono = preview.expectedChrono;
-    base.expectedFlux = preview.expectedFlux;
-    base.failureChancePct = preview.failureChancePct;
+    refinery.expectedCredits = preview.expectedCredits;
+    refinery.expectedChrono = preview.expectedChrono;
+    refinery.expectedFlux = preview.expectedFlux;
+    refinery.failureChancePct = preview.failureChancePct;
   }
-  entries.push(base);
-  uiState.refineries = entries;
+  uiState.refinery = refinery;
   uiState.items = (game.items || []).map(it => ({ id: it.id, quantity: it.quantity }));
 
   uiState.wafer = game.wafer;

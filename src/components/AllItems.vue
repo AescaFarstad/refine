@@ -35,16 +35,31 @@
         </span>
       </button>
     </div>
+    <div v-if="raidFilterMode && availableRaids && availableRaids.length" class="raid-filter-row">
+      <button
+        v-for="raid in availableRaids"
+        :key="'raid-' + raid.id"
+        type="button"
+        class="raid-btn"
+        :class="{ active: activeRaidFilter === raid.id }"
+        :title="`${raid.name} (${raid.id})`"
+        @click="emit('raid-filter', raid.id)"
+      >
+        {{ raid.order + 1 }}
+      </button>
+    </div>
     <div class="grid-wrap">
       <ItemGrid
-        :items="sortedItems" 
-        :dim-ids="dimIds" 
+        :items="sortedItems"
+        :dim-ids="dimIds"
         :draggable-ids="draggableIds"
         :show-molecule="isHovering"
-        clickable 
+        :show-rarity-labels="showRarityLabel"
+        :rarity-labels="rarityLabelsMap"
+        clickable
         draggable
         no-tooltip
-        @item-click="onPick" 
+        @item-click="onPick"
         @item-drag-start="onPick"
         @item-drag-end="$emit('drag-end')"
       />
@@ -58,9 +73,22 @@ import { computed, onMounted, ref } from 'vue';
 import ItemGrid from './ItemGrid.vue';
 import { uiState } from '../logic/UIState';
 import atlasStorage from '../logic/AtlasStorage';
+import type { ItemDefinition } from '../logic/ItemLib';
 
-const props = defineProps<{ items: Array<{ id: string; quantity: number }>; requiredEssences?: Record<string, number>; copyIdOnClick?: boolean }>();
-const emit = defineEmits<{ (e: 'pick-item', id: string): void; (e: 'drag-end'): void }>();
+const props = defineProps<{
+  items: Array<{ id: string; quantity: number }>;
+  requiredEssences?: Record<string, number>;
+  copyIdOnClick?: boolean;
+  raidFilterMode?: boolean;
+  availableRaids?: Array<{ id: string; name: string; order: number }>;
+  activeRaidFilter?: string | null;
+  showRarityLabel?: boolean;
+}>();
+const emit = defineEmits<{
+  (e: 'pick-item', id: string): void;
+  (e: 'drag-end'): void;
+  (e: 'raid-filter', raidId: string | null): void;
+}>();
 
 const isHovering = ref(false);
 
@@ -200,6 +228,20 @@ async function onPick(id: string) {
 
   emit('pick-item', id);
 }
+
+const rarityLabelsMap = computed<Record<string, string>>(() => {
+  if (!props.showRarityLabel || !uiState.lib) return {};
+  const labels: Record<string, string> = {};
+
+  for (const item of sortedItems.value) {
+    const def: ItemDefinition | undefined = uiState.lib.items.get(item.id);
+    if (def) {
+      labels[item.id] = def.rarity.toUpperCase();
+    }
+  }
+
+  return labels;
+});
 </script>
 
 <style scoped>
@@ -213,7 +255,7 @@ h3 { margin: 0; font-size: 16px; letter-spacing: 0.04em; }
 .essence-btn:hover { background: rgba(255,255,255,0.06); }
 .raid-sort-btn { padding: 2px 4px; }
 .raid-sort-btn .row-top { min-height: 32px; }
-.raid-sort-btn .ess-letter14 { width: 24px; height: 24px; font-size: 24px; font-weight: 900; background: none; }
+.raid-sort-btn .ess-letter14 { width: 18px; height: 18px; font-size: 24px; font-weight: 900; background: none;}
 .row-top { display: inline-flex; align-items: center; gap: 4px; line-height: 1; }
 .row-bottom { line-height: 1; }
 .ess-icon14 { display: inline-block; width: 14px; height: 14px; vertical-align: middle; }
@@ -221,5 +263,10 @@ h3 { margin: 0; font-size: 16px; letter-spacing: 0.04em; }
 .ess-total { font-variant-numeric: tabular-nums; }
 .sort-arrow { display: inline-block; width: 10px; text-align: center; opacity: 0; transition: opacity 100ms ease; }
 .sort-arrow.active { opacity: 1; }
+.raid-filter-row { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; flex-wrap: wrap; }
+.raid-btn { min-width: 28px; height: 28px; padding: 4px 6px; border-radius: 4px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.03); color: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: all 120ms ease; position: relative; }
+.raid-btn:hover { background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.5); transform: translateY(-1px); }
+.raid-btn.active { background: rgba(34, 197, 94, 0.25); border-color: rgba(34, 197, 94, 0.7); color: #a7f3d0; }
+.raid-btn:hover::after { content: attr(title); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 4px; padding: 4px 8px; background: rgba(15, 23, 42, 0.95); border: 1px solid var(--panel-border); border-radius: 4px; font-size: 11px; font-weight: 600; white-space: nowrap; z-index: 1000; pointer-events: none; color: #e5e7eb; }
 .grid-wrap { flex: 1; min-height: 0; }
 </style>

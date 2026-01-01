@@ -21,10 +21,15 @@
     <div class="editor-body">
       <div class="items-panel">
         <AllItems
-          :items="allItems"
+          :items="filteredItems"
           :copy-id-on-click="true"
+          :raid-filter-mode="true"
+          :available-raids="availableRaids"
+          :active-raid-filter="activeRaidFilter"
+          :show-rarity-label="true"
           @pick-item="onPickItem"
           @drag-end="onDragEnd"
+          @raid-filter="onRaidFilter"
         />
       </div>
 
@@ -53,7 +58,7 @@
               :upgrade-preview-cells="null"
               :cell-effective-counts="null"
               :use-effective-essence="false"
-              :show-buff-overlays="false"
+              :show-buff-overlays="true"
               :show-upgrade-hints="false"
               :connect-mode="connectMode"
               @hover="onHover"
@@ -87,12 +92,13 @@ import { translateForSnap, rotateMolecule } from '../logic/MoleculeUtils';
 import { HEX_SIZE, WAFER_CANVAS_WIDTH, WAFER_CANVAS_HEIGHT } from '../logic/RefineUIBehaviour';
 import type { Molecule, Point2 } from '../logic/ItemLib';
 import { updateManualDragMolecule } from '../logic/ManualDrag';
+import type { RaidDefinition } from '../logic/RaidLib';
 
 const emit = defineEmits<{ (e: 'close'): void }>();
 
 type DragItem = { id: string; molecule: Molecule };
 
-const wafer = ref<Wafer>(createWafer(5));
+const wafer = ref<Wafer>(createWafer(6));
 const waferVersion = ref(0);
 
 const draggingItem = ref<DragItem | null>(null);
@@ -104,6 +110,7 @@ const highlightItemIdx = ref<number | null>(null);
 const lastHoverPos = ref<Point2 | null>(null);
 const rotation = ref(0);
 const connectMode = ref(false);
+const activeRaidFilter = ref<string | null>(null);
 
 const DEV_ESSENCE_ITEMS: Record<string, string> = {
   red: 'dev_atom_red',
@@ -132,6 +139,39 @@ const allItems = computed(() => {
 
   return list;
 });
+
+const availableRaids = computed(() => {
+  if (!uiState.lib) return [];
+  const raids: RaidDefinition[] = [];
+  for (const [, raid] of uiState.lib.raids) {
+    raids.push(raid);
+  }
+  raids.sort((a, b) => a.order - b.order);
+  return raids;
+});
+
+const filteredItems = computed(() => {
+  if (!activeRaidFilter.value) return allItems.value;
+  if (!uiState.lib) return allItems.value;
+
+  const raid = uiState.lib.raids.get(activeRaidFilter.value);
+  if (!raid || !raid.items) return allItems.value;
+
+  const raidItemIds = new Set(raid.items);
+
+  return allItems.value.filter(item => {
+    if (item.id.startsWith('dev_')) return true;
+    return raidItemIds.has(item.id);
+  });
+});
+
+function onRaidFilter(raidId: string | null) {
+  if (activeRaidFilter.value === raidId) {
+    activeRaidFilter.value = null;
+  } else {
+    activeRaidFilter.value = raidId;
+  }
+}
 
 const hoverCoords = computed(() => {
   const p = lastHoverPos.value;

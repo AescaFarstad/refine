@@ -20,33 +20,49 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
   const monsterName = m.name;
   let monsterHp = m.hp;
 
-  const baseHit = clamp(r.hitChance, 0, 100);
-  const baseBlock = clamp(r.blockChance, 0, 100);
+  const baseHit = r.hitChance;
+  const baseBlock = r.blockChance;
 
-  const theirDodge = clamp(m.dodge, 0, 100);
-  const theirAccuracy = clamp(m.accuracy, 0, 100);
+  const theirDodge = m.dodge;
+  const theirAccuracy = m.accuracy;
   const theirDamage = m.damage;
 
   const roundTime = 60 + (r.perks.includes(Perks.CAREFUL_MANEUVERING) ? 60 : 0);
   const immovable = r.perks.includes(Perks.IMMOVABLE_WALL);
+  const hasStun = r.perks.includes(Perks.STUN);
 
   const fightLog: FightEvent[] = [];
   let totalTime = 0;
   let dieFromOvertime = false;
   let encounterCreated = false;
+  let stunTriggered = false;
 
   // Up to 100 rounds
   for (let round = 0; round < 100; round++) {
     const myHpBefore = r.hp;
     const theirHpBefore = monsterHp;
 
-    const hitCheck = clamp(baseHit - theirDodge, 0, 100);
+    // Apply stun bonus if triggered
+    const stunBonus = (hasStun && stunTriggered) ? 25 : 0;
+    const hitCheck = clamp(baseHit + stunBonus - theirDodge, 0, 100);
     const myRoll = Math.floor(gs.random.get() * 100);
 
     if (myRoll <= hitCheck) {
       // Hit landed; they don't counter-attack this round
       const dmg = r.damage;
       const theirHpAfter = theirHpBefore - dmg;
+
+      // Trigger stun on first successful hit with 50% probability (can only happen once per fight)
+      // But only if the enemy survives this hit
+      let stunJustTriggered = false;
+      let hitChanceBefore = baseHit - theirDodge;
+      let hitChanceAfter = baseHit - theirDodge;
+      if (hasStun && !stunTriggered && theirHpAfter > 0 && Math.floor(gs.random.get() * 100) < 50) {
+        stunTriggered = true;
+        stunJustTriggered = true;
+        // Calculate actual hit chances (not clamped) for display
+        hitChanceAfter = baseHit + 25 - theirDodge;
+      }
       const ev: FightEvent = {
         myHitRoll: myRoll,
         theirDodgeValue: hitCheck,
@@ -63,13 +79,19 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         myHpAfter: myHpBefore,
         blocked: false,
         hitLanded: true,
+        stunTriggered: stunJustTriggered,
+        hitChanceBefore,
+        hitChanceAfter,
       } as any;
       fightLog.push(ev);
       totalTime += roundTime;
       monsterHp = theirHpAfter;
       if (monsterHp <= 0) {
-        // Victory; optionally insert monster loot via Aspirator Probe
-        if ((r.perks || []).includes(Perks.ASPIRATOR_PROBE) && m?.lootItemId) {
+        // Only create monster loot encounter if we have biopsy chance AND have spare volume in bags
+        const capacity = Math.max(0, (gs.volume || 0)) + Math.max(0, (r.bagsVolume || 0));
+        const usedVolume = Math.max(0, r.usedVolume || 0);
+        const hasRoom = usedVolume < capacity;
+        if (r.biopsyChance > 0 && m?.lootItemId && hasRoom) {
           encounterCreated = true;
           // Mark on the last event to allow UI to show a sub-line
           (fightLog[fightLog.length - 1] as any).encounterCreated = true;
@@ -111,6 +133,9 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         myHpAfter,
         blocked,
         hitLanded: false,
+        stunTriggered: false,
+        hitChanceBefore: 0,
+        hitChanceAfter: 0,
       } as any;
       fightLog.push(ev);
       totalTime += ev.timeSpentSec;
@@ -140,6 +165,8 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
     monsterId,
     monsterName,
     timeSpentSec: totalTime,
+    hpBeforeRegen: 0,
+    hpAfterRegen: 0,
   } as any;
 
   const extras: LootEncounterLogEntry[] = [];

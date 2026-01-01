@@ -12,7 +12,7 @@ const monsters: Record<string, Omit<MonsterDefinition, 'id' | 'features'> & { fe
   },
   hound: {
     name: 'Xeno Hound',
-    hp: 5,
+    hp: 3,
     dodge: 10,
     accuracy: 30,
     damage: 1,
@@ -24,7 +24,7 @@ const monsters: Record<string, Omit<MonsterDefinition, 'id' | 'features'> & { fe
     hp: 8,
     dodge: 15,
     accuracy: 40,
-    damage: 2,
+    damage: 1,
     lootItemId: 'distorted_remains',
   },
   flower: {
@@ -32,7 +32,7 @@ const monsters: Record<string, Omit<MonsterDefinition, 'id' | 'features'> & { fe
     hp: 25,
     dodge: 20,
     accuracy: 45,
-    damage: 3,
+    damage: 2,
     lootItemId: 'flower_remains',
     features:['armor1'],
   },
@@ -49,7 +49,7 @@ const monsters: Record<string, Omit<MonsterDefinition, 'id' | 'features'> & { fe
     hp: 7,
     dodge: 45,
     accuracy: 25,
-    damage: 3,
+    damage: 2,
     lootItemId: 'spikder_remains',
   },
   scorch: {

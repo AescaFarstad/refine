@@ -12,3 +12,13 @@ export class CheatAddRaidItems implements CheatInput {
   }
 }
 
+export class CheatUnlockAllGear implements CheatInput {
+  readonly name = 'CheatUnlockAllGear';
+  constructor() {}
+}
+
+export class CheatAddResources implements CheatInput {
+  readonly name = 'CheatAddResources';
+  constructor() {}
+}
+

@@ -12,7 +12,7 @@ import { computeMaxSquareForHexNode, type MaxSquareResult } from './MaxSquareInH
 
 const RESEARCH_COLOR_OWNED_BG = 'rgba(74, 222, 128, 0.6)';
 const RESEARCH_COLOR_UNOWNED_BG = 'rgba(47, 60, 101, 0.45)';
-const RESEARCH_COLOR_SPECIAL_OVERT_UNOWNED_BG = 'rgba(79, 209, 197, 0.55)'; // teal, matches accent
+const RESEARCH_COLOR_SPECIAL_OVERT_UNOWNED_BG = 'rgba(234, 179, 8, 0.55)'; // yellowish for special nodes
 const RESEARCH_COLOR_OBSTACLE_MARKER = 'rgba(131, 145, 164, 0.9)';
 
 interface StatIconSpec {
@@ -26,7 +26,26 @@ const RESEARCH_STAT_ICON_SPECS: Record<string, StatIconSpec> = {
   health: { glyph: '❤︎', offsetX: 0, offsetY: 3 },
   volume: { glyph: '⌞ ⌝', offsetX: 0, offsetY: 2 },
   baseMaxWeight: { glyph: 'w', offsetX: 0.5, offsetY: 0 },
+  researchRevealRadius: { glyph: '◎', offsetX: 0, offsetY: 0},
+  skillPoints: { glyph: '◌', offsetX: 0, offsetY: 0 },
 };
+
+const RESOURCE_GLYPHS: Record<string, StatIconSpec> = {
+  credits: { glyph: '✦', offsetX: 0, offsetY: 2 },
+  chronotraces: { glyph: '⧖', offsetX: 0, offsetY: 0 },
+  timeFlux: { glyph: '∿', offsetX: 0, offsetY: 1 },
+  shards: { glyph: '⌁', offsetX: 0, offsetY: 0 },
+};
+
+export function getStatGlyph(statKey: string): string {
+  const spec = RESEARCH_STAT_ICON_SPECS[statKey];
+  return spec?.glyph || '⾘';
+}
+
+export function getResourceGlyph(resourceKey: string): string {
+  const spec = RESOURCE_GLYPHS[resourceKey];
+  return spec?.glyph || '⚠';
+}
 
 const nodeSquareCache: Map<number, MaxSquareResult> = new Map();
 
@@ -220,6 +239,12 @@ function drawNodeOverlay(
     return;
   }
 
+  // Resource nodes: draw the resource icon (e.g. ✦ for credits)
+  if (type === 'resource' && !covert) {
+    drawResourceIconForNode(ctx, cells, archetype, owned, origin, hexSize);
+    return;
+  }
+
   // Owned obstacle/covert nodes are visually treated as empty: no overlay.
   if (owned || !isObstacleLike) return;
 
@@ -302,6 +327,71 @@ function drawStatIconForNode(
   ctx.textBaseline = 'middle';
   ctx.font = `bold ${fontSize}px sans-serif`;
   ctx.fillStyle = 'rgba(248, 250, 252, 0.96)'; // light text on dark background
+  ctx.fillText(spec.glyph, centerX, centerY);
+  ctx.restore();
+}
+
+function drawResourceIconForNode(
+  ctx: CanvasRenderingContext2D,
+  cells: ResearchCellInfo[],
+  archetype: ResearchArchetype,
+  owned: boolean,
+  origin: Point2,
+  hexSize: number
+): void {
+  const resourceKey = archetype.resource;
+  if (!resourceKey) return;
+  if (!cells.length) return;
+
+  const spec = RESOURCE_GLYPHS[resourceKey];
+  if (!spec) return;
+
+  const nodeId = cells.length > 0 ? cells[0].nodeId : -1;
+  const axialCells: Point2[] = cells.map(info => info.axial);
+
+  let layout: MaxSquareResult | null | undefined = nodeId >= 0 ? nodeSquareCache.get(nodeId) : null;
+  if (!layout) {
+    layout = computeMaxSquareForHexNode(axialCells);
+    if (layout && nodeId >= 0) {
+      nodeSquareCache.set(nodeId, layout);
+    }
+  }
+
+  let centerX: number;
+  let centerY: number;
+  let maxIconSize: number | null = null;
+
+  if (layout) {
+    centerX = layout.center.x * hexSize + origin.x;
+    centerY = layout.center.y * hexSize + origin.y;
+    maxIconSize = layout.side * hexSize * 0.9;
+  } else {
+    let sumX = 0;
+    let sumY = 0;
+    for (const cellInfo of cells) {
+      const pixel = axialToPixel(cellInfo.axial, hexSize, origin);
+      sumX += pixel.x;
+      sumY += pixel.y;
+    }
+    centerX = sumX / cells.length;
+    centerY = sumY / cells.length;
+  }
+
+  let fontSize = hexSize * 1.1;
+  fontSize = Math.max(12, fontSize);
+  if (maxIconSize != null) {
+    fontSize = Math.min(fontSize, maxIconSize);
+  }
+
+  centerX += spec.offsetX;
+  centerY += spec.offsetY;
+
+  ctx.save();
+  ctx.globalAlpha = owned ? 1 : 0.95;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `bold ${fontSize}px sans-serif`;
+  ctx.fillStyle = 'rgba(248, 250, 252, 0.96)';
   ctx.fillText(spec.glyph, centerX, centerY);
   ctx.restore();
 }

@@ -25,7 +25,10 @@
             <div class="col-left enc-col">
               <div class="enc-name">
                 <template v-if="entry.kind === 'WalkEncounter'">Walking</template>
-                <template v-else-if="entry.kind === 'LootEncounter'">Looting</template>
+                <template v-else-if="entry.kind === 'LootEncounter'">
+                  <template v-if="(entry as any).source === 'monster'">Dissecting the corpse</template>
+                  <template v-else>Looting</template>
+                </template>
                 <template v-else-if="entry.kind === 'FightEncounter'">
                   <div class="enc-type">Fighting</div>
                   <div class="enc-monster">{{ (entry as any).monsterName }}</div>
@@ -51,46 +54,60 @@
                   <div class="note-row">Bags are full. Skipping search.</div>
                 </template>
                 <template v-else>
-                  <!-- Independent 3-column layout: text stack | item volume | image -->
-                  <div class="loot-cols" :class="{ hasItem: !!(entry as any).itemId && (subShownSteps[idx] || 0) >= 1 }">
-                    <!-- Column 1: outcome + bags volume (stacked) -->
-                    <div class="lc col1">
-                      <template v-if="(subShownSteps[idx] || 0) >= 1">
-                        <template v-if="(entry as any).itemId">
-                          <div class="line outcome">Found <b>{{ itemName((entry as any).itemId) }}</b>!</div>
-                        </template>
-                        <template v-else>
-                          <div class="line outcome">No valuables here</div>
-                        </template>
-                      </template>
-
-                      <!-- Bags volume appears at step 2 (or step 1 for monster loot) when item is found -->
-                      <template v-if="(entry as any).itemId && ((entry as any).source === 'monster' ? (subShownSteps[idx] || 0) >= 1 : (subShownSteps[idx] || 0) >= 2)">
-                        <div class="line bags">
-                          <template v-if="!(entry as any).discarded">
-                            Bags volume: <b>{{ (entry as any).volumeAfter }} / {{ (entry as any).capacity }}</b>
+                  <!-- Biopsy failure: full-width message -->
+                  <template v-if="(entry as any).source === 'monster' && (entry as any).biopsyChance > 0 && !(entry as any).biopsySuccess && (subShownSteps[idx] || 0) >= 1">
+                    <div class="note-row dimmed">The monster's remains were scattered and spoiled (<b>{{ (entry as any).biopsyChance }}</b> vs {{ (entry as any).biopsyRoll }})</div>
+                  </template>
+                  <!-- Regular loot layout (for successful biopsy or regular loot) -->
+                  <template v-else>
+                    <!-- Independent 3-column layout: text stack | item volume | image -->
+                    <div class="loot-cols" :class="{ hasItem: !!(entry as any).itemId && (subShownSteps[idx] || 0) >= 1 }">
+                      <!-- Column 1: outcome + bags volume (stacked) -->
+                      <div class="lc col1">
+                        <template v-if="(subShownSteps[idx] || 0) >= 1">
+                          <!-- Monster loot with biopsy mechanic (success only) -->
+                          <template v-if="(entry as any).source === 'monster' && (entry as any).biopsyChance > 0">
+                            <div class="line outcome">Found <b>{{ itemName((entry as any).itemId) }}</b>! (<b>{{ (entry as any).biopsyChance }}</b> vs {{ (entry as any).biopsyRoll }})</div>
                           </template>
+                          <!-- Regular loot -->
                           <template v-else>
-                            Bags volume: <b>{{ (entry as any).volumeBefore }} / {{ (entry as any).capacity }}</b>. Need {{ (entry as any).requiredVolume }} more. Discarded.
+                            <template v-if="(entry as any).itemId">
+                              <div class="line outcome">Found <b>{{ itemName((entry as any).itemId) }}</b>!</div>
+                            </template>
+                            <template v-else>
+                              <div class="line outcome dimmed">No valuables here</div>
+                            </template>
                           </template>
-                        </div>
-                      </template>
-                      <!-- Reserve space to avoid layout jump before the bags line is revealed -->
-                      <template v-else-if="(entry as any).itemId">
-                        <div class="line bags placeholder">&nbsp;</div>
-                      </template>
-                    </div>
+                        </template>
 
-                    <!-- Column 4: combined volume + image, aligned with fight HP column -->
-                    <div class="lc colR" v-if="(entry as any).itemId">
-                      <div class="colR-grid" :class="{ notyet: (subShownSteps[idx] || 0) < 1 }">
-                        <div class="vol" v-if="(subShownSteps[idx] || 0) >= 1">Volume: {{ itemVolume((entry as any).itemId) }}</div>
-                        <div class="icon-wrap">
-                          <ItemDisplay :id="(entry as any).itemId" :minor="true" />
+                        <!-- Bags volume appears at step 2 (or step 1 for monster loot) when item is found -->
+                        <template v-if="(entry as any).itemId && ((entry as any).source === 'monster' ? (subShownSteps[idx] || 0) >= 1 : (subShownSteps[idx] || 0) >= 2)">
+                          <div class="line bags">
+                            <template v-if="!(entry as any).discarded">
+                              Bags volume: <b>{{ (entry as any).volumeAfter }} / {{ (entry as any).capacity }}</b>
+                            </template>
+                            <template v-else>
+                              Bags volume: <b>{{ (entry as any).volumeBefore }} / {{ (entry as any).capacity }}</b>. Need {{ (entry as any).requiredVolume }} more. Discarded.
+                            </template>
+                          </div>
+                        </template>
+                        <!-- Reserve space to avoid layout jump before the bags line is revealed -->
+                        <template v-else-if="(entry as any).itemId">
+                          <div class="line bags placeholder">&nbsp;</div>
+                        </template>
+                      </div>
+
+                      <!-- Column 4: combined volume + image, aligned with fight HP column -->
+                      <div class="lc colR" v-if="(entry as any).itemId">
+                        <div class="colR-grid" :class="{ notyet: (subShownSteps[idx] || 0) < 1 }">
+                          <div class="vol" v-if="(subShownSteps[idx] || 0) >= 1">Volume: {{ itemVolume((entry as any).itemId) }}</div>
+                          <div class="icon-wrap">
+                            <ItemDisplay :id="(entry as any).itemId" :minor="true" :class="{ 'loot-kept': !(entry as any).discarded }" />
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </template>
                 </template>
               </template>
 
@@ -98,7 +115,7 @@
               <template v-else-if="entry.kind === 'FightEncounter'">
                 <div class="fight-rows">
                   <template v-for="(ev, j) in ((entry as any).fightLog || [])" :key="'fe-'+j">
-                    <template v-if="(subShownSteps[idx] || 0) >= (j + 1)">
+                    <template v-if="(subShownSteps[idx] || 0) >= (Number(j) + 1)">
                       <!-- Player row for this round (independent grid) -->
                       <div class="fr-grid">
                         <div class="cell who">You</div>
@@ -110,6 +127,9 @@
                         </div>
                         <div class="cell after" v-html="ev.hitLanded ? hpChange('their', ev.theirHpBefore, ev.theirHpAfter) : ''"></div>
                       </div>
+
+                      <!-- Stun note as a separate row when stun triggers -->
+                      <div class="note-row stun-note" v-if="ev.stunTriggered" v-html="stunLine(ev)"></div>
 
                       <!-- Monster counter only when we miss (independent grid) -->
                       <template v-if="!ev.hitLanded">
@@ -130,8 +150,11 @@
                     </template>
                   </template>
                 </div>
-                <div class="note-row" v-show="(entry as any).dieFromOvertime && (subShownSteps[idx] || 0) >= (((entry as any).fightLog?.length || 0) + 1)">You die of overexertion.</div>
-                <div class="note-row aspirator-note" v-show="aspiratorUsed(entry as any) && (subShownSteps[idx] || 0) >= (((entry as any).fightLog?.length || 0) + ((entry as any).dieFromOvertime ? 2 : 1))">You examine their body with an Aspirator.</div>
+                <div class="note-row regen-note" v-if="(entry as any).hpAfterRegen > (entry as any).hpBeforeRegen && (subShownSteps[idx] || 0) >= (((entry as any).fightLog?.length || 0) + 1)">
+                  Regenerated health: {{ (entry as any).hpBeforeRegen }} → <b>{{ (entry as any).hpAfterRegen }}</b>
+                </div>
+                <div class="note-row" v-show="(entry as any).dieFromOvertime && (subShownSteps[idx] || 0) >= (((entry as any).fightLog?.length || 0) + ((entry as any).hpAfterRegen > (entry as any).hpBeforeRegen ? 2 : 1))">You die of overexertion.</div>
+                <div class="note-row aspirator-note" v-show="aspiratorUsed(entry as any) && (subShownSteps[idx] || 0) >= (((entry as any).fightLog?.length || 0) + ((entry as any).dieFromOvertime ? (((entry as any).hpAfterRegen > (entry as any).hpBeforeRegen ? 3 : 2)) : ((entry as any).hpAfterRegen > (entry as any).hpBeforeRegen ? 2 : 1)))">You examine their body...</div>
               </template>
 
               <!-- Quest details -->
@@ -163,6 +186,10 @@
             </div>
           </div>
         </div>
+        <section class="final-state" v-if="raidSuccess">
+          <div class="fs-item">Bags: <b>{{ finalBagsUsed }} / {{ finalBagsCapacity }}</b></div>
+          <div class="fs-item">Health: <b>{{ finalHp }} / {{ finalMaxHp }}</b></div>
+        </section>
         <section class="zone-change" v-if="zoneChangeText">
           <div class="zc">Your activity has changed the zone: <strong>{{ zoneChangeText }}</strong>.</div>
         </section>
@@ -174,7 +201,16 @@
       <footer class="modal-actions">
         <button v-if="!timelineComplete" class="btn" @click="fastForward">Fast-forward</button>
         <template v-else>
-          <button class="btn primary" @click="raidMore">Raid More</button>
+          <span class="btn-wrap" :class="{ 'has-tooltip': !canRaidAgain }">
+            <button
+              class="btn green"
+              :class="{ disabled: !canRaidAgain }"
+              :disabled="!canRaidAgain"
+              @click="raidAgain"
+            >Raid Again</button>
+            <span class="tooltip" v-if="!canRaidAgain">{{ raidAgainDisabledReason }}</span>
+          </span>
+          <button class="btn primary" @click="changeSetup">Change Setup</button>
           <button class="btn primary" @click="goRefine">Refine</button>
         </template>
       </footer>
@@ -185,9 +221,9 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
-import { uiState } from '../logic/UIState';
+import { uiState, getGameState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
-import { CmdAknowledgeOutcome } from '../logic/input/InputCommands';
+import { CmdAknowledgeOutcome, CmdStartRaid } from '../logic/input/InputCommands';
 import type { RaidEventLogEntry, WalkEncounterLogEntry } from '../logic/RaidLog';
 import { DEFAULT_SPEED } from '../logic/GameState';
 import ItemDisplay from './ItemDisplay.vue';
@@ -206,7 +242,10 @@ const timerId = ref<number | null>(null);
 const bodyRef = ref<HTMLElement | null>(null);
 // Playback speed scale: 1 = normal, 0.2 = 5x faster
 const speedScale = ref(1);
-const totalEncounters = computed(() => logEntries.value.length);
+const totalEncounters = computed(() => {
+  const o: any = uiState.lastOutcome as any;
+  return Math.max(0, o?.plannedEncounters || 0);
+});
 const visibleEntries = computed(() => logEntries.value.slice(0, shownCount.value));
 const allShown = computed(() => shownCount.value >= totalEncounters.value);
 // Consider the playback complete only when the unified timeline finishes
@@ -273,6 +312,26 @@ const zoneChangeText = computed(() => {
   return s || '';
 });
 
+const finalHp = computed(() => {
+  const o: any = uiState.lastOutcome as any;
+  return Math.max(0, o?.finalHp ?? 0);
+});
+
+const finalMaxHp = computed(() => {
+  const o: any = uiState.lastOutcome as any;
+  return Math.max(0, o?.finalMaxHp ?? 0);
+});
+
+const finalBagsUsed = computed(() => {
+  const o: any = uiState.lastOutcome as any;
+  return Math.max(0, o?.finalBagsUsed ?? 0);
+});
+
+const finalBagsCapacity = computed(() => {
+  const o: any = uiState.lastOutcome as any;
+  return Math.max(0, o?.finalBagsCapacity ?? 0);
+});
+
 function clearMainTimer() {
   if (timerId.value !== null) {
     clearTimeout(timerId.value);
@@ -320,19 +379,23 @@ function buildTimeline() {
         timeline.push({ kind: 'loot_sub', index: i, step: 1 });
         if (e.itemId) timeline.push({ kind: 'loot_sub', index: i, step: 2 });
       } else {
-        // Monster loot: always success; show only the volume line
-        if (e.itemId) timeline.push({ kind: 'loot_sub', index: i, step: 1 });
+        // Monster loot: always show step 1 (either failure message or success + volume)
+        timeline.push({ kind: 'loot_sub', index: i, step: 1 });
       }
     }
-    // FightEncounter: reveal each round and possibly overtime/aspirator lines
+    // FightEncounter: reveal each round and possibly regen/overtime/aspirator lines
     if (e && e.kind === 'FightEncounter') {
       const rounds = Math.max(0, (e.fightLog?.length || 0));
       for (let j = 1; j <= rounds; j++) timeline.push({ kind: 'fight_sub', index: i, step: j });
+      let step = rounds;
+      // Regen line (if HP was regenerated)
+      const hasRegen = (e as any).hpAfterRegen > (e as any).hpBeforeRegen;
+      if (hasRegen) timeline.push({ kind: 'fight_sub', index: i, step: ++step });
       // Overtime death line
-      if (e.dieFromOvertime) timeline.push({ kind: 'fight_sub', index: i, step: rounds + 1 });
+      if (e.dieFromOvertime) timeline.push({ kind: 'fight_sub', index: i, step: ++step });
       // Aspirator line (when any event marks encounterCreated)
       const useAsp = !!(e.fightLog || []).find((ev: any) => !!ev.encounterCreated);
-      if (useAsp) timeline.push({ kind: 'fight_sub', index: i, step: rounds + (e.dieFromOvertime ? 2 : 1) });
+      if (useAsp) timeline.push({ kind: 'fight_sub', index: i, step: ++step });
     }
   }
 }
@@ -359,20 +422,26 @@ function scheduleNextTick() {
   }, delay);
 }
 
-watch(visible, (v) => {
+// Reset and start animation when a new outcome appears
+function resetAndStartAnimation() {
   clearTimer();
-  if (v) {
+  shownCount.value = 0;
+  speedScale.value = 1;
+  subShownSteps.value = {};
+  timelineReady.value = false;
+  buildTimeline();
+  timelineReady.value = true;
+  scheduleNextTick();
+}
+
+// Watch the outcome object itself to catch new raids starting
+watch(() => uiState.lastOutcome, (newOutcome, oldOutcome) => {
+  clearTimer();
+  if (newOutcome) {
     // Prevent background page scroll when modal is open
     try { document.body.style.overflow = 'hidden'; } catch (_) {}
-    shownCount.value = 0;
-    speedScale.value = 1;
-    subShownSteps.value = {};
-    timelineReady.value = false;
-    // Build and start unified timeline on open
-    buildTimeline();
-    // Mark ready after timeline is built to prevent early summary flicker
-    timelineReady.value = true;
-    scheduleNextTick();
+    // Reset animation state for new outcome (handles both fresh open and "raid again")
+    resetAndStartAnimation();
   } else {
     shownCount.value = 0;
     subShownSteps.value = {};
@@ -398,7 +467,61 @@ function fastForward() {
   stickToBottomAfterUpdate(prevScrollable, prevAtBottom);
 }
 
-function raidMore() {
+// Compute the gear price for the completed raid
+const raidGearPrice = computed(() => {
+  const o: any = uiState.lastOutcome as any;
+  const raidId = (o?.id || '').trim();
+  if (!raidId) return 0;
+  const gs = getGameState();
+  if (!gs) return 0;
+  const gearIds: string[] = (gs.loadouts && gs.loadouts[raidId]) ? gs.loadouts[raidId] : [];
+  let total = 0;
+  for (const gid of gearIds) {
+    const g = gs.lib.gear.get(gid);
+    if (g) total += g.price;
+  }
+  return total;
+});
+
+// Check if a quest was completed during this raid (would change encounter composition)
+const questWasCompleted = computed(() => {
+  const o: any = uiState.lastOutcome as any;
+  const completed = o?.questsCompleted;
+  return Array.isArray(completed) && completed.length > 0;
+});
+
+// Check if player can afford to raid again with the same gear
+const canAffordRaidAgain = computed(() => {
+  return uiState.credits >= raidGearPrice.value;
+});
+
+// Combined check: can we raid again with identical settings?
+const canRaidAgain = computed(() => {
+  // Only allow if raid was successful, no quest was completed, and we can afford the gear
+  if (!raidSuccess.value) return false;
+  if (questWasCompleted.value) return false;
+  if (!canAffordRaidAgain.value) return false;
+  return true;
+});
+
+// Tooltip explaining why raid again is disabled
+const raidAgainDisabledReason = computed(() => {
+  if (!raidSuccess.value) return 'You died';
+  if (questWasCompleted.value) return 'Quest completed - zone encounters have changed';
+  if (!canAffordRaidAgain.value) return `Not enough credits (need ${raidGearPrice.value})`;
+  return '';
+});
+
+function raidAgain() {
+  const o: any = uiState.lastOutcome as any;
+  const raidId = (o?.id || '').trim();
+  if (!raidId || !canRaidAgain.value) return;
+  // Clear the outcome and start a new raid with the same settings
+  globalInputQueue.push(new CmdAknowledgeOutcome());
+  globalInputQueue.push(new CmdStartRaid({ id: raidId }));
+}
+
+function changeSetup() {
   globalInputQueue.push(new CmdAknowledgeOutcome());
 }
 
@@ -450,6 +573,12 @@ function reflectLine(ev: any): string {
   return `They receive damage reflection on ${on}. ${hpChange('their', ev.theirHpBefore, ev.theirHpAfter, true)}`;
 }
 
+function stunLine(ev: any): string {
+  const before = ev.hitChanceBefore;
+  const after = ev.hitChanceAfter;
+  return `You stun the target. Chance to hit them: <b>${before}</b> → <b>${after}</b>`;
+}
+
 function aspiratorUsed(entry: any): boolean {
   return !!(entry?.fightLog || []).find((ev: any) => !!ev.encounterCreated);
 }
@@ -489,7 +618,7 @@ watch([timelineComplete, gainedItems, discardedItems, zoneChangeText], () => {
 
 <style scoped>
 .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: grid; place-items: center; z-index: 10000; }
-.modal { width: 780px; max-width: 96vw; background: linear-gradient(180deg, rgba(20,28,40,0.98), rgba(10,15,26,0.94)); border: 1px solid var(--panel-border); border-radius: 6px; box-shadow: 0 24px 64px rgba(0,0,0,0.7), inset 0 1px 0 var(--panel-shine); padding: 16px; height: min(800px, 90vh); display: grid; grid-template-rows: auto 1fr auto; }
+.modal { width: 780px; max-width: 96vw; background: linear-gradient(180deg, rgba(20,28,40,0.98), rgba(10,15,26,0.94)); border: 1px solid var(--panel-border); border-radius: 6px; box-shadow: 0 24px 64px rgba(0,0,0,0.7), inset 0 1px 0 var(--panel-shine); padding: 16px; height: min(1000px, 95vh); display: grid; grid-template-rows: auto 1fr auto; }
 .modal-header { display: grid; grid-template-rows: auto auto; align-items: start; gap: 8px; }
 .modal-title { margin: 0; font-size: 18px; letter-spacing: 0.02em; display: flex; align-items: baseline; gap: 10px; }
 .modal-title .raiding { font-weight: 400; }
@@ -498,11 +627,20 @@ watch([timelineComplete, gainedItems, discardedItems, zoneChangeText], () => {
 .dot { color: var(--text-secondary); }
 .dot.done { color: var(--accent-hover); }
 .modal-body { margin-top: 10px; overflow-y: auto; overflow-x: hidden; min-height: 0; scrollbar-gutter: stable; }
+
+/* Custom scrollbar styling */
+.modal-body::-webkit-scrollbar { width: 10px; }
+.modal-body::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 5px; }
+.modal-body::-webkit-scrollbar-thumb { background: rgba(79, 209, 197, 0.3); border-radius: 5px; border: 2px solid rgba(0, 0, 0, 0.2); }
+.modal-body::-webkit-scrollbar-thumb:hover { background: rgba(79, 209, 197, 0.5); }
+.modal-body::-webkit-scrollbar-thumb:active { background: rgba(79, 209, 197, 0.6); }
+/* Firefox scrollbar styling */
+.modal-body { scrollbar-width: thin; scrollbar-color: rgba(79, 209, 197, 0.3) rgba(0, 0, 0, 0.2); }
 .modal-footer-info { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--panel-border); }
 .summary { margin-top: 16px; margin-bottom: 12px; display: grid; gap: 8px; }
 .summary-row { display: grid; gap: 6px; }
 .summary-cap { font-weight: 900; letter-spacing: 0.04em; opacity: 0.95; }
-.summary-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.summary-items { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; }
 .summary-items.dim { opacity: 0.55; filter: grayscale(0.9); }
 .log-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
 .log-item { border: none; border-radius: 6px; padding: 0; display: grid; grid-template-columns: 170px 1fr; gap: 4px; align-items: stretch; }
@@ -527,8 +665,10 @@ watch([timelineComplete, gainedItems, discardedItems, zoneChangeText], () => {
 .loot-cols .lc.colR .colR-grid.notyet { visibility: hidden; }
 .loot-cols .lc.colR .icon-wrap { width: 48px; height: 48px; }
 .loot-cols .line.outcome { font-weight: 400; }
+.loot-cols .line.outcome.dimmed { opacity: 0.65; }
 .loot-cols .line.bags { opacity: 0.95; }
 .loot-cols .line.placeholder { visibility: hidden; }
+.note-row.dimmed { opacity: 0.65; }
 .hl { color: var(--accent); font-weight: 800; }
 
 /* Fight layout */
@@ -545,6 +685,9 @@ watch([timelineComplete, gainedItems, discardedItems, zoneChangeText], () => {
 :deep(.hp-your) { color: #f36d7b; }
 :deep(.hp-their) { color: inherit; }
 
+/* Regen note spacing */
+.regen-note { margin-top: 12px; }
+
 /* Rolls styling */
 .roll { white-space: nowrap; }
 .roll-self { font-size: 0.85em; opacity: 0.6; }
@@ -559,16 +702,63 @@ watch([timelineComplete, gainedItems, discardedItems, zoneChangeText], () => {
 
 .zone-change { margin-top: 10px; padding: 8px 10px; border: none; border-radius: 6px; background: rgba(255,255,255,0.03); }
 .zone-change .zc { font-weight: 400; }
+.final-state { margin-top: 10px; display: flex; gap: 10px; }
+.final-state .fs-item { padding: 8px 10px; border: none; border-radius: 6px; background: rgba(255,255,255,0.03); font-weight: 400; opacity: 0.9; }
 .death-note { margin-top: 10px; padding: 8px 10px; border: none; border-radius: 6px; background: rgba(255,255,255,0.03); }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; }
+.btn-wrap { display: inline-block; position: relative; }
+.btn-wrap .tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  background: rgba(10, 14, 20, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  color: #f0c070;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 150ms ease;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.btn-wrap .tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: rgba(10, 14, 20, 0.95);
+}
+.btn-wrap:hover .tooltip { opacity: 1; }
 .btn { padding: 10px 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; border-radius: 4px; border: 1px solid var(--panel-border); cursor: pointer; background: rgba(255,255,255,0.03); color: inherit; }
+.btn:hover { background: rgba(255,255,255,0.08); }
 .btn.primary { background: rgba(79, 209, 197, 0.14); color: var(--accent); }
 .btn.primary:hover { background: rgba(79, 209, 197, 0.22); }
+.btn.green { background: rgba(34, 197, 94, 0.18); color: #86efac; border-color: rgba(34, 197, 94, 0.35); }
+.btn.green:hover { background: rgba(34, 197, 94, 0.28); }
+.btn.disabled, .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn.disabled:hover, .btn:disabled:hover { background: rgba(34, 197, 94, 0.10); border-color: rgba(34, 197, 94, 0.22); }
 
 /* simple appear animation */
 .appear { animation: fadeInUp 220ms ease; }
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+:deep(.loot-kept .item-cell.minor .sprite) {
+  filter: none;
+}
+:deep(.loot-kept .item-cell.minor .sprite.sprite-dimmed) {
+  filter: brightness(0.5);
 }
 </style>

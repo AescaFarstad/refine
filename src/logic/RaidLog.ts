@@ -32,6 +32,9 @@ export interface FightEvent {
   myHpAfter: number;
   blocked: boolean;
   hitLanded: boolean;
+  stunTriggered: boolean;
+  hitChanceBefore: number;  // hit chance before stun bonus
+  hitChanceAfter: number;   // hit chance after stun bonus
 }
 
 export interface FightEncounterLogEntry {
@@ -41,6 +44,8 @@ export interface FightEncounterLogEntry {
   monsterId: string;
   monsterName: string;
   timeSpentSec: number;
+  hpBeforeRegen: number;
+  hpAfterRegen: number;
 }
 
 export interface LootEncounterLogEntry {
@@ -56,6 +61,9 @@ export interface LootEncounterLogEntry {
   volumeAfter: number;
   discarded: boolean;
   requiredVolume: number;
+  biopsyChance: number;
+  biopsyRoll: number;
+  biopsySuccess: boolean;
 }
 
 export type RaidEventLogEntry =

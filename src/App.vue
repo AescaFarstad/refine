@@ -94,7 +94,7 @@ body {
   letter-spacing: 0.015em;
 }
 .manual-dragging, .manual-dragging * { user-select: none !important; -webkit-user-drag: none !important; }
-.content { padding: 12px; box-sizing: border-box; flex: 1 1 auto; }
+.content { box-sizing: border-box; flex: 1 1 auto; }
 
 .tab-content {
   height: 100%;

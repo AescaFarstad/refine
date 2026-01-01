@@ -4,11 +4,13 @@ import SeededRandom from "./core/SeededRandom";
 import { Essence } from "./ItemLib";
 import type { Point2 } from "./core/math";
 import type { CheatInput } from './cheat/CheatCommands';
-import { CheatAddRaidItems } from './cheat/CheatCommands';
+import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources } from './cheat/CheatCommands';
+import { IS_DEBUG } from './Const';
 import type { IceMaze } from "../maze/IceMaze";
 import type { Wafer } from "./Wafer";
 import { createWafer } from "./Wafer";
-import { initResearchCells, calculateVisibility } from "./Research";
+import { initResearchCells } from "./Research";
+import gearCategories from "../data/gear_categories";
 
 export const DEFAULT_SPEED: number = 6;
 export const MIN_WALK_SPEED: number = 1; // km/h
@@ -25,16 +27,16 @@ export class GameState {
   public random: SeededRandom = new SeededRandom();
 
   // Properties for /core/ compatibility (not actively used in this project)
-  public hypothetical: { key: string; connections: any } | null = null; // For core Hypothetical system
-  public connections: any = null; // For core Stats system
+  public hypothetical: { key: string; connections: any } | null = null;
+  public connections: any = null;
 
 
-  public credits: number = 5000;
-  public chronotraces: number = 500000;
-  public timeFlux: number = 150;
-  public shardDust: number = 1000;
-  public strength: number = 120;
+  public credits: number = 1000;
+  public chronotraces: number = 0;
+  public timeFlux: number = 0;
+  public shardDust: number = 0;
   public reach: number = 0;
+  public strength: number = 0;
   public looting: number = 0;
   public speed: number = DEFAULT_SPEED;//km/h
   public volume: number = 10;
@@ -43,7 +45,6 @@ export class GameState {
   public chanceToHit: number = 60;
   public chanceToBlock: number = 30;
   public health: number = 10;
-  public overflowEssences: Essence = {};
   public wafer: Wafer = createWafer(2);
   public waferSize: Point2 = { x: 0, y: 0 };
   public waferUpgradesPurchased: number = 0;
@@ -65,61 +66,39 @@ export class GameState {
 
   public items: Array<Item> = [];
 
-  // Ice Maze persistent state
   public maze: IceMaze | null = null;
   public mazeLevelIndex: number = 0;
   public labirinthResetRequested: boolean = false;
 
 
 
-  public cheats: Array<CheatInput> = [
-    new CheatAddRaidItems({ id: "shegolskoe", count: 10 })
-  ];
+  public cheats: Array<CheatInput> = IS_DEBUG ? [
+    new CheatAddResources(),
+    new CheatAddRaidItems({ id: "shegolskoe", count: 10 }),
+    new CheatUnlockAllGear()
+  ] : [];
 
   public unlocks: string[] = [];
   public completedQuests: string[] = [];
   public activeQuests: string[] = [];
-  public gearLevels: Record<string, number> = {
-    weapons: 1,
-    accessories: 1,
-    armor: 1,
-    bags: 1,
-    devices: 1,
-    companions: 1,
-    grenades: 1,
-    medicine: 1,
-    tactics: 1,
-  };
+  public gearLevels: Record<string, number> = {};
   public skillPoints: number = 0;
   public unlockedGear: string[] = [
-    'boots_basic', 'sprint_boots',
-    'stim_patch', 'medkit_basic',
-    'empty_pack', 'ruksack',
-    'aspirator_probe', 'metal_detector', 'field_scanner',
-    'rusty_machete', 'makeshift_spear', 'nail_gun', 'stun_baton',
-    'kevlar_helmet', 'kevlar_vest',
-    'spiked_armor',
-    'flash_grenade', 'frag_grenade',
-    'robodog', 'needle_drone', 'cargo_drone',
-    'scope', 'laser_sight',
-    'tactics_thorough_search', 'tactics_immovable_wall',
+    'brass_knuckles', 'painkillers', 'brass_knuckles', 
   ];
   public loadouts: Record<string, string[]> = {
-    shegolskoe: ['sprint_boots', 'medkit_basic', 'aspirator_probe', 'makeshift_spear', 'spiked_armor', 'frag_grenade', 'needle_drone'],
+    shegolskoe: [],
     ozernoye: [],
   };
   public selectedGearPrice: number = 0;
 
-  // Estimates for the currently active raid (UI mirrors these)
   public raidSurvivalEstimatePct: number = 0;
   public raidTimeEstimateSec: number = 0;
 
-  public setResearchRevealRadius(radius: number): void {
-    this.researchRevealRadius = radius;
-    calculateVisibility(this, this.lib.research);
-  }
-
   constructor() {
+    for (const categoryId of Object.keys(gearCategories)) {
+      this.gearLevels[categoryId] = 1;
+    }
     initResearchCells(this, this.lib.research);
   }
 }
@@ -130,24 +109,22 @@ export class ActiveRaid {
   public hp: number = 100;
   public maxHp: number = 100;
   public baseSpeed: number = 6; // km/h
-  public speedBonusPct: number = 0; // additive percent
-  public speedBonusFlat: number = 0; // flat km/h added
-  public regenPerKm: number = 0; // HP per km
+  public speedBonusPct: number = 0;
+  public speedBonusFlat: number = 0;
+  public regenPerKm: number = 0;
+  public regenAfterEncounter: number = 0;
   public weight: number = 0;
   public maxWeight: number = 10;
-  // Gear-provided extra capacity; base capacity comes from GameState.volume
   public bagsVolume: number = 0;
-  // Current used volume accumulated during a raid run
   public usedVolume: number = 0;
   public damage: number = 1;
   public perks: string[] = [];
-  // Additive loot chance bonus from gear (percent)
   public lootChanceBonus: number = 0;
   public hitChance: number = 60;
   public blockChance: number = 30;
-  // Reflect: percent of monster's damage reflected back
   public reflectOnHitPct: number = 0;   // monster hits you
   public reflectOnBlockPct: number = 0; // you block monster
+  public biopsyChance: number = 0;      // chance to successfully harvest monster loot
 }
 
 
@@ -166,6 +143,7 @@ export class RaidOutcome {
   public success: boolean = false;
   public questDeltaPct: number = 0;
   public unlockedRaidId: string | null = null;
+  public plannedEncounters: number = 0;
   // Items obtained and discarded during this raid
   public looted: Array<Item> = [];
   public discardedByVolume: Array<Item> = [];

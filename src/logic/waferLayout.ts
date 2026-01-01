@@ -10,20 +10,27 @@ export interface WaferBuffCell {
 }
 
 export const waferBuffCells: WaferBuffCell[] = [
-  // Center ring — mild additive buffs
-  { x: 0, y: 0, add: 1 }, // +1
+  { x: 0, y: 3, add: 1 },
+  { x: 0, y: -3, add: 1 },
 
-  // Horizontal neighbors — stronger additive buffs
-  { x: 1, y: 0, add: 2 }, // +2
-  { x: -1, y: 0, add: 2 }, // +2
+  { x: 3, y: -2, add: 1 },
+  { x: -3, y: 2, add: 1 },
+  { x: 2, y: 2, add: 2 },
+  { x: -2, y: -2, add: 2 },
 
-  // Vertical neighbors — strongest additive buffs
-  { x: 0, y: 1, add: 3 }, // +3
-  { x: 0, y: -1, add: 3 }, // +3
+  { x: 1, y: -4, mul: 2 },
+  { x: 4, y: -4, mul: 2 },
+  { x: 4, y: 0, mul: 2 },
+  { x: -4, y: 0, mul: 2 },
+  { x: -1, y: 4, mul: 2 },
+  { x: -4, y: 4, mul: 2 },
 
-  // Diagonal cells — multiplicative buffs
-  { x: 1, y: -1, mul: 2 }, // x2
-  { x: -1, y: 1, mul: 2 }, // x2
+  { x: 5, y: -2, add: 3 },
+  { x: -5, y: 2, add: 3 },
+  { x: 1, y: 4, add: 3 },
+  { x: -1, y: -4, add: 3 },
+  { x: -3, y: 5, add: 2 },
+  { x: 3, y: -5, add: 2 },
 ];
 
 interface InternalBuff {

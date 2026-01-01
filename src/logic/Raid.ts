@@ -13,6 +13,7 @@ export interface RaidRunResult {
   success: boolean;
   log: RaidEventLog;
   timeSpentSec: number;
+  plannedEncounters: number;
 }
 
 function shuffleInPlace<T>(arr: T[], rnd: { get: () => number }): void {
@@ -121,6 +122,7 @@ function cloneActiveRaidState(r: ActiveRaid): ActiveRaid {
     blockChance: r.blockChance,
     reflectOnHitPct: r.reflectOnHitPct,
     reflectOnBlockPct: r.reflectOnBlockPct,
+    biopsyChance: r.biopsyChance,
   } as ActiveRaid;
 }
 
@@ -137,6 +139,8 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun = false):
 
   // Build a mutable encounter queue expanded and ordered per concept buckets
   const queue: EncounterDef[] = buildEncounterQueue(gsForRun, raidDef);
+  // Store the planned encounter count before we start processing (for UI progress indicator)
+  const plannedEncounters = queue.length;
 
   while (queue.length > 0) {
     const enc = queue.shift()!;
@@ -186,14 +190,21 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun = false):
         }
         // If we died during the fight, terminate the raid early
         if (raid.hp <= 0) {
-          return { success: false, log, timeSpentSec };
+          return { success: false, log, timeSpentSec, plannedEncounters };
+        }
+        if (raid.regenAfterEncounter > 0) {
+          const hpBefore = raid.hp;
+          raid.hp = Math.min(raid.maxHp, raid.hp + raid.regenAfterEncounter);
+          const hpAfter = raid.hp;
+          (fight.entry as any).hpBeforeRegen = hpBefore;
+          (fight.entry as any).hpAfterRegen = hpAfter;
         }
         break;
       }
       case 'MonsterLootEncounter': {
         const mid = (enc as any).monsterId as string;
         const m = gsForRun.lib.monsters.get(mid)!;
-        const entry = handleMonsterLootEncounter(gsForRun, raid, m.lootItemId);
+        const entry = handleMonsterLootEncounter(gsForRun, raid, m.lootItemId, raid.biopsyChance);
         timeSpentSec += entry.timeSpentSec;
         (entry as any).elapsedTotalSec = timeSpentSec;
         log.entries.push(entry);
@@ -202,7 +213,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun = false):
     }
   }
 
-  return { success: true, log, timeSpentSec };
+  return { success: true, log, timeSpentSec, plannedEncounters };
 }
 
 // Convenience wrapper for explicit dry runs
@@ -245,6 +256,7 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
   gs.raid.speedBonusPct = 0;
   gs.raid.speedBonusFlat = 0;
   gs.raid.regenPerKm = 0;
+  gs.raid.regenAfterEncounter = 0;
   gs.raid.weight = 0;
   gs.raid.maxWeight = gs.baseMaxWeight;
   gs.raid.bagsVolume = 0;
@@ -256,6 +268,7 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
   gs.raid.lootChanceBonus = 0;
   gs.raid.reflectOnHitPct = 0;
   gs.raid.reflectOnBlockPct = 0;
+  gs.raid.biopsyChance = 0;
   gs.selectedGearPrice = 0;
 
   const gearIds: string[] = (gs.loadouts && gs.loadouts[raidId]) ? gs.loadouts[raidId] : [];
@@ -264,6 +277,7 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
     gs.raid.speedBonusPct += g.speedPercent;
     gs.raid.speedBonusFlat += g.speedFlat;
     gs.raid.regenPerKm += g.regenPerKm;
+    gs.raid.regenAfterEncounter += g.regenAfterEncounter;
     gs.raid.weight += g.weight;
     gs.raid.maxWeight += g.maxWeight;
     gs.raid.hp += g.hp;
@@ -274,6 +288,7 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
     gs.raid.blockChance += g.chanceToBlock;
     gs.raid.reflectOnHitPct += g.reflectOnHitPct;
     gs.raid.reflectOnBlockPct += g.reflectOnBlockPct;
+    gs.raid.biopsyChance += g.biopsyChance;
     if (g.perk) gs.raid.perks.push(g.perk);
     gs.selectedGearPrice += g.price;
   }

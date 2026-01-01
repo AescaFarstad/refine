@@ -6,6 +6,7 @@ export interface GearDefinition {
   speedPercent: number;    // additive percent (e.g., 10 => +10%)
   speedFlat: number;       // flat km/h added after percent
   regenPerKm: number;      // HP per km walked
+  regenAfterEncounter: number; // HP after each encounter
   weight: number;
   maxWeight: number;
   hp: number;
@@ -21,7 +22,7 @@ export interface GearDefinition {
   // - onBlock: when you block the monster's hit
   reflectOnHitPct: number;
   reflectOnBlockPct: number;
-  // Utility
+  biopsyChance: number;
   perk?: string;
   // Visual - key into items.json sprite atlas
   image?: string;
@@ -43,6 +44,7 @@ export function parseGearDefinitions(raw: Record<string, RawGearDefinition>): Ma
       speedPercent: d.speedPercent ?? 0,
       speedFlat: d.speedFlat ?? 0,
       regenPerKm: d.regenPerKm ?? 0,
+      regenAfterEncounter: d.regenAfterEncounter ?? 0,
       weight: d.weight ?? 0,
       maxWeight: d.maxWeight ?? 0,
       hp: d.hp ?? 0,
@@ -54,6 +56,7 @@ export function parseGearDefinitions(raw: Record<string, RawGearDefinition>): Ma
       chanceToBlock: d.chanceToBlock ?? 0,
       reflectOnHitPct: d.reflectOnHitPct ?? 0,
       reflectOnBlockPct: d.reflectOnBlockPct ?? 0,
+      biopsyChance: d.biopsyChance ?? 0,
       perk: d.perk,
       image: d.image,
     };

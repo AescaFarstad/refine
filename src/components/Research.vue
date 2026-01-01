@@ -3,21 +3,27 @@
     <ResearchPane @hover-cell="onHoverCell" />
     <EditResearchPane v-if="editResearchOpen" />
     <div
-      v-if="hoverPreview && hoverPreview.price > 0"
-      class="path-summary-label"
+      v-if="showHoverTopPanel"
+      class="hover-top-panel"
+      :class="{ 'hint-only': showHintPanel && !showHoverPreviewPanel }"
     >
-      <div>
-        Research {{ hoverPreview.pathLength }} nodes
+      <div v-if="showHoverPreviewPanel && hoverPreview" class="hover-preview hover-panel">
+        <div>
+          Research {{ hoverPreview.pathLength }} nodes
+        </div>
+        <div>
+          Clear {{ hoverPreview.pathCost }} ⬤ in the path for
+          <span class="resource-price" :style="{ color: chronoColor }">
+            {{ hoverPreview.price }} ⧖
+          </span>
+        </div>
       </div>
-      <div>
-        Clear {{ hoverPreview.pathCost }} ⬤ in the path for
-        <span class="resource-price" :style="{ color: chronoColor }">
-          {{ hoverPreview.price }} ⧖
-        </span>
+      <div v-if="showHintPanel && hoveredNode" class="hover-hint hover-panel">
+        <ResearchNodeHint :cell="hoveredNode.cell" :node="hoveredNode.node" :archetype="hoveredNode.archetype" />
       </div>
     </div>
     <div v-if="hoverCell" class="coord-label">
-      <span>q: {{ hoverCell.x }}, r: {{ hoverCell.y }}</span>
+      <span>q: {{ hoverCell.x }}, r: {{ hoverCell.y }} • dist: {{ hoverDistance }}</span>
       <span v-if="hoverPreview">
         •
         <span v-if="hoverPreview.alreadyOwned">Owned</span>
@@ -41,10 +47,13 @@
 import { ref, computed } from 'vue';
 import type { Point2 } from '../logic/ItemLib';
 import ResearchPane from './ResearchPane.vue';
-import { uiState, getGameState } from '../logic/UIState';
+import { uiState, getGameState, getGameLib } from '../logic/UIState';
 import { axialToIndex, calculateResearchNodePrice, findCheapestPath } from '../logic/Research';
 import { getShardDisplay } from '../utils/ShardDisplay';
 import EditResearchPane from './EditResearchPane.vue';
+import ResearchNodeHint from './researchHints/ResearchNodeHint.vue';
+import type { ResearchCell } from '../logic/GameState';
+import type { ResearchArchetype, ResearchNodeInstance } from '../logic/ResearchLib';
 
 const hoverCell = ref<Point2 | null>(null);
 
@@ -55,6 +64,13 @@ function onHoverCell(cell: Point2 | null): void {
 }
 
 const chronoColor = getShardDisplay('chronotraces').color;
+
+const hoverDistance = computed(() => {
+  const cell = hoverCell.value;
+  if (!cell) return 0;
+  // Distance from origin in axial coordinates
+  return Math.max(Math.abs(cell.x), Math.abs(cell.y), Math.abs(cell.x + cell.y));
+});
 
 const hoverPreview = computed(() => {
   const cell = hoverCell.value;
@@ -98,6 +114,39 @@ const hoverPreview = computed(() => {
     canAfford,
   };
 });
+
+const hoveredNode = computed<null | { cell: ResearchCell; node: ResearchNodeInstance | null; archetype: ResearchArchetype | null }>(() => {
+  const cell = hoverCell.value;
+  if (!cell) return null;
+
+  const gs = getGameState();
+  const idx = axialToIndex(cell.x, cell.y);
+  if (idx === -1) return null;
+
+  const rc = gs.researchCells[idx];
+  if (!rc || !rc.revealed) return null;
+
+  const lib = getGameLib();
+  const archetype = lib.research.archetypes.get(rc.archetypeId) ?? null;
+  const node = lib.research.nodes.get(rc.nodeId) ?? null;
+
+  return { cell: rc, node, archetype };
+});
+
+const showHintPanel = computed(() => {
+  const hn = hoveredNode.value;
+  if (!hn) return false;
+  if (hn.cell.blocked) return false;
+  return hn.archetype?.type === 'gear' || hn.archetype?.type === 'resource' || hn.archetype?.type === 'stat';
+});
+
+const showHoverPreviewPanel = computed(() => {
+  return !!(hoverPreview.value && hoverPreview.value.price > 0);
+});
+
+const showHoverTopPanel = computed(() => {
+  return !!(showHintPanel.value || showHoverPreviewPanel.value);
+});
 </script>
 
 <style scoped>
@@ -107,11 +156,36 @@ const hoverPreview = computed(() => {
   height: 100%;
 }
 
-.path-summary-label {
+.hover-top-panel {
   position: absolute;
   top: 12px;
   left: 50%;
   transform: translateX(-50%);
+  display: inline-block;
+  pointer-events: none;
+  user-select: none;
+  z-index: 25;
+}
+
+.hover-preview {
+  position: relative;
+}
+
+.hover-hint {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  margin-left: 10px;
+}
+
+.hint-only .hover-hint {
+  position: relative;
+  top: auto;
+  left: auto;
+  margin-left: 0;
+}
+
+.hover-panel {
   padding: 4px 10px;
   border-radius: 4px;
   background: rgba(15, 23, 42, 0.9);
@@ -121,9 +195,6 @@ const hoverPreview = computed(() => {
   font-weight: 600;
   letter-spacing: 0.04em;
   text-align: center;
-  pointer-events: none;
-  user-select: none;
-  z-index: 25;
 }
 
 .resource-price {
@@ -134,11 +205,13 @@ const hoverPreview = computed(() => {
   position: absolute;
   bottom: 8px;
   right: 8px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  background: rgba(15, 23, 42, 0.85);
+  padding: 5px 10px;
+  border-radius: 5px;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.5);
   color: var(--text-primary);
-  font-size: 11px;
+  font-size: 13.75px;
   pointer-events: none;
+  z-index: 25;
 }
 </style>

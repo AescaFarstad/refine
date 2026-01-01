@@ -96,11 +96,12 @@ export class ResearchLib {
     placements: ResearchPlacementInput[],
     emptyCells: Point2[] = [],
     voidCells: Point2[] = [],
+    gearMap?: Map<string, any>,
   ) {
     this.archetypes.clear();
     this.nodes.clear();
 
-    // Load Archetypes
+    // Load Archetypes (manual definitions)
     for (const id in archetypes) {
       const input = archetypes[id];
       const arch: ResearchArchetype = {
@@ -114,6 +115,27 @@ export class ResearchLib {
         gearId: input.gearId ?? "",
       };
       this.archetypes.set(arch.id, arch);
+    }
+
+    // Auto-generate gear archetypes from gear library
+    if (gearMap) {
+      for (const [gearId, gearDef] of gearMap.entries()) {
+        const archetypeId = `gear_${gearId}`;
+        // Only add if not already manually defined
+        if (!this.archetypes.has(archetypeId)) {
+          const arch: ResearchArchetype = {
+            id: archetypeId,
+            type: 'gear',
+            covert: false,
+            stat: "",
+            value: 0,
+            resource: "",
+            amount: 0,
+            gearId: gearId,
+          };
+          this.archetypes.set(arch.id, arch);
+        }
+      }
     }
 
     // Load Placements

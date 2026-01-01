@@ -66,7 +66,7 @@ function onPickupItem(item: { id: string; molecule: Molecule }) {
 </script>
 
 <style scoped>
-.refine-root { display: flex; flex-direction: column; gap: 14px; }
+.refine-root { display: flex; flex-direction: column; gap: 14px; padding: 12px; }
 .refine-root :deep(.panel) { background: transparent !important; box-shadow: none !important; border: none !important; }
 
 .main-split {
@@ -76,13 +76,12 @@ function onPickupItem(item: { id: string; molecule: Molecule }) {
 }
 
 /* Unified background for items section */
-.items-bg { 
-  background: var(--panel-bg); 
-  border-radius: 6px; 
-  padding: 0px; 
+.items-bg {
+  background: var(--panel-bg);
+  border-radius: 6px;
+  padding: 0px;
   flex: 1 1 auto;
   min-width: 300px; /* Minimum width for 3 columns */
-  max-width: 600px; /* Reasonable maximum */
 }
 
 .center {

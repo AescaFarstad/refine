@@ -4,12 +4,14 @@ import { processEvt } from './evt/EvtProcessor';
 import { Evt } from "./evt/Evt";
 import { EvtRaidComplete, EvtRefineryDone } from './evt/Evt';
 import { processCheats } from './cheat/CheatProcessor';
+import { IS_DEBUG } from './Const';
 // IceMaze instance is persisted on GameState
 import { IceMaze } from "../maze/IceMaze";
 import { distancePointToSegment } from "./core/math";
 import { ArtefactType, Chase } from "../maze/Chase";
 import generateIceMaze from "../maze/IceMazeGen";
 import { clearWafer } from "./Wafer";
+import { calculateVisibility } from "./Research";
 
 const TIME_SPEED_MAX = 3800;
 const TIME_SPEED_MIN = 300;
@@ -26,6 +28,11 @@ export const globalInputQueue: CmdInput[] = [];
 // Duration of the shard pickup animation in seconds;
 export const SHARD_PICKUP_DELAY_SEC = 0.6;
 
+export function setResearchRevealRadius(gs: GameState, radius: number): void {
+  gs.researchRevealRadius = radius;
+  calculateVisibility(gs, gs.lib.research);
+}
+
 const SHARD_ATTRACTION_RANGE_PX = 250;
 const SHARD_BASE_GRAV_ACCEL = 180;
 const SHARD_ATTRACTION_BASE_AMOUNT = 5;
@@ -40,7 +47,7 @@ export function update(gs: GameState, deltaTime: number): void {
   initOrAdvanceMaze(gs);
   gs.maze?.update(deltaTime);
 
-  if (gs.cheats && gs.cheats.length > 0) {
+  if (IS_DEBUG && gs.cheats && gs.cheats.length > 0) {
     processCheats(gs);
   }
 

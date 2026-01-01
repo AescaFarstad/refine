@@ -20,6 +20,7 @@ handlersByName.set('EvtRaidComplete', (gs, evt) => {
     success: false,
     questDeltaPct: 0,
     unlockedRaidId: null as string | null,
+    plannedEncounters: 0,
     looted: [] as { id: string; quantity: number }[],
     discardedByVolume: [] as { id: string; quantity: number }[],
     discardedByLuck: [] as { id: string; quantity: number }[],

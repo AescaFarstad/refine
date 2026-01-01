@@ -51,16 +51,19 @@ const { gear, selected, unaffordable, blocked, price, hintRight } = toRefs(props
 
 // Atlas state for gear images
 const source = ref<HTMLImageElement | null>(atlasStorage.getItemsSource());
+const ready = ref<boolean>(atlasStorage.isItemsAtlasLoaded());
 onMounted(async () => {
-  if (!atlasStorage.isItemsAtlasLoaded()) {
+  if (!ready.value) {
     try {
       await atlasStorage.loadItemsAtlas();
     } catch (_e) { /* noop */ }
+    ready.value = atlasStorage.isItemsAtlasLoaded();
     source.value = atlasStorage.getItemsSource();
   }
 });
 
 const gearFrame = computed(() => {
+  if (!ready.value) return null;
   const imageKey = props.gear.image;
   if (!imageKey) return null;
   return atlasStorage.getItemsFrame(imageKey);
@@ -135,6 +138,7 @@ const hintRows = computed((): Array<{ label: string; value: string }> => {
   if (g.speedPercent) rows.push({ label: 'Speed', value: `${fmtSigned(g.speedPercent, '%')}` });
   if (g.speedFlat) rows.push({ label: 'Speed (flat)', value: `${fmtSigned(g.speedFlat)}` });
   if (g.regenPerKm) rows.push({ label: 'Regen', value: `${fmtSigned(g.regenPerKm)} hp/km` });
+  if (g.regenAfterEncounter) rows.push({ label: 'Regen/encounter', value: `${fmtSigned(g.regenAfterEncounter)} hp` });
   // Survivability & combat
   if (g.hp) rows.push({ label: 'HP', value: `${fmtSigned(g.hp)}` });
   if (g.damage) rows.push({ label: 'Damage', value: `${fmtSigned(g.damage)}` });

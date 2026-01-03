@@ -7,13 +7,22 @@
           <span class="cell-label">Gear cost</span>
           <span class="cell-value">{{ selectedPrice }}✦</span>
         </div>
-        <div class="cell">
+        <div class="cell" :class="{ reddish: survivalChance < 50 && survivalChance >= 25, red: survivalChance < 25 }">
           <span class="cell-label">Survival</span>
           <span class="cell-value">~{{ survivalChance }}%</span>
         </div>
-        <div class="cell">
+        <div class="cell" :class="{ reddish: timeInHours > 4 && timeInHours <= 24, red: timeInHours > 24 }">
           <span class="cell-label">Time</span>
           <span class="cell-value">~{{ estimatedTime }}</span>
+        </div>
+        <div v-if="zoneCollapseTime" class="cell cell-zone-collapse" :class="{ reddish: isCollapseWarning, red: isCollapseDanger, 'has-death-pct': zoneCollapseDeathPct > 0 }">
+          <span class="cell-label">Zone collapse</span>
+          <span class="cell-value">
+            {{ zoneCollapseTime }}
+            <span v-if="zoneCollapseDeathPct > 0" style="font-size: 11px; opacity: 0.85;">
+              ({{ zoneCollapseDeathPct }}% odds you won't make it in time)
+            </span>
+          </span>
         </div>
       </div>
     </div>
@@ -22,7 +31,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { uiState, getGameState } from '../logic/UIState';
+import { uiState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
 import { CmdStartRaid } from '../logic/input/InputCommands';
 import type { RaidDefinition } from '../logic/RaidLib';
@@ -36,9 +45,7 @@ const canAfford = computed(() => uiState.credits >= selectedPrice.value);
 const canDeploy = computed(() => !!selectedRaid.value && !isLocked(selectedRaid.value) && canAfford.value);
 
 function isLocked(r: RaidDefinition): boolean {
-  const gs = getGameState();
-  const reach = gs?.reach || 0;
-  return reach < Math.max(0, r.reachRequired || 0);
+  return !uiState.unlockedRaidIds.includes(r.id);
 }
 
 function deploy() {
@@ -51,6 +58,33 @@ function deploy() {
 // Estimates provided via UI state
 const survivalChance = computed(() => Math.max(0, Math.min(100, Math.round(uiState.raidSurvivalPct || 0))));
 const estimatedTime = computed(() => formatDurationHM(Math.max(0, uiState.raidTimeEstimateSec || 0)));
+const timeInHours = computed(() => (uiState.raidTimeEstimateSec || 0) / 3600);
+
+const zoneCollapseTime = computed(() => {
+  const raid = selectedRaid.value;
+  if (!raid || !raid.zoneCollapseSec || raid.zoneCollapseSec <= 0) return null;
+  return formatDurationHM(raid.zoneCollapseSec);
+});
+
+const isCollapseWarning = computed(() => {
+  const raid = selectedRaid.value;
+  if (!raid || !raid.zoneCollapseSec || raid.zoneCollapseSec <= 0) return false;
+  const estimateSec = uiState.raidTimeEstimateSec || 0;
+  const collapseSec = raid.zoneCollapseSec;
+  // Warning if estimated time is 50-80% of collapse time
+  return estimateSec >= collapseSec * 0.5 && estimateSec < collapseSec * 0.8;
+});
+
+const isCollapseDanger = computed(() => {
+  const raid = selectedRaid.value;
+  if (!raid || !raid.zoneCollapseSec || raid.zoneCollapseSec <= 0) return false;
+  const estimateSec = uiState.raidTimeEstimateSec || 0;
+  const collapseSec = raid.zoneCollapseSec;
+  // Danger if estimated time is 80%+ of collapse time
+  return estimateSec >= collapseSec * 0.8;
+});
+
+const zoneCollapseDeathPct = computed(() => Math.max(0, Math.min(100, Math.round(uiState.raidZoneCollapseDeathPct || 0))));
 </script>
 
 <style scoped>
@@ -69,6 +103,7 @@ const estimatedTime = computed(() => formatDurationHM(Math.max(0, uiState.raidTi
   gap: 8px;
 }
 .cell.red { color: #ef4444; }
+.cell.reddish { color: #fb923c; } /* orange-400 */
 /* Label/value split to mirror TopPanel highlighting */
 .cell-label { 
   font-size: 12px; 
@@ -81,9 +116,18 @@ const estimatedTime = computed(() => formatDurationHM(Math.max(0, uiState.raidTi
   font-weight: 700; 
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
-/* When in red state, allow inherited color for both parts */
-.cell.red .cell-label, 
-.cell.red .cell-value { color: inherit; }
+/* When in red/reddish state, allow inherited color for both parts */
+.cell.red .cell-label,
+.cell.red .cell-value,
+.cell.reddish .cell-label,
+.cell.reddish .cell-value { color: inherit; }
+/* Zone collapse cell: wider when showing death percentage */
+.cell-zone-collapse.has-death-pct {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 200px;
+  max-width: 500px;
+}
 /* Match TopPanel time-advance button styling */
 .deploy-btn {
   height: 32px;

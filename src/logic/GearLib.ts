@@ -15,17 +15,28 @@ export interface GearDefinition {
   damage: number;
   price: number;
   // Combat support
-  chanceToHit: number;     // additive percent to base hit chance
-  chanceToBlock: number;   // additive percent to base block chance
+  chanceToHit: number;
+  chanceToBlock: number;
   // Reflective damage stats (percent of monster's damage returned)
   // - onHit: when monster successfully hits you (not blocked)
   // - onBlock: when you block the monster's hit
   reflectOnHitPct: number;
   reflectOnBlockPct: number;
   biopsyChance: number;
-  perk?: string;
+  perk: string;
+
+  prepTimeMin: number;
+
+  // Values are additive and multiplied by the number of equipped items in the referenced category.
+  bonusDamagePerCategory: Record<string, number>;
+  bonusHpPerCategory: Record<string, number>;
+  bonusBlockChancePerCategory: Record<string, number>; // additive percent
+  walkMultiplier: number; // e.g. 2 => doubles WalkEncounter count
+  walkDelta: number;      // additive count change after multipliers
+  ignoreLootEncounters: boolean;
+
   // Visual - key into items.json sprite atlas
-  image?: string;
+  image: string;
 }
 
 // Raw data type for data files: allows omitting numbers which will default to 0 at load time
@@ -57,8 +68,15 @@ export function parseGearDefinitions(raw: Record<string, RawGearDefinition>): Ma
       reflectOnHitPct: d.reflectOnHitPct ?? 0,
       reflectOnBlockPct: d.reflectOnBlockPct ?? 0,
       biopsyChance: d.biopsyChance ?? 0,
-      perk: d.perk,
-      image: d.image,
+      perk: d.perk ?? '',
+      prepTimeMin: d.prepTimeMin ?? 0,
+      bonusDamagePerCategory: d.bonusDamagePerCategory ?? {},
+      bonusHpPerCategory: d.bonusHpPerCategory ?? {},
+      bonusBlockChancePerCategory: d.bonusBlockChancePerCategory ?? {},
+      walkMultiplier: d.walkMultiplier ?? 1,
+      walkDelta: d.walkDelta ?? 0,
+      ignoreLootEncounters: d.ignoreLootEncounters ?? false,
+      image: d.image ?? '',
     };
     map.set(key, def);
   }

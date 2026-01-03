@@ -4,7 +4,15 @@
       <div v-for="(cat, colIndex) in categories" :key="cat" class="gear-col">
         <div class="gear-cat">
           <div class="name">{{ displayCategoryName(cat) }}</div>
-          <div class="slots" :aria-label="usedCount(cat) + '/' + allowedSlots(cat)">{{ slotCircles(cat) }}</div>
+          <div class="cat-right">
+            <button
+              v-if="canShowUpgradeButton(cat)"
+              class="upgrade-btn"
+              @click="openUpgradeModal"
+              title="Upgrade gear categories"
+            >+</button>
+            <div class="slots" :aria-label="usedCount(cat) + '/' + allowedSlots(cat)">{{ slotCircles(cat) }}</div>
+          </div>
         </div>
         <div class="gear-items">
           <GearItem
@@ -51,15 +59,22 @@ const categories = computed<string[]>(() => {
   const _dep = uiState.unlockedGear.length + uiState.raidOrder.length;
   const gs = getGameState();
   if (!gs) return [];
-  const hasItems = new Set<string>();
-  gs.lib.gear.forEach(g => hasItems.add(g.category));
+
+  const list = (uiState.unlockedGear && uiState.unlockedGear.length > 0)
+    ? uiState.unlockedGear
+    : (gs?.unlockedGear || []);
+  const unlocked = new Set<string>(list);
+
+  // Find categories that have at least one unlocked item
+  const hasUnlockedItems = new Set<string>();
+  gs.lib.gear.forEach(g => {
+    if (unlocked.has(g.id)) hasUnlockedItems.add(g.category);
+  });
+
   const arr: string[] = [];
   gs.lib.gearCategories.forEach((def, id) => {
-    if (hasItems.has(id) && !(def as any)?.hidden) arr.push(id);
+    if (hasUnlockedItems.has(id) && !(def as any)?.hidden) arr.push(id);
   });
-  if (!arr.length) {
-    gs.lib.gear.forEach(g => { if (!arr.includes(g.category)) arr.push(g.category); });
-  }
   return arr;
 });
 
@@ -118,7 +133,9 @@ function slotCircles(cat: string): string {
   const maxSlots = allowedSlots(cat);
   const max = Number.isFinite(maxSlots) ? Math.max(0, maxSlots | 0) : usedCount(cat);
   const used = Math.max(0, Math.min(usedCount(cat) | 0, max));
-  return '◉'.repeat(used) + '◌'.repeat(Math.max(0, max - used));
+  const usedCircles = Array(used).fill('◉').join(' ');
+  const emptyCircles = Array(Math.max(0, max - used)).fill('◌').join(' ');
+  return [usedCircles, emptyCircles].filter(s => s).join(' ');
 }
 
 function toggleItemWithLimit(cat: string, id: string): void {
@@ -131,13 +148,37 @@ function toggleItemWithLimit(cat: string, id: string): void {
   toggleItem(id);
 }
 
+function canShowUpgradeButton(cat: string): boolean {
+  const gs = getGameState();
+  if (!gs) return false;
+
+  if ((gs.skillPoints || 0) <= 0) return false;
+
+  const def = gs.lib.gearCategories.get(cat);
+  if (!def) return false;
+
+  if ((def as any)?.hidden || (def as any)?.unlimited) return false;
+
+  // Check if category has reached maximum level
+  const costs = (def as any).unlockCost || [];
+  const currentSlots = Math.max(0, gs.gearLevels?.[cat] ?? 0);
+  const nextIndex = currentSlots - 1; // costs[0] is for 2nd slot (from 1 to 2)
+  if (nextIndex < 0 || nextIndex >= costs.length) return false; // max level reached
+
+  return true;
+}
+
+function openUpgradeModal(): void {
+  uiState.gearUpgradeModalOpen = true;
+}
+
 // summary and deploy moved to RaidDeploy panel
 </script>
 
 <style scoped>
 .gear .section-title { font-weight: 800; text-transform: uppercase; font-size: 12px; letter-spacing: 0.08em; margin-bottom: 8px; }
-.gear-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 0.75fr)); gap: 12px; }
-.gear-col { display: flex; flex-direction: column; gap: 6px; }
+.gear-grid { display: flex; flex-wrap: wrap; gap: 12px; }
+.gear-col { flex: 1 1 160px; max-width: 280px; display: flex; flex-direction: column; gap: 6px; }
 /* Column headers: single-line, no background, with divider */
 .gear-cat {
   background: none;
@@ -152,7 +193,10 @@ function toggleItemWithLimit(cat: string, id: string): void {
   border-bottom: 1px solid var(--panel-border);
 }
 .gear-cat .name { color: var(--text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cat-right { display: flex; align-items: center; gap: 6px; }
 .gear-cat .slots { font-weight: 900; color: var(--text-primary); white-space: nowrap; }
 .gear-cat .slots { font-variant-numeric: tabular-nums; }
+.upgrade-btn { padding: 2px 8px; font-size: 14px; font-weight: 900; background: rgba(34, 197, 94, 0.18); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 3px; cursor: pointer; transition: all 100ms ease; }
+.upgrade-btn:hover { background: rgba(34, 197, 94, 0.28); transform: scale(1.05); }
 .gear-items { display: grid; gap: 6px; }
 </style>

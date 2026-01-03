@@ -22,3 +22,8 @@ export class CheatAddResources implements CheatInput {
   constructor() {}
 }
 
+export class CheatUnlockAllRaids implements CheatInput {
+  readonly name = 'CheatUnlockAllRaids';
+  constructor() {}
+}
+

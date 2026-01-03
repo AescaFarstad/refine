@@ -269,7 +269,7 @@ FightEncounter
     damageReceived:number
     myHp:number
     timeSpent:number
-    encounterCreated:bool
+    biopsyTriggered:bool
 
   LootEncounter/LootMonsterEncounter:
     myRoll:number

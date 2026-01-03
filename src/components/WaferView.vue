@@ -36,7 +36,6 @@ import {
   drawHexAt,
   drawGrid,
   clearCanvas,
-  getEssenceColor,
   drawHighlight,
   drawHexagon,
   drawPlus,

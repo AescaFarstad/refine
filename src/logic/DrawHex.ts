@@ -7,6 +7,16 @@ import { axialToPixel } from './HexMath';
  * Uses pointy-top hex orientation
  */
 
+const UNIT_HEX_POINTS: ReadonlyArray<Point2> = (() => {
+    const points: Point2[] = [];
+    const angleOffset = Math.PI / 6;
+    for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI / 3) * i + angleOffset;
+        points.push({ x: Math.cos(angle), y: Math.sin(angle) });
+    }
+    return points;
+})();
+
 export interface HexDrawOptions {
     fillColor?: string;
     strokeColor?: string;
@@ -33,15 +43,12 @@ export function drawHexagon(
 
     // Draw hexagon path (pointy-top orientation)
     ctx.beginPath();
-    for (let i = 0; i < 6; i++) {
-        const angle = (Math.PI / 3) * i + Math.PI / 6; // 60° increments, starting at 30°
-        const x = center.x + hexSize * Math.cos(angle);
-        const y = center.y + hexSize * Math.sin(angle);
-        if (i === 0) {
-            ctx.moveTo(x, y);
-        } else {
-            ctx.lineTo(x, y);
-        }
+    for (let i = 0; i < UNIT_HEX_POINTS.length; i++) {
+        const p = UNIT_HEX_POINTS[i];
+        const x = center.x + hexSize * p.x;
+        const y = center.y + hexSize * p.y;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
     }
     ctx.closePath();
 
@@ -189,20 +196,4 @@ export function clearRect(
 
 export function clearCanvas(ctx: CanvasRenderingContext2D): void {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-}
-
-export function getEssenceColor(essence: string): string {
-    const colors: Record<string, string> = {
-        red: '#ff4444',
-        blue: '#4444ff',
-        green: '#44ff44',
-        yellow: '#ffdd44',
-        indigo: '#4b0082',
-        crimson: '#dc143c',
-        emerald: '#50c878',
-        gold: '#ffd700',
-        gray: '#9ca3af',
-        orange: '#fb923c',
-    };
-    return colors[essence] || '#888888';
 }

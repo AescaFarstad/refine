@@ -2,6 +2,7 @@ import type { Molecule } from './ItemLib';
 import atlasStorage from './AtlasStorage';
 import { axialToPixel } from './HexMath';
 import { getPivotHex } from './MoleculeUtils';
+import { DRAG_RADIUS_MULTIPLIER } from './RenderConstants';
 
 export function drawMolecule(
   ctx: CanvasRenderingContext2D,
@@ -159,8 +160,6 @@ export function createMoleculeCanvasWithAnchor(
   return { canvas, anchorX: centroidX, anchorY: centroidY };
 }
 
-import { DRAG_RADIUS_MULTIPLIER } from './RefineUIBehaviour';
-
 export function drawGhostMolecule(
   ctx: CanvasRenderingContext2D,
   molecule: Molecule,
@@ -170,7 +169,12 @@ export function drawGhostMolecule(
   essenceSize: number = 28
 ): void {
   const bondStroke = valid ? 'rgba(200, 255, 245, 0.7)' : 'rgba(255, 200, 200, 0.7)';
-  drawMolecule(ctx, molecule, hexSize, origin, { bondStroke, bondWidth: 3, essenceSize, radiusMultiplier: DRAG_RADIUS_MULTIPLIER });
+  drawMolecule(ctx, molecule, hexSize, origin, {
+    bondStroke,
+    bondWidth: 3,
+    essenceSize,
+    radiusMultiplier: DRAG_RADIUS_MULTIPLIER,
+  });
 }
 
 export function createMoleculeCanvas(
@@ -194,6 +198,7 @@ function getEssenceColorFallback(essence: string): string {
     gold: '#ffd700',
     gray: '#9ca3af',
     orange: '#fb923c',
+    cyan: '#00ffff',
   };
   return colors[essence] || '#888888';
 }

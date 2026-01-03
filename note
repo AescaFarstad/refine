@@ -36,7 +36,11 @@ december 27
 december 31
   balance tuning, adding situational gameplay features
 january 1
-  research editor, balancing
+  research editor, balancing, monster abilities
+january 2
+  balancing, html visuals, cyan essence, tactics
+january 3
+  refactoring, defensive programming clean-up, balancing, quests
 
 
 Images:
@@ -118,3 +122,35 @@ summons
 remains
 decoy
 weight
+road weaves
+search
+fight
+investigate
+
+not enough credits in research
+
+
+Firearms check-up
+  +1 damage per firearm,
+  + 30 min
+Pre-apply medicine
+  +2 hp per medicine item
+  + 30 min
+Adjust armor
+  +5% block chance per armor piece
+  +1 hp per armor piece
+  +30 min
+Safer routes
+  doubles walking distance
+No scavaging
+  -1 walking encounter
+  ignore looting encounters (except for harvesting remains)
+
+
+device to stabilize the zone
+quest to stabilize the zone
+
+known items in this raid
+
+descriptions for perks
+summoned encounters shouldn't advance displayed progress

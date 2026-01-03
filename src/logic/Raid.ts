@@ -1,27 +1,96 @@
 import type { GameState, ActiveRaid } from './GameState';
-import type { RaidDefinition, EncounterDef, FightEncounterDef } from './RaidLib';
+import type { RaidDefinition, EncounterDef, FightEncounterDef, QuestEncounterDef } from './RaidLib';
 import type { GearDefinition } from './GearLib';
 import type { RaidEventLog } from './RaidLog';
 import { handleWalkEncounter } from './WalkEncounter';
 import { handleLootLikeEncounter, handleMonsterLootEncounter } from './LootEncounter';
 import { handleFightEncounter } from './FightEncounter';
+import { handlePreparationEncounter, createPreparationEncounter } from './PreparationEncounter';
 import SeededRandom from './core/SeededRandom';
-import { getEffectiveRaidDefinition } from './RaidMutation';
-import Perks from './Perks';
+import { cloneRaid, applyRaidMutation, questIsActive } from './RaidMutation';
 
 export interface RaidRunResult {
   success: boolean;
   log: RaidEventLog;
   timeSpentSec: number;
   plannedEncounters: number;
+  barelyInTime: boolean;
 }
 
-function shuffleInPlace<T>(arr: T[], rnd: { get: () => number }): void {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(rnd.get() * (i + 1));
-    const t = arr[i];
-    arr[i] = arr[j];
-    arr[j] = t;
+function loadoutGear(gs: GameState, raidId: string): GearDefinition[] {
+  const ids: string[] = gs.loadouts[raidId] ?? [];
+  return ids.map(id => gs.lib.gear.get(id)!);
+}
+
+function countByCategory(gear: GearDefinition[]): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const g of gear) {
+    const cat = g.category.trim();
+    counts[cat] = (counts[cat] || 0) + 1;
+  }
+  return counts;
+}
+
+function sumBonus(map: Record<string, number> | undefined, counts: Record<string, number>): number {
+  if (!map) return 0;
+  let total = 0;
+  for (const [cat, per] of Object.entries(map)) {
+    total += per * (counts[cat] || 0);
+  }
+  return total;
+}
+
+function computePreparationBonuses(gear: GearDefinition[], counts: Record<string, number>) {
+  let prepTimeMin = 0;
+  const prepTacticNames: string[] = [];
+  let damageBonus = 0;
+  let hpBonus = 0;
+  let blockChanceBonus = 0;
+
+  for (const g of gear) {
+    const pt = Math.max(0, Math.trunc(g.prepTimeMin ?? 0));
+    if (pt > 0) prepTacticNames.push(g.name || g.id);
+    prepTimeMin += pt;
+
+    damageBonus += sumBonus(g.bonusDamagePerCategory, counts);
+    hpBonus += sumBonus(g.bonusHpPerCategory, counts);
+    blockChanceBonus += sumBonus(g.bonusBlockChancePerCategory, counts);
+  }
+
+  return {
+    prepTimeSec: Math.max(0, Math.trunc(prepTimeMin * 60)),
+    prepTacticNames,
+    damageBonus: Math.trunc(damageBonus),
+    hpBonus: Math.trunc(hpBonus),
+    blockChanceBonus: Math.trunc(blockChanceBonus),
+  };
+}
+
+function applyGearToRaidDefinition(def: RaidDefinition, gear: GearDefinition[]): void {
+  let walkMultiplier = 1;
+  let walkDelta = 0;
+  let ignoreLootEncounters = false;
+
+  for (const g of gear) {
+    const mult = g.walkMultiplier ?? 1;
+    if (mult !== 1) walkMultiplier *= mult;
+    walkDelta += (g.walkDelta ?? 0);
+    if (g.ignoreLootEncounters) ignoreLootEncounters = true;
+  }
+
+  if (ignoreLootEncounters) {
+    // monster corpse harvesting remains intact: it's a separate encounter type
+    const encounters = def.encounters;
+    for (let i = encounters.length - 1; i >= 0; i--) {
+      if (encounters[i].encounter.type === 'LootEncounter') encounters.splice(i, 1);
+    }
+  }
+
+  if (walkMultiplier !== 1 || walkDelta !== 0) {
+    const cur = totalCount(def, 'WalkEncounter');
+    const scaled = Math.trunc(cur * walkMultiplier);
+    const next = Math.max(0, scaled + Math.trunc(walkDelta));
+    setCount(def, 'WalkEncounter', next);
   }
 }
 
@@ -48,8 +117,8 @@ function buildEncounterQueue(gs: GameState, raid: RaidDefinition): EncounterDef[
         break;
       }
       case 'QuestEncounter': {
-        const qid = (step.encounter as any).questId as string;
-        for (let i = 0; i < c; i++) questPool.push({ type: 'QuestEncounter', questId: qid } as EncounterDef);
+        const qid = (step.encounter as QuestEncounterDef).questId;
+        for (let i = 0; i < c; i++) questPool.push({ type: 'QuestEncounter', questId: qid });
         break;
       }
       // MonsterLootEncounter is dynamically inserted by the runner and should not be present here
@@ -59,7 +128,7 @@ function buildEncounterQueue(gs: GameState, raid: RaidDefinition): EncounterDef[
   }
 
   const bucketsCount = Math.max(1, walkCount + 1);
-  const buckets: Array<{ items: EncounterDef[]; fights: number } > = new Array(bucketsCount).fill(null as any).map(() => ({ items: [], fights: 0 }));
+  const buckets: Array<{ items: EncounterDef[]; fights: number } > = Array.from({ length: bucketsCount }, () => ({ items: [], fights: 0 }));
 
   // Spread LootEncounters as evenly as possible among buckets (round-robin)
   for (let i = 0; i < lootPool.length; i++) {
@@ -88,7 +157,7 @@ function buildEncounterQueue(gs: GameState, raid: RaidDefinition): EncounterDef[
 
   // Shuffle within each bucket using seeded RNG
   for (const b of buckets) {
-    shuffleInPlace(b.items, gs.random);
+    gs.random.shuffleInPlace(b.items);
   }
 
   // Build final queue: bucket0, Walk, bucket1, Walk, ..., last bucket
@@ -101,6 +170,31 @@ function buildEncounterQueue(gs: GameState, raid: RaidDefinition): EncounterDef[
   }
   return queue;
 }
+
+function totalCount(def: RaidDefinition, type: string): number {
+  let n = 0;
+  for (const step of def.encounters) {
+    if (step.encounter.type !== type) continue;
+    n += Math.max(0, Math.trunc(step.count));
+  }
+  return n;
+}
+
+function setCount(def: RaidDefinition, type: string, newCount: number): void {
+  const next = Math.max(0, Math.trunc(newCount));
+  const encounters = def.encounters;
+  const firstIdx = encounters.findIndex(s => s.encounter.type === type);
+
+  for (let i = encounters.length - 1; i >= 0; i--) {
+    if (encounters[i].encounter.type === type) encounters.splice(i, 1);
+  }
+
+  if (next <= 0) return;
+  const entry = { count: next, encounter: { type } as EncounterDef };
+  if (firstIdx >= 0 && firstIdx <= encounters.length) encounters.splice(firstIdx, 0, entry);
+  else encounters.push(entry);
+}
+
 
 function cloneActiveRaidState(r: ActiveRaid): ActiveRaid {
   return {
@@ -116,7 +210,7 @@ function cloneActiveRaidState(r: ActiveRaid): ActiveRaid {
     bagsVolume: r.bagsVolume,
     usedVolume: r.usedVolume,
     damage: r.damage,
-    perks: Array.isArray(r.perks) ? [...r.perks] : [],
+    perks: [...r.perks],
     lootChanceBonus: r.lootChanceBonus,
     hitChance: r.hitChance,
     blockChance: r.blockChance,
@@ -126,127 +220,177 @@ function cloneActiveRaidState(r: ActiveRaid): ActiveRaid {
   } as ActiveRaid;
 }
 
-export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun = false): RaidRunResult {
+export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean = false): RaidRunResult {
   const raid = dryRun ? cloneActiveRaidState(gs.raid) : gs.raid;
+  // When running for real, use the game state's random generator (affects game state)
+  // When doing a dry run/simulation, create a temporary random that doesn't affect game state
   const simRnd = dryRun
-    // use unique-ish random seed so multiple dry runs vary even in tight loops
-    ? new SeededRandom(((Date.now() + Math.floor(Math.random() * 0x7fffffff)) | 0))
+    ? new SeededRandom((Math.random() * 2147483647) | 0)
     : gs.random;
-  const gsForRun: GameState = dryRun ? ({ ...(gs as any), random: simRnd, raid } as GameState) : gs;
+  const gsForRun: GameState = dryRun ? ({ ...gs, random: simRnd, raid }) : gs;
   const log: RaidEventLog = { entries: [] };
   // Elapsed time since the beginning of the raid
   let timeSpentSec = 0;
+  let barelyInTime = false;
 
   // Build a mutable encounter queue expanded and ordered per concept buckets
   const queue: EncounterDef[] = buildEncounterQueue(gsForRun, raidDef);
+
+  const gear = loadoutGear(gsForRun, raidDef.id);
+  const counts = countByCategory(gear);
+  const prepBonuses = computePreparationBonuses(gear, counts);
+  const prep = createPreparationEncounter(prepBonuses);
+  if (prep) queue.unshift(prep);
   // Store the planned encounter count before we start processing (for UI progress indicator)
   const plannedEncounters = queue.length;
 
   while (queue.length > 0) {
     const enc = queue.shift()!;
+
+    const zoneCollapseLimit = raidDef.zoneCollapseSec;
+    if (zoneCollapseLimit > 0 && timeSpentSec >= zoneCollapseLimit) {
+      const remainingEncounters = [enc, ...queue];
+      const hasUnsafeEncounters = remainingEncounters.some(e =>
+        e.type !== 'LootEncounter' && e.type !== 'MonsterLootEncounter'
+      );
+
+      if (hasUnsafeEncounters) {
+        const collapseEntry = {
+          kind: 'ZoneCollapse' as const,
+          timeSpentSec: 0,
+          elapsedTotalSec: timeSpentSec,
+          timeLimit: zoneCollapseLimit,
+          elapsedTime: timeSpentSec,
+        };
+        log.entries.push(collapseEntry);
+        raid.hp = 0;
+        return { success: false, log, timeSpentSec, plannedEncounters, barelyInTime: false };
+      } else {
+        barelyInTime = true;
+      }
+    }
+
     switch (enc.type) {
+      case 'PreparationEncounter': {
+        const entry = handlePreparationEncounter(raid, enc);
+        timeSpentSec += entry.timeSpentSec;
+        entry.elapsedTotalSec = timeSpentSec;
+        log.entries.push(entry);
+        break;
+      }
       case 'WalkEncounter': {
         const entry = handleWalkEncounter(raid);
         timeSpentSec += entry.timeSpentSec;
-        // annotate cumulative time after this encounter
-        (entry as any).elapsedTotalSec = timeSpentSec;
+        entry.elapsedTotalSec = timeSpentSec;
         log.entries.push(entry);
         break;
       }
       case 'QuestEncounter': {
-        const qid = (enc as any).questId as string;
+        const qid = enc.questId;
         const quest = gsForRun.lib.quests.get(qid)!;
-        const entry = { kind: 'QuestEncounter', questId: qid, success: true, timeSpentSec: Math.round(quest.encounterTimeMin * 60) } as any;
+        const entry = { kind: 'QuestEncounter' as const, questId: qid, success: true, timeSpentSec: Math.round(quest.encounterTimeMin * 60), elapsedTotalSec: 0 };
         timeSpentSec += entry.timeSpentSec;
-        (entry as any).elapsedTotalSec = timeSpentSec;
+        entry.elapsedTotalSec = timeSpentSec;
         log.entries.push(entry);
         break;
       }
       case 'LootEncounter': {
-        const entry = handleLootLikeEncounter(gsForRun, raid, { baseLootChance: raidDef.baseLootChance, items: raidDef.items });
+        const entry = handleLootLikeEncounter(gsForRun, raid, {
+          baseLootChance: raidDef.baseLootChance,
+          items: raidDef.items,
+          poolsByRarity: raidDef.itemPoolsByRarity,
+        });
         timeSpentSec += entry.timeSpentSec;
-        (entry as any).elapsedTotalSec = timeSpentSec;
+        entry.elapsedTotalSec = timeSpentSec;
         log.entries.push(entry);
         break;
       }
       case 'FightEncounter': {
-        const monsterId = (enc as any).monsterId as string;
+        const monsterId = enc.monsterId;
         const fight = handleFightEncounter(gsForRun, raid, { monsterId });
-        // For the fight, annotate cumulative time per round and for the entry itself
         let t = timeSpentSec;
-        const rounds = Array.isArray(fight.entry.fightLog) ? fight.entry.fightLog : [];
-        for (let i = 0; i < rounds.length; i++) {
-          const ev: any = rounds[i];
-          t += Math.max(0, ev.timeSpentSec || 0);
+        for (const ev of fight.entry.fightLog) {
+          t += ev.timeSpentSec;
           ev.elapsedTotalSec = t;
         }
         timeSpentSec += fight.timeSpentSec;
-        (fight.entry as any).elapsedTotalSec = timeSpentSec;
+        fight.entry.elapsedTotalSec = timeSpentSec;
         log.entries.push(fight.entry);
-        // If the last event indicates an aspirator loot opportunity, insert a separate MonsterLootEncounter next
-        const lastEv = fight.entry.fightLog[fight.entry.fightLog.length - 1] as any;
-        if (lastEv && lastEv.encounterCreated) {
-          queue.unshift({ type: 'MonsterLootEncounter', monsterId } as any);
+        // biopsy
+        const lastEv = fight.entry.fightLog[fight.entry.fightLog.length - 1];
+        if (lastEv?.biopsyTriggered) {
+          queue.unshift({ type: 'MonsterLootEncounter', monsterId });
         }
-        // If we died during the fight, terminate the raid early
+        // monster summoned
+        if (fight.summonedMonsterId) {
+          queue.unshift({ type: 'FightEncounter', monsterId: fight.summonedMonsterId });
+        }
+        // we died
         if (raid.hp <= 0) {
-          return { success: false, log, timeSpentSec, plannedEncounters };
+          return { success: false, log, timeSpentSec, plannedEncounters, barelyInTime: false };
         }
         if (raid.regenAfterEncounter > 0) {
           const hpBefore = raid.hp;
           raid.hp = Math.min(raid.maxHp, raid.hp + raid.regenAfterEncounter);
           const hpAfter = raid.hp;
-          (fight.entry as any).hpBeforeRegen = hpBefore;
-          (fight.entry as any).hpAfterRegen = hpAfter;
+          fight.entry.hpBeforeRegen = hpBefore;
+          fight.entry.hpAfterRegen = hpAfter;
         }
         break;
       }
       case 'MonsterLootEncounter': {
-        const mid = (enc as any).monsterId as string;
+        const mid = enc.monsterId;
         const m = gsForRun.lib.monsters.get(mid)!;
         const entry = handleMonsterLootEncounter(gsForRun, raid, m.lootItemId, raid.biopsyChance);
         timeSpentSec += entry.timeSpentSec;
-        (entry as any).elapsedTotalSec = timeSpentSec;
+        entry.elapsedTotalSec = timeSpentSec;
         log.entries.push(entry);
         break;
       }
     }
   }
 
-  return { success: true, log, timeSpentSec, plannedEncounters };
+  return { success: true, log, timeSpentSec, plannedEncounters, barelyInTime };
 }
 
-// Convenience wrapper for explicit dry runs
 export function dryRunRaid(gs: GameState, raidDef: RaidDefinition): RaidRunResult {
   return runRaid(gs, raidDef, true);
 }
 
+export function getEffectiveRaidDefinition(gs: GameState, raidId: string): RaidDefinition {
+  const def = cloneRaid(gs.lib.raids.get(raidId)!);
+  gs.lib.quests.forEach((q) => {
+    if (!questIsActive(gs, q, raidId)) return;
+    const muts = (q as any).encounters;
+    if (!muts) return;
+    for (const m of muts) applyRaidMutation(def, m);
+  });
+  const gear = loadoutGear(gs, raidId);
+  applyGearToRaidDefinition(def, gear);
+  return def;
+}
+
 export function recomputeActiveRaidEstimates(gs: GameState, simulations = 100): void {
-  const id = (gs.raid?.id || '').trim();
-  if (!id) {
-    (gs as any).raidSurvivalEstimatePct = 0;
-    (gs as any).raidTimeEstimateSec = 0;
-    return;
-  }
-  const def = getEffectiveRaidDefinition(gs, id);
-  if (!def) {
-    (gs as any).raidSurvivalEstimatePct = 0;
-    (gs as any).raidTimeEstimateSec = 0;
-    return;
-  }
-  const n = Math.max(1, Math.floor(simulations || 0));
+  const def = getEffectiveRaidDefinition(gs, gs.raid.id);
   let wins = 0;
+  let zoneCollapseDeaths = 0;
   // Sum time only for successful runs to estimate time conditioned on success
   let successTimeSum = 0;
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < simulations; i++) {
     const res = runRaid(gs, def, true);
     if (res.success) {
       wins++;
       successTimeSum += Math.max(0, res.timeSpentSec || 0);
+    } else {
+      const hasZoneCollapse = res.log.entries.some(entry => entry.kind === 'ZoneCollapse');
+      if (hasZoneCollapse) {
+        zoneCollapseDeaths++;
+      }
     }
   }
-  (gs as any).raidSurvivalEstimatePct = Math.round((wins / n) * 100);
+  (gs as any).raidSurvivalEstimatePct = Math.round((wins / simulations) * 100);
   (gs as any).raidTimeEstimateSec = wins > 0 ? Math.round(successTimeSum / wins) : 0;
+  (gs as any).raidZoneCollapseDeathPct = Math.round((zoneCollapseDeaths / simulations) * 100);
 }
 
 export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
@@ -259,7 +403,7 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
   gs.raid.regenAfterEncounter = 0;
   gs.raid.weight = 0;
   gs.raid.maxWeight = gs.baseMaxWeight;
-  gs.raid.bagsVolume = 0;
+  gs.raid.bagsVolume = gs.volume;
   gs.raid.usedVolume = 0;
   gs.raid.damage = gs.damage;
   gs.raid.hitChance = gs.chanceToHit;
@@ -271,8 +415,11 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
   gs.raid.biopsyChance = 0;
   gs.selectedGearPrice = 0;
 
-  const gearIds: string[] = (gs.loadouts && gs.loadouts[raidId]) ? gs.loadouts[raidId] : [];
-  for (const gid of gearIds) {
+  const gearIds: string[] = gs.loadouts[raidId] ?? [];
+  const appliedGearIds = new Set<string>();
+  const applyGearById = (gid: string): void => {
+    if (!gid || appliedGearIds.has(gid)) return;
+    appliedGearIds.add(gid);
     const g = gs.lib.gear.get(gid)!;
     gs.raid.speedBonusPct += g.speedPercent;
     gs.raid.speedBonusFlat += g.speedFlat;
@@ -291,23 +438,22 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
     gs.raid.biopsyChance += g.biopsyChance;
     if (g.perk) gs.raid.perks.push(g.perk);
     gs.selectedGearPrice += g.price;
-  }
-  // Perk-only effects are applied contextually in encounters (e.g., Immovable Wall affects time on counter rounds)
+  };
+
+  for (const gid of gearIds) applyGearById(gid);
+
+  if (gs.raid.weight > gs.raid.maxWeight) applyGearById('overweight');
+
   gs.raid.maxHp = gs.raid.hp;
 
-  // Auto-apply overweight penalty if current loadout exceeds max carry weight
-  if (gs.raid.weight > gs.raid.maxWeight) {
-    const ow = gs.lib.gear.get('overweight');
-    if (ow) {
-      gs.raid.hitChance += ow.chanceToHit;
-      gs.raid.blockChance += ow.chanceToBlock;
-      // Do not add price/weight or modify loadout; this is implicit
-    } else {
-      // Fallback if missing definition
-      gs.raid.hitChance += -10;
-      gs.raid.blockChance += -10;
-    }
-  }
+  const gear = loadoutGear(gs, raidId);
+  const counts = countByCategory(gear);
+  const prepBonuses = computePreparationBonuses(gear, counts);
+
+  gs.raid.damage += prepBonuses.damageBonus;
+  gs.raid.hp += prepBonuses.hpBonus;
+  gs.raid.maxHp += prepBonuses.hpBonus;
+  gs.raid.blockChance += prepBonuses.blockChanceBonus;
 }
 
 export function toggleGearForRaid(gs: GameState, raidId: string, gearId: string, selected: boolean): void {

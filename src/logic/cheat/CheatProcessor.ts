@@ -1,6 +1,6 @@
-import type { GameState } from '../GameState';
+import { type GameState, Raid } from '../GameState';
 import type { CheatInput } from './CheatCommands';
-import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources } from './CheatCommands';
+import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources, CheatUnlockAllRaids } from './CheatCommands';
 import type { EncounterDef } from '../RaidLib';
 
 type Handler = (gs: GameState, cheat: CheatInput) => void;
@@ -45,6 +45,9 @@ handlersByName.set('CheatAddRaidItems', (gs, cheat) => {
   }
 
   function addToInventory(id: string, qty: number): void {
+    const essence = gs.lib.getItem(id).essence;
+    for (const k of Object.keys(essence))
+      gs.encounteredEssences[k] = true;
     const inv = gs.items;
     const existing = inv.find(x => x.id === id);
     if (existing) existing.quantity += qty;
@@ -66,6 +69,12 @@ handlersByName.set('CheatAddResources', (gs, cheat) => {
   gs.chronotraces += 100000;
   gs.timeFlux += 100000;
   gs.shardDust += 100000;
+  gs.skillPoints += 100;
+});
+
+handlersByName.set('CheatUnlockAllRaids', (gs, cheat) => {
+  const allRaidIds = Array.from(gs.lib.raids.keys());
+  gs.unlockedRaids = allRaidIds.map(id => new Raid(id));
 });
 
 export function processCheats(gs: GameState): void {

@@ -4,13 +4,14 @@ import SeededRandom from "./core/SeededRandom";
 import { Essence } from "./ItemLib";
 import type { Point2 } from "./core/math";
 import type { CheatInput } from './cheat/CheatCommands';
-import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources } from './cheat/CheatCommands';
+import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources, CheatUnlockAllRaids } from './cheat/CheatCommands';
 import { IS_DEBUG } from './Const';
 import type { IceMaze } from "../maze/IceMaze";
 import type { Wafer } from "./Wafer";
 import { createWafer } from "./Wafer";
 import { initResearchCells } from "./Research";
 import gearCategories from "../data/gear_categories";
+import type { RaidEventLog } from './RaidLog';
 
 export const DEFAULT_SPEED: number = 6;
 export const MIN_WALK_SPEED: number = 1; // km/h
@@ -35,9 +36,7 @@ export class GameState {
   public chronotraces: number = 0;
   public timeFlux: number = 0;
   public shardDust: number = 0;
-  public reach: number = 0;
   public strength: number = 0;
-  public looting: number = 0;
   public speed: number = DEFAULT_SPEED;//km/h
   public volume: number = 10;
   public baseMaxWeight: number = 10;
@@ -55,16 +54,16 @@ export class GameState {
 
   public researchCells: ResearchCell[] = [];
   public researchOwnedCount: number = 0;
-  public researchRevealRadius: number = 5;
+  public researchRevealRadius: number = 3;
 
   public unlockedRaids: Array<Raid> = [new Raid("shegolskoe")];
 
   public nextEvt: Evt | null = null;
   public lastRaidOutcome: RaidOutcome | null = null;
   public lastRefineryOutcome: RefineryOutcome | null = null;
-  public levelupsAvailable: number = 0;
 
   public items: Array<Item> = [];
+  public encounteredEssences: Record<string, true> = {};
 
   public maze: IceMaze | null = null;
   public mazeLevelIndex: number = 0;
@@ -75,7 +74,8 @@ export class GameState {
   public cheats: Array<CheatInput> = IS_DEBUG ? [
     new CheatAddResources(),
     new CheatAddRaidItems({ id: "shegolskoe", count: 10 }),
-    new CheatUnlockAllGear()
+    new CheatUnlockAllGear(),
+    new CheatUnlockAllRaids()
   ] : [];
 
   public unlocks: string[] = [];
@@ -84,7 +84,7 @@ export class GameState {
   public gearLevels: Record<string, number> = {};
   public skillPoints: number = 0;
   public unlockedGear: string[] = [
-    'brass_knuckles', 'painkillers', 'brass_knuckles', 
+    'brass_knuckles', 'painkillers', 'pouches', 'no_scavenging',
   ];
   public loadouts: Record<string, string[]> = {
     shegolskoe: [],
@@ -94,6 +94,7 @@ export class GameState {
 
   public raidSurvivalEstimatePct: number = 0;
   public raidTimeEstimateSec: number = 0;
+  public raidZoneCollapseDeathPct: number = 0;
 
   constructor() {
     for (const categoryId of Object.keys(gearCategories)) {
@@ -106,8 +107,8 @@ export class GameState {
 export class ActiveRaid {
   public id: string = "";
   // Snapshot-like params used by the runner and UI previews
-  public hp: number = 100;
-  public maxHp: number = 100;
+  public hp: number = 10;
+  public maxHp: number = 10;
   public baseSpeed: number = 6; // km/h
   public speedBonusPct: number = 0;
   public speedBonusFlat: number = 0;
@@ -144,10 +145,20 @@ export class RaidOutcome {
   public questDeltaPct: number = 0;
   public unlockedRaidId: string | null = null;
   public plannedEncounters: number = 0;
-  // Items obtained and discarded during this raid
   public looted: Array<Item> = [];
   public discardedByVolume: Array<Item> = [];
   public discardedByLuck: Array<Item> = [];
+  public barelyInTime: boolean = false;
+
+  public log: RaidEventLog = { entries: [] };
+  public timeSpentSec: number = 0;
+  public skillPointsGained: number = 0;
+  public questsCompleted: string[] = [];
+  public zoneChange: string | null = null;
+  public finalHp: number = 0;
+  public finalMaxHp: number = 0;
+  public finalBagsUsed: number = 0;
+  public finalBagsCapacity: number = 0;
 }
 
 export class Item {

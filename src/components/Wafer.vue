@@ -33,7 +33,7 @@
         Drag items here to refine them into resources
       </div>
       <div
-        v-if="hasUpgradePreview && !showRefineAnim"
+        v-if="hasUpgradePreview && canAffordAnyUpgrade && !showRefineAnim"
         class="wafer-upgrade-hint"
         :class="{ insufficient: !canAffordUpgrade }"
       >
@@ -109,8 +109,18 @@
         <div class="stat-row">
           <span class="stat-label">Failure Chance:</span>
           <span class="stat-value" :class="failureClass">{{ preview.failureChancePct }}%</span>
-          <span class="stat-source" v-if="preview.emptyCells > 0">
-            from {{ preview.emptyCells }} empty cells
+          <span class="stat-source" v-if="preview.emptyCells > 0 || cyanEssences > 0">
+            <template v-if="preview.emptyCells > 0">
+              from {{ preview.emptyCells }} empty cells
+            </template>
+            <template v-if="cyanEssences > 0">
+              <template v-if="preview.emptyCells > 0">, </template>
+              -{{ cyanReduction }}% from {{ cyanEssences }}
+              <template v-for="(key, idx) in cyanEssenceKeys" :key="key">
+                <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
+                <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
+              </template>
+            </template>
           </span>
         </div>
 
@@ -230,6 +240,10 @@ const canAffordAnyUpgrade = computed(() => {
   return hasGrownWafer.value || uiState.shardDust >= cost;
 });
 
+watch(canAffordAnyUpgrade, (enabled) => {
+  if (!enabled) upgradeHoverCells.value = null;
+});
+
 onMounted(() => {
   const gs = getGameState();
   if (gs && gs.waferSize) {
@@ -244,7 +258,7 @@ const preview = computed(() => {
 
   if (!wafer.value) {
     return {
-      essenceTotals: {},
+      essenceTotals: {} as Record<string, number>,
       expectedCredits: 0,
       expectedChrono: 0,
       expectedFlux: 0,
@@ -253,7 +267,7 @@ const preview = computed(() => {
       chronoEssences: 0,
       fluxEssences: 0,
       emptyCells: 0,
-      cellEffectiveCounts: {},
+      cellEffectiveCounts: {} as Record<string, number>,
     };
   }
 
@@ -287,6 +301,18 @@ const chronoEssenceKeys = computed(() => {
 
 const fluxEssenceKeys = computed(() => {
   return preview.value.fluxEssences > 0 ? ['green'] : [];
+});
+
+const cyanEssences = computed(() => {
+  return preview.value.essenceTotals?.cyan || 0;
+});
+
+const cyanEssenceKeys = computed(() => {
+  return cyanEssences.value > 0 ? ['cyan'] : [];
+});
+
+const cyanReduction = computed(() => {
+  return cyanEssences.value * 10;
 });
 
 const failureClass = computed(() => {
@@ -357,7 +383,7 @@ function essenceIconStyle(k: string): Record<string, string> {
 }
 
 function essenceLetter(k: string): string {
-  const m: Record<string, string> = { red: 'R', green: 'G', blue: 'B', yellow: 'Y' };
+  const m: Record<string, string> = { red: 'R', green: 'G', blue: 'B', yellow: 'Y', cyan: 'C' };
   return m[k] || k?.[0]?.toUpperCase?.() || '?';
 }
 
@@ -392,8 +418,12 @@ function onHover(pos: Point2 | null) {
     return;
   }
 
+  if (!canAffordAnyUpgrade.value) {
+    upgradeHoverCells.value = null;
+  }
+
   // Wafer growth preview (only when not dragging an item)
-  if (!props.draggingItem && pos && wafer.value) {
+  if (canAffordAnyUpgrade.value && !props.draggingItem && pos && wafer.value) {
     const cell = getCell(wafer.value, pos as Point2);
     if (cell && !cell.enabled && cell.canBeUpgraded) {
       const region = computeUpgradeableRegion(wafer.value, pos as Point2);

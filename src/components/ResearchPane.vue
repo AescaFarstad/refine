@@ -14,19 +14,33 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, computed, defineEmits } from 'vue';
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
 import { uiState, getGameState, getGameLib } from '../logic/UIState';
 import { clearCanvas, drawHexagon } from '../logic/DrawHex';
 import type { Point2 } from '../logic/ItemLib';
 import { pixelToAxial, axialToPixel } from '../logic/HexMath';
 import { renderResearchBaseLayer } from '../logic/drawResearch';
-import { findCheapestPath, indexToAxial, axialToIndex, calculateVisibility } from '../logic/Research';
+import { findCheapestPath, indexToAxial, axialToIndex, calculateVisibility, calculateResearchNodePrice } from '../logic/Research';
 import { globalInputQueue } from '../logic/Model';
 import { CmdResearchNode } from '../logic/input/InputCommands';
 
 const container = ref<HTMLDivElement | null>(null);
 const baseCanvas = ref<HTMLCanvasElement | null>(null);
 const highlightCanvas = ref<HTMLCanvasElement | null>(null);
+
+let rafId: number | null = null;
+let pendingBaseMode: 'none' | 'present' | 'render' = 'none';
+let pendingHighlightRender = false;
+
+let baseBufferCanvas: HTMLCanvasElement | null = null;
+let baseBufferOffset: Point2 = { x: 0, y: 0 };
+let baseBufferZoom = 1;
+let baseBufferValid = false;
+
+const BASE_BUFFER_PADDING_PX = 768;
+const ZOOM_STOP_RENDER_DEBOUNCE_MS = 400;
+
+let zoomStopTimeoutId: number | null = null;
 
 const HEX_SIZE = 18;
 const BACKGROUND_HEX_SIZE = HEX_SIZE * 0.85;
@@ -52,12 +66,19 @@ const emit = defineEmits<{
   (e: 'hover-cell', cell: Point2 | null): void;
 }>();
 
+
+defineExpose({
+  zoom,
+  offset,
+  origin,
+  HEX_SIZE,
+});
+
 const RESEARCH_PATH_OBSTACLE_ICON_COLOR = '#b1dcff';
 
 onMounted(() => {
   setupCanvases();
-  renderBaseLayer();
-  renderHighlightLayer();
+  scheduleRender({ base: true, highlight: true });
   window.addEventListener('resize', onResize);
   window.addEventListener('mouseup', onWindowMouseUp);
 });
@@ -65,25 +86,32 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('resize', onResize);
   window.removeEventListener('mouseup', onWindowMouseUp);
+  if (rafId != null) {
+    cancelAnimationFrame(rafId);
+    rafId = null;
+  }
+  if (zoomStopTimeoutId != null) {
+    window.clearTimeout(zoomStopTimeoutId);
+    zoomStopTimeoutId = null;
+  }
 });
 
 watch(
   () => [uiState.researchOwnedCount, uiState.researchRevealRadius],
   () => {
-    renderBaseLayer();
-    renderHighlightLayer();
+    scheduleRender({ base: true, highlight: true });
   }
 );
 
 function onResize() {
   setupCanvases();
-  renderBaseLayer();
-  renderHighlightLayer();
+  scheduleRender({ base: true, highlight: true });
 }
 
 function setupCanvases() {
   const root = container.value;
   if (!root) return;
+  if (typeof document === 'undefined') return;
 
   const width = root.clientWidth || root.offsetWidth || 0;
   const height = root.clientHeight || root.offsetHeight || 0;
@@ -98,13 +126,54 @@ function setupCanvases() {
     canvas.width = width;
     canvas.height = height;
   });
+
+  if (!baseBufferCanvas) {
+    baseBufferCanvas = document.createElement('canvas');
+  }
+  const bufferWidth = width + BASE_BUFFER_PADDING_PX * 2;
+  const bufferHeight = height + BASE_BUFFER_PADDING_PX * 2;
+  if (baseBufferCanvas.width !== bufferWidth || baseBufferCanvas.height !== bufferHeight) {
+    baseBufferCanvas.width = bufferWidth;
+    baseBufferCanvas.height = bufferHeight;
+    baseBufferValid = false;
+  }
+}
+
+function scheduleRender({
+  base,
+  baseMode,
+  highlight,
+}: { base?: boolean; baseMode?: 'present' | 'render'; highlight?: boolean } = {}): void {
+  if (base) {
+    const requested = baseMode ?? 'render';
+    pendingBaseMode =
+      pendingBaseMode === 'render' || requested === 'render' ? 'render' : 'present';
+  }
+  if (highlight) pendingHighlightRender = true;
+  if (rafId != null) return;
+
+  rafId = requestAnimationFrame(() => {
+    rafId = null;
+
+    const baseModeToRun = pendingBaseMode;
+    const shouldRenderHighlight = pendingHighlightRender;
+    pendingBaseMode = 'none';
+    pendingHighlightRender = false;
+
+    if (baseModeToRun === 'render') renderBaseLayer();
+    if (baseModeToRun === 'present') presentBaseLayer();
+    if (shouldRenderHighlight) renderHighlightLayer();
+  });
 }
 
 function renderBaseLayer() {
   const canvas = baseCanvas.value;
   if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
+  const displayCtx = canvas.getContext('2d');
+  if (!displayCtx) return;
+  const bufferCtx = baseBufferCanvas?.getContext('2d') || null;
+  const hasBuffer = !!baseBufferCanvas && !!bufferCtx;
+  const ctx = hasBuffer ? bufferCtx : displayCtx;
 
   // Reset transform before clearing
   ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -113,13 +182,74 @@ function renderBaseLayer() {
   // Apply camera transform (zoom + pan)
   const z = zoom.value;
   const off = offset.value;
-  ctx.setTransform(z, 0, 0, z, off.x, off.y);
+  if (hasBuffer && baseBufferCanvas) {
+    const padX = (baseBufferCanvas.width - canvas.width) / 2;
+    const padY = (baseBufferCanvas.height - canvas.height) / 2;
+    ctx.setTransform(z, 0, 0, z, off.x + padX, off.y + padY);
+  } else {
+    ctx.setTransform(z, 0, 0, z, off.x, off.y);
+  }
 
   const gs = getGameState();
   const lib = getGameLib();
   const o = origin.value;
 
   renderResearchBaseLayer(ctx, gs, lib, o, HEX_SIZE, BACKGROUND_HEX_SIZE);
+
+  baseBufferOffset = { x: off.x, y: off.y };
+  baseBufferZoom = z || 1;
+  baseBufferValid = hasBuffer;
+
+  if (hasBuffer) {
+    presentBaseLayer();
+  }
+}
+
+function presentBaseLayer() {
+  const canvas = baseCanvas.value;
+  if (!canvas) return;
+  const displayCtx = canvas.getContext('2d');
+  if (!displayCtx) return;
+
+  if (!baseBufferCanvas || !baseBufferValid) {
+    renderBaseLayer();
+    return;
+  }
+
+  const currentZoom = zoom.value || 1;
+  const bufferZoom = baseBufferZoom || 1;
+  const scale = currentZoom / bufferZoom;
+
+  const padX = (baseBufferCanvas.width - canvas.width) / 2;
+  const padY = (baseBufferCanvas.height - canvas.height) / 2;
+
+  const off = offset.value;
+  const drawX = off.x - scale * (baseBufferOffset.x + padX);
+  const drawY = off.y - scale * (baseBufferOffset.y + padY);
+
+  const fullyCoversX = drawX <= 0 && drawX + scale * baseBufferCanvas.width >= canvas.width;
+  const fullyCoversY = drawY <= 0 && drawY + scale * baseBufferCanvas.height >= canvas.height;
+  if (!fullyCoversX || !fullyCoversY) {
+    renderBaseLayer();
+    return;
+  }
+
+  displayCtx.setTransform(1, 0, 0, 1, 0, 0);
+  clearCanvas(displayCtx);
+  displayCtx.setTransform(scale, 0, 0, scale, drawX, drawY);
+  displayCtx.drawImage(baseBufferCanvas, 0, 0);
+}
+
+function scheduleZoomStopRender(): void {
+  if (typeof window === 'undefined') return;
+  if (zoomStopTimeoutId != null) {
+    window.clearTimeout(zoomStopTimeoutId);
+    zoomStopTimeoutId = null;
+  }
+  zoomStopTimeoutId = window.setTimeout(() => {
+    zoomStopTimeoutId = null;
+    scheduleRender({ base: true, baseMode: 'render', highlight: true });
+  }, ZOOM_STOP_RENDER_DEBOUNCE_MS);
 }
 
 function renderHighlightLayer() {
@@ -150,12 +280,25 @@ function renderHighlightLayer() {
   const path = findCheapestPath(gs, axial.x, axial.y);
   if (!path.reachable || path.pathLength === 0) return;
 
+  // Calculate the price and check affordability
+  const pathCost = path.cost;
+  const price = calculateResearchNodePrice(gs, pathCost);
+  const canAfford = pathCost === 0 || gs.chronotraces >= price;
+
   // Apply camera transform
   const z = zoom.value || 1;
   const off = offset.value;
   ctx.setTransform(z, 0, 0, z, off.x, off.y);
 
   const o = origin.value;
+
+  // Choose colors based on affordability
+  const fillColor = canAfford
+    ? 'rgba(56, 189, 248, 0.22)'    // cyan/blue for affordable
+    : 'rgba(239, 68, 68, 0.22)';     // red for unaffordable
+  const strokeColor = canAfford
+    ? 'rgba(56, 189, 248, 0.9)'     // cyan/blue for affordable
+    : 'rgba(239, 68, 68, 0.9)';      // red for unaffordable
 
   // Highlight all cells that will be converted
   const pathCells = path.pathCells;
@@ -167,8 +310,8 @@ function renderHighlightLayer() {
      const a = indexToAxial(cellIdx);
      const center = axialToPixel({ x: a.x, y: a.y }, HEX_SIZE, o);
      drawHexagon(ctx, center, HEX_SIZE * 0.9, {
-       fillColor: 'rgba(56, 189, 248, 0.22)',
-       strokeColor: 'rgba(56, 189, 248, 0.9)',
+       fillColor,
+       strokeColor,
        lineWidth: 2,
      });
 
@@ -210,8 +353,8 @@ function onWheel(event: WheelEvent) {
   };
   zoom.value = newZoom;
 
-  renderBaseLayer();
-  renderHighlightLayer();
+  scheduleRender({ base: true, baseMode: 'present', highlight: true });
+  scheduleZoomStopRender();
 }
 
 function onMouseDown(event: MouseEvent) {
@@ -244,21 +387,25 @@ function onMouseMove(event: MouseEvent) {
     y: offset.value.y + dy,
   };
 
-  renderBaseLayer();
-  renderHighlightLayer();
+  scheduleRender({ base: true, baseMode: 'present', highlight: true });
 }
 
 function onMouseUp(event: MouseEvent) {
   if (event.button !== 0) return;
+  const wasPanning = isMouseDown.value && isPanning.value;
   if (isMouseDown.value && !isPanning.value) {
     handleClick(event);
   }
   isMouseDown.value = false;
   isPanning.value = false;
   lastPanClient.value = null;
+  if (wasPanning) {
+    scheduleRender({ base: true, baseMode: 'render', highlight: true });
+  }
 }
 
 function onMouseLeave(_event: MouseEvent) {
+  const wasPanning = isMouseDown.value && isPanning.value;
   isMouseDown.value = false;
   isPanning.value = false;
   lastPanClient.value = null;
@@ -266,14 +413,21 @@ function onMouseLeave(_event: MouseEvent) {
     hoverAxial.value = null;
     emit('hover-cell', null);
   }
-  renderHighlightLayer();
+  scheduleRender({ highlight: true });
+  if (wasPanning) {
+    scheduleRender({ base: true, baseMode: 'render' });
+  }
 }
 
 function onWindowMouseUp(event: MouseEvent) {
   if (event.button !== 0) return;
+  const wasPanning = isMouseDown.value && isPanning.value;
   isMouseDown.value = false;
   isPanning.value = false;
   lastPanClient.value = null;
+  if (wasPanning) {
+    scheduleRender({ base: true, baseMode: 'render', highlight: true });
+  }
 }
 
 function updateHoverCell(event: MouseEvent): void {
@@ -296,7 +450,7 @@ function updateHoverCell(event: MouseEvent): void {
   if (!prev || prev.x !== axial.x || prev.y !== axial.y) {
     hoverAxial.value = axial;
     emit('hover-cell', axial);
-    renderHighlightLayer();
+    scheduleRender({ highlight: true });
   }
 }
 
@@ -372,8 +526,7 @@ function applyEditModeAt(axial: Point2): void {
   calculateVisibility(gs, lib.research);
 
   // Force local redraw and notify dev tools
-  renderBaseLayer();
-  renderHighlightLayer();
+  scheduleRender({ base: true, highlight: true });
   (uiState as any).researchEditVersion = ((uiState as any).researchEditVersion || 0) + 1;
 }
 

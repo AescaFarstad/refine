@@ -1,27 +1,49 @@
 <template>
-  <div class="research-tab">
-    <ResearchPane @hover-cell="onHoverCell" />
+  <div class="research-tab" ref="researchTab">
+    <ResearchPane ref="researchPane" @hover-cell="onHoverCell" />
     <EditResearchPane v-if="editResearchOpen" />
     <div
-      v-if="showHoverTopPanel"
-      class="hover-top-panel"
-      :class="{ 'hint-only': showHintPanel && !showHoverPreviewPanel }"
+      v-if="hoverPreview && hoverPreview.reachable && !hoverPreview.alreadyOwned"
+      class="hover-top-panel hover-panel"
     >
-      <div v-if="showHoverPreviewPanel && hoverPreview" class="hover-preview hover-panel">
-        <div>
-          Research {{ hoverPreview.pathLength }} nodes
-        </div>
-        <div>
-          Clear {{ hoverPreview.pathCost }} ⬤ in the path for
-          <span class="resource-price" :style="{ color: chronoColor }">
-            {{ hoverPreview.price }} ⧖
-          </span>
-        </div>
+      <div>
+        Research {{ hoverPreview.pathLength }} nodes
       </div>
-      <div v-if="showHintPanel && hoveredNode" class="hover-hint hover-panel">
-        <ResearchNodeHint :cell="hoveredNode.cell" :node="hoveredNode.node" :archetype="hoveredNode.archetype" />
+      <div>
+        Clear {{ hoverPreview.pathCost }} ⬤ in the path for
+        <span class="resource-price" :style="{ color: chronoColor }">
+          {{ hoverPreview.price }} ⧖
+        </span>
       </div>
     </div>
+    <div
+      v-if="showHintPanel && hoveredNode && hoverNodePosition"
+      class="hover-hint hover-panel"
+      :style="{
+        left: `${hoverNodePosition.x}px`,
+        top: `${hoverNodePosition.y}px`
+      }"
+    >
+      <ResearchNodeHint :cell="hoveredNode.cell" :node="hoveredNode.node" :archetype="hoveredNode.archetype" />
+    </div>
+
+    <!-- Left panel: Obstacle info -->
+    <div class="left-info-panel info-panel">
+      <div>Obstacles cleared: {{ uiState.researchOwnedCount }}</div>
+      <div>
+        Next clear obstacle cost:
+        <span class="resource-price" :style="{ color: chronoColor }">
+          {{ nextClearCost }}⧖
+        </span>
+      </div>
+    </div>
+
+    <!-- Right panel: Controls -->
+    <div class="right-info-panel info-panel">
+      <div>Drag the pane with left mouse button</div>
+      <div>Zoom with mouse wheel</div>
+    </div>
+
     <div v-if="hoverCell" class="coord-label">
       <span>q: {{ hoverCell.x }}, r: {{ hoverCell.y }} • dist: {{ hoverDistance }}</span>
       <span v-if="hoverPreview">
@@ -54,8 +76,11 @@ import EditResearchPane from './EditResearchPane.vue';
 import ResearchNodeHint from './researchHints/ResearchNodeHint.vue';
 import type { ResearchCell } from '../logic/GameState';
 import type { ResearchArchetype, ResearchNodeInstance } from '../logic/ResearchLib';
+import { axialToPixel } from '../logic/HexMath';
+import { RESEARCH_OBSTACLE_PRICE, RESEARCH_OBSTACLE_PRICE_GROWTH } from '../logic/Const';
 
 const hoverCell = ref<Point2 | null>(null);
+const researchPane = ref<InstanceType<typeof ResearchPane> | null>(null);
 
 const editResearchOpen = computed(() => uiState.editResearchOpen);
 
@@ -141,11 +166,40 @@ const showHintPanel = computed(() => {
 });
 
 const showHoverPreviewPanel = computed(() => {
-  return !!(hoverPreview.value && hoverPreview.value.price > 0);
+  const hp = hoverPreview.value;
+  if (!hp) return false;
+  return hp.reachable && !hp.alreadyOwned;
 });
 
-const showHoverTopPanel = computed(() => {
-  return !!(showHintPanel.value || showHoverPreviewPanel.value);
+const hoverNodePosition = computed<Point2 | null>(() => {
+  const cell = hoverCell.value;
+  if (!cell || !researchPane.value) return null;
+
+  const paneZoom = researchPane.value.zoom;
+  const paneOffset = researchPane.value.offset;
+  const paneOrigin = researchPane.value.origin;
+  const paneHexSize = researchPane.value.HEX_SIZE;
+
+  if (!paneZoom || !paneOffset || !paneOrigin || !paneHexSize) return null;
+
+  const worldPos = axialToPixel(cell, paneHexSize, paneOrigin);
+
+  const screenX = worldPos.x * paneZoom + paneOffset.x;
+  const screenY = worldPos.y * paneZoom + paneOffset.y;
+
+  return {
+    x: screenX,
+    y: screenY - 40,
+  };
+});
+
+const nextClearCost = computed(() => {
+  // Touch reactive deps so cost updates when ownership changes
+  const _ownedCount = uiState.researchOwnedCount;
+
+  const gs = getGameState();
+  const ownedCount = gs.researchOwnedCount;
+  return RESEARCH_OBSTACLE_PRICE + ownedCount * RESEARCH_OBSTACLE_PRICE_GROWTH;
 });
 </script>
 
@@ -173,16 +227,11 @@ const showHoverTopPanel = computed(() => {
 
 .hover-hint {
   position: absolute;
-  top: 0;
-  left: 100%;
-  margin-left: 10px;
-}
-
-.hint-only .hover-hint {
-  position: relative;
-  top: auto;
-  left: auto;
-  margin-left: 0;
+  transform: translate(-50%, -100%);
+  margin-bottom: 8px;
+  pointer-events: none;
+  user-select: none;
+  z-index: 25;
 }
 
 .hover-panel {
@@ -195,6 +244,32 @@ const showHoverTopPanel = computed(() => {
   font-weight: 600;
   letter-spacing: 0.04em;
   text-align: center;
+}
+
+.info-panel {
+  position: absolute;
+  top: 12px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  color: rgba(226, 232, 240, 0.95);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  user-select: none;
+  z-index: 25;
+}
+
+.left-info-panel {
+  left: 12px;
+  text-align: left;
+}
+
+.right-info-panel {
+  right: 12px;
+  text-align: right;
 }
 
 .resource-price {

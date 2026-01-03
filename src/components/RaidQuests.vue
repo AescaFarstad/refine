@@ -1,8 +1,9 @@
 <template>
-  <div>
-    <div v-if="quests.length === 0" class="placeholder">No quests available for this raid.</div>
+  <div v-if="quests.length > 0">
+    <div class="section-title">Investigations</div>
+    <hr class="section-divider" />
 
-    <ul v-else class="quest-list">
+    <ul class="quest-list">
       <li
         v-for="q in quests"
         :key="q.id"
@@ -31,7 +32,7 @@ import { uiState, getGameLib, getGameState } from '../logic/UIState';
 import type { QuestDefinition } from '../logic/QuestLib';
 import { globalInputQueue } from '../logic/Model';
 import { CmdToggleQuest } from '../logic/input/InputCommands';
-import { describeMutation } from '../logic/RaidMutation';
+import { describeMutation, type RaidMutation } from '../logic/RaidMutation';
 
 const activeRaidId = computed(() => uiState.activeRaidId || (uiState.raidOrder[0] || ''));
 
@@ -76,8 +77,6 @@ function isActive(id: string): boolean {
 function formatReward(q: QuestDefinition): string {
   const r = q.rewards || {};
   const parts: string[] = [];
-  const reach = Math.max(0, r.reach || 0);
-  if (reach > 0) parts.push(`Reach +${reach}`);
   const sp = Math.max(0, (r as any).skillPoints || 0);
   if (sp > 0) parts.push(`Skill Points +${sp}`);
   if ((r.unlocks || []).length > 0) parts.push(`Unlocks ${r.unlocks!.length}`);
@@ -100,8 +99,7 @@ function onQuestClick(q: QuestDefinition): void {
 
 function hintSections(q: QuestDefinition): Array<{ label: string; value: string }> {
   const out: Array<{ label: string; value: string }> = [];
-  // Added encounters (mutations)
-  const encs = (q as any).encounters as import('../logic/RaidMutation').RaidMutation[] | undefined;
+  const encs = (q as any).encounters as RaidMutation[] | undefined;
   if (Array.isArray(encs) && encs.length) {
     const gs = getGameState();
     const desc = encs
@@ -110,16 +108,15 @@ function hintSections(q: QuestDefinition): Array<{ label: string; value: string 
       .join('; ');
     if (desc) out.push({ label: 'Encounters:', value: desc });
   }
-  // Rewards
   const reward = formatReward(q);
-  if (reward) out.push({ label: 'Rewards', value: reward });
+  if (reward) out.push({ label: 'Rewards:', value: reward });
   return out;
 }
 </script>
 
 <style scoped>
-.placeholder { opacity: 0.7; font-style: italic; }
-.section-title { font-weight: 800; text-transform: uppercase; font-size: 12px; letter-spacing: 0.08em; margin-bottom: 8px; }
+.section-title { font-weight: 800; text-transform: uppercase; font-size: 12px; letter-spacing: 0.08em; margin-bottom: 8px; text-align: center; }
+.section-divider { border: none; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 0 0 12px 0; }
 .quest-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
 .quest {
   border: none; /* no border around quest */
@@ -158,6 +155,9 @@ function hintSections(q: QuestDefinition): Array<{ label: string; value: string 
   box-shadow: inset 0 1px 0 var(--panel-shine),
               0 8px 24px rgba(0,0,0,0.5);
   pointer-events: none; /* prevent flicker */
+  grid-template-columns: max-content 1fr;
+  gap: 2px 8px;
+  align-items: baseline;
 }
 .hint::before {
   content: '';
@@ -171,8 +171,8 @@ function hintSections(q: QuestDefinition): Array<{ label: string; value: string 
   border-top: 1px solid var(--hint-border);
   transform: rotate(45deg);
 }
-.hint-row { white-space: nowrap; display: grid; grid-template-columns: max-content 1fr; gap: 4px 8px; align-items: baseline; margin: 2px 0; }
+.hint-row { white-space: nowrap; display: contents; }
 .hint-label { color: var(--text-secondary); font-size: 11px; letter-spacing: 0.06em; font-weight: 800; }
 .hint-value { color: var(--text-primary); font-size: 12px; font-weight: 800; }
-.quest:hover .hint { display: block; }
+.quest:hover .hint { display: grid; }
 </style>

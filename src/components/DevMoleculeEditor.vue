@@ -134,7 +134,7 @@ const allItems = computed(() => {
   }
 
   list.sort((a, b) => {
-    return uiState.lib!.items.get(a.id)!.order - uiState.lib!.items.get(b.id)!.order;
+    return uiState.lib!.getItem(a.id).order - uiState.lib!.getItem(b.id).order;
   });
 
   return list;

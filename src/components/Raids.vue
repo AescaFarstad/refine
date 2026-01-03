@@ -1,32 +1,29 @@
 <template>
   <div class="raids-view">
-    <RaidSelection />
+
     <div class="raid-main-bg">
-      <RaidSetup v-if="hasSelection" />
-      <RaidGear />
+      <RaidSetup />
+
+      <RaidGear v-if="hasSelection" />
     </div>
-    <RaidDeploy />
+    <RaidDeploy v-if="hasSelection" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue';
-import { uiState, getGameState } from '../logic/UIState';
-import RaidSelection from './RaidSelection.vue';
+import { uiState } from '../logic/UIState';
 import RaidSetup from './RaidSetup.vue';
 import RaidGear from './RaidGear.vue';
 import RaidDeploy from './RaidDeploy.vue';
 import { globalInputQueue } from '../logic/Model';
 import { CmdSelectRaid } from '../logic/input/InputCommands';
+import { IS_DEBUG } from '../logic/Const';
 
-const hasSelection = computed(() => !!(uiState.activeRaidId || uiState.raidOrder[0]));
+const hasSelection = computed(() => !!uiState.activeRaidId);
 
 function isLockedById(id: string): boolean {
-  const def = uiState.raids.find(r => r.id === id);
-  if (!def) return true;
-  const gs = getGameState();
-  const reach = gs?.reach || 0;
-  return reach < Math.max(0, (def as any).reachRequired || 0);
+  return !uiState.unlockedRaidIds.includes(id);
 }
 
 function firstUnlockedRaidId(): string | null {
@@ -42,15 +39,16 @@ function onSelectRaid(id: string) {
   globalInputQueue.push(new CmdSelectRaid({ id }));
 }
 
-// Ensure a default selection exists once raids are loaded
+
 onMounted(() => {
-  if (!uiState.activeRaidId) {
+  if (IS_DEBUG && !uiState.activeRaidId) {
     const id = firstUnlockedRaidId();
     if (id) onSelectRaid(id);
   }
 });
+
 watch(() => uiState.raidOrder.join('|'), () => {
-  if (!uiState.activeRaidId) {
+  if (IS_DEBUG && !uiState.activeRaidId) {
     const id = firstUnlockedRaidId();
     if (id) onSelectRaid(id);
   }
@@ -58,7 +56,7 @@ watch(() => uiState.raidOrder.join('|'), () => {
 </script>
 
 <style scoped>
-.raids-view { display: flex; flex-direction: column; gap: 14px; }
+.raids-view { display: flex; flex-direction: column; gap: 14px; padding: 12px; }
 .raids-view :deep(.panel) { background: transparent !important; box-shadow: none !important; border: none !important; }
 /* Unified background for raid details, quests, and gear */
 .raid-main-bg { background: var(--panel-bg); border-radius: 6px; padding: 0px; display: flex; flex-direction: column; gap: 14px; }

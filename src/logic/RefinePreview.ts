@@ -268,7 +268,13 @@ function computeEffectiveEssenceTotals(wafer: Wafer): {
 
 export function computeRefinePreviewChem(wafer: Wafer): RefinePreviewChem {
 
-    const failureChancePct = Math.min(100, Math.max(0, wafer.emptyCount * FAILURE_PER_EMPTY_CELL));
+    const { essenceTotals, cellEffectiveCounts } = computeEffectiveEssenceTotals(wafer);
+
+    const cyanCount = essenceTotals['cyan'] || 0;
+    const cyanReduction = cyanCount * 10;
+
+    const baseFailureChance = wafer.emptyCount * FAILURE_PER_EMPTY_CELL;
+    const failureChancePct = Math.min(100, Math.max(0, baseFailureChance - cyanReduction));
 
     const baseYieldPct = 100;
 
@@ -276,8 +282,6 @@ export function computeRefinePreviewChem(wafer: Wafer): RefinePreviewChem {
     const signatureSpeedBonus = 0;
 
     const totalYieldPct = baseYieldPct + signatureYieldBonus;
-
-    const { essenceTotals, cellEffectiveCounts } = computeEffectiveEssenceTotals(wafer);
 
     const red = essenceTotals['red'] || 0;
     const green = essenceTotals['green'] || 0;

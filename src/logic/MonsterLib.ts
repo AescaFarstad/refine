@@ -7,5 +7,7 @@ export interface MonsterDefinition {
   damage: number;
   lootItemId: string; // item dropped for MonsterLootEncounter
   features: string[];
+  armor: number;     // flat damage reduction on all incoming damage
+  damageCap: number; // max damage per hit (0 = no cap)
 }
 

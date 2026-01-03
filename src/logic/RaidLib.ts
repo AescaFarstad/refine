@@ -1,5 +1,21 @@
-// New RaidLib definitions (single final type name)
-export type EncounterType = 'WalkEncounter' | 'LootEncounter' | 'MonsterLootEncounter' | 'FightEncounter' | 'QuestEncounter';
+export type EncounterType =
+  | 'PreparationEncounter'
+  | 'WalkEncounter'
+  | 'LootEncounter'
+  | 'MonsterLootEncounter'
+  | 'FightEncounter'
+  | 'QuestEncounter';
+
+export type LootRarity = 'common' | 'uncommon' | 'rare' | 'legendary';
+
+export interface PreparationEncounterDef {
+  type: 'PreparationEncounter';
+  timeSpentSec: number;
+  damageBonus: number;
+  hpBonus: number;
+  blockChanceBonus: number;
+  tacticNames: string[];  // (display only)
+}
 
 export interface WalkEncounterDef {
   type: 'WalkEncounter';
@@ -25,15 +41,23 @@ export interface QuestEncounterDef {
   questId: string;
 }
 
-export type EncounterDef = WalkEncounterDef | LootEncounterDef | MonsterLootEncounterDef | FightEncounterDef | QuestEncounterDef;
+export type EncounterDef =
+  | PreparationEncounterDef
+  | WalkEncounterDef
+  | LootEncounterDef
+  | MonsterLootEncounterDef
+  | FightEncounterDef
+  | QuestEncounterDef;
 
-// Source-of-truth and runtime type for raids
 export interface RaidDefinition {
   id: string;
   name: string;
-  reachRequired: number;
+  description?: string;
   baseLootChance: number;
-  items?: string[];
+  items: string[];
+  itemPoolsByRarity: Record<LootRarity, string[]>;
   encounters: Array<{ count: number; encounter: EncounterDef }>;
   order: number;
+  zoneCollapseSec: number;
+  zoneCollapseStepPerMutation: number;
 }

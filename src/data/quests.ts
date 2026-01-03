@@ -1,13 +1,12 @@
 import type { QuestDefinition } from '../logic/QuestLib';
 
-// Minimal quests to drive reach gating via end-of-raid completion (Stage 8)
+// Minimal quests for raid testing/progression (Stage 8)
 const quests: Record<string, Omit<QuestDefinition, 'id'>> = {
-  // Completing Shegolskoe increases reach by 5
   q_reach_5: {
-    name: 'Stretch Your Reach',
+    name: 'Establish a Foothold',
     encounterTimeMin: 10,
     raidRestriction: ['shegolskoe'],
-    rewards: { reach: 5 },
+    rewards: { skillPoints: 1 },
   },
   q_sp_training_1: {
     name: 'Basic Field Training',
@@ -32,7 +31,7 @@ const quests: Record<string, Omit<QuestDefinition, 'id'>> = {
     name: 'Survey the Lakefront',
     encounterTimeMin: 10,
     raidRestriction: ['ozernoye'],
-    rewards: { reach: 2 },
+    rewards: { skillPoints: 1 },
     encounters: [
       { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 2 },
     ],
@@ -50,7 +49,7 @@ const quests: Record<string, Omit<QuestDefinition, 'id'>> = {
     name: 'Push the Boundary',
     encounterTimeMin: 20,
     raidRestriction: ['ozernoye'],
-    rewards: { skillPoints: 1, reach: 1 },
+    rewards: { skillPoints: 2 },
     encounters: [
       { kind: 'AddMonsterMutation', monsterId: 'flower', count: 1 },
     ],

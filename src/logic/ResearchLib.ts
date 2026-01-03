@@ -1,6 +1,4 @@
 import type { Point2 } from './core/math';
-import { researchArchetypes } from '../data/research_archetypes';
-import { researchPane, researchPaneEmptyCells, researchPaneVoidCells } from '../data/research_pane';
 
 export type ResearchNodeType = 'obstacle' | 'empty' | 'stat' | 'gear' | 'resource' | 'void';
 
@@ -87,9 +85,7 @@ export class ResearchLib {
   public archetypes: Map<string, ResearchArchetype> = new Map();
   public nodes: Map<number, ResearchNodeInstance> = new Map();
 
-  constructor() {
-    this.load(researchArchetypes, researchPane, researchPaneEmptyCells, researchPaneVoidCells);
-  }
+  constructor() {}
 
   public load(
     archetypes: Record<string, ResearchArchetypeDef>,

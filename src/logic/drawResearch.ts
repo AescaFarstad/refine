@@ -27,7 +27,6 @@ const RESEARCH_STAT_ICON_SPECS: Record<string, StatIconSpec> = {
   volume: { glyph: '⌞ ⌝', offsetX: 0, offsetY: 2 },
   baseMaxWeight: { glyph: 'w', offsetX: 0.5, offsetY: 0 },
   researchRevealRadius: { glyph: '◎', offsetX: 0, offsetY: 0},
-  skillPoints: { glyph: '◌', offsetX: 0, offsetY: 0 },
 };
 
 const RESOURCE_GLYPHS: Record<string, StatIconSpec> = {
@@ -35,6 +34,7 @@ const RESOURCE_GLYPHS: Record<string, StatIconSpec> = {
   chronotraces: { glyph: '⧖', offsetX: 0, offsetY: 0 },
   timeFlux: { glyph: '∿', offsetX: 0, offsetY: 1 },
   shards: { glyph: '⌁', offsetX: 0, offsetY: 0 },
+  skillPoints: { glyph: '◌', offsetX: 0, offsetY: 0 },
 };
 
 export function getStatGlyph(statKey: string): string {

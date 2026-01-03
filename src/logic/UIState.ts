@@ -2,7 +2,7 @@ import { reactive, computed } from 'vue';
 import { formatDurationHM } from './StringUtils';
 import type { GameState, RaidOutcome, RefineryOutcome, Shard } from './GameState';
 import type { RaidDefinition } from './RaidLib';
-import { getEffectiveRaidDefinition } from './RaidMutation';
+import { getEffectiveRaidDefinition } from './Raid';
 import { computeRefinePreviewChem } from './RefinePreview';
 import type { Lib } from './Lib';
 import { createWafer, type Wafer } from './Wafer';
@@ -38,7 +38,6 @@ export const uiState = reactive({
   strength: 0,
   speed: 0,
   volume: 0,
-  looting: 0,
 
   raids: [] as UIRaidDef[],
   raidOrder: [] as string[],
@@ -52,14 +51,14 @@ export const uiState = reactive({
 
   raidSurvivalPct: 0,
   raidTimeEstimateSec: 0,
+  raidZoneCollapseDeathPct: 0,
 
   lastOutcome: null as RaidOutcome | null,
   lastRefineryOutcome: null as RefineryOutcome | null,
-  levelupsAvailable: 0,
 
   activeTab: 'raid' as 'raid' | 'refine' | 'research' | 'maze',
 
-  levelUpOpen: false,
+  gearUpgradeModalOpen: false,
 
   cheatOpen: false,
   devAtlasKey: '' as '' | 'items',
@@ -68,6 +67,7 @@ export const uiState = reactive({
 
   refinery: null as UIRefinery | null,
   items: [] as Array<{ id: string; quantity: number }>,
+  encounteredEssences: [] as string[],
   waferUpgradesPurchased: 0,
   wafer: createWafer(2) as Wafer,
   waferSize: { x: 0, y: 0 } as Point2,
@@ -112,14 +112,16 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.credits = game.credits;
   uiState.chronotraces = game.chronotraces;
   uiState.timeFlux = game.timeFlux ?? 0;
-  uiState.shardDust = (game as any).shardDust || 0;
+  uiState.shardDust = game.shardDust || 0;
   // Model tracks time in seconds; UI needs minutes for display
   uiState.timeMinutes = Math.floor((game.gameTime || 0) / 60);
   uiState.canAdvanceTime = !!game.nextEvt;
   uiState.timeActive = game.timeActive;
 
+  const loadoutIds = (game.loadouts && game.raid && game.raid.id) ? game.loadouts[game.raid.id] : null;
+  const loadoutKey = Array.isArray(loadoutIds) ? [...loadoutIds].sort().join(',') : '';
   const rk = game.raid
-    ? `${game.raid.id}|${game.raid.hp}|${game.raid.maxHp}|${game.raid.baseSpeed}|${game.raid.speedBonusPct}|${game.raid.regenPerKm}|${game.raid.regenAfterEncounter}|${game.raid.weight}|${game.raid.maxWeight}|${(game.raid.damage ?? game.damage ?? 1)}|${game.raid.bagsVolume}|${game.raid.usedVolume}`
+    ? `${game.raid.id}|${game.raid.hp}|${game.raid.maxHp}|${game.raid.baseSpeed}|${game.raid.speedBonusPct}|${game.raid.speedBonusFlat}|${game.raid.regenPerKm}|${game.raid.regenAfterEncounter}|${game.raid.weight}|${game.raid.maxWeight}|${(game.raid.damage ?? game.damage ?? 1)}|${game.raid.bagsVolume}|${game.raid.usedVolume}|${game.raid.lootChanceBonus}|${game.raid.hitChance}|${game.raid.blockChance}|${game.raid.reflectOnHitPct}|${game.raid.reflectOnBlockPct}|${game.raid.biopsyChance}|${loadoutKey}`
     : '';
   if (rk !== lastRaidKey) {
     uiState.raidKey = rk;
@@ -129,7 +131,6 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.strength = game.strength;
   uiState.speed = game.speed ?? 0;
   uiState.volume = game.volume;
-  uiState.looting = game.looting;
 
   const raids: UIRaidDef[] = [];
   const order: string[] = [];
@@ -145,19 +146,19 @@ export function SyncUIFromGameState(game: GameState): void {
 
   uiState.unlockedRaidIds = game.unlockedRaids.map(r => r.id);
   uiState.unlockedGear = Array.isArray(game.unlockedGear) ? [...game.unlockedGear] : [];
-  uiState.activeQuests = Array.isArray((game as any).activeQuests) ? [...(game as any).activeQuests] : [];
+  uiState.activeQuests = Array.isArray(game.activeQuests) ? [...game.activeQuests] : [];
   const progress: Record<string, number> = {};
   game.unlockedRaids.forEach(r => { progress[r.id] = r.questProgress; });
   uiState.questProgressById = progress;
 
   uiState.activeRaidId = game.raid.id;
   uiState.selectedGearPrice = game.selectedGearPrice ?? 0;
-  uiState.raidSurvivalPct = (game as any).raidSurvivalEstimatePct || 0;
-  uiState.raidTimeEstimateSec = (game as any).raidTimeEstimateSec || 0;
+  uiState.raidSurvivalPct = game.raidSurvivalEstimatePct;
+  uiState.raidTimeEstimateSec = game.raidTimeEstimateSec;
+  uiState.raidZoneCollapseDeathPct = game.raidZoneCollapseDeathPct;
 
   uiState.lastOutcome = game.lastRaidOutcome;
   uiState.lastRefineryOutcome = game.lastRefineryOutcome;
-  uiState.levelupsAvailable = game.levelupsAvailable;
 
   const hasWafer = !!game.wafer;
   const refinery: UIRefinery = {};
@@ -184,11 +185,12 @@ export function SyncUIFromGameState(game: GameState): void {
   }
   uiState.refinery = refinery;
   uiState.items = (game.items || []).map(it => ({ id: it.id, quantity: it.quantity }));
+  uiState.encounteredEssences = Object.keys(game.encounteredEssences || {});
 
   uiState.wafer = game.wafer;
   uiState.waferSize = game.waferSize;
   uiState.shards = game.shards;
-  uiState.waferUpgradesPurchased = (game as any).waferUpgradesPurchased || 0;
+  uiState.waferUpgradesPurchased = game.waferUpgradesPurchased || 0;
 
   if (game.wafer) {
     const currentItemCount = Array.isArray(game.wafer.items) ? game.wafer.items.filter(item => item !== null).length : 0;
@@ -222,7 +224,7 @@ export function SyncUIFromGameState(game: GameState): void {
     uiState.researchOwnedCount = game.researchOwnedCount;
   }
 
-  const radius = (game as any).researchRevealRadius;
+  const radius = game.researchRevealRadius;
   uiState.researchRevealRadius = typeof radius === 'number' ? radius : 0;
 }
 

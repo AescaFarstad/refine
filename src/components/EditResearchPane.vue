@@ -157,6 +157,7 @@ import { uiState, getGameState, getGameLib } from '../logic/UIState';
 import { indexToAxial } from '../logic/Research';
 import { getStatGlyph, getResourceGlyph } from '../logic/drawResearch';
 import atlasStorage from '../logic/AtlasStorage';
+import { setResearchRevealRadius } from '../logic/Model';
 
 type Point = { x: number; y: number };
 
@@ -303,11 +304,10 @@ onBeforeUnmount(() => {
 function revealAllResearch() {
   const gs = getGameState();
   if (!gs) return;
-  if (typeof (gs as any).setResearchRevealRadius === 'function') {
-    (gs as any).setResearchRevealRadius(1000);
-  } else {
-    (gs as any).researchRevealRadius = 1000;
-  }
+  // Use the proper function that updates reveal radius and recalculates visibility
+  setResearchRevealRadius(gs, 1000);
+  // Update UIState to trigger watcher and redraw
+  uiState.researchRevealRadius = 1000;
 }
 
 type EditMode = '' | 'empty' | 'void' | 'obstacle' | 'coordinates';

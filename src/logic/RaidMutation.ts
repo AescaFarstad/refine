@@ -37,11 +37,18 @@ export interface QuestMutation {
   count: number;
 }
 
-export type RaidMutation = LootMutation | WalkMutation | AddMonsterMutation | LootDifficultyMutation | UpgradeMonsterMutation | QuestMutation;
+export interface ZoneCollapseTimeMutation {
+  kind: 'ZoneCollapseTimeMutation';
+  amount: number; // negative to reduce time, positive to increase (in seconds)
+}
+
+export type RaidMutation = LootMutation | WalkMutation | AddMonsterMutation | LootDifficultyMutation | UpgradeMonsterMutation | QuestMutation | ZoneCollapseTimeMutation;
 
 function encountersEqual(a: EncounterDef, b: EncounterDef): boolean {
   if (a.type !== b.type) return false;
   switch (a.type) {
+    case 'PreparationEncounter':
+      return true; // all prep encounters are considered equal
     case 'WalkEncounter':
       return true; // no additional fields
     case 'LootEncounter':
@@ -52,8 +59,6 @@ function encountersEqual(a: EncounterDef, b: EncounterDef): boolean {
       return (a as FightEncounterDef).monsterId === (b as FightEncounterDef).monsterId;
     case 'QuestEncounter':
       return (a as QuestEncounterDef).questId === (b as QuestEncounterDef).questId;
-    default:
-      return false;
   }
 }
 
@@ -69,7 +74,6 @@ function normalizeCount(v: number): number {
   return Math.max(0, Math.floor(v));
 }
 
-// Modifies the raid encounters in-place, merging counts when present.
 export function modifyEncounterCount(raid: RaidDefinition, enc: EncounterDef, delta: number): void {
   const d = Math.trunc(delta);
   if (d === 0) return;
@@ -131,6 +135,10 @@ export function applyRaidMutation(raid: RaidDefinition, m: RaidMutation): void {
       modifyEncounterCount(raid, enc, Math.trunc(q.count));
       break;
     }
+    case 'ZoneCollapseTimeMutation': {
+      raid.zoneCollapseSec = Math.max(0, raid.zoneCollapseSec + (m as ZoneCollapseTimeMutation).amount);
+      break;
+    }
   }
 }
 
@@ -147,8 +155,17 @@ export function applyMonsterMutation(raid: RaidDefinition, monsterId: string, co
   applyRaidMutation(raid, { kind: 'AddMonsterMutation', monsterId, count });
 }
 
-function cloneEncounter(enc: EncounterDef): EncounterDef {
+export function cloneEncounter(enc: EncounterDef): EncounterDef {
   switch (enc.type) {
+    case 'PreparationEncounter':
+      return {
+        type: 'PreparationEncounter',
+        timeSpentSec: (enc as any).timeSpentSec,
+        damageBonus: (enc as any).damageBonus,
+        hpBonus: (enc as any).hpBonus,
+        blockChanceBonus: (enc as any).blockChanceBonus,
+        tacticNames: [...(enc as any).tacticNames],
+      };
     case 'WalkEncounter':
       return { type: 'WalkEncounter' };
     case 'LootEncounter':
@@ -166,48 +183,26 @@ export function cloneRaid(def: RaidDefinition): RaidDefinition {
   return {
     id: def.id,
     name: def.name,
-    reachRequired: def.reachRequired,
     baseLootChance: def.baseLootChance,
-    items: Array.isArray(def.items) ? [...def.items] : undefined,
-    encounters: (def.encounters || []).map(step => ({ count: Math.max(0, step.count | 0), encounter: cloneEncounter(step.encounter) })),
+    items: def.items ? [...def.items] : undefined,
+    itemPoolsByRarity: def.itemPoolsByRarity,
+    encounters: def.encounters.map(step => ({ count: step.count | 0, encounter: cloneEncounter(step.encounter) })),
     order: def.order,
+    zoneCollapseSec: def.zoneCollapseSec,
+    zoneCollapseStepPerMutation: def.zoneCollapseStepPerMutation,
   };
 }
 
-function questIsActive(gs: GameState, q: QuestDefinition, raidId: string): boolean {
+export function questIsActive(gs: GameState, q: QuestDefinition, raidId: string): boolean {
   const applies = !q.raidRestriction || q.raidRestriction.includes(raidId);
   if (!applies) return false;
-  const done = (gs.completedQuests || []).includes(q.id);
-  if (done) return false;
+  if (gs.completedQuests.includes(q.id)) return false;
   if (q.autoaccept) return true;
-  // manual quests: must be explicitly active
-  return (gs.activeQuests || []).includes(q.id);
+  return gs.activeQuests.includes(q.id);
 }
 
-// Build an effective raid definition for this UI/render or execution:
-// start from the current modded raid, then overlay active quest encounter mutations.
-export function getEffectiveRaidDefinition(gs: GameState, raidId: string): RaidDefinition | null {
-  const base = gs.lib.raids.get(raidId);
-  if (!base) return null;
-  const def = cloneRaid(base);
-  // Apply active quests that declare encounter mutations
-  gs.lib.quests.forEach((q) => {
-    const muts = (q as any).encounters as RaidMutation[] | undefined;
-    if (!Array.isArray(muts) || muts.length === 0) return;
-    const applies = (!q.raidRestriction || q.raidRestriction.includes(raidId));
-    if (!applies) return;
-    if (!questIsActive(gs, q, raidId)) return;
-    for (const m of muts) applyRaidMutation(def, m);
-  });
-  return def;
-}
-
-// Apply a permanent mutation to the modded raid definition, detaching from source if needed
 export function applyPermanentRaidMutation(gs: GameState, raidId: string, m: RaidMutation): void {
-  const lib = gs.lib;
-  const target = lib.raids.get(raidId);
-  if (!target) return;
-  applyRaidMutation(target, m);
+  applyRaidMutation(gs.lib.raids.get(raidId)!, m);
 }
 
 // -------- Success-mutation selection logic --------
@@ -310,7 +305,10 @@ export function buildSuccessMutationCandidates(gs: GameState, raidId: string): W
   const origFights = countFights(original);
   const curFights = countFights(current);
   if (origFights > 0) {
-    const w = curFights > 0 ? clamp01(origFights / Math.max(1, curFights)) : 1;
+    let w = curFights > 0 ? clamp01(origFights / Math.max(1, curFights)) : 1;
+    // Exponentially decay when we exceed original count to phase out adding weak monsters
+    const excessRatio = Math.max(0, curFights - origFights) / origFights;
+    w *= Math.pow(0.5, excessRatio);
     // pick weakest reference monster (prefer current list; fallback to original)
     let pool = listFightMonsters(current);
     if (!pool.length) pool = listFightMonsters(original);
@@ -343,6 +341,18 @@ export function buildSuccessMutationCandidates(gs: GameState, raidId: string): W
       if (w > 0 && toId && toId !== pick.id) {
         out.push({ mutation: { kind: 'UpgradeMonsterMutation', fromMonsterId: pick.id, toMonsterId: toId, count: 1 }, weight: w });
       }
+    }
+  }
+
+  // ZoneCollapseTimeMutation: reduce zone collapse time
+  const origZoneTime = original.zoneCollapseSec || 0;
+  const curZoneTime = current.zoneCollapseSec || 0;
+  const step = current.zoneCollapseStepPerMutation || 0;
+  if (origZoneTime > 0 && step > 0) {
+    const w = clamp01(curZoneTime / origZoneTime);
+    // Only add mutation if current time is still positive and above a reasonable minimum
+    if (w > 0 && curZoneTime > step) {
+      out.push({ mutation: { kind: 'ZoneCollapseTimeMutation', amount: -step }, weight: w });
     }
   }
 
@@ -383,7 +393,7 @@ export function describeMutation(gs: GameState, mutation: RaidMutation): string 
       const abs = Math.abs(n);
       const m = gs.lib.monsters.get(mutation.monsterId);
       const name = m?.name || mutation.monsterId;
-      return `${sign(n)}${abs} ${name}`;
+      return `${name} ${sign(n)}${abs}`;
     }
     case 'LootDifficultyMutation': {
       const amt = (mutation as LootDifficultyMutation).amount || 0;
@@ -403,6 +413,12 @@ export function describeMutation(gs: GameState, mutation: RaidMutation): string 
       const abs = Math.abs(n);
       const questName = mutation.questId;
       return `${sign(n)}${abs} ${questName} quest${abs === 1 ? '' : 's'}`;
+    }
+    case 'ZoneCollapseTimeMutation': {
+      const amt = (mutation as ZoneCollapseTimeMutation).amount || 0;
+      const absMin = Math.abs(Math.round(amt / 60));
+      const prefix = amt >= 0 ? '+' : '-';
+      return `Zone collapse ${prefix}${absMin}m`;
     }
   }
 }

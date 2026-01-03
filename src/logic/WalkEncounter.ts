@@ -5,9 +5,10 @@ import type { WalkEncounterLogEntry } from './RaidLog';
 function speedKmH(hp: number, maxHp: number, baseSpeed: number, speedBonusPct: number, speedBonusFlat: number, weight: number, maxWeight: number): number {
   const hpM = Math.max(0, hp) / Math.max(1e-9, maxHp);
   const wM = Math.max(0, maxWeight - weight) / Math.max(1e-9, maxWeight);
-  const basePre = Math.max(MIN_WALK_SPEED, baseSpeed) * hpM * wM;
-  const withPct = basePre * (1 + speedBonusPct / 100);
-  return Math.max(MIN_WALK_SPEED, withPct + speedBonusFlat);
+  // Treat MIN_WALK_SPEED as an unscaled baseline: only the portion above MIN scales with weight.
+  const baseExcess = Math.max(0, Math.max(MIN_WALK_SPEED, baseSpeed) - MIN_WALK_SPEED);
+  const scaledExcess = baseExcess * hpM * wM * (1 + speedBonusPct / 100);
+  return Math.max(MIN_WALK_SPEED, MIN_WALK_SPEED + scaledExcess + speedBonusFlat + MIN_WALK_SPEED * speedBonusPct / 100);
 }
 
 export function handleWalkEncounter(r: ActiveRaid): WalkEncounterLogEntry {
@@ -19,5 +20,5 @@ export function handleWalkEncounter(r: ActiveRaid): WalkEncounterLogEntry {
   const regen = Math.max(0, r.regenPerKm || 0);
   const healed = Math.min(regen, missing);
   r.hp = r.hp + healed;
-  return { kind: 'WalkEncounter', hpBefore, hpAfter: r.hp, timeSpentSec: sec, speedKmH: kmh };
+  return { kind: 'WalkEncounter', hpBefore, hpAfter: r.hp, timeSpentSec: sec, elapsedTotalSec: 0, speedKmH: kmh };
 }

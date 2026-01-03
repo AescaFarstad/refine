@@ -1,4 +1,4 @@
-import type { RaidDefinition } from "./RaidLib";
+import type { LootRarity, RaidDefinition } from "./RaidLib";
 import type { GearDefinition, RawGearDefinition } from './GearLib';
 import { parseGearDefinitions } from './GearLib';
 import type { GearCategoryDefinition } from './GearCategoryLib';
@@ -41,6 +41,24 @@ export class Lib {
     this.loadAllDefinitions();
   }
 
+  public getItem(id: string): ItemDefinition {
+    return this.items.get(id)!;
+  }
+
+  private _emptyItemPoolsByRarity(): Record<LootRarity, string[]> {
+    return { common: [], uncommon: [], rare: [], legendary: [] };
+  }
+
+  private _buildItemPoolsByRarity(ids?: string[]): Record<LootRarity, string[]> {
+    if (!Array.isArray(ids) || ids.length === 0) return this._emptyItemPoolsByRarity();
+    const pools: Record<LootRarity, string[]> = this._emptyItemPoolsByRarity();
+    for (const id of ids) {
+      const def = this.getItem(id);
+      pools[def.rarity].push(id);
+    }
+    return pools;
+  }
+
   private loadAllDefinitions(): void {
     if (this.isLoaded) {
       return;
@@ -49,7 +67,7 @@ export class Lib {
     try {
       // Load raids (source of truth) and create a deep, independent working copy
       {
-        const rawRaids = raidsData as unknown as Record<string, Omit<RaidDefinition, 'id' | 'order'>>;
+        const rawRaids = raidsData as unknown as Record<string, Omit<RaidDefinition, 'id' | 'order' | 'itemPoolsByRarity'>>;
         const raidSources = new Map<string, RaidDefinition>();
         const raidsCopy = new Map<string, RaidDefinition>();
         let orderIndex = 0;
@@ -60,18 +78,22 @@ export class Lib {
           const withId: RaidDefinition = {
             id,
             name: def.name,
-            reachRequired: def.reachRequired,
+            description: def.description,
             baseLootChance: def.baseLootChance,
             items: def.items,
             encounters: def.encounters,
             order: orderIndex++,
+            zoneCollapseSec: def.zoneCollapseSec,
+            zoneCollapseStepPerMutation: def.zoneCollapseStepPerMutation,
+            // Filled in after items load
+            itemPoolsByRarity: this._emptyItemPoolsByRarity(),
           };
           raidSources.set(id, withId);
 
           const cloned: RaidDefinition = {
             id: withId.id,
             name: withId.name,
-            reachRequired: withId.reachRequired,
+            description: withId.description,
             baseLootChance: withId.baseLootChance,
             items: Array.isArray(withId.items) ? [...withId.items] : undefined,
             encounters: (withId.encounters || []).map(step => ({
@@ -80,6 +102,10 @@ export class Lib {
               encounter: { ...(step.encounter as any) },
             })),
             order: withId.order,
+            zoneCollapseSec: withId.zoneCollapseSec,
+            zoneCollapseStepPerMutation: withId.zoneCollapseStepPerMutation,
+            // Filled in after items load
+            itemPoolsByRarity: this._emptyItemPoolsByRarity(),
           };
           raidsCopy.set(id, cloned);
         }
@@ -199,6 +225,14 @@ export class Lib {
 
         this.items = map;
       }
+
+      for (const raid of this.raidSources.values()) {
+        raid.itemPoolsByRarity = this._buildItemPoolsByRarity(raid.items);
+      }
+      for (const raid of this.raids.values()) {
+        raid.itemPoolsByRarity = this._buildItemPoolsByRarity(raid.items);
+      }
+
       this.quests = this._processDataDefinitions<QuestDefinition>(questsData as unknown as Record<string, QuestDefinition>);
       {
         const raw: Record<string, any> = monstersData as unknown as Record<string, any>;
@@ -215,6 +249,8 @@ export class Lib {
             damage: d.damage,
             lootItemId: d.lootItemId,
             features: Array.isArray(d.features) ? d.features : [],
+            armor: Math.max(0, d.armor || 0),
+            damageCap: Math.max(0, d.damageCap || 0),
           };
           map.set(key, def);
         }

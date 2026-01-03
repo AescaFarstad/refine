@@ -18,13 +18,6 @@
         :show-molecule="showMolecule"
         :no-tooltip="noTooltip"
       />
-      <div
-        v-if="showRarityLabels && rarityLabels && rarityLabels[it.id]"
-        class="rarity-label"
-        :class="`rarity-${rarityLabels[it.id].toLowerCase()}`"
-      >
-        {{ rarityLabels[it.id] }}
-      </div>
     </div>
   </div>
 
@@ -32,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, onUnmounted } from 'vue';
 import ItemDisplay from './ItemDisplay.vue';
 import itemsData from '../data/items';
 import atlasStorage from '../logic/AtlasStorage';
@@ -121,11 +114,6 @@ onUnmounted(() => {
 .grid-item { position: relative; }
 .grid-item.clickable { cursor: pointer; }
 .grid-item.dim { opacity: 0.38; }
-.rarity-label { position: absolute; bottom: 2px; left: 2px; font-size: 9px; font-weight: 700; text-shadow: 0 0 3px rgba(0, 0, 0, 0.9), 0 1px 2px rgba(0, 0, 0, 0.8); pointer-events: none; z-index: 10; letter-spacing: 0.03em; text-transform: uppercase; line-height: 1; }
-.rarity-label.rarity-common { color: #9ca3af; }
-.rarity-label.rarity-uncommon { color: white; }
-.rarity-label.rarity-rare { color: #60a5fa; }
-.rarity-label.rarity-legendary { color: #fbbf24; font-weight: 900; }
 /* Prevent native drag and selection inside the grid */
 .item-grid, .item-grid * { user-select: none; -webkit-user-drag: none; }
 </style>

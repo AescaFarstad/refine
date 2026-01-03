@@ -1,8 +1,7 @@
 import type { ActiveRaid, GameState } from './GameState';
+import type { LootRarity } from './RaidLib';
 import type { LootEncounterLogEntry } from './RaidLog';
 import Perks from './Perks';
-
-type Cat = 'common' | 'uncommon' | 'rare' | 'legendary';
 
 function clamp(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v));
@@ -16,10 +15,18 @@ function computeCapacity(gs: GameState, r: ActiveRaid): number {
 }
 
 export interface LootEncounterContext {
-  // Items available to roll from; if empty or undefined, nothing can be found
-  items?: string[];
-  // Base chance in percent to find something (0..100) before gear bonuses
+  items: string[];
+  poolsByRarity: Record<LootRarity, string[]>;
   baseLootChance: number;
+}
+
+function buildPoolsByRarity(gs: GameState, ids: string[]): Record<LootRarity, string[]> {
+  const pools: Record<LootRarity, string[]> = { common: [], uncommon: [], rare: [], legendary: [] };
+  for (const id of ids) {
+    const def = gs.lib.getItem(id);
+    pools[def.rarity].push(id);
+  }
+  return pools;
 }
 
 export function handleLootLikeEncounter(gs: GameState, r: ActiveRaid, ctx: LootEncounterContext): LootEncounterLogEntry {
@@ -33,6 +40,7 @@ export function handleLootLikeEncounter(gs: GameState, r: ActiveRaid, ctx: LootE
       source: 'raid',
       skipped: true,
       timeSpentSec: 0,
+      elapsedTotalSec: 0,
       myRoll: 0,
       checkValue: 0,
       itemId: '',
@@ -47,9 +55,8 @@ export function handleLootLikeEncounter(gs: GameState, r: ActiveRaid, ctx: LootE
     };
   }
 
-  // Spend time searching: 60s base plus 60s if perk Thorough Search
   const thorough = (r.perks || []).includes(Perks.THOROUGH_SEARCH);
-  const timeSpentSec = 60 + (thorough ? 60 : 0);
+  const timeSpentSec = 300 + (thorough ? 300 : 0);
 
   const lootBonus = Math.max(0, r.lootChanceBonus || 0);
   const checkValue = clamp((ctx.baseLootChance || 0) + lootBonus, 0, 100);
@@ -60,6 +67,7 @@ export function handleLootLikeEncounter(gs: GameState, r: ActiveRaid, ctx: LootE
     source: 'raid',
     skipped: false,
     timeSpentSec,
+    elapsedTotalSec: 0,
     myRoll,
     checkValue,
     itemId: '',
@@ -78,44 +86,29 @@ export function handleLootLikeEncounter(gs: GameState, r: ActiveRaid, ctx: LootE
     return entry;
   }
 
-  const source = Array.isArray(ctx.items) ? ctx.items : [];
-  if (!source.length) {
-    // Nothing to pick from even on success
-    return entry;
-  }
+  const pools = ctx.poolsByRarity
 
-  // Build rarity pools from available source ids
-  const pools: Record<Cat, string[]> = {
-    common: [], uncommon: [], rare: [], legendary: [],
-  };
-  for (const id of source) {
-    const def = gs.lib.items.get(id);
-    if (!def) continue;
-    const cat = (def.rarity || 'common') as Cat;
-    (pools[cat] || pools.common).push(id);
-  }
-
-  const poolSizes: Record<Cat, number> = {
+  const poolSizes: Record<LootRarity, number> = {
     common: pools.common.length,
     uncommon: pools.uncommon.length,
     rare: pools.rare.length,
     legendary: pools.legendary.length,
   };
 
-  const effLooting = Math.max(0, gs.looting || 0);
-  const weights: Record<Cat, number> = {
+  const effLootChance = Math.max(0, r.lootChanceBonus || 0);
+  const weights: Record<LootRarity, number> = {
     common: poolSizes.common > 0 ? 200 : 0,
-    uncommon: poolSizes.uncommon > 0 ? 50 + effLooting / 2 : 0,
-    rare: poolSizes.rare > 0 ? 20 + effLooting / 5 : 0,
-    legendary: poolSizes.legendary > 0 ? effLooting / 10 : 0,
+    uncommon: poolSizes.uncommon > 0 ? 50 + effLootChance / 2 : 0,
+    rare: poolSizes.rare > 0 ? 20 + effLootChance / 4 : 0,
+    legendary: poolSizes.legendary > 0 ? 10 + effLootChance / 7 : 0,
   };
 
-  const entries: Array<[Cat, number]> = ([
+  const entries: Array<[LootRarity, number]> = ([
     ['common', weights.common],
     ['uncommon', weights.uncommon],
     ['rare', weights.rare],
     ['legendary', weights.legendary],
-  ] as Array<[Cat, number]>).filter(([, w]) => w > 0);
+  ] as Array<[LootRarity, number]>).filter(([, w]) => w > 0);
 
   let picked: string | null = null;
   if (entries.length > 0) {
@@ -132,26 +125,21 @@ export function handleLootLikeEncounter(gs: GameState, r: ActiveRaid, ctx: LootE
   }
 
   if (!picked) {
-    // Fallback: no suitable pool; treat as no find
     return entry;
   }
 
-  // We found an item; check capacity to decide if it fits
-  const def = gs.lib.items.get(picked);
-  const vol = Math.max(0, def?.volume || 0);
-  const after = before + vol;
+  const def = gs.lib.getItem(picked);
+  const after = before + def.volume;
 
   entry.itemId = picked;
   entry.volumeBefore = before;
   entry.capacity = capacity;
 
   if (after <= capacity) {
-    // Add to used volume; item fits
     r.usedVolume = after;
     entry.volumeAfter = after;
     entry.discarded = false;
   } else {
-    // Not enough space; discard
     entry.volumeAfter = before;
     entry.discarded = true;
     entry.requiredVolume = Math.max(0, after - capacity);
@@ -173,6 +161,7 @@ export function handleMonsterLootEncounter(gs: GameState, r: ActiveRaid, itemId:
     source: 'monster',
     skipped: false,
     timeSpentSec,
+    elapsedTotalSec: 0,
     myRoll: 0,
     checkValue: 0,
     itemId,
@@ -191,9 +180,8 @@ export function handleMonsterLootEncounter(gs: GameState, r: ActiveRaid, itemId:
     return entry;
   }
 
-  const def = gs.lib.items.get(itemId)!;
-  const vol = Math.max(0, def.volume || 0);
-  const after = before + vol;
+  const def = gs.lib.getItem(itemId);
+  const after = before + def.volume;
 
   if (after <= capacity) {
     r.usedVolume = after;

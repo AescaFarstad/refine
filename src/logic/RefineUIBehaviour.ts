@@ -1,12 +1,9 @@
 import type { Molecule, Point2 } from './ItemLib';
 import { createMoleculeCanvasWithAnchor } from './DrawMolecule';
+import { DRAG_RADIUS_MULTIPLIER, ESSENCE_SIZE, HEX_SIZE, WAFER_CANVAS_HEIGHT, WAFER_CANVAS_WIDTH } from './RenderConstants';
 
 // Render/display constants
-export const HEX_SIZE = 18;
-export const ESSENCE_SIZE = 28;
-export const DRAG_RADIUS_MULTIPLIER = 0.8;
-export const WAFER_CANVAS_WIDTH = 800;
-export const WAFER_CANVAS_HEIGHT = 400;
+export { DRAG_RADIUS_MULTIPLIER, ESSENCE_SIZE, HEX_SIZE, WAFER_CANVAS_HEIGHT, WAFER_CANVAS_WIDTH };
 
 // Pointer helpers
 export function eventToCanvasPixel(e: MouseEvent | DragEvent, canvas: HTMLCanvasElement): Point2 {

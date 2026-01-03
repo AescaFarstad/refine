@@ -9,6 +9,7 @@
     </section>
   </main>
   <RaidOutcomeModal />
+  <GearUpgradeModal />
   <CheatOverlay />
 </template>
 
@@ -20,6 +21,7 @@ import Refine from './components/Refine.vue';
 import Research from './components/Research.vue';
 import Maze from './components/Maze.vue';
 import RaidOutcomeModal from './components/RaidOutcomeModal.vue';
+import GearUpgradeModal from './components/GearUpgradeModal.vue';
 import CheatOverlay from './components/CheatOverlay.vue';
 import { uiState } from './logic/UIState';
 
@@ -78,9 +80,9 @@ onBeforeUnmount(() => {
   --text-secondary: #8b98a8; /* muted gray */
   --text-disabled: #5a6477;  /* darker muted */
 
-  /* Distinct tooltip palette (deep indigo theme) */
-  --hint-bg: #1a1640;        /* deep indigo, fully opaque */
-  --hint-border: rgba(122, 92, 255, 0.45); /* soft violet border */
+  /* Tooltip palette (neutral slate theme, matches hover panels) */
+  --hint-bg: rgba(15, 23, 42, 0.95);
+  --hint-border: rgba(148, 163, 184, 0.7);
 }
 
 html, body, #app { height: 100%; }

@@ -9,6 +9,7 @@ const DISTANCES = new Int32Array(TOTAL_CELLS);
 const CURRENT_FRONTIER = new Int32Array(TOTAL_CELLS);
 const NEXT_FRONTIER = new Int32Array(TOTAL_CELLS);
 
+const NEIGHBOR_COUNT = 6;
 const NEIGHBOR_OFFSETS = [
   { c: 1, r: 0 },
   { c: 1, r: -1 },
@@ -17,6 +18,26 @@ const NEIGHBOR_OFFSETS = [
   { c: -1, r: 1 },
   { c: 0, r: 1 }
 ];
+
+const NEIGHBORS = new Int32Array(TOTAL_CELLS * NEIGHBOR_COUNT);
+for (let idx = 0; idx < TOTAL_CELLS; idx++) {
+  const row = (idx / SIZE) | 0;
+  const col = idx - row * SIZE;
+  const base = idx * NEIGHBOR_COUNT;
+
+  for (let j = 0; j < NEIGHBOR_COUNT; j++) {
+    const off = NEIGHBOR_OFFSETS[j];
+    const nCol = col + off.c;
+    const nRow = row + off.r;
+
+    if (nCol < 0 || nCol >= SIZE || nRow < 0 || nRow >= SIZE) {
+      NEIGHBORS[base + j] = -1;
+      continue;
+    }
+
+    NEIGHBORS[base + j] = nRow * SIZE + nCol;
+  }
+}
 
 function bfsFromOwned(
   cells: ResearchCell[],
@@ -42,22 +63,14 @@ function bfsFromOwned(
 
     for (let i = 0; i < currentSize; i++) {
       const currIdx = currentFrontier[i];
-      const currRow = Math.floor(currIdx / SIZE);
-      const currCol = currIdx % SIZE;
       const currDist = DISTANCES[currIdx];
       const currCell = cells[currIdx];
+      const base = currIdx * NEIGHBOR_COUNT;
 
-      for (let j = 0; j < 6; j++) {
-        const off = NEIGHBOR_OFFSETS[j];
-        const nCol = currCol + off.c;
-        const nRow = currRow + off.r;
-
-        if (nCol < 0 || nCol >= SIZE || nRow < 0 || nRow >= SIZE) continue;
-
-        const nIdx = nRow * SIZE + nCol;
+      for (let j = 0; j < NEIGHBOR_COUNT; j++) {
+        const nIdx = NEIGHBORS[base + j];
+        if (nIdx === -1) continue;
         const nCell = cells[nIdx];
-
-
         if (nCell.blocked) continue;
 
         // For visibility we use uniform cost (1 per step),
@@ -112,6 +125,76 @@ const VISITED = new Uint8Array(TOTAL_CELLS);
 // SETTLED: nodes finalized by Dijkstra
 const SETTLED = new Uint8Array(TOTAL_CELLS);
 
+// Min-heap for Dijkstra (stores cell indices; priority is `DISTANCES[idx]`).
+const HEAP = new Int32Array(TOTAL_CELLS);
+const HEAP_POS = new Int32Array(TOTAL_CELLS);
+let HEAP_SIZE = 0;
+
+function heapReset(): void {
+  HEAP_SIZE = 0;
+  HEAP_POS.fill(-1);
+}
+
+function heapSwap(i: number, j: number): void {
+  const a = HEAP[i];
+  const b = HEAP[j];
+  HEAP[i] = b;
+  HEAP[j] = a;
+  HEAP_POS[a] = j;
+  HEAP_POS[b] = i;
+}
+
+function heapSiftUp(pos: number): void {
+  while (pos > 0) {
+    const parent = (pos - 1) >> 1;
+    if (DISTANCES[HEAP[pos]] >= DISTANCES[HEAP[parent]]) break;
+    heapSwap(pos, parent);
+    pos = parent;
+  }
+}
+
+function heapSiftDown(pos: number): void {
+  while (true) {
+    const left = pos * 2 + 1;
+    if (left >= HEAP_SIZE) return;
+    const right = left + 1;
+
+    let smallest = left;
+    if (right < HEAP_SIZE && DISTANCES[HEAP[right]] < DISTANCES[HEAP[left]]) {
+      smallest = right;
+    }
+
+    if (DISTANCES[HEAP[pos]] <= DISTANCES[HEAP[smallest]]) return;
+    heapSwap(pos, smallest);
+    pos = smallest;
+  }
+}
+
+function heapPushOrDecrease(idx: number): void {
+  const pos = HEAP_POS[idx];
+  if (pos === -1) {
+    const insertPos = HEAP_SIZE++;
+    HEAP[insertPos] = idx;
+    HEAP_POS[idx] = insertPos;
+    heapSiftUp(insertPos);
+    return;
+  }
+  heapSiftUp(pos);
+}
+
+function heapPopMin(): number {
+  const minIdx = HEAP[0];
+  HEAP_POS[minIdx] = -1;
+  HEAP_SIZE--;
+  if (HEAP_SIZE > 0) {
+    const last = HEAP[HEAP_SIZE];
+    HEAP[0] = last;
+    HEAP_POS[last] = 0;
+    heapSiftDown(0);
+  }
+  return minIdx;
+}
+
 export function calculateResearchPath(
   gs: GameState,
   targetRow: number,
@@ -156,46 +239,40 @@ export function calculateResearchPath(
   DISTANCES.fill(MAX_INT32);
   PREV.fill(-1);
   SETTLED.fill(0);
+  heapReset();
 
+  let sources = 0;
   for (let idx = 0; idx < TOTAL_CELLS; idx++) {
-    if (cells[idx].owned) {
+    const cell = cells[idx];
+    if (cell && cell.owned && !cell.blocked) {
       DISTANCES[idx] = 0;
+      heapPushOrDecrease(idx);
+      sources++;
     }
   }
 
-  for (let iter = 0; iter < TOTAL_CELLS; iter++) {
-    let bestIdx = -1;
-    let bestDist = MAX_INT32;
+  if (sources === 0) {
+    return PATH_RESULT;
+  }
 
-    for (let idx = 0; idx < TOTAL_CELLS; idx++) {
-      if (!SETTLED[idx] && DISTANCES[idx] < bestDist) {
-        bestDist = DISTANCES[idx];
-        bestIdx = idx;
-      }
-    }
+  while (HEAP_SIZE > 0) {
+    const bestIdx = heapPopMin();
+    if (SETTLED[bestIdx]) continue;
 
-    if (bestIdx === -1 || bestDist === MAX_INT32) {
-      break; // remaining cells unreachable
-    }
+    const bestDist = DISTANCES[bestIdx];
+    if (bestDist === MAX_INT32) break;
 
     SETTLED[bestIdx] = 1;
     if (bestIdx === targetIdx) {
       break; // we found the cheapest path to target
     }
 
-    const currRow = Math.floor(bestIdx / SIZE);
-    const currCol = bestIdx % SIZE;
-    const currDist = DISTANCES[bestIdx];
     const currCell = cells[bestIdx];
+    const base = bestIdx * NEIGHBOR_COUNT;
 
-    for (let j = 0; j < 6; j++) {
-      const off = NEIGHBOR_OFFSETS[j];
-      const nCol = currCol + off.c;
-      const nRow = currRow + off.r;
-
-      if (nCol < 0 || nCol >= SIZE || nRow < 0 || nRow >= SIZE) continue;
-
-      const nIdx = nRow * SIZE + nCol;
+    for (let j = 0; j < NEIGHBOR_COUNT; j++) {
+      const nIdx = NEIGHBORS[base + j];
+      if (nIdx === -1) continue;
       if (SETTLED[nIdx]) continue;
 
       const nCell = cells[nIdx];
@@ -212,10 +289,11 @@ export function calculateResearchPath(
         }
       }
 
-      const newDist = currDist + edgeCost;
+      const newDist = bestDist + edgeCost;
       if (newDist < DISTANCES[nIdx]) {
         DISTANCES[nIdx] = newDist;
         PREV[nIdx] = bestIdx;
+        heapPushOrDecrease(nIdx);
       }
     }
   }
@@ -253,17 +331,11 @@ export function calculateResearchPath(
 
   while (dequeHead < dequeTail) {
     const currIdx = CURRENT_FRONTIER[dequeHead++];
-    const currRow = Math.floor(currIdx / SIZE);
-    const currCol = currIdx % SIZE;
+    const base = currIdx * NEIGHBOR_COUNT;
 
-    for (let j = 0; j < 6; j++) {
-      const off = NEIGHBOR_OFFSETS[j];
-      const nCol = currCol + off.c;
-      const nRow = currRow + off.r;
-
-      if (nCol < 0 || nCol >= SIZE || nRow < 0 || nRow >= SIZE) continue;
-
-      const nIdx = nRow * SIZE + nCol;
+    for (let j = 0; j < NEIGHBOR_COUNT; j++) {
+      const nIdx = NEIGHBORS[base + j];
+      if (nIdx === -1) continue;
       if (VISITED[nIdx]) continue;
 
       const nCell = cells[nIdx];
@@ -281,8 +353,9 @@ export function calculateResearchPath(
 }
 
 export function indexToRowCol(idx: number): { row: number; col: number } {
+  const row = (idx / SIZE) | 0;
   return {
-    row: Math.floor(idx / SIZE),
-    col: idx % SIZE
+    row,
+    col: idx - row * SIZE
   };
 }

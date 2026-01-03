@@ -1,9 +1,7 @@
 <template>
   <div class="hint-root">
-    <div class="hint-title">Resource</div>
     <div class="hint-body">
-      TODO: render resource hint
-      <span v-if="resourceText">({{ resourceText }})</span>
+      <span v-if="resourceKey">Gives <span class="resource-value">{{ amount }}{{ glyph }}</span> {{ displayName }}</span>
     </div>
   </div>
 </template>
@@ -12,6 +10,7 @@
 import { computed } from 'vue';
 import type { ResearchCell } from '../../logic/GameState';
 import type { ResearchArchetype, ResearchNodeInstance } from '../../logic/ResearchLib';
+import { getResourceGlyph } from '../../logic/drawResearch';
 
 const props = defineProps<{
   cell: ResearchCell;
@@ -19,11 +18,26 @@ const props = defineProps<{
   archetype: ResearchArchetype | null;
 }>();
 
-const resourceText = computed(() => {
-  const resource = props.archetype?.resource || '';
-  const amount = props.archetype?.amount || 0;
-  if (!resource) return '';
-  return amount > 0 ? `${amount} ${resource}` : resource;
+
+const resourceDisplayNames: Record<string, string> = {
+  credits: 'Credits (Used to purchase gear)',
+  chronotraces: 'Chronotraces (Used for research)',
+  timeFlux: 'Time Flux (Used for maze traversal',
+  shards: 'Shards (Used to upgrade wafer size)',
+  skillPoints: 'Skill Point (Used to equip more gear items from a category)',
+};
+
+const resourceKey = computed(() => props.archetype?.resource || '');
+const amount = computed(() => props.archetype?.amount || 0);
+
+const glyph = computed(() => {
+  if (!resourceKey.value) return '';
+  return getResourceGlyph(resourceKey.value);
+});
+
+const displayName = computed(() => {
+  if (!resourceKey.value) return '';
+  return resourceDisplayNames[resourceKey.value] || resourceKey.value;
 });
 </script>
 
@@ -33,19 +47,18 @@ const resourceText = computed(() => {
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.03em;
-}
-
-.hint-title {
-  font-size: 12px;
-  opacity: 0.85;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
+  min-width: 220px;
 }
 
 .hint-body {
   margin-top: 2px;
   font-size: 14px;
   font-weight: 600;
+  white-space: nowrap;
+}
+
+.resource-value {
+  color: rgba(34, 197, 94, 0.95);
+  font-weight: 700;
 }
 </style>
-

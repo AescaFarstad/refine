@@ -19,17 +19,6 @@ export class CmdAknowledgeOutcome implements CmdInput {
   readonly name = 'CmdAknowledgeOutcome';
 }
 
-export type LevelupStat = 'strength' | 'volume' | 'looting';
-
-export class CmdLevelup implements CmdInput {
-  readonly name = 'CmdLevelup';
-  readonly stat: LevelupStat;
-  constructor(stat: LevelupStat) {
-    this.stat = stat;
-  }
-}
-
-
 export class CmdStartRefining implements CmdInput {
   readonly name = 'CmdStartRefining';
   constructor() { }
@@ -121,5 +110,13 @@ export class CmdGrowWafer implements CmdInput {
   readonly pos: Point2;
   constructor(args: { pos: Point2 }) {
     this.pos = args.pos;
+  }
+}
+
+export class CmdUpgradeGearCategory implements CmdInput {
+  readonly name = 'CmdUpgradeGearCategory';
+  readonly categoryId: string;
+  constructor(args: { categoryId: string }) {
+    this.categoryId = args.categoryId;
   }
 }

@@ -34,6 +34,7 @@
           <span class="ess-total">{{ essenceTotals[k] || 0 }}</span>
         </span>
       </button>
+      <EssenceCheatSheet />
     </div>
     <div v-if="raidFilterMode && availableRaids && availableRaids.length" class="raid-filter-row">
       <button
@@ -71,6 +72,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import ItemGrid from './ItemGrid.vue';
+import EssenceCheatSheet from './EssenceCheatSheet.vue';
 import { uiState } from '../logic/UIState';
 import atlasStorage from '../logic/AtlasStorage';
 import type { ItemDefinition } from '../logic/ItemLib';
@@ -134,9 +136,8 @@ const essenceTotals = computed<Record<string, number>>(() => {
   if (!uiState.lib) return totals;
 
   for (const it of uiState.items) {
-    const def = uiState.lib.items.get(it.id);
-    if (!def) continue;
-    const ess = def.essence || {};
+    const def = uiState.lib.getItem(it.id);
+    const ess = def.essence;
     const qty = Math.max(1, it.quantity || 1);
     for (const [k, v] of Object.entries(ess)) {
       if (!v) continue;
@@ -156,8 +157,8 @@ const activeSort = ref<string>('');
 
 function essenceInItem(itemId: string, k: string): number {
   if (!uiState.lib) return 0;
-  const def = uiState.lib.items.get(itemId);
-  return Math.max(0, def?.essence?.[k] || 0);
+  const def = uiState.lib.getItem(itemId);
+  return Math.max(0, def.essence[k] || 0);
 }
 
 const sortedItems = computed(() => {
@@ -167,8 +168,8 @@ const sortedItems = computed(() => {
 
   if (k === '#') {
     return list.sort((a, b) => {
-      const aOrder = uiState.lib!.items.get(a.id)!.order;
-      const bOrder = uiState.lib!.items.get(b.id)!.order;
+      const aOrder = uiState.lib!.getItem(a.id).order;
+      const bOrder = uiState.lib!.getItem(b.id).order;
       return aOrder - bOrder;
     });
   }
@@ -205,8 +206,8 @@ const draggableIds = computed<Record<string, boolean>>(() => {
   if (!uiState.lib) return out;
 
   for (const it of props.items || []) {
-    const def = uiState.lib.items.get(it.id);
-    if (def?.molecule) {
+    const def = uiState.lib.getItem(it.id);
+    if (def.molecule) {
       out[it.id] = true;
     }
   }
@@ -234,10 +235,8 @@ const rarityLabelsMap = computed<Record<string, string>>(() => {
   const labels: Record<string, string> = {};
 
   for (const item of sortedItems.value) {
-    const def: ItemDefinition | undefined = uiState.lib.items.get(item.id);
-    if (def) {
-      labels[item.id] = def.rarity.toUpperCase();
-    }
+    const def = uiState.lib.getItem(item.id);
+    labels[item.id] = def.rarity.toUpperCase();
   }
 
   return labels;

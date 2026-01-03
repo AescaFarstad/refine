@@ -1,9 +1,14 @@
 <template>
   <div class="hint-root">
-    <div class="hint-title">Gear</div>
     <div class="hint-body">
-      TODO: render gear hint
-      <span v-if="gearId">({{ gearId }})</span>
+      <div v-if="gear">
+        <div class="unlock-text">Unlock gear: <span class="gear-name">{{ gear.name }}</span></div>
+        <div class="gear-info">Type: {{ categoryName }}</div>
+        <div class="gear-info">Price: <span class="price">{{ gear.price }}✦</span></div>
+        <div class="gear-info">Weight: {{ gear.weight }}</div>
+        <GearStatsHint :gear="gear" class="gear-stats" />
+      </div>
+      <div v-else class="gear-error">Unknown gear</div>
     </div>
   </div>
 </template>
@@ -12,6 +17,8 @@
 import { computed } from 'vue';
 import type { ResearchCell } from '../../logic/GameState';
 import type { ResearchArchetype, ResearchNodeInstance } from '../../logic/ResearchLib';
+import { getGameState } from '../../logic/UIState';
+import GearStatsHint from '../GearStatsHint.vue';
 
 const props = defineProps<{
   cell: ResearchCell;
@@ -20,6 +27,19 @@ const props = defineProps<{
 }>();
 
 const gearId = computed(() => props.archetype?.gearId || '');
+
+const gear = computed(() => {
+  if (!gearId.value) return null;
+  const gs = getGameState();
+  return gs.lib.gear.get(gearId.value) || null;
+});
+
+const categoryName = computed(() => {
+  if (!gear.value) return '';
+  const gs = getGameState();
+  const category = gs.lib.gearCategories.get(gear.value.category);
+  return category?.name || gear.value.category;
+});
 </script>
 
 <style scoped>
@@ -28,19 +48,45 @@ const gearId = computed(() => props.archetype?.gearId || '');
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.03em;
-}
-
-.hint-title {
-  font-size: 12px;
-  opacity: 0.85;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
+  min-width: 220px;
 }
 
 .hint-body {
-  margin-top: 2px;
   font-size: 14px;
   font-weight: 600;
+  white-space: nowrap;
+}
+
+.unlock-text {
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.gear-name {
+  color: rgba(34, 197, 94, 0.95);
+  font-weight: 700;
+}
+
+.gear-info {
+  margin-top: 3px;
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.price {
+  color: rgba(251, 191, 36, 0.95);
+  font-weight: 600;
+}
+
+.gear-error {
+  color: rgba(239, 68, 68, 0.85);
+  font-size: 13px;
+}
+
+.gear-stats {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 </style>
-

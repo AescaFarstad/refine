@@ -1,9 +1,9 @@
 <template>
   <div class="hint-root">
-    <div class="hint-title">Stat</div>
     <div class="hint-body">
-      TODO: render stat hint
-      <span v-if="statText">({{ statText }})</span>
+      <div v-if="statDescription">Increase {{ statDescription }} by {{ statIncrease }}</div>
+      <div v-if="currentValue !== null" class="stat-values">{{ currentValue }} → <span class="new-value">{{ newValue }}</span></div>
+      <div v-else class="stat-error">Unknown stat</div>
     </div>
   </div>
 </template>
@@ -12,6 +12,7 @@
 import { computed } from 'vue';
 import type { ResearchCell } from '../../logic/GameState';
 import type { ResearchArchetype, ResearchNodeInstance } from '../../logic/ResearchLib';
+import { getGameState } from '../../logic/UIState';
 
 const props = defineProps<{
   cell: ResearchCell;
@@ -19,11 +20,41 @@ const props = defineProps<{
   archetype: ResearchArchetype | null;
 }>();
 
-const statText = computed(() => {
-  const stat = props.archetype?.stat || '';
-  const value = props.archetype?.value || 0;
-  if (!stat) return '';
-  return value ? `${stat} +${value}` : stat;
+const statDescriptions: Record<string, string> = {
+  damage: 'Damage',
+  health: 'Health',
+  volume: 'Bags Volume',
+  baseMaxWeight: 'Max Carry Weight',
+  researchRevealRadius: 'Research Vision Radius',
+  skillPoints: 'Skill Points',
+  strength: 'Strength',
+  looting: 'Looting',
+  speed: 'Speed',
+  chanceToHit: 'Chance to Hit',
+  chanceToBlock: 'Chance to Block',
+};
+
+const statId = computed(() => props.archetype?.stat || '');
+const statIncrease = computed(() => props.archetype?.value || 0);
+
+const statDescription = computed(() => {
+  const id = statId.value;
+  return statDescriptions[id] || null;
+});
+
+const currentValue = computed(() => {
+  const id = statId.value;
+  if (!id) return null;
+
+  const gs = getGameState();
+  // Access the stat value from GameState
+  const value = (gs as any)[id];
+  return typeof value === 'number' ? value : null;
+});
+
+const newValue = computed(() => {
+  if (currentValue.value === null) return null;
+  return currentValue.value + statIncrease.value;
 });
 </script>
 
@@ -33,6 +64,7 @@ const statText = computed(() => {
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.03em;
+  min-width: 220px;
 }
 
 .hint-title {
@@ -46,6 +78,21 @@ const statText = computed(() => {
   margin-top: 2px;
   font-size: 14px;
   font-weight: 600;
+  white-space: nowrap;
+}
+
+.stat-values {
+  margin-top: 4px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.new-value {
+  color: rgba(34, 197, 94, 0.95);
+}
+
+.stat-error {
+  color: rgba(239, 68, 68, 0.85);
+  font-size: 13px;
 }
 </style>
-

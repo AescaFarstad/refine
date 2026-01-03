@@ -1,10 +1,12 @@
 import type { RaidDefinition } from '../logic/RaidLib';
 
-const raids: Record<string, Omit<RaidDefinition, 'id' | 'order'>> = {
+const raids: Record<string, Omit<RaidDefinition, 'id' | 'order' | 'itemPoolsByRarity' >> = {
   shegolskoe: {
     name: 'Shegolskoe',
-    reachRequired: 0,
-    baseLootChance: 25,
+    description: 'A small abandoned village, scattered with relics of everyday life. Hostile creatures roam its ruins.',
+    baseLootChance: 35,
+    zoneCollapseSec: 10200,
+    zoneCollapseStepPerMutation: 300,
     items: [
       'enamel_mug',
       'mechanical_clock',
@@ -24,13 +26,15 @@ const raids: Record<string, Omit<RaidDefinition, 'id' | 'order'>> = {
       { count: 2, encounter: { type: 'WalkEncounter' } },
       { count: 4, encounter: { type: 'FightEncounter', monsterId: 'hound' } },
       { count: 1, encounter: { type: 'FightEncounter', monsterId: 'distorted' } },
-      { count: 8, encounter: { type: 'LootEncounter' } }
+      { count: 12, encounter: { type: 'LootEncounter' } }
     ],
   },
   ozernoye: {
     name: 'Ozernoye',
-    reachRequired: 5,
-    baseLootChance: 30,
+    description: 'A lakeside settlement overtaken by anomalous activity. Many scavengers never returned from its shores.',
+    baseLootChance: 40,
+    zoneCollapseSec: 12800,
+    zoneCollapseStepPerMutation: 360,
     items: [
       'enamel_mug',
       'padlock',
@@ -50,13 +54,15 @@ const raids: Record<string, Omit<RaidDefinition, 'id' | 'order'>> = {
       { count: 4, encounter: { type: 'WalkEncounter' } },
       { count: 6, encounter: { type: 'FightEncounter', monsterId: 'hound' } },
       { count: 3, encounter: { type: 'FightEncounter', monsterId: 'spikder' } },
-      { count: 10, encounter: { type: 'LootEncounter' } }
+      { count: 15, encounter: { type: 'LootEncounter' } }
     ],
   },
   dyatlovsk: {
     name: 'Dyatlovsk',
-    reachRequired: 5,
-    baseLootChance: 30,
+    description: 'A frontier town deep in contaminated territory. Dense anomalous growth has reclaimed the streets.',
+    baseLootChance: 40,
+    zoneCollapseSec: 15400,
+    zoneCollapseStepPerMutation: 360,
     items: [
       'aluminium_bowl',
       'calipers',
@@ -77,13 +83,15 @@ const raids: Record<string, Omit<RaidDefinition, 'id' | 'order'>> = {
       { count: 5, encounter: { type: 'WalkEncounter' } },
       { count: 4, encounter: { type: 'FightEncounter', monsterId: 'distorted' } },
       { count: 12, encounter: { type: 'FightEncounter', monsterId: 'burdock' } },
-      { count: 11, encounter: { type: 'LootEncounter' } }
+      { count: 16, encounter: { type: 'LootEncounter' } }
     ],
   },
   birdmundshire: {
     name: 'Birdmundshire',
-    reachRequired: 15,
-    baseLootChance: 45,
+    description: 'An English coastal town consumed by the Zone. Strange flowers bloom where people once walked.',
+    baseLootChance: 55,
+    zoneCollapseSec: 14400,
+    zoneCollapseStepPerMutation: 420,
     items: [
       'wrench',
       'soviet_watch',
@@ -108,7 +116,7 @@ const raids: Record<string, Omit<RaidDefinition, 'id' | 'order'>> = {
       { count: 6, encounter: { type: 'WalkEncounter' } },
       { count: 4, encounter: { type: 'FightEncounter', monsterId: 'flower' } },
       { count: 8, encounter: { type: 'FightEncounter', monsterId: 'distorted' } },
-      { count: 9, encounter: { type: 'LootEncounter' } }
+      { count: 13, encounter: { type: 'LootEncounter' } }
     ],
   },
 };

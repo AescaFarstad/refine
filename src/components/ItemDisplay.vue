@@ -27,10 +27,22 @@
           </template>
         </div>
       </div>
+
+      <div
+        v-if="!minor && displayRarityShort"
+        class="rarity-label"
+        :class="`rarity-${displayRarity.toLowerCase()}`"
+      >
+        {{ displayRarityShort }}
+      </div>
     </div>
 
     <div v-if="!noTooltip" class="tooltip-panel" aria-hidden="true">
       <div class="tp-title">{{ displayName }}</div>
+      <div v-if="displayRarity" class="tp-row">
+        <span class="tp-label">Rarity</span>
+        <span class="tp-value">{{ displayRarity }}</span>
+      </div>
       <div v-if="displayVolume != null" class="tp-row">
         <span class="tp-label">Volume</span>
         <span class="tp-value">{{ displayVolume }}</span>
@@ -42,6 +54,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import atlasStorage from '../logic/AtlasStorage';
+import { ensureMoleculeAtlas } from '../logic/MoleculeAtlas';
 import itemsData from '../data/items';
 
 const props = defineProps<{ id: string; quantity?: number; minor?: boolean; noTooltip?: boolean; showMolecule?: boolean }>();
@@ -63,24 +76,43 @@ onMounted(async () => {
 });
 
 const moleculeUrl = ref<string | null>(null);
-watch(() => [props.showMolecule, props.id, ready.value], () => {
-  try {
-    if (props.showMolecule && ready.value) {
-      moleculeUrl.value = atlasStorage.getMoleculeImage(props.id);
-    } else {
+watch(
+  () => [props.showMolecule, props.id] as const,
+  async ([showMolecule, id], _prev, onCleanup) => {
+    let cancelled = false;
+    onCleanup(() => { cancelled = true; });
+
+    if (!showMolecule) {
+      moleculeUrl.value = null;
+      return;
+    }
+
+    try {
+      await ensureMoleculeAtlas();
+      if (cancelled) return;
+      moleculeUrl.value = atlasStorage.getMoleculeImage(id);
+    } catch (e) {
+      console.error('Error updating molecule image:', e);
+      if (cancelled) return;
       moleculeUrl.value = null;
     }
-  } catch (e) {
-    console.error('Error updating molecule image:', e);
-    moleculeUrl.value = null;
-  }
-}, { immediate: true });
+  },
+  { immediate: true }
+);
 
 const frame = computed(() => atlasStorage.getItemsFrame(props.id));
 
-const itemDef = computed(() => (itemsData as any)[props.id] as { name?: string; volume?: number } | undefined);
+const itemDef = computed(() => (itemsData as any)[props.id] as { name?: string; volume?: number; rarity?: 'common' | 'uncommon' | 'rare' | 'legendary' } | undefined);
 const displayName = computed(() => itemDef.value?.name ?? props.id);
 const displayVolume = computed(() => itemDef.value?.volume);
+const displayRarity = computed(() => {
+  return itemDef.value!.rarity!.toUpperCase();
+});
+
+const displayRarityShort = computed(() => {
+  const rarity = itemDef.value?.rarity!;
+  return rarity[0].toUpperCase();
+});
 
 const spriteStyle = computed(() => {
   if (!source.value || !frame.value) return {} as Record<string, string>;
@@ -121,7 +153,7 @@ const essenceRows = computed(() => {
 });
 
 function essenceLetter(k: string): string {
-  const m: Record<string, string> = { red: 'R', green: 'G', blue: 'B', yellow: 'Y' };
+  const m: Record<string, string> = { red: 'R', green: 'G', blue: 'B', yellow: 'Y', cyan: 'C' };
   return m[k] || k[0]?.toUpperCase() || '?';
 }
 
@@ -309,4 +341,22 @@ function essenceIconStyle(k: string): Record<string, string> {
 .tp-row { display: flex; align-items: baseline; gap: 6px; font-size: 12px; }
 .tp-label { opacity: 0.8; text-transform: uppercase; letter-spacing: 0.06em; }
 .tp-value { font-weight: 800; }
+
+.rarity-label {
+  position: absolute;
+  bottom: 2px;
+  left: 2px;
+  font-size: 9px;
+  font-weight: 700;
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.9), 0 1px 2px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  z-index: 10;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.rarity-label.rarity-common { color: #9ca3af; }
+.rarity-label.rarity-uncommon { color: white; }
+.rarity-label.rarity-rare { color: #60a5fa; }
+.rarity-label.rarity-legendary { color: #fbbf24; font-weight: 900; }
 </style>

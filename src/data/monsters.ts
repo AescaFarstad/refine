@@ -1,6 +1,6 @@
 import type { MonsterDefinition } from '../logic/MonsterLib';
 
-const monsters: Record<string, Omit<MonsterDefinition, 'id' | 'features'> & { features?: string[] }> = {
+const monsters: Record<string, Omit<MonsterDefinition, 'id' | 'features' | 'armor' | 'damageCap'> & { features?: string[]; armor?: number; damageCap?: number }> = {
   burdock: {
     name: 'Burdock',
     hp: 1,
@@ -34,7 +34,7 @@ const monsters: Record<string, Omit<MonsterDefinition, 'id' | 'features'> & { fe
     accuracy: 45,
     damage: 2,
     lootItemId: 'flower_remains',
-    features:['armor1'],
+    armor: 1,
   },
   stalker: {
     name: 'Invisible Stalker',
@@ -100,7 +100,7 @@ const monsters: Record<string, Omit<MonsterDefinition, 'id' | 'features'> & { fe
     accuracy: 50,
     damage: 5,
     lootItemId: 'squid_remains',
-    features:['armor2'],
+    armor: 2,
   },
   devourer: {
     name: 'Devourer Swarm',
@@ -109,7 +109,7 @@ const monsters: Record<string, Omit<MonsterDefinition, 'id' | 'features'> & { fe
     accuracy: 55,
     damage: 3,
     lootItemId: 'devourer_remains',
-    features:['damage_cap10'],
+    damageCap: 10,
   },
   hive: {
     name: 'The Hive',
@@ -118,16 +118,17 @@ const monsters: Record<string, Omit<MonsterDefinition, 'id' | 'features'> & { fe
     accuracy: 60,
     damage: 2,
     lootItemId: 'hive_remains',
-    features:['damage_cap1'],
+    damageCap: 1,
   },
   finger: {
     name: 'Devil\'s Finger',
     hp: 200,
-    dodge: 5,
+    dodge: 25,
     accuracy: 40,
-    damage: 6,
+    damage: 5,
     lootItemId: 'finger_remains',
-    features:['regen', 'armor1'],
+    features: ['regen'],
+    armor: 1,
   },
   hedgehog: {
     name: 'Hedgehog',
@@ -136,7 +137,8 @@ const monsters: Record<string, Omit<MonsterDefinition, 'id' | 'features'> & { fe
     accuracy: 70,
     damage: 5,
     lootItemId: 'hedgehog_remains',
-    features:['damage_on_hurt', 'armor1'],
+    features: ['damage_on_hurt'],
+    armor: 1,
   },
 };
 

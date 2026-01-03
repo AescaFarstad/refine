@@ -1,8 +1,6 @@
 import type { GameState } from "./GameState";
 import type { CmdInput } from "./input/InputCommands";
 import { processEvt } from './evt/EvtProcessor';
-import { Evt } from "./evt/Evt";
-import { EvtRaidComplete, EvtRefineryDone } from './evt/Evt';
 import { processCheats } from './cheat/CheatProcessor';
 import { IS_DEBUG } from './Const';
 // IceMaze instance is persisted on GameState
@@ -119,9 +117,9 @@ function updateShards(gs: GameState, dt: number) {
         } else if (shard.resource === 'chronotraces') {
           gs.chronotraces += shard.amount;
         } else if (shard.resource === 'timeFlux') {
-          gs.timeFlux = Math.max(0, (gs.timeFlux || 0) + shard.amount);
+          gs.timeFlux += shard.amount;
         } else if (shard.resource === 'shards') {
-          (gs as any).shardDust = Math.max(0, ((gs as any).shardDust || 0) + shard.amount);
+          gs.shardDust += shard.amount;
         }
         gs.shards[i] = null as any;
       }
@@ -265,7 +263,7 @@ function initOrAdvanceMaze(gs: GameState) {
     const idx = clampIndex(gs.mazeLevelIndex);
     const def = levels[idx];
     const seed = Math.floor(gs.random.get_in_range(1, 0x7fffffff));
-    const moves = Math.max(0, (gs as any).timeFlux || 0);
+    const moves = gs.timeFlux;
     const inst = new IceMaze({ x: def.x, y: def.y }, moves, seed);
     inst.loadSettings(toSettings(def, seed), seed);
     gs.maze = inst;
@@ -277,7 +275,7 @@ function initOrAdvanceMaze(gs: GameState) {
     const idx = clampIndex(gs.mazeLevelIndex);
     const def = levels[idx];
     const seed = Math.floor(gs.random.get_in_range(1, 0x7fffffff));
-    const moves = Math.max(0, (gs as any).timeFlux || 0);
+    const moves = gs.timeFlux;
     const inst = new IceMaze({ x: def.x, y: def.y }, moves, seed);
     inst.loadSettings(toSettings(def, seed), seed);
     gs.maze = inst;
@@ -292,7 +290,7 @@ function initOrAdvanceMaze(gs: GameState) {
     // Rebuild immediately at next level
     const def = levels[next];
     const seed = Math.floor(gs.random.get_in_range(1, 0x7fffffff));
-    const moves = Math.max(0, (gs as any).timeFlux || 0);
+    const moves = gs.timeFlux;
     const inst = new IceMaze({ x: def.x, y: def.y }, moves, seed);
     inst.loadSettings(toSettings(def, seed), seed);
     gs.maze = inst;

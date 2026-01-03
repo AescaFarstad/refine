@@ -1,17 +1,15 @@
 import type { GameState } from '../GameState';
-import { globalInputQueue, SHARD_PICKUP_DELAY_SEC } from '../Model';
+import { globalInputQueue } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAknowledgeOutcome, CmdLevelup, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer, CmdResearchNode } from './InputCommands';
-import { LEVEL_UP_STRENGTH, LEVEL_UP_LOOTING, LEVEL_UP_VOLUME } from '../Const';
+import { CmdStartRaid, CmdAdvanceTime, CmdAknowledgeOutcome, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule } from './InputCommands';
 import { EvtRefineryDone } from '../evt/Evt';
-import { computeLoadedEssencesFromItems } from '../Refine';
 import { computeRefinePreviewChem, computeEffectiveEssences } from '../RefinePreview';
 import type { Point2 } from '../core/math';
-import { runRaid, recomputeActiveRaidParams, toggleGearForRaid, recomputeActiveRaidEstimates } from '../Raid';
-import type { QuestDefinition } from '../QuestLib';
-import { getEffectiveRaidDefinition, pickAndApplyRaidSuccessMutation, describeMutation } from '../RaidMutation';
-import { createWafer, placeMolecule, removeMolecule, enableCellWithFloodfill, computeWaferUpgradePrice } from '../Wafer';
+import { runRaid, recomputeActiveRaidParams, toggleGearForRaid, recomputeActiveRaidEstimates, getEffectiveRaidDefinition } from '../Raid';
+import { pickAndApplyRaidSuccessMutation, describeMutation } from '../RaidMutation';
+import { placeMolecule, removeMolecule, enableCellWithFloodfill, computeWaferUpgradePrice } from '../Wafer';
 import { applyResearchPurchase } from '../Research';
+import type { LootEncounterLogEntry } from '../RaidLog';
 
 type Handler = (gs: GameState, cmd: CmdInput) => void;
 const handlersByName = new Map<string, Handler>();
@@ -22,45 +20,60 @@ handlersByName.set('CmdAdvanceTime', (gs, cmd) => {
 
 handlersByName.set('CmdStartRaid', (gs, cmd) => {
   const c = cmd as CmdStartRaid;
-  if (!c.id) return;
-
-  // Resolve selected raid as an effective copy (modded + active quest overlays)
   const def = getEffectiveRaidDefinition(gs, c.id);
-  if (!def) return;
-
-  if ((gs.reach || 0) < Math.max(0, def.reachRequired || 0)) {
+  if (!gs.unlockedRaids.some(r => r.id === c.id))
     return;
-  }
 
   recomputeActiveRaidParams(gs, c.id);
 
+  const gearCost = Math.max(0, Math.floor(gs.selectedGearPrice));
+  if (gearCost > 0) {
+    if (gs.credits < gearCost) return;
+    gs.credits -= gearCost;
+  }
+
   const result = runRaid(gs, def);
 
-  gs.gameTime = Math.max(0, (gs.gameTime || 0) + Math.max(0, result.timeSpentSec || 0));
+  gs.gameTime += result.timeSpentSec;
 
-  // End-of-raid quest processing (reach + skill points)
-  let reachGained = 0;
+  if (result.success) {
+    const lootCounts: Record<string, number> = {};
+    for (const e of result.log.entries) {
+      if (e.kind !== 'LootEncounter') continue;
+      const le = e as LootEncounterLogEntry;
+      if (le.skipped) continue;
+      if (le.discarded) continue;
+      const id = le.itemId;
+      lootCounts[id] = (lootCounts[id] || 0) + 1;
+    }
+
+    for (const [id, qty] of Object.entries(lootCounts)) {
+      const q = qty | 0;
+      const essence = gs.lib.getItem(id).essence;
+      for (const k of Object.keys(essence))
+        gs.encounteredEssences[k] = true;
+      const existing = gs.items.find(x => x.id === id);
+      if (existing) existing.quantity += q;
+      else gs.items.push({ id, quantity: q });
+    }
+  }
+
+  // End-of-raid quest processing (skill points)
   let skillPointsGained = 0;
   const completedNow: string[] = [];
   let zoneChange: string | null = null;
   if (result.success) {
-    const allQuests = gs.lib.quests || new Map<string, QuestDefinition>();
-    allQuests.forEach((q, id) => {
-      const already = (gs.completedQuests || []).includes(id);
-      const applies = (!q.raidRestriction || q.raidRestriction.includes(c.id)) && (!!q.autoaccept);
+    gs.lib.quests.forEach((q, id) => {
+      const already = gs.completedQuests.includes(id);
+      const applies = (!q.raidRestriction || q.raidRestriction.includes(c.id)) && q.autoaccept;
       if (!already && applies) {
         const r = q.rewards || {};
-        const incReach = Math.max(0, r.reach || 0);
-        if (incReach > 0) {
-          gs.reach = Math.max(0, (gs.reach || 0) + incReach);
-          reachGained += incReach;
-        }
-        const incSP = Math.max(0, (r as any).skillPoints || 0);
+        const incSP = Math.max(0, (r as any).skillPoints ?? 0);
         if (incSP > 0) {
-          gs.skillPoints = Math.max(0, (gs.skillPoints || 0) + incSP);
+          gs.skillPoints += incSP;
           skillPointsGained += incSP;
         }
-        (gs.completedQuests || (gs.completedQuests = [])).push(id);
+        gs.completedQuests.push(id);
         completedNow.push(id);
       }
     });
@@ -71,27 +84,34 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
     }
   }
 
-  // Store outcome/log (shape will evolve later with more details)
-  (gs as any).lastRaidOutcome = {
+  gs.lastRaidOutcome = {
     id: c.id,
-    success: !!result.success,
+    questsDone: completedNow.length,
+    success: result.success,
+    questDeltaPct: 0,
+    unlockedRaidId: null,
     log: result.log,
     timeSpentSec: result.timeSpentSec,
     plannedEncounters: result.plannedEncounters,
-    reachGained,
+    looted: [],
+    discardedByVolume: [],
+    discardedByLuck: [],
     skillPointsGained,
     questsCompleted: completedNow,
     zoneChange,
     finalHp: gs.raid.hp,
     finalMaxHp: gs.raid.maxHp,
     finalBagsUsed: gs.raid.usedVolume,
-    finalBagsCapacity: Math.max(0, gs.volume || 0) + Math.max(0, gs.raid.bagsVolume || 0),
+    finalBagsCapacity: gs.raid.bagsVolume,
+    barelyInTime: result.barelyInTime,
   };
+
+  recomputeActiveRaidParams(gs, c.id);
+  recomputeActiveRaidEstimates(gs, 100);
 });
 
 handlersByName.set('CmdStartRefining', (gs, cmd) => {
   if (gs.nextEvt && gs.nextEvt.name === 'EvtRefineryDone') return;
-  if (!gs.wafer || gs.wafer.items.length === 0) return;
 
   const itemCounts = new Map<string, number>();
   // Use gs.wafer as the source of truth
@@ -101,19 +121,20 @@ handlersByName.set('CmdStartRefining', (gs, cmd) => {
     itemCounts.set(id, (itemCounts.get(id) || 0) + 1);
   }
 
+  if (itemCounts.size === 0) return;
+
   for (const [itemId, count] of itemCounts) {
-    const inv = gs.items;
-    const entry = inv.find(x => x.id === itemId);
+    const entry = gs.items.find(x => x.id === itemId);
     if (!entry) continue;
-    entry.quantity = Math.max(0, (entry.quantity || 0) - count);
+    entry.quantity -= count;
     if (entry.quantity <= 0) {
-      const i = inv.indexOf(entry);
-      if (i >= 0) inv.splice(i, 1);
+      const i = gs.items.indexOf(entry);
+      if (i >= 0) gs.items.splice(i, 1);
     }
   }
 
   const preview = computeRefinePreviewChem(gs.wafer);
-  gs.refiningDuration = Math.max(0, Math.round(preview.timeSec || 0));
+  gs.refiningDuration = Math.max(0, Math.round(preview.timeSec));
 
   const duration = gs.refiningDuration;
   gs.nextEvt = new EvtRefineryDone({ at: gs.gameTime + duration });
@@ -130,16 +151,14 @@ handlersByName.set('CmdAcknowledgeRefineryOutcome', (gs, cmd) => {
 
 // Maze controls: movement via InputProcessor (Vue only dispatches commands)
 handlersByName.set('CmdMazeMove', (gs, cmd) => {
-  if (!gs.maze) return;
   const c = cmd as CmdMazeMove;
-  let d: Point2 | null = null;
-  switch (c.dir) {
-    case 'up': d = { x: 0, y: -1 }; break;
-    case 'left': d = { x: -1, y: 0 }; break;
-    case 'down': d = { x: 0, y: 1 }; break;
-    case 'right': d = { x: 1, y: 0 }; break;
-  }
-  if (d) gs.maze.tryMove(d);
+  const deltaByDir: Record<MazeDir, Point2> = {
+    up: { x: 0, y: -1 },
+    left: { x: -1, y: 0 },
+    down: { x: 0, y: 1 },
+    right: { x: 1, y: 0 },
+  };
+  gs.maze!.tryMove(deltaByDir[c.dir]);
 });
 
 handlersByName.set('CmdMazeReset', (gs, cmd) => {
@@ -148,18 +167,13 @@ handlersByName.set('CmdMazeReset', (gs, cmd) => {
 
 handlersByName.set('CmdMazeRestart', (gs, cmd) => {
   // Restart current level without regenerating layout (same seed/settings)
-  if (gs.maze) gs.maze.reset();
+  gs.maze!.reset();
 });
 
-// Raid UI commands
 handlersByName.set('CmdSelectRaid', (gs, cmd) => {
   const c = cmd as CmdSelectRaid;
-  if (!c.id) return;
-  // Prevent selecting locked raids based on reach requirement
-  const def = gs.lib.raids.get(c.id);
-  if (!def) return;
-  const reachReq = Math.max(0, (def as any).reachRequired || 0);
-  if ((gs as any).reach < reachReq) return;
+  if (!gs.lib.raids.has(c.id)) throw new Error(`CmdSelectRaid: unknown raid id "${c.id}"`);
+  if (!gs.unlockedRaids.some(r => r.id === c.id)) return;
   recomputeActiveRaidParams(gs, c.id);
   recomputeActiveRaidEstimates(gs, 100);
 });
@@ -170,90 +184,113 @@ handlersByName.set('CmdToggleGear', (gs, cmd) => {
   recomputeActiveRaidEstimates(gs, 100);
 });
 
-// Removed: unlocking gear slots logic
-
-// Quests: toggle manual activation for non-autoaccept quests
 handlersByName.set('CmdToggleQuest', (gs, cmd) => {
   const c = cmd as CmdToggleQuest;
-  const id = (c.id || '').trim();
-  if (!id) return;
-  const q = gs.lib.quests.get(id);
-  if (!q) return;
-  // Ignore if quest is autoaccepted or completed
+  const id = c.id;
+  const q = gs.lib.quests.get(id)!;
   if (q.autoaccept) return;
-  if ((gs.completedQuests || []).includes(id)) return;
-  const list = (gs.activeQuests || (gs.activeQuests = []));
+  if (gs.completedQuests.includes(id)) return;
+  const list = gs.activeQuests;
   const i = list.indexOf(id);
-  const want = !!c.active;
-  if (want) {
+  if (c.active) {
     if (i === -1) list.push(id);
   } else {
     if (i !== -1) list.splice(i, 1);
   }
-  // Active quests can mutate encounter composition; refresh estimates for active raid
   recomputeActiveRaidEstimates(gs, 100);
 });
 
-// Wafer manipulation handlers
 handlersByName.set('CmdPlaceMolecule', (gs, cmd) => {
-  const c = cmd as any; // CmdPlaceMolecule
-  if (!gs.wafer) {
-    gs.wafer = createWafer(3);
+  const c = cmd as CmdPlaceMolecule;
+  const itemId = c.itemId;
+
+  const invEntry = gs.items.find(x => x.id === itemId);
+  if (!invEntry || invEntry.quantity <= 0) return;
+
+  const placed = placeMolecule(gs.wafer, itemId, c.molecule, c.rotation);
+  if (!placed) return;
+
+  invEntry.quantity -= 1;
+  if (invEntry.quantity <= 0) {
+    const idx = gs.items.indexOf(invEntry);
+    if (idx !== -1) gs.items.splice(idx, 1);
   }
-  placeMolecule(gs.wafer, c.itemId, c.molecule, c.rotation ?? 0);
+
   computeEffectiveEssences(gs.wafer);
 });
 
 handlersByName.set('CmdRemoveMolecule', (gs, cmd) => {
-  const c = cmd as any; // CmdRemoveMolecule
-  if (!gs.wafer) return;
+  const c = cmd as CmdRemoveMolecule;
+
+  const existing = gs.wafer.items[c.itemIdx];
   removeMolecule(gs.wafer, c.itemIdx);
   computeEffectiveEssences(gs.wafer);
+
+  const itemId = existing.id;
+
+  const essence = gs.lib.getItem(itemId).essence;
+  for (const k of Object.keys(essence))
+    gs.encounteredEssences[k] = true;
+  const invEntry = gs.items.find(x => x.id === itemId);
+  if (invEntry) invEntry.quantity += 1;
+  else gs.items.push({ id: itemId, quantity: 1 });
 });
 
 handlersByName.set('CmdGrowWafer', (gs, cmd) => {
   const c = cmd as CmdGrowWafer;
-  if (!c.pos) return;
 
-  if (!gs.wafer) {
-    gs.wafer = createWafer(3);
-  }
-
-  const upgradesPurchased = (gs as any).waferUpgradesPurchased || 0;
+  const upgradesPurchased = gs.waferUpgradesPurchased;
   const price = computeWaferUpgradePrice(upgradesPurchased);
-  const currentShards = (gs as any).shardDust || 0;
+  const currentShards = gs.shardDust;
   if (currentShards < price) return;
 
   const added = enableCellWithFloodfill(gs.wafer, c.pos);
   if (added <= 0) return;
 
-  (gs as any).shardDust = Math.max(0, currentShards - price);
-  (gs as any).waferUpgradesPurchased = upgradesPurchased + 1;
+  gs.shardDust = currentShards - price;
+  gs.waferUpgradesPurchased = upgradesPurchased + 1;
   computeEffectiveEssences(gs.wafer);
 });
 
 handlersByName.set('CmdResearchNode', (gs, cmd) => {
   const c = cmd as CmdResearchNode;
-  if (!c.pos) return;
   const lib = gs.lib.research;
   const result = applyResearchPurchase(gs, lib, c.pos.x, c.pos.y);
-  if (result.success && gs.raid && gs.raid.id) {
+  if (result.success && gs.raid.id) {
     recomputeActiveRaidParams(gs, gs.raid.id);
     recomputeActiveRaidEstimates(gs, 100);
   }
+});
+
+handlersByName.set('CmdUpgradeGearCategory', (gs, cmd) => {
+  const c = cmd as CmdUpgradeGearCategory;
+  const catId = c.categoryId;
+
+  const def = gs.lib.gearCategories.get(catId)!;
+
+  if (def.hidden || def.unlimited) return;
+
+  const costs = def.unlockCost;
+  const currentSlots = gs.gearLevels[catId] ?? 0;
+  const nextIndex = currentSlots - 1; // costs[0] is for 2nd slot (from 1 to 2)
+
+  if (nextIndex < 0 || nextIndex >= costs.length) return;
+
+  const cost = costs[nextIndex] || 0;
+  const currentSP = gs.skillPoints;
+
+  if (currentSP < cost) return;
+
+  gs.skillPoints = currentSP - cost;
+  gs.gearLevels[catId] = currentSlots + 1;
 });
 
 
 export function processInputs(gameState: GameState): void {
   for (const command of globalInputQueue) {
     const handler = handlersByName.get(command.name);
-    if (handler) {
-      handler(gameState, command);
-    } else {
-      // Unknown commands are ignored but logged for visibility during dev
-      // eslint-disable-next-line no-console
-      console.warn(`[InputProcessor] No handler for command: ${command.name}`);
-    }
+    if (!handler) throw new Error(`[InputProcessor] No handler for command: ${command.name}`);
+    handler(gameState, command);
   }
   globalInputQueue.length = 0;
 }

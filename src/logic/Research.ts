@@ -190,16 +190,16 @@ function applyResearchNodeEffect(gs: GameState, lib: ResearchLib, nodeId: number
       if (!amount) return;
       switch (archetype.resource) {
         case 'credits':
-          gs.credits = Math.max(0, (gs.credits || 0) + amount);
+          gs.credits += amount;
           break;
         case 'chronotraces':
-          gs.chronotraces = Math.max(0, (gs.chronotraces || 0) + amount);
+          gs.chronotraces += amount;
           break;
         case 'timeFlux':
-          gs.timeFlux = Math.max(0, (gs.timeFlux || 0) + amount);
+          gs.timeFlux += amount;
           break;
         case 'shards':
-          (gs as any).shardDust = Math.max(0, ((gs as any).shardDust || 0) + amount);
+          gs.shardDust += amount;
           break;
         default:
           break;

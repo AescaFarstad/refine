@@ -72,19 +72,19 @@ const zoneCollapseTime = computed(() => {
 const isCollapseWarning = computed(() => {
   const raid = selectedRaid.value;
   if (!raid || !raid.zoneCollapseSec || raid.zoneCollapseSec <= 0) return false;
+  // If we have deaths to zone, don't show warning (show danger instead)
+  if (zoneCollapseDeathPct.value > 0) return false;
   const estimateSec = uiState.raidTimeEstimateSec || 0;
   const collapseSec = raid.zoneCollapseSec;
-  // Warning if estimated time is 50-80% of collapse time
-  return estimateSec >= collapseSec * 0.5 && estimateSec < collapseSec * 0.8;
+  // Warning if estimated time is 80%+ of collapse time but no deaths yet
+  return estimateSec >= collapseSec * 0.8;
 });
 
 const isCollapseDanger = computed(() => {
   const raid = selectedRaid.value;
   if (!raid || !raid.zoneCollapseSec || raid.zoneCollapseSec <= 0) return false;
-  const estimateSec = uiState.raidTimeEstimateSec || 0;
-  const collapseSec = raid.zoneCollapseSec;
-  // Danger if estimated time is 80%+ of collapse time
-  return estimateSec >= collapseSec * 0.8;
+  // Danger only if we've actually died to zone collapse in simulations
+  return zoneCollapseDeathPct.value > 0;
 });
 
 const zoneCollapseDeathPct = computed(() => Math.max(0, Math.min(100, Math.round(uiState.raidZoneCollapseDeathPct || 0))));

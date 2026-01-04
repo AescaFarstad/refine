@@ -8,8 +8,8 @@
             v-for="(_, i) in totalEncounters"
             :key="i"
             class="dot"
-            :class="{ done: i < shownCount }"
-          >{{ i < shownCount ? '◉' : '◌' }}</span>
+            :class="{ done: i < shownNonSummonedCount }"
+          >{{ i < shownNonSummonedCount ? '◉' : '◌' }}</span>
         </div>
       </header>
 
@@ -59,7 +59,7 @@
           <div class="zc">Your activity has changed the zone: <strong>{{ zoneChangeText }}</strong>.</div>
         </section>
         <section class="new-quests" v-if="raidSuccess && newQuestNames.length">
-          <div class="nq">New investigations available: <strong>{{ newQuestNames.join(', ') }}</strong>.</div>
+          <div class="nq" v-for="(name, i) in newQuestNames" :key="i">New investigation available: <strong>{{ name }}</strong></div>
         </section>
       </section>
       <section class="death-note" v-if="timelineComplete && !raidSuccess">
@@ -95,7 +95,7 @@ import { CmdAknowledgeOutcome } from '../logic/input/InputCommands';
 import ItemDisplay from './ItemDisplay.vue';
 import { formatDurationHM } from '../logic/StringUtils';
 import { useRaidAgain } from '../logic/useRaidAgain';
-import type { LootEncounterLogEntry, RaidEventLogEntry } from '../logic/RaidLog';
+import type { FightEncounterLogEntry, LootEncounterLogEntry, RaidEventLogEntry } from '../logic/RaidLog';
 import RaidOutcomeLogPlayback from './raidOutcome/RaidOutcomeLogPlayback.vue';
 import { describeMutation } from '../logic/RaidMutation';
 import { getResourceSpec, type ResourceKey } from '../logic/Resources';
@@ -115,6 +115,17 @@ function onDisplayedTimeSec(v: number) { displayedTimeSec.value = v; }
 
 const totalEncounters = computed(() => {
   return outcome.value.plannedEncounters;
+});
+
+
+const shownNonSummonedCount = computed(() => {
+  const entries = logEntries.value.slice(0, shownCount.value);
+  let count = 0;
+  for (const e of entries) {
+    if (e.kind === 'FightEncounter' && (e as FightEncounterLogEntry).summoned) continue;
+    count++;
+  }
+  return count;
 });
 
 // Header helpers
@@ -269,8 +280,8 @@ function formatHMS(totalSec?: number): string { return formatDurationHM(totalSec
 
 .zone-change { margin-top: 10px; padding: 8px 10px; border: none; border-radius: 6px; background: rgba(255,255,255,0.03); }
 .zone-change .zc { font-weight: 400; }
-.new-quests { margin-top: 10px; padding: 8px 10px; border: none; border-radius: 6px; background: rgba(74, 222, 128, 0.08); border: 1px solid rgba(74, 222, 128, 0.25); }
-.new-quests .nq { font-weight: 500; color: rgba(74, 222, 128, 0.95); }
+.new-quests { margin-top: 10px; display: grid; gap: 6px; }
+.new-quests .nq { padding: 8px 10px; border-radius: 6px; background: rgba(250, 204, 21, 0.08); border: 1px solid rgba(250, 204, 21, 0.25); font-weight: 500; color: rgba(250, 204, 21, 0.95); }
 .barely-in-time { margin-top: 10px; padding: 8px 10px; border: none; border-radius: 6px; background: rgba(251, 146, 60, 0.10); border: 1px solid rgba(251, 146, 60, 0.3); }
 .barely-in-time .bt { font-weight: 500; color: #fb923c; font-style: italic; }
 .final-state { margin-top: 10px; display: flex; gap: 10px; }

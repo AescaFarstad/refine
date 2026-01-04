@@ -1,81 +1,64 @@
 import type { RawQuestDefinition } from '../logic/QuestLib';
 
 const quests: Record<string, RawQuestDefinition> = {
-  sheg_1: {
-    name: 'Explore new locations',
+  explore_loot_locations: {
+    name: 'Explore new loot locations',
     raidRestriction: ['shegolskoe'],
+    requiresRaidSuccesses: 1,
     encounters: [
       { kind: 'WalkMutation', count: 3 },
     ],
   },
-  sheg_2_1: {
+  break_spikder: {
     name: 'Break through a spikder',
+    requiresRaidQuestCompletions: 1,
     raidRestriction: ['shegolskoe'],
     encounters: [
       { kind: 'AddMonsterMutation', monsterId: 'spikder', count: 1 },
     ],
-    rewards: { skillPoints: 1 },
+    rewards: {
+      lootChanceDelta: 5,
+      raidMutations: [
+        { kind: 'LootMutation', count: 1 },
+      ],
+    },
   },
-  q_sp_training_1: {
-    name: 'Basic Field Training',
-    encounterTimeMin: 20,
+  break_flower: {
+    name: 'Break through a flower human',
+    requiresRaidQuestCompletions: 1,
     raidRestriction: ['shegolskoe'],
-    rewards: { skillPoints: 1 },
-    encounters: [
-      { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 1 },
-    ],
-  },
-  q_sp_training_2: {
-    name: 'Improvised Tactics',
-    encounterTimeMin: 20,
-    raidRestriction: ['shegolskoe'],
-    rewards: { skillPoints: 1 },
-    encounters: [
-      { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 3 },
-    ],
-  },
-  q_reach_oz_boost_2: {
-    name: 'Survey the Lakefront',
-    encounterTimeMin: 10,
-    raidRestriction: ['ozernoye'],
-    rewards: { skillPoints: 1 },
-    encounters: [
-      { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 2 },
-    ],
-  },
-  q_sp_oz_advance: {
-    name: 'Advanced Anomalous Techniques',
-    encounterTimeMin: 30,
-    raidRestriction: ['ozernoye'],
-    rewards: { skillPoints: 2 },
-    encounters: [
-      { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 4 },
-    ],
-  },
-  q_combo_oz: {
-    name: 'Push the Boundary',
-    encounterTimeMin: 20,
-    raidRestriction: ['ozernoye'],
-    rewards: { skillPoints: 2 },
     encounters: [
       { kind: 'AddMonsterMutation', monsterId: 'flower', count: 1 },
     ],
+    rewards: {
+      raidMutations: [
+        { kind: 'LootMutation', count: 3 },
+      ],
+    },
   },
-  q_soil_sample: {
-    name: 'Anomaly Soil Sample',
-    encounterLine: 'Gathering anomaly soil',
-    encounterTimeMin: 12,
+  break_distorted_pack: {
+    name: 'Break through a pack of distorted',
+    requiresRaidQuestCompletions: 1,
     raidRestriction: ['shegolskoe'],
-    rewards: { skillPoints: 1 },
-  },
-  q_add_rat_to_shegolskoe: {
-    name: 'Infestation in Shegolskoe',
-    encounterTimeMin: 0,
-    raidRestriction: ['shegolskoe'],
-    rewards: { skillPoints: 1 },
     encounters: [
-      { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 1 },
+      { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 3 },
     ],
+    rewards: {
+      addRaidItems: ['red_rubber_ball'],
+      lootingRarityBuffDelta: 10,
+    },
+  },
+  locate_next_zone: {
+    name: 'Locate another zone',
+    requiresRaidQuestCompletions: 3,
+    raidRestriction: ['shegolskoe'],
+    encounterTimeMin: 50,
+    encounters: [
+      { kind: 'WalkMutation', count: 5 },
+    ],
+    rewards: {
+      unlocks: ['ozernoye'],
+    },
   },
 };
 

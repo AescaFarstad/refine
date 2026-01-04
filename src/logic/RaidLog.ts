@@ -68,6 +68,7 @@ export interface FightEncounterLogEntry {
   hpBeforeRegen: number;
   hpAfterRegen: number;
   selfDestructed: boolean; // true if the monster self-destructed (no corpse left)
+  summoned: boolean; // true if this fight was summoned by another monster (doesn't count toward progress)
 }
 
 export interface LootEncounterLogEntry {

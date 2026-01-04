@@ -27,6 +27,7 @@ export interface QuestDefinition {
   encounterLine: string;
   encounterTimeMin: number;
   encounters: RaidMutation[];
+  showAddedItems: boolean;
 }
 
 export type RawQuestResourceRewards = Partial<QuestResourceRewards>;
@@ -44,6 +45,7 @@ export interface RawQuestDefinition {
   encounterLine?: string;
   encounterTimeMin?: number;
   encounters?: RaidMutation[];
+  showAddedItems?: boolean;
 }
 
 export function normalizeQuestDefinition(id: string, raw: RawQuestDefinition): QuestDefinition {
@@ -74,5 +76,6 @@ export function normalizeQuestDefinition(id: string, raw: RawQuestDefinition): Q
     encounterLine: raw.encounterLine ?? '',
     encounterTimeMin: raw.encounterTimeMin ?? 0,
     encounters: raw.encounters ?? [],
+    showAddedItems: raw.showAddedItems ?? false,
   };
 }

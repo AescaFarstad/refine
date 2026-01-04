@@ -7,6 +7,7 @@ function clamp(v: number, lo: number, hi: number): number { return Math.max(lo, 
 
 export interface FightEncounterContext {
   monsterId: string;
+  summoned: boolean;
 }
 
 export interface FightEncounterResult {
@@ -17,7 +18,7 @@ export interface FightEncounterResult {
 }
 
 export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEncounterContext): FightEncounterResult {
-  const { monsterId } = ctx;
+  const { monsterId, summoned } = ctx;
   const m = gs.lib.monsters.get(monsterId)!;
   const monsterName = m.name;
   let monsterHp = m.hp;
@@ -208,6 +209,7 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
     hpBeforeRegen: 0,
     hpAfterRegen: 0,
     selfDestructed: monsterSelfDestructed,
+    summoned,
   };
 
   const extras: LootEncounterLogEntry[] = [];

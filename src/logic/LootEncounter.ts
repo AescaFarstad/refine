@@ -7,34 +7,17 @@ function clamp(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v));
 }
 
-function computeCapacity(gs: GameState, r: ActiveRaid): number {
-  // Base player volume plus gear-provided capacity accumulated into r.bagsVolume
-  const base = Math.max(0, (gs.volume || 0));
-  const gear = Math.max(0, (r.bagsVolume || 0));
-  return base + gear;
-}
-
 export interface LootEncounterContext {
   items: string[];
   poolsByRarity: Record<LootRarity, string[]>;
   baseLootChance: number;
 }
 
-function buildPoolsByRarity(gs: GameState, ids: string[]): Record<LootRarity, string[]> {
-  const pools: Record<LootRarity, string[]> = { common: [], uncommon: [], rare: [], legendary: [] };
-  for (const id of ids) {
-    const def = gs.lib.getItem(id);
-    pools[def.rarity].push(id);
-  }
-  return pools;
-}
-
 export function handleLootLikeEncounter(gs: GameState, r: ActiveRaid, ctx: LootEncounterContext): LootEncounterLogEntry {
-  const capacity = computeCapacity(gs, r);
   const before = Math.max(0, r.usedVolume || 0);
 
   // If bags already full, skip searching altogether
-  if (before >= capacity) {
+  if (before >= r.bagsVolume) {
     return {
       kind: 'LootEncounter',
       source: 'raid',
@@ -44,7 +27,7 @@ export function handleLootLikeEncounter(gs: GameState, r: ActiveRaid, ctx: LootE
       myRoll: 0,
       checkValue: 0,
       itemId: '',
-      capacity,
+      capacity: r.bagsVolume,
       volumeBefore: before,
       volumeAfter: before,
       discarded: false,
@@ -70,7 +53,7 @@ export function handleLootLikeEncounter(gs: GameState, r: ActiveRaid, ctx: LootE
     myRoll,
     checkValue,
     itemId: '',
-    capacity,
+    capacity: r.bagsVolume,
     volumeBefore: before,
     volumeAfter: before,
     discarded: false,
@@ -133,23 +116,22 @@ export function handleLootLikeEncounter(gs: GameState, r: ActiveRaid, ctx: LootE
 
   entry.itemId = picked;
   entry.volumeBefore = before;
-  entry.capacity = capacity;
+  entry.capacity = r.bagsVolume;
 
-  if (after <= capacity) {
+  if (after <= r.bagsVolume) {
     r.usedVolume = after;
     entry.volumeAfter = after;
     entry.discarded = false;
   } else {
     entry.volumeAfter = before;
     entry.discarded = true;
-    entry.requiredVolume = Math.max(0, after - capacity);
+    entry.requiredVolume = Math.max(0, after - r.bagsVolume);
   }
 
   return entry;
 }
 
 export function handleMonsterLootEncounter(gs: GameState, r: ActiveRaid, itemId: string, biopsyChance: number): LootEncounterLogEntry {
-  const capacity = computeCapacity(gs, r);
   const before = Math.max(0, r.usedVolume || 0);
   const timeSpentSec = 60; // fixed 1 minute to harvest
 
@@ -165,7 +147,7 @@ export function handleMonsterLootEncounter(gs: GameState, r: ActiveRaid, itemId:
     myRoll: 0,
     checkValue: 0,
     itemId,
-    capacity,
+    capacity : r.bagsVolume,
     volumeBefore: before,
     volumeAfter: before,
     discarded: false,
@@ -183,14 +165,14 @@ export function handleMonsterLootEncounter(gs: GameState, r: ActiveRaid, itemId:
   const def = gs.lib.getItem(itemId);
   const after = before + def.volume;
 
-  if (after <= capacity) {
+  if (after <= r.bagsVolume) {
     r.usedVolume = after;
     entry.volumeAfter = after;
     entry.discarded = false;
   } else {
     entry.volumeAfter = before;
     entry.discarded = true;
-    entry.requiredVolume = Math.max(0, after - capacity);
+    entry.requiredVolume = Math.max(0, after - r.bagsVolume);
   }
 
   return entry;

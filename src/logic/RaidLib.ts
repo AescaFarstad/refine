@@ -34,6 +34,7 @@ export interface MonsterLootEncounterDef {
 export interface FightEncounterDef {
   type: 'FightEncounter';
   monsterId: string;
+  summoned?: boolean; // true if this fight was summoned by another monster (default false)
 }
 
 export interface QuestEncounterDef {

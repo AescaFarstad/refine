@@ -342,7 +342,8 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
       }
       case 'FightEncounter': {
         const monsterId = enc.monsterId;
-        const fight = handleFightEncounter(gsForRun, raid, { monsterId });
+        const summoned = (enc as FightEncounterDef).summoned || false;
+        const fight = handleFightEncounter(gsForRun, raid, { monsterId, summoned });
         let t = timeSpentSec;
         for (const ev of fight.entry.fightLog) {
           t += ev.timeSpentSec;
@@ -358,7 +359,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         }
         // monster summoned
         if (fight.summonedMonsterId) {
-          queue.unshift({ type: 'FightEncounter', monsterId: fight.summonedMonsterId });
+          queue.unshift({ type: 'FightEncounter', monsterId: fight.summonedMonsterId, summoned: true });
         }
         // we died
         if (raid.hp <= 0) {
@@ -540,7 +541,8 @@ export function recomputeActiveRaidEstimates(gs: GameState, simulations = 100): 
     }
   }
   gs.raidSurvivalEstimatePct = Math.round((wins / simulations) * 100);
-  gs.raidTimeEstimateSec = wins > 0 ? Math.round(successTimeSum / wins) : 0;
+  // If no wins, use zone collapse time as estimate (if applicable), otherwise 0
+  gs.raidTimeEstimateSec = wins > 0 ? Math.round(successTimeSum / wins) : (def.zoneCollapseSec || 0);
   gs.raidZoneCollapseDeathPct = Math.round((zoneCollapseDeaths / simulations) * 100);
 }
 

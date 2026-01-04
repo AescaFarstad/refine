@@ -24,6 +24,8 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
   if (!gs.unlockedRaids.some(r => r.id === c.id))
     return;
 
+  gs.activeQuests = gs.activeQuests.filter(qid => !gs.completedQuests.includes(qid));
+
   recomputeActiveRaidParams(gs, c.id);
 
   const listAvailableQuestIdsAllRaids = (): string[] => {
@@ -59,14 +61,13 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
       const le = e as LootEncounterLogEntry;
       if (le.skipped) continue;
       if (le.discarded) continue;
+      if (!le.itemId) continue;
       const id = le.itemId;
       lootCounts[id] = (lootCounts[id] || 0) + 1;
     }
 
     for (const [id, qty] of Object.entries(lootCounts)) {
       const q = qty | 0;
-      const t = gs.lib.getItem(id);
-      if (!t) console.error(`[InputProcessor] LootEncounter: unknown item id "${id}"`);
       const essence = gs.lib.getItem(id).essence;
       for (const k of Object.keys(essence))
         gs.encounteredEssences[k] = true;

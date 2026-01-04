@@ -117,24 +117,36 @@ function hintSections(q: QuestDefinition): HintRow[] {
     if (desc) out.push({ label: 'Active effects:', value: desc, chips: [] });
   }
 
-  const raidParts: string[] = [];
   const r = q.rewards;
-  if (r.lootChanceDelta) raidParts.push(`Loot chance ${r.lootChanceDelta >= 0 ? '+' : ''}${r.lootChanceDelta}%`);
-  if (r.lootingRarityBuffDelta) raidParts.push(`Loot rarity ${r.lootingRarityBuffDelta >= 0 ? '+' : ''}${r.lootingRarityBuffDelta}`);
+
+  // Raid modifiers - each on its own line
+  if (r.lootChanceDelta) {
+    out.push({ label: 'Raid:', value: `Loot chance ${r.lootChanceDelta >= 0 ? '+' : ''}${r.lootChanceDelta}%`, chips: [] });
+  }
+  if (r.lootingRarityBuffDelta) {
+    out.push({ label: 'Raid:', value: `Loot rarity ${r.lootingRarityBuffDelta >= 0 ? '+' : ''}${r.lootingRarityBuffDelta}`, chips: [] });
+  }
   if (r.raidMutations.length) {
     const gs = getGameState();
     const desc = r.raidMutations
       .map(m => describeMutation(gs!, m))
       .filter((s): s is string => !!s && s.length > 0)
       .join('; ');
-    if (desc) raidParts.push(desc);
+    if (desc) out.push({ label: 'Raid:', value: desc, chips: [] });
   }
   if (r.addRaidItems.length) {
-    const lib = getGameLib()!;
-    const names = r.addRaidItems.map(id => lib.getItem(id).name).join(', ');
-    raidParts.push(`Drops: ${names}`);
+    if (q.showAddedItems) {
+      const lib = getGameLib()!;
+      const names = r.addRaidItems.map(id => lib.getItem(id).name).join(', ');
+      out.push({ label: 'Raid:', value: `Drops: ${names}`, chips: [] });
+    } else {
+      out.push({ label: 'Raid:', value: 'New items can be found in raid', chips: [] });
+    }
   }
-  if (raidParts.length) out.push({ label: 'Raid:', value: raidParts.join('; '), chips: [] });
+
+  if (r.unlocks.length) {
+    out.push({ label: 'Reward:', value: 'Discover a new raid location', chips: [] });
+  }
 
   const rewardChips = formatRewardsChips(q);
   if (rewardChips.length) out.push({ label: 'Rewards:', value: null, chips: rewardChips });

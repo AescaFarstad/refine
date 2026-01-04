@@ -174,8 +174,12 @@ export function cloneEncounter(enc: EncounterDef): EncounterDef {
       return { type: 'LootEncounter' };
     case 'MonsterLootEncounter':
       return { type: 'MonsterLootEncounter', monsterId: (enc as MonsterLootEncounterDef).monsterId };
-    case 'FightEncounter':
-      return { type: 'FightEncounter', monsterId: (enc as FightEncounterDef).monsterId };
+    case 'FightEncounter': {
+      const f = enc as FightEncounterDef;
+      const cloned: FightEncounterDef = { type: 'FightEncounter', monsterId: f.monsterId };
+      if (f.summoned) cloned.summoned = true;
+      return cloned;
+    }
     case 'QuestEncounter':
       return { type: 'QuestEncounter', questId: (enc as QuestEncounterDef).questId };
   }

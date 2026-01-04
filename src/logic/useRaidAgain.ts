@@ -26,10 +26,10 @@ export function useRaidAgain() {
   const estimatedTime = computed(() => formatDurationHM(Math.max(0, uiState.raidTimeEstimateSec)));
   const raidAgainButtonLabel = computed(() => `Raid Again (~${survivalChance.value}% / ~${estimatedTime.value})`);
 
-  const canRaidAgain = computed(() => !questWasCompleted.value && canAffordRaidAgain.value);
+  const canRaidAgain = computed(() => /* !questWasCompleted.value && */ canAffordRaidAgain.value);
 
   const raidAgainDisabledReason = computed(() => {
-    if (questWasCompleted.value) return 'Investigation completed - you may need to choose another one';
+    // if (questWasCompleted.value) return 'Investigation completed - you may need to choose another one';
     if (!canAffordRaidAgain.value) return `Not enough credits (need ${raidGearPrice.value})`;
     return '';
   });

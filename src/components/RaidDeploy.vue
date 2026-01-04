@@ -5,7 +5,7 @@
       <div class="stats">
         <div class="cell" :class="{ red: !canAfford }">
           <span class="cell-label">Gear cost</span>
-          <span class="cell-value">{{ selectedPrice }}✦</span>
+          <span class="cell-value" :style="{ color: creditsSpec.color }">{{ selectedPrice }}{{ creditsSpec.glyph }}</span>
         </div>
         <div class="cell" :class="{ reddish: survivalChance < 50 && survivalChance >= 25, red: survivalChance < 25 }">
           <span class="cell-label">Survival</span>
@@ -36,6 +36,9 @@ import { globalInputQueue } from '../logic/Model';
 import { CmdStartRaid } from '../logic/input/InputCommands';
 import type { RaidDefinition } from '../logic/RaidLib';
 import { formatDurationHM } from '../logic/StringUtils';
+import { getResourceSpec } from '../logic/Resources';
+
+const creditsSpec = getResourceSpec('credits');
 
 const activeRaidId = computed(() => uiState.activeRaidId || (uiState.raidOrder[0] || ''));
 const selectedRaid = computed<RaidDefinition | null>(() => uiState.raids.find(r => r.id === activeRaidId.value) || null);

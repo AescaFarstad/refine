@@ -39,7 +39,7 @@
       >
         Grow wafer for
         <span class="resource-price" :style="{ color: shardColor }">
-          {{ upgradeCost }} ⌁
+          {{ upgradeCost }} {{ shardSpec.glyph }}
         </span>
       </div>
     </div>
@@ -72,7 +72,7 @@
       <div class="stats-table">
         <div class="stat-row">
           <span class="stat-label">Expected Credits:</span>
-          <span class="stat-value hl">{{ preview.expectedCredits }}✦</span>
+          <span class="stat-value hl" :style="{ color: creditsSpec.color }">{{ preview.expectedCredits }}{{ creditsSpec.glyph }}</span>
           <span class="stat-source" v-if="preview.creditsEssences > 0">
             from {{ preview.creditsEssences }}
             <template v-for="(key, idx) in creditsEssenceKeys" :key="key">
@@ -84,7 +84,7 @@
 
         <div class="stat-row">
           <span class="stat-label">Expected Chronotraces:</span>
-          <span class="stat-value hl">{{ preview.expectedChrono }}⧗</span>
+          <span class="stat-value hl" :style="{ color: chronotracesSpec.color }">{{ preview.expectedChrono }}{{ chronotracesSpec.glyph }}</span>
           <span class="stat-source" v-if="preview.chronoEssences > 0">
             from {{ preview.chronoEssences }}
             <template v-for="(key, idx) in chronoEssenceKeys" :key="key">
@@ -96,7 +96,7 @@
 
         <div class="stat-row">
           <span class="stat-label">Expected Time Flux:</span>
-          <span class="stat-value hl">{{ preview.expectedFlux }}∿</span>
+          <span class="stat-value hl" :style="{ color: timeFluxSpec.color }">{{ preview.expectedFlux }}{{ timeFluxSpec.glyph }}</span>
           <span class="stat-source" v-if="preview.fluxEssences > 0">
             from {{ preview.fluxEssences }}
             <template v-for="(key, idx) in fluxEssenceKeys" :key="key">
@@ -170,7 +170,7 @@ import atlasStorage from '../logic/AtlasStorage';
 import { translateForSnap, rotateMolecule } from '../logic/MoleculeUtils';
 import { HEX_SIZE, WAFER_CANVAS_WIDTH, WAFER_CANVAS_HEIGHT } from '../logic/RefineUIBehaviour';
 import { updateManualDragMolecule } from '../logic/ManualDrag';
-import { getShardDisplay } from '../utils/ShardDisplay';
+import { getResourceSpec } from '../logic/Resources';
 
 
 const props = defineProps<{
@@ -183,7 +183,11 @@ const emit = defineEmits<{
   (e: 'pickup-item', item: { id: string; molecule: Molecule }): void;
 }>();
 
-const shardColor = getShardDisplay('shards').color;
+const creditsSpec = getResourceSpec('credits');
+const chronotracesSpec = getResourceSpec('chronotraces');
+const timeFluxSpec = getResourceSpec('timeFlux');
+const shardSpec = getResourceSpec('shardDust');
+const shardColor = shardSpec.color;
 
 // Wafer comes from UIState (synced from GameState)
 const wafer = computed(() => uiState.wafer);

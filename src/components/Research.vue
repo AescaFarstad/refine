@@ -12,7 +12,7 @@
       <div>
         Clear {{ hoverPreview.pathCost }} ⬤ in the path for
         <span class="resource-price" :style="{ color: chronoColor }">
-          {{ hoverPreview.price }} ⧖
+          {{ hoverPreview.price }} {{ chronotracesSpec.glyph }}
         </span>
       </div>
     </div>
@@ -33,7 +33,7 @@
       <div>
         Next clear obstacle cost:
         <span class="resource-price" :style="{ color: chronoColor }">
-          {{ nextClearCost }}⧖
+          {{ nextClearCost }}{{ chronotracesSpec.glyph }}
         </span>
       </div>
     </div>
@@ -53,7 +53,7 @@
         <span v-else>
           Cost:
           <span class="resource-price" :style="{ color: chronoColor }">
-            {{ hoverPreview.price }} chrono
+            {{ hoverPreview.price }} {{ chronotracesSpec.name }}
           </span>
           <span v-if="hoverPreview.pathCost > 0">
             ({{ hoverPreview.pathCost }} obstacle<span v-if="hoverPreview.pathCost !== 1">s</span>)
@@ -71,13 +71,13 @@ import type { Point2 } from '../logic/ItemLib';
 import ResearchPane from './ResearchPane.vue';
 import { uiState, getGameState, getGameLib } from '../logic/UIState';
 import { axialToIndex, calculateResearchNodePrice, findCheapestPath } from '../logic/Research';
-import { getShardDisplay } from '../utils/ShardDisplay';
 import EditResearchPane from './EditResearchPane.vue';
 import ResearchNodeHint from './researchHints/ResearchNodeHint.vue';
 import type { ResearchCell } from '../logic/GameState';
 import type { ResearchArchetype, ResearchNodeInstance } from '../logic/ResearchLib';
 import { axialToPixel } from '../logic/HexMath';
 import { RESEARCH_OBSTACLE_PRICE, RESEARCH_OBSTACLE_PRICE_GROWTH } from '../logic/Const';
+import { getResourceSpec } from '../logic/Resources';
 
 const hoverCell = ref<Point2 | null>(null);
 const researchPane = ref<InstanceType<typeof ResearchPane> | null>(null);
@@ -88,7 +88,8 @@ function onHoverCell(cell: Point2 | null): void {
   hoverCell.value = cell;
 }
 
-const chronoColor = getShardDisplay('chronotraces').color;
+const chronotracesSpec = getResourceSpec('chronotraces');
+const chronoColor = chronotracesSpec.color;
 
 const hoverDistance = computed(() => {
   const cell = hoverCell.value;

@@ -40,11 +40,26 @@
           <div class="fs-item">Bags: <b>{{ finalBagsUsed }} / {{ finalBagsCapacity }}</b></div>
           <div class="fs-item">Health: <b>{{ finalHp }} / {{ finalMaxHp }}</b></div>
         </section>
+        <section class="quest-rewards" v-if="raidSuccess && (rewardChips.length || raidChangesText)">
+          <div class="qr-row" v-if="rewardChips.length">
+            <div class="qr-cap">Quest rewards</div>
+            <div class="qr-chips">
+              <span v-for="(chip, i) in rewardChips" :key="i" class="chip" :class="chip.class" :style="chip.style">{{ chip.text }}</span>
+            </div>
+          </div>
+          <div class="qr-row" v-if="raidChangesText">
+            <div class="qr-cap">Raid changes</div>
+            <div class="qr-text">{{ raidChangesText }}</div>
+          </div>
+        </section>
         <section class="barely-in-time" v-if="raidSuccess && barelyInTime">
           <div class="bt">You have barely escaped the collapsing zone.</div>
         </section>
         <section class="zone-change" v-if="zoneChangeText">
           <div class="zc">Your activity has changed the zone: <strong>{{ zoneChangeText }}</strong>.</div>
+        </section>
+        <section class="new-quests" v-if="raidSuccess && newQuestNames.length">
+          <div class="nq">New investigations available: <strong>{{ newQuestNames.join(', ') }}</strong>.</div>
         </section>
       </section>
       <section class="death-note" v-if="timelineComplete && !raidSuccess">
@@ -74,20 +89,20 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
-import { uiState, getGameLib } from '../logic/UIState';
+import { uiState, getGameLib, getGameState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
 import { CmdAknowledgeOutcome } from '../logic/input/InputCommands';
 import ItemDisplay from './ItemDisplay.vue';
 import { formatDurationHM } from '../logic/StringUtils';
 import { useRaidAgain } from '../logic/useRaidAgain';
-import type { RaidEventLogEntry } from '../logic/RaidLog';
+import type { LootEncounterLogEntry, RaidEventLogEntry } from '../logic/RaidLog';
 import RaidOutcomeLogPlayback from './raidOutcome/RaidOutcomeLogPlayback.vue';
+import { describeMutation } from '../logic/RaidMutation';
+import { getResourceSpec, type ResourceKey } from '../logic/Resources';
 
-const visible = computed(() => !!uiState.lastOutcome);
-const logEntries = computed<RaidEventLogEntry[]>(() => {
-  const o: any = uiState.lastOutcome as any;
-  return (o && o.log && Array.isArray(o.log.entries)) ? (o.log.entries as RaidEventLogEntry[]) : [];
-});
+const visible = computed(() => uiState.lastOutcome !== null);
+const outcome = computed(() => uiState.lastOutcome!);
+const logEntries = computed<RaidEventLogEntry[]>(() => outcome.value.log.entries);
 
 const shownCount = ref(0);
 const timelineComplete = ref(false);
@@ -99,72 +114,108 @@ function onTimelineComplete(v: boolean) { timelineComplete.value = v; }
 function onDisplayedTimeSec(v: number) { displayedTimeSec.value = v; }
 
 const totalEncounters = computed(() => {
-  const o: any = uiState.lastOutcome as any;
-  return Math.max(0, o?.plannedEncounters || 0);
+  return outcome.value.plannedEncounters;
 });
 
 // Header helpers
 const raidTitle = computed(() => {
-  const o: any = uiState.lastOutcome as any;
-  const id: string = (o?.id || '').trim();
-  const lib = getGameLib();
-  const name = id ? (lib?.raids.get(id)?.name || '') : '';
-  return name || (id || '');
+  const id = outcome.value.id;
+  const lib = getGameLib()!;
+  return lib.raids.get(id)!.name;
 });
 
-const raidSuccess = computed(() => !!((uiState.lastOutcome as any)?.success));
+const raidSuccess = computed(() => outcome.value.success);
 
 // Summary: aggregate gained and discarded items across the entire log
-function aggregateItems(filter: (e: any) => boolean): Array<{ id: string; quantity: number }> {
+function aggregateItems(discarded: boolean): Array<{ id: string; quantity: number }> {
   const counts: Record<string, number> = {};
-  for (const e of logEntries.value as any[]) {
-    if (!e || e.kind !== 'LootEncounter') continue;
-    if (!filter(e)) continue;
-    const id = e.itemId as string;
-    if (!id) continue;
-    counts[id] = (counts[id] || 0) + 1;
+  for (const e of logEntries.value) {
+    if (e.kind !== 'LootEncounter') continue;
+    const le = e as LootEncounterLogEntry;
+    if (le.skipped) continue;
+    if (!le.itemId) continue;
+    if (le.discarded !== discarded) continue;
+    counts[le.itemId] = (counts[le.itemId] || 0) + 1;
   }
   return Object.entries(counts).map(([id, quantity]) => ({ id, quantity }));
 }
-const gainedItems = computed(() => aggregateItems((e) => !!e.itemId && !e.discarded));
-const discardedItems = computed(() => aggregateItems((e) => !!e.itemId && !!e.discarded));
+const gainedItems = computed(() => aggregateItems(false));
+const discardedItems = computed(() => aggregateItems(true));
 
 const zoneChangeText = computed(() => {
-  const o: any = uiState.lastOutcome as any;
-  const s = (o && typeof o.zoneChange === 'string') ? (o.zoneChange as string) : '';
-  return s || '';
+  return outcome.value.zoneChange || '';
+});
+
+const newQuestNames = computed(() => {
+  const ids = outcome.value.newQuestsAvailable;
+  const lib = getGameLib()!;
+  return ids.map(id => lib.quests.get(id)!.name);
 });
 
 const finalHp = computed(() => {
-  const o: any = uiState.lastOutcome as any;
-  return Math.max(0, o?.finalHp ?? 0);
+  return outcome.value.finalHp;
 });
 
 const finalMaxHp = computed(() => {
-  const o: any = uiState.lastOutcome as any;
-  return Math.max(0, o?.finalMaxHp ?? 0);
+  return outcome.value.finalMaxHp;
 });
 
 const finalBagsUsed = computed(() => {
-  const o: any = uiState.lastOutcome as any;
-  return Math.max(0, o?.finalBagsUsed ?? 0);
+  return outcome.value.finalBagsUsed;
 });
 
 const finalBagsCapacity = computed(() => {
-  const o: any = uiState.lastOutcome as any;
-  return Math.max(0, o?.finalBagsCapacity ?? 0);
+  return outcome.value.finalBagsCapacity;
 });
 
 const barelyInTime = computed(() => {
-  const o: any = uiState.lastOutcome as any;
-  return !!o?.barelyInTime;
+  return outcome.value.barelyInTime;
+});
+
+type RewardChip = { text: string; class: string; style?: Record<string, string> };
+
+const rewardChips = computed<RewardChip[]>(() => {
+  const out: RewardChip[] = [];
+  const sp = outcome.value.skillPointsGained || 0;
+  if (sp > 0) out.push({ text: `+${sp}${getResourceSpec('skillPoints').glyph}`, class: 'res', style: resourceChipStyle('skillPoints') });
+
+  const r = outcome.value.resourcesGained;
+  const rewardResourceKeys = ['credits', 'chronotraces', 'timeFlux', 'shardDust'] as const;
+  for (const k of rewardResourceKeys) {
+    const v = r[k] || 0;
+    if (v > 0) out.push({ text: `+${v}${getResourceSpec(k).glyph}`, class: 'res', style: resourceChipStyle(k) });
+  }
+  return out;
+});
+
+function resourceChipStyle(key: ResourceKey): Record<string, string> {
+  const spec = getResourceSpec(key);
+  return { color: spec.color, background: spec.bgColor };
+}
+
+const raidChangesText = computed(() => {
+  const out: string[] = [];
+  const lc = outcome.value.lootChanceDeltaApplied || 0;
+  if (lc) out.push(`Loot chance ${lc >= 0 ? '+' : ''}${lc}%`);
+  const rb = outcome.value.lootingRarityBuffDeltaApplied || 0;
+  if (rb) out.push(`Loot rarity ${rb >= 0 ? '+' : ''}${rb}`);
+  if (outcome.value.raidMutationsApplied.length) {
+    const gs = getGameState()!;
+    const desc = outcome.value.raidMutationsApplied.map(m => describeMutation(gs, m)).join('; ');
+    if (desc) out.push(desc);
+  }
+  if (outcome.value.raidItemsAdded.length) {
+    const lib = getGameLib()!;
+    const names = outcome.value.raidItemsAdded.map(id => lib.getItem(id).name).join(', ');
+    out.push(`Drops: ${names}`);
+  }
+  return out.join('; ');
 });
 
 // Watch the outcome object itself to catch new raids starting
 watch(() => uiState.lastOutcome, (newOutcome, oldOutcome) => {
   if (newOutcome) {
-    // Prevent background page scroll when modal is open
-    try { document.body.style.overflow = 'hidden'; } catch (_) {}
+    document.body.style.overflow = 'hidden';
     shownCount.value = 0;
     displayedTimeSec.value = 0;
     timelineComplete.value = false;
@@ -172,18 +223,16 @@ watch(() => uiState.lastOutcome, (newOutcome, oldOutcome) => {
     shownCount.value = 0;
     displayedTimeSec.value = 0;
     timelineComplete.value = false;
-    // Restore background scroll
-    try { document.body.style.overflow = ''; } catch (_) {}
+    document.body.style.overflow = '';
   }
 });
 
 onBeforeUnmount(() => {
-  // Ensure we restore body scroll if component unmounts while open
-  try { document.body.style.overflow = ''; } catch (_) {}
+  document.body.style.overflow = '';
 });
 
 function fastForward() {
-  playbackRef.value?.fastForward?.();
+  playbackRef.value!.fastForward!();
 }
 
 const { raidAgain, canRaidAgain, raidAgainButtonLabel, raidAgainDisabledReason } = useRaidAgain();
@@ -220,10 +269,18 @@ function formatHMS(totalSec?: number): string { return formatDurationHM(totalSec
 
 .zone-change { margin-top: 10px; padding: 8px 10px; border: none; border-radius: 6px; background: rgba(255,255,255,0.03); }
 .zone-change .zc { font-weight: 400; }
+.new-quests { margin-top: 10px; padding: 8px 10px; border: none; border-radius: 6px; background: rgba(74, 222, 128, 0.08); border: 1px solid rgba(74, 222, 128, 0.25); }
+.new-quests .nq { font-weight: 500; color: rgba(74, 222, 128, 0.95); }
 .barely-in-time { margin-top: 10px; padding: 8px 10px; border: none; border-radius: 6px; background: rgba(251, 146, 60, 0.10); border: 1px solid rgba(251, 146, 60, 0.3); }
 .barely-in-time .bt { font-weight: 500; color: #fb923c; font-style: italic; }
 .final-state { margin-top: 10px; display: flex; gap: 10px; }
 .final-state .fs-item { padding: 8px 10px; border: none; border-radius: 6px; background: rgba(255,255,255,0.03); font-weight: 400; opacity: 0.9; }
+.quest-rewards { margin-top: 10px; padding: 8px 10px; border: none; border-radius: 6px; background: rgba(255,255,255,0.03); border: 1px solid rgba(148, 163, 184, 0.20); display: grid; gap: 8px; }
+.qr-row { display: grid; gap: 6px; }
+.qr-cap { font-weight: 900; letter-spacing: 0.04em; opacity: 0.95; font-size: 12px; text-transform: uppercase; }
+.qr-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.qr-text { font-weight: 700; font-size: 12px; color: var(--text-primary); }
+.chip { display: inline-flex; align-items: baseline; padding: 2px 6px; border-radius: 999px; background: rgba(255,255,255,0.06); }
 .death-note { margin-top: 10px; padding: 8px 10px; border: none; border-radius: 6px; background: rgba(255,255,255,0.03); }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; }
 .btn-wrap { display: inline-block; position: relative; }

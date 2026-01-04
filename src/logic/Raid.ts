@@ -7,7 +7,8 @@ import { handleLootLikeEncounter, handleMonsterLootEncounter } from './LootEncou
 import { handleFightEncounter } from './FightEncounter';
 import { handlePreparationEncounter, createPreparationEncounter } from './PreparationEncounter';
 import SeededRandom from './core/SeededRandom';
-import { cloneRaid, applyRaidMutation, questIsActive } from './RaidMutation';
+import { applyPermanentRaidMutation, cloneRaid, applyRaidMutation, questIsActive, type RaidMutation } from './RaidMutation';
+import type { QuestResourceRewards } from './QuestLib';
 
 export interface RaidRunResult {
   success: boolean;
@@ -15,6 +16,13 @@ export interface RaidRunResult {
   timeSpentSec: number;
   plannedEncounters: number;
   barelyInTime: boolean;
+  questsCompleted: string[];
+  skillPointsGained: number;
+  resourcesGained: QuestResourceRewards;
+  raidMutationsApplied: RaidMutation[];
+  raidItemsAdded: string[];
+  lootChanceDeltaApplied: number;
+  lootingRarityBuffDeltaApplied: number;
 }
 
 function loadoutGear(gs: GameState, raidId: string): GearDefinition[] {
@@ -232,6 +240,20 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
   // Elapsed time since the beginning of the raid
   let timeSpentSec = 0;
   let barelyInTime = false;
+  const questsCompleted: string[] = [];
+  let skillPointsGained = 0;
+  const resourcesGained: QuestResourceRewards = { credits: 0, chronotraces: 0, timeFlux: 0, shardDust: 0 };
+  const raidMutationsApplied: RaidMutation[] = [];
+  const raidItemsAdded: string[] = [];
+  let lootChanceDeltaApplied = 0;
+  let lootingRarityBuffDeltaApplied = 0;
+
+  const activeQuestIdsAtStart = new Set<string>();
+  if (!dryRun) {
+    gsForRun.lib.quests.forEach((q) => {
+      if (questIsActive(gsForRun, q, raidDef.id)) activeQuestIdsAtStart.add(q.id);
+    });
+  }
 
   // Build a mutable encounter queue expanded and ordered per concept buckets
   const queue: EncounterDef[] = buildEncounterQueue(gsForRun, raidDef);
@@ -264,7 +286,20 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         };
         log.entries.push(collapseEntry);
         raid.hp = 0;
-        return { success: false, log, timeSpentSec, plannedEncounters, barelyInTime: false };
+        return {
+          success: false,
+          log,
+          timeSpentSec,
+          plannedEncounters,
+          barelyInTime: false,
+          questsCompleted,
+          skillPointsGained,
+          resourcesGained,
+          raidMutationsApplied,
+          raidItemsAdded,
+          lootChanceDeltaApplied,
+          lootingRarityBuffDeltaApplied,
+        };
       } else {
         barelyInTime = true;
       }
@@ -327,7 +362,20 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         }
         // we died
         if (raid.hp <= 0) {
-          return { success: false, log, timeSpentSec, plannedEncounters, barelyInTime: false };
+          return {
+            success: false,
+            log,
+            timeSpentSec,
+            plannedEncounters,
+            barelyInTime: false,
+            questsCompleted,
+            skillPointsGained,
+            resourcesGained,
+            raidMutationsApplied,
+            raidItemsAdded,
+            lootChanceDeltaApplied,
+            lootingRarityBuffDeltaApplied,
+          };
         }
         if (raid.regenAfterEncounter > 0) {
           const hpBefore = raid.hp;
@@ -350,7 +398,103 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
     }
   }
 
-  return { success: true, log, timeSpentSec, plannedEncounters, barelyInTime };
+  if (!dryRun) {
+    const raidId = raidDef.id;
+    const raidEntry = gsForRun.unlockedRaids.find(r => r.id === raidId)!;
+    raidEntry.successes += 1;
+
+    const completedSet = new Set<string>();
+    // Quests with encounterTimeMin > 0 require a QuestEncounter in the log to complete
+    for (const e of log.entries) {
+      if (e.kind !== 'QuestEncounter') continue;
+      if (!activeQuestIdsAtStart.has(e.questId)) continue;
+      if (gsForRun.completedQuests.includes(e.questId)) continue;
+      completedSet.add(e.questId);
+    }
+
+    // Quests with encounterTimeMin === 0 complete just by finishing the raid
+    for (const qid of activeQuestIdsAtStart) {
+      if (gsForRun.completedQuests.includes(qid)) continue;
+      const q = gsForRun.lib.quests.get(qid)!;
+      if (q.encounterTimeMin > 0) continue;
+      completedSet.add(qid);
+    }
+
+    let shouldRebuildPools = false;
+
+    for (const qid of completedSet) {
+      const q = gsForRun.lib.quests.get(qid)!;
+
+      gsForRun.skillPoints += q.rewards.skillPoints;
+      skillPointsGained += q.rewards.skillPoints;
+      for (const u of q.rewards.unlocks) {
+        if (!gsForRun.unlocks.includes(u)) gsForRun.unlocks.push(u);
+      }
+
+      const rr = q.rewards.resources;
+      if (rr.credits) { gsForRun.credits += rr.credits; resourcesGained.credits += rr.credits; }
+      if (rr.chronotraces) { gsForRun.chronotraces += rr.chronotraces; resourcesGained.chronotraces += rr.chronotraces; }
+      if (rr.timeFlux) { gsForRun.timeFlux += rr.timeFlux; resourcesGained.timeFlux += rr.timeFlux; }
+      if (rr.shardDust) { gsForRun.shardDust += rr.shardDust; resourcesGained.shardDust += rr.shardDust; }
+
+      if (q.rewards.lootChanceDelta) {
+        const raidDefToChange = gsForRun.lib.raids.get(raidId)!;
+        const before = raidDefToChange.baseLootChance;
+        const after = Math.max(0, Math.min(100, before + q.rewards.lootChanceDelta));
+        raidDefToChange.baseLootChance = after;
+        lootChanceDeltaApplied += (after - before);
+      }
+
+      if (q.rewards.lootingRarityBuffDelta) {
+        const before = raidEntry.lootingRarityBuff;
+        const after = before + q.rewards.lootingRarityBuffDelta;
+        raidEntry.lootingRarityBuff = after;
+        lootingRarityBuffDeltaApplied += (after - before);
+      }
+
+      for (const m of q.rewards.raidMutations) {
+        applyPermanentRaidMutation(gsForRun, raidId, m);
+        raidMutationsApplied.push(m);
+      }
+
+      if (q.rewards.addRaidItems.length) {
+        const raidDefToChange = gsForRun.lib.raids.get(raidId)!;
+        for (const itemId of q.rewards.addRaidItems) {
+          if (raidDefToChange.items.includes(itemId)) continue;
+          raidDefToChange.items.push(itemId);
+          raidItemsAdded.push(itemId);
+          shouldRebuildPools = true;
+        }
+      }
+
+      gsForRun.completedQuests.push(qid);
+      questsCompleted.push(qid);
+      const i = gsForRun.activeQuests.indexOf(qid);
+      if (i !== -1) gsForRun.activeQuests.splice(i, 1);
+    }
+
+    if (shouldRebuildPools) {
+      const raidDefToChange = gsForRun.lib.raids.get(raidId)!;
+      raidDefToChange.itemPoolsByRarity = gsForRun.lib.buildItemPoolsByRarity(raidDefToChange.items);
+    }
+
+    raidEntry.questCompletions += questsCompleted.length;
+  }
+
+  return {
+    success: true,
+    log,
+    timeSpentSec,
+    plannedEncounters,
+    barelyInTime,
+    questsCompleted,
+    skillPointsGained,
+    resourcesGained,
+    raidMutationsApplied,
+    raidItemsAdded,
+    lootChanceDeltaApplied,
+    lootingRarityBuffDeltaApplied,
+  };
 }
 
 export function dryRunRaid(gs: GameState, raidDef: RaidDefinition): RaidRunResult {
@@ -361,9 +505,16 @@ export function getEffectiveRaidDefinition(gs: GameState, raidId: string): RaidD
   const def = cloneRaid(gs.lib.raids.get(raidId)!);
   gs.lib.quests.forEach((q) => {
     if (!questIsActive(gs, q, raidId)) return;
-    const muts = (q as any).encounters;
-    if (!muts) return;
-    for (const m of muts) applyRaidMutation(def, m);
+    if (q.encounterTimeMin > 0) {
+      // Ensure active quests with an encounter time create a quest encounter (for timing/log/completion).
+      const hasOwnQuestEncounter = def.encounters.some(step =>
+        step.encounter.type === 'QuestEncounter' && (step.encounter as QuestEncounterDef).questId === q.id && (step.count | 0) > 0
+      );
+      if (!hasOwnQuestEncounter) {
+        applyRaidMutation(def, { kind: 'QuestMutation', questId: q.id, count: 1 });
+      }
+    }
+    for (const m of q.encounters) applyRaidMutation(def, m);
   });
   const gear = loadoutGear(gs, raidId);
   applyGearToRaidDefinition(def, gear);
@@ -388,9 +539,9 @@ export function recomputeActiveRaidEstimates(gs: GameState, simulations = 100): 
       }
     }
   }
-  (gs as any).raidSurvivalEstimatePct = Math.round((wins / simulations) * 100);
-  (gs as any).raidTimeEstimateSec = wins > 0 ? Math.round(successTimeSum / wins) : 0;
-  (gs as any).raidZoneCollapseDeathPct = Math.round((zoneCollapseDeaths / simulations) * 100);
+  gs.raidSurvivalEstimatePct = Math.round((wins / simulations) * 100);
+  gs.raidTimeEstimateSec = wins > 0 ? Math.round(successTimeSum / wins) : 0;
+  gs.raidZoneCollapseDeathPct = Math.round((zoneCollapseDeaths / simulations) * 100);
 }
 
 export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {

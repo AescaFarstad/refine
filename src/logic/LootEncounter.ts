@@ -58,8 +58,7 @@ export function handleLootLikeEncounter(gs: GameState, r: ActiveRaid, ctx: LootE
   const thorough = (r.perks || []).includes(Perks.THOROUGH_SEARCH);
   const timeSpentSec = 300 + (thorough ? 300 : 0);
 
-  const lootBonus = Math.max(0, r.lootChanceBonus || 0);
-  const checkValue = clamp((ctx.baseLootChance || 0) + lootBonus, 0, 100);
+  const checkValue = clamp(ctx.baseLootChance + r.lootChanceBonus, 0, 100);
   const myRoll = Math.floor(gs.random.get() * 100);
 
   const entry: LootEncounterLogEntry = {
@@ -95,7 +94,8 @@ export function handleLootLikeEncounter(gs: GameState, r: ActiveRaid, ctx: LootE
     legendary: pools.legendary.length,
   };
 
-  const effLootChance = Math.max(0, r.lootChanceBonus || 0);
+  const raidEntry = gs.unlockedRaids.find(rr => rr.id === r.id)!;
+  const effLootChance = r.lootChanceBonus + raidEntry.lootingRarityBuff;
   const weights: Record<LootRarity, number> = {
     common: poolSizes.common > 0 ? 200 : 0,
     uncommon: poolSizes.uncommon > 0 ? 50 + effLootChance / 2 : 0,

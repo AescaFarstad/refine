@@ -3,7 +3,7 @@
     <div class="topbar">
       <div class="title">Ice Maze — {{ levelTitle }}</div>
       <div class="stats">
-        <span>Time flux remains: {{ movesLeft }}∿</span>
+        <span>{{ timeFluxSpec.name }} remains: {{ movesLeft }}{{ timeFluxSpec.glyph }}</span>
         <span v-if="totalKeys > 0" class="arrows-of-time">
           <span class="arrows-label">Arrows of time:</span>
           <span class="arrows">
@@ -49,6 +49,7 @@ import { globalInputQueue } from '../logic/Model';
 import { CmdMazeMove, CmdMazeReset, CmdMazeRestart } from '../logic/input/InputCommands';
 import type { MazeDefinition } from '../logic/MazeLib';
 import type { Point2 } from '../logic/core/math';
+import { getResourceSpec } from '../logic/Resources';
 
 const rootEl = ref<HTMLElement | null>(null);
 const staticCanvasEl = ref<HTMLCanvasElement | null>(null);
@@ -76,6 +77,8 @@ const keysCollected = computed(() => uiState.mazeKeysCollected);
 const totalKeys = computed(() => uiState.mazeTotalKeys);
 const failed = computed(() => uiState.mazeFailed);
 const solved = computed(() => uiState.mazeSolved);
+
+const timeFluxSpec = getResourceSpec('timeFlux');
 
 const artefactsTaken = computed(() => {
   const game = getGameState()?.maze;

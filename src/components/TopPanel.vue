@@ -10,7 +10,7 @@
           type="button"
         >
           <span class="tab-title">Raids</span>
-          <span class="tab-sub" :class="{ 'resource-animate': animatingCredits }"><span class="tab-label">Credits</span><span class="tab-value" data-resource-display="credits">{{ creditsDisplay }}</span></span>
+          <span class="tab-sub" :class="{ 'resource-animate': animatingCredits }"><span class="tab-label">{{ creditsSpec.name }}</span><span class="tab-value" data-resource-display="credits" :style="{ color: creditsSpec.color }">{{ creditsDisplay }}</span></span>
         </button>
         <button
           class="tab"
@@ -20,7 +20,7 @@
           type="button"
         >
           <span class="tab-title">Refine</span>
-          <span class="tab-sub" :class="{ 'resource-animate': animatingShards }"><span class="tab-label">Shards</span><span class="tab-value" data-resource-display="shards">{{ shardsDisplay }}</span></span>
+          <span class="tab-sub" :class="{ 'resource-animate': animatingShards }"><span class="tab-label">{{ shardSpec.name }}</span><span class="tab-value" data-resource-display="shards" :style="{ color: shardSpec.color }">{{ shardsDisplay }}</span></span>
         </button>
         <button
           class="tab"
@@ -30,7 +30,7 @@
           type="button"
         >
           <span class="tab-title">Research</span>
-          <span class="tab-sub" :class="{ 'resource-animate': animatingChronotraces }"><span class="tab-label">Chronotraces</span><span class="tab-value" data-resource-display="chronotraces">{{ chronoDisplay }}</span></span>
+          <span class="tab-sub" :class="{ 'resource-animate': animatingChronotraces }"><span class="tab-label">{{ chronotracesSpec.name }}</span><span class="tab-value" data-resource-display="chronotraces" :style="{ color: chronotracesSpec.color }">{{ chronoDisplay }}</span></span>
         </button>
         <button
           class="tab"
@@ -40,7 +40,7 @@
           type="button"
         >
           <span class="tab-title">Maze</span>
-          <span class="tab-sub" :class="{ 'resource-animate': animatingTimeFlux }"><span class="tab-label">Time Flux</span><span class="tab-value" data-resource-display="timeFlux">{{ fluxDisplay }}</span></span>
+          <span class="tab-sub" :class="{ 'resource-animate': animatingTimeFlux }"><span class="tab-label">{{ timeFluxSpec.name }}</span><span class="tab-value" data-resource-display="timeFlux" :style="{ color: timeFluxSpec.color }">{{ fluxDisplay }}</span></span>
         </button>
       </nav>
 
@@ -57,6 +57,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { uiState, timeDisplay } from '../logic/UIState';
+import { getResourceSpec } from '../logic/Resources';
 
 type TabKey = 'raid' | 'refine' | 'research' | 'maze';
 const activeTab = computed<TabKey>({
@@ -64,11 +65,16 @@ const activeTab = computed<TabKey>({
   set: (v: TabKey) => { uiState.activeTab = v; },
 });
 
+const creditsSpec = getResourceSpec('credits');
+const chronotracesSpec = getResourceSpec('chronotraces');
+const timeFluxSpec = getResourceSpec('timeFlux');
+const shardSpec = getResourceSpec('shardDust');
+
 // Tab sub-line resource displays
-const creditsDisplay = computed(() => `${uiState.credits}✦`);
-const chronoDisplay = computed(() => `${uiState.chronotraces}⧖`);
-const fluxDisplay = computed(() => `${uiState.timeFlux}∿`);
-const shardsDisplay = computed(() => `${uiState.shardDust}⌁`);
+const creditsDisplay = computed(() => `${uiState.credits}${creditsSpec.glyph}`);
+const chronoDisplay = computed(() => `${uiState.chronotraces}${chronotracesSpec.glyph}`);
+const fluxDisplay = computed(() => `${uiState.timeFlux}${timeFluxSpec.glyph}`);
+const shardsDisplay = computed(() => `${uiState.shardDust}${shardSpec.glyph}`);
 const inventoryCount = computed(() => (uiState.items || []).reduce((acc, it) => acc + (it?.quantity || 0), 0));
 const inventoryCountDisplay = computed(() => `${inventoryCount.value}`);
 

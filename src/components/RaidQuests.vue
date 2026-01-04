@@ -18,7 +18,10 @@
         <div class="hint" role="tooltip">
           <div class="hint-row" v-for="(row, i) in hintSections(q)" :key="i">
             <span class="hint-label">{{ row.label }}</span>
-            <span class="hint-value">{{ row.value }}</span>
+            <span class="hint-value" v-if="row.value !== null">{{ row.value }}</span>
+            <span class="hint-value" v-else>
+              <span v-for="(chip, j) in row.chips" :key="j" class="chip" :class="chip.class" :style="chip.style">{{ chip.text }}</span>
+            </span>
           </div>
         </div>
       </li>
@@ -32,7 +35,8 @@ import { uiState, getGameLib, getGameState } from '../logic/UIState';
 import type { QuestDefinition } from '../logic/QuestLib';
 import { globalInputQueue } from '../logic/Model';
 import { CmdToggleQuest } from '../logic/input/InputCommands';
-import { describeMutation, type RaidMutation } from '../logic/RaidMutation';
+import { describeMutation, questIsAvailable } from '../logic/RaidMutation';
+import { getResourceSpec, type ResourceKey } from '../logic/Resources';
 
 const activeRaidId = computed(() => uiState.activeRaidId || (uiState.raidOrder[0] || ''));
 
@@ -47,11 +51,11 @@ const quests = computed<QuestDefinition[]>(() => {
   const lib = getGameLib();
   const id = activeRaidId.value;
   if (!lib || !id) return [];
+  const gs = getGameState();
+  if (!gs) return [];
   const arr: QuestDefinition[] = [];
   lib.quests.forEach((q) => {
-    const applies = !q.raidRestriction || q.raidRestriction.includes(id);
-    if (!applies) return;
-    if (isCompleted(q.id)) return; // hide completed
+    if (!questIsAvailable(gs, q, id)) return;
     arr.push(q);
   });
   // Sort by name
@@ -59,36 +63,40 @@ const quests = computed<QuestDefinition[]>(() => {
   return arr;
 });
 
-function isCompleted(id: string): boolean {
-  // Touch outcome key to ensure reactivity after a raid
-  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-  uiState.lastOutcome;
-  const gs = getGameState();
-  const list = gs?.completedQuests || [];
-  return list.includes(id);
-}
-
 function isActive(id: string): boolean {
   // Depend on reactive ui mirror for reactivity
-  const arr = uiState.activeQuests || [];
-  return arr.includes(id);
+  return uiState.activeQuests.includes(id);
 }
 
-function formatReward(q: QuestDefinition): string {
-  const r = q.rewards || {};
-  const parts: string[] = [];
-  const sp = Math.max(0, (r as any).skillPoints || 0);
-  if (sp > 0) parts.push(`Skill Points +${sp}`);
-  if ((r.unlocks || []).length > 0) parts.push(`Unlocks ${r.unlocks!.length}`);
-  return parts.join(', ');
+type ChipStyle = Record<string, string>;
+type HintChip = { text: string; class: string; style?: ChipStyle };
+type HintRow = { label: string; value: string | null; chips: HintChip[] };
+
+function chipStyleForResource(key: ResourceKey): ChipStyle {
+  const spec = getResourceSpec(key);
+  return {
+    color: spec.color,
+    background: spec.bgColor,
+  };
 }
 
-function restrictionLabel(q: QuestDefinition): string {
-  const ids = q.raidRestriction || [];
-  if (!ids.length) return 'Any raid';
-  const lib = getGameLib();
-  const names = ids.map(id => lib?.raids.get(id)?.name || id);
-  return `Limited to: ${names.join(', ')}`;
+function formatRewardsChips(q: QuestDefinition): HintChip[] {
+  const r = q.rewards;
+  const chips: HintChip[] = [];
+  const sp = r.skillPoints || 0;
+  if (sp > 0) chips.push({ text: `+${sp}${getResourceSpec('skillPoints').glyph}`, class: 'res', style: chipStyleForResource('skillPoints') });
+
+  const res = r.resources;
+  const rewardResourceKeys = ['credits', 'chronotraces', 'timeFlux', 'shardDust'] as const;
+  for (const k of rewardResourceKeys) {
+    const v = res[k] || 0;
+    if (v > 0) chips.push({ text: `+${v}${getResourceSpec(k).glyph}`, class: 'res', style: chipStyleForResource(k) });
+  }
+
+  const unlocks = r.unlocks.length;
+  if (unlocks > 0) chips.push({ text: `Unlocks ${unlocks}`, class: 'unlocks' });
+
+  return chips;
 }
 
 function onQuestClick(q: QuestDefinition): void {
@@ -97,19 +105,39 @@ function onQuestClick(q: QuestDefinition): void {
   globalInputQueue.push(new CmdToggleQuest({ id: q.id, active: next }));
 }
 
-function hintSections(q: QuestDefinition): Array<{ label: string; value: string }> {
-  const out: Array<{ label: string; value: string }> = [];
-  const encs = (q as any).encounters as RaidMutation[] | undefined;
-  if (Array.isArray(encs) && encs.length) {
+function hintSections(q: QuestDefinition): HintRow[] {
+  const out: HintRow[] = [];
+  const encs = q.encounters;
+  if (encs.length) {
     const gs = getGameState();
     const desc = encs
       .map(m => describeMutation(gs!, m))
       .filter((s): s is string => !!s && s.length > 0)
       .join('; ');
-    if (desc) out.push({ label: 'Encounters:', value: desc });
+    if (desc) out.push({ label: 'Active effects:', value: desc, chips: [] });
   }
-  const reward = formatReward(q);
-  if (reward) out.push({ label: 'Rewards:', value: reward });
+
+  const raidParts: string[] = [];
+  const r = q.rewards;
+  if (r.lootChanceDelta) raidParts.push(`Loot chance ${r.lootChanceDelta >= 0 ? '+' : ''}${r.lootChanceDelta}%`);
+  if (r.lootingRarityBuffDelta) raidParts.push(`Loot rarity ${r.lootingRarityBuffDelta >= 0 ? '+' : ''}${r.lootingRarityBuffDelta}`);
+  if (r.raidMutations.length) {
+    const gs = getGameState();
+    const desc = r.raidMutations
+      .map(m => describeMutation(gs!, m))
+      .filter((s): s is string => !!s && s.length > 0)
+      .join('; ');
+    if (desc) raidParts.push(desc);
+  }
+  if (r.addRaidItems.length) {
+    const lib = getGameLib()!;
+    const names = r.addRaidItems.map(id => lib.getItem(id).name).join(', ');
+    raidParts.push(`Drops: ${names}`);
+  }
+  if (raidParts.length) out.push({ label: 'Raid:', value: raidParts.join('; '), chips: [] });
+
+  const rewardChips = formatRewardsChips(q);
+  if (rewardChips.length) out.push({ label: 'Rewards:', value: null, chips: rewardChips });
   return out;
 }
 </script>
@@ -175,4 +203,8 @@ function hintSections(q: QuestDefinition): Array<{ label: string; value: string 
 .hint-label { color: var(--text-secondary); font-size: 11px; letter-spacing: 0.06em; font-weight: 800; }
 .hint-value { color: var(--text-primary); font-size: 12px; font-weight: 800; }
 .quest:hover .hint { display: grid; }
+
+.chip { display: inline-flex; align-items: baseline; padding: 2px 6px; border-radius: 999px; background: rgba(255,255,255,0.06); margin-right: 6px; }
+.chip:last-child { margin-right: 0; }
+.chip.unlocks { color: rgba(251, 146, 60, 0.95); background: rgba(251, 146, 60, 0.10); }
 </style>

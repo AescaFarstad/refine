@@ -957,9 +957,30 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
   },
   red_rubber_ball: {
     name: 'Red Rubber Ball',
-    volume: 1,
-    rarity: 1,
-    molecule: blankMolecule,
+    volume: 5,
+    rarity: 2,
+    molecule: {
+      atoms: [
+        { color: 'red', x: 0, y: -1 },
+        { color: 'red', x: 1, y: -1 },
+        { color: 'red', x: -1, y: 0 },
+        { color: 'cyan', x: 0, y: 0 },
+        { color: 'red', x: 1, y: 0 },
+        { color: 'red', x: -1, y: 1 },
+        { color: 'red', x: 0, y: 1 },
+      ],
+      connections: [
+        { from: { x: -1, y: 0 }, to: { x: 0, y: 0 } },
+        { from: { x: 1, y: 0 }, to: { x: 0, y: 0 } },
+        { from: { x: 0, y: -1 }, to: { x: -1, y: 0 } },
+        { from: { x: 0, y: -1 }, to: { x: 0, y: 0 } },
+        { from: { x: 1, y: -1 }, to: { x: 1, y: 0 } },
+        { from: { x: 1, y: -1 }, to: { x: 0, y: 0 } },
+        { from: { x: -1, y: 1 }, to: { x: 0, y: 1 } },
+        { from: { x: 0, y: 0 }, to: { x: -1, y: 1 } },
+        { from: { x: 0, y: 0 }, to: { x: 0, y: 1 } },
+      ],
+    },
   },
   christmas_ball: {
     name: 'Christmas Ball',

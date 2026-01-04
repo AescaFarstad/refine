@@ -1,21 +1,13 @@
+import { getResourceSpecByAnyKey } from '../logic/Resources';
+
 export interface ShardDisplayInfo {
   symbol: string;
   color: string;
 }
 
 export function getShardDisplay(resource: string): ShardDisplayInfo {
-  switch (resource) {
-    case 'credits':
-      return { symbol: '✦', color: '#f56565' }; // red-ish
-    case 'chronotraces':
-      return { symbol: '⧖', color: '#4299e1' }; // blue-ish
-    case 'timeFlux':
-      return { symbol: '∿', color: '#48bb78' }; // green-ish
-    case 'shards':
-      return { symbol: '⌁', color: '#fbbf24' }; // golden-ish
-    default:
-      return { symbol: '?', color: '#fff' };
-  }
+  const spec = getResourceSpecByAnyKey(resource);
+  return { symbol: spec.glyph, color: spec.color };
 }
 
 export function calculateShardFontSize(amount: number): number {

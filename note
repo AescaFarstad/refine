@@ -40,7 +40,9 @@ january 1
 january 2
   balancing, html visuals, cyan essence, tactics
 january 3
-  refactoring, defensive programming clean-up, balancing, quests
+  refactoring, defensive programming clean-up, balancing
+january 4
+  quests, images
 
 
 Images:
@@ -118,16 +120,16 @@ stim patch
 plasma bag
 bio foam dispencer
 surgical stappler
+
 summons
 remains
+
 decoy
 weight
 road weaves
 search
 fight
 investigate
-
-not enough credits in research
 
 
 Firearms check-up
@@ -154,3 +156,51 @@ known items in this raid
 
 descriptions for perks
 summoned encounters shouldn't advance displayed progress
+
+
+S: 1
+Explore new loot locations
+E: 
+  +3 km
+
+1:
+Break through a spikder
+E:
+  + spikder
+R: 
+  +scavange site, + 5% loot chance
+
+
+Break through a flower human
+E:
+  + fh
+R: 
+  +3 scavange sites
+
+Break through a pack of distorted
+E:
+  + 3 distorted
+R:
+  + raid looting
+  + rubber ball
+
+3:
+Locate another zone
+E:
+  +5km
+  +1h
+R:
+  unlock next raid
+
+
+
+As a reward, quest should be able to:
+Permanently add encounters to the raid (via specifying raid mutations) (the raid is the raid where that quest was completed)
+Alter loot chance in the raid
+Increase lootingRarityBuff
+Give resources
+Add items to the raid drop table.
+
+End-of-raid quest processing should be done in runRaid, not in InputProcessor
+
+Add support for these in UI as well. The resource values should be color-coded and accompanied with the resource symbol.

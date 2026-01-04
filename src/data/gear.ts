@@ -480,6 +480,7 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 1,
     image: 'smoke_grenade',
   },
+  /*
   summon_slimy_mound: {
     name: 'Summon Slimy Mound',
     category: 'summons',
@@ -515,6 +516,7 @@ const gear: Record<string, RawGearDefinition> = {
     price: 150,
     image: 'smoke_grenade',
   },
+  */
 };
 
 export default gear;

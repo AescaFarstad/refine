@@ -4,7 +4,7 @@
       <div v-if="gear">
         <div class="unlock-text">Unlock gear: <span class="gear-name">{{ gear.name }}</span></div>
         <div class="gear-info">Type: {{ categoryName }}</div>
-        <div class="gear-info">Price: <span class="price">{{ gear.price }}✦</span></div>
+        <div class="gear-info">Price: <span class="price" :style="{ color: creditsSpec.color }">{{ gear.price }}{{ creditsSpec.glyph }}</span></div>
         <div class="gear-info">Weight: {{ gear.weight }}</div>
         <GearStatsHint :gear="gear" class="gear-stats" />
       </div>
@@ -19,12 +19,15 @@ import type { ResearchCell } from '../../logic/GameState';
 import type { ResearchArchetype, ResearchNodeInstance } from '../../logic/ResearchLib';
 import { getGameState } from '../../logic/UIState';
 import GearStatsHint from '../GearStatsHint.vue';
+import { getResourceSpec } from '../../logic/Resources';
 
 const props = defineProps<{
   cell: ResearchCell;
   node: ResearchNodeInstance | null;
   archetype: ResearchArchetype | null;
 }>();
+
+const creditsSpec = getResourceSpec('credits');
 
 const gearId = computed(() => props.archetype?.gearId || '');
 
@@ -75,7 +78,6 @@ const categoryName = computed(() => {
 }
 
 .price {
-  color: rgba(251, 191, 36, 0.95);
   font-weight: 600;
 }
 

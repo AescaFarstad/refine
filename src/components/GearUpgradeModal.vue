@@ -2,7 +2,7 @@
   <div v-if="visible" class="modal-backdrop" @click.self="close">
     <div class="modal">
       <header class="modal-header">
-        <h3 class="modal-title">Skill Points: {{ skillPoints }}</h3>
+        <h3 class="modal-title">{{ skillPointsSpec.name }}: {{ skillPoints }}{{ skillPointsSpec.glyph }}</h3>
       </header>
 
       <section class="modal-body">
@@ -20,11 +20,11 @@
                 class="btn upgrade"
                 @click="upgrade(cat.id)"
               >
-                Add slot for <span class="cost-highlight">{{ getUpgradeCost(cat.id) }}</span> skill points
+                Add slot for <span class="cost-highlight">{{ getUpgradeCost(cat.id) }}</span> {{ skillPointsLabelLower }}
               </button>
               <div v-else class="requirement-label">
                 <template v-if="getUpgradeCost(cat.id) >= 999">Maximum reached</template>
-                <template v-else>Requires <span class="cost-dim">{{ getUpgradeCost(cat.id) }}</span> skill points</template>
+                <template v-else>Requires <span class="cost-dim">{{ getUpgradeCost(cat.id) }}</span> {{ skillPointsLabelLower }}</template>
               </div>
             </div>
           </div>
@@ -43,6 +43,7 @@ import { computed } from 'vue';
 import { uiState, getGameState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
 import { CmdUpgradeGearCategory } from '../logic/input/InputCommands';
+import { getResourceSpec } from '../logic/Resources';
 
 const visible = computed(() => uiState.gearUpgradeModalOpen);
 
@@ -50,6 +51,9 @@ const skillPoints = computed(() => {
   const gs = getGameState();
   return Math.max(0, gs?.skillPoints || 0);
 });
+
+const skillPointsSpec = getResourceSpec('skillPoints');
+const skillPointsLabelLower = skillPointsSpec.name.toLowerCase();
 
 interface CategoryInfo {
   id: string;

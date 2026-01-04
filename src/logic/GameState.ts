@@ -12,6 +12,7 @@ import { createWafer } from "./Wafer";
 import { initResearchCells } from "./Research";
 import gearCategories from "../data/gear_categories";
 import type { RaidEventLog } from './RaidLog';
+import type { RaidMutation } from './RaidMutation';
 
 export const DEFAULT_SPEED: number = 6;
 export const MIN_WALK_SPEED: number = 1; // km/h
@@ -134,8 +135,11 @@ export class Raid {
     this.id = id;
   }
   public id: string = "";
+  public successes: number = 0;
+  public questCompletions: number = 0;
   public questsDone: number = 0;
   public questProgress: number = 0;
+  public lootingRarityBuff: number = 0;
 }
 
 export class RaidOutcome {
@@ -154,6 +158,12 @@ export class RaidOutcome {
   public timeSpentSec: number = 0;
   public skillPointsGained: number = 0;
   public questsCompleted: string[] = [];
+  public resourcesGained: ResourceDelta = { credits: 0, chronotraces: 0, timeFlux: 0, shardDust: 0 };
+  public raidMutationsApplied: RaidMutation[] = [];
+  public raidItemsAdded: string[] = [];
+  public lootChanceDeltaApplied: number = 0;
+  public lootingRarityBuffDeltaApplied: number = 0;
+  public newQuestsAvailable: string[] = [];
   public zoneChange: string | null = null;
   public finalHp: number = 0;
   public finalMaxHp: number = 0;
@@ -171,6 +181,13 @@ export class RefineryOutcome {
   public creditsGained: number = 0;
   public chronotracesGained: number = 0;
   public timeFluxGained: number = 0;
+}
+
+export interface ResourceDelta {
+  credits: number;
+  chronotraces: number;
+  timeFlux: number;
+  shardDust: number;
 }
 
 export interface Shard {

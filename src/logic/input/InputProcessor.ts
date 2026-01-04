@@ -6,7 +6,7 @@ import { EvtRefineryDone } from '../evt/Evt';
 import { computeRefinePreviewChem, computeEffectiveEssences } from '../RefinePreview';
 import type { Point2 } from '../core/math';
 import { runRaid, recomputeActiveRaidParams, toggleGearForRaid, recomputeActiveRaidEstimates, getEffectiveRaidDefinition } from '../Raid';
-import { pickAndApplyRaidSuccessMutation, describeMutation } from '../RaidMutation';
+import { pickAndApplyRaidSuccessMutation, describeMutation, questIsAvailable } from '../RaidMutation';
 import { placeMolecule, removeMolecule, enableCellWithFloodfill, computeWaferUpgradePrice } from '../Wafer';
 import { applyResearchPurchase } from '../Research';
 import type { LootEncounterLogEntry } from '../RaidLog';
@@ -26,7 +26,23 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
 
   recomputeActiveRaidParams(gs, c.id);
 
-  const gearCost = Math.max(0, Math.floor(gs.selectedGearPrice));
+  const listAvailableQuestIdsAllRaids = (): string[] => {
+    const raidIds = gs.unlockedRaids.map(r => r.id);
+    const out: string[] = [];
+    gs.lib.quests.forEach((q) => {
+      for (const raidId of raidIds) {
+        if (questIsAvailable(gs, q, raidId)) {
+          out.push(q.id);
+          break;
+        }
+      }
+    });
+    return out.sort();
+  };
+
+  const availableQuestIdsBefore = listAvailableQuestIdsAllRaids();
+
+  const gearCost = Math.floor(gs.selectedGearPrice);
   if (gearCost > 0) {
     if (gs.credits < gearCost) return;
     gs.credits -= gearCost;
@@ -49,6 +65,8 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
 
     for (const [id, qty] of Object.entries(lootCounts)) {
       const q = qty | 0;
+      const t = gs.lib.getItem(id);
+      if (!t) console.error(`[InputProcessor] LootEncounter: unknown item id "${id}"`);
       const essence = gs.lib.getItem(id).essence;
       for (const k of Object.keys(essence))
         gs.encounteredEssences[k] = true;
@@ -58,35 +76,20 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
     }
   }
 
-  // End-of-raid quest processing (skill points)
-  let skillPointsGained = 0;
-  const completedNow: string[] = [];
   let zoneChange: string | null = null;
   if (result.success) {
-    gs.lib.quests.forEach((q, id) => {
-      const already = gs.completedQuests.includes(id);
-      const applies = (!q.raidRestriction || q.raidRestriction.includes(c.id)) && q.autoaccept;
-      if (!already && applies) {
-        const r = q.rewards || {};
-        const incSP = Math.max(0, (r as any).skillPoints ?? 0);
-        if (incSP > 0) {
-          gs.skillPoints += incSP;
-          skillPointsGained += incSP;
-        }
-        gs.completedQuests.push(id);
-        completedNow.push(id);
-      }
-    });
-
     const chosen = pickAndApplyRaidSuccessMutation(gs, c.id);
     if (chosen) {
       zoneChange = describeMutation(gs, chosen.mutation);
     }
   }
 
+  const availableQuestIdsAfter = result.success ? listAvailableQuestIdsAllRaids() : availableQuestIdsBefore;
+  const newQuestsAvailable = availableQuestIdsAfter.filter(id => !availableQuestIdsBefore.includes(id));
+
   gs.lastRaidOutcome = {
     id: c.id,
-    questsDone: completedNow.length,
+    questsDone: result.questsCompleted.length,
     success: result.success,
     questDeltaPct: 0,
     unlockedRaidId: null,
@@ -96,8 +99,14 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
     looted: [],
     discardedByVolume: [],
     discardedByLuck: [],
-    skillPointsGained,
-    questsCompleted: completedNow,
+    skillPointsGained: result.skillPointsGained,
+    questsCompleted: result.questsCompleted,
+    resourcesGained: result.resourcesGained,
+    raidMutationsApplied: result.raidMutationsApplied,
+    raidItemsAdded: result.raidItemsAdded,
+    lootChanceDeltaApplied: result.lootChanceDeltaApplied,
+    lootingRarityBuffDeltaApplied: result.lootingRarityBuffDeltaApplied,
+    newQuestsAvailable,
     zoneChange,
     finalHp: gs.raid.hp,
     finalMaxHp: gs.raid.maxHp,

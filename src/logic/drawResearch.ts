@@ -9,6 +9,7 @@ import { drawHexagon } from './DrawHex';
 import type { Point2 } from './ItemLib';
 import atlasStorage from './AtlasStorage';
 import { computeMaxSquareForHexNode, type MaxSquareResult } from './MaxSquareInHexNode';
+import { getResourceSpecByAnyKey } from './Resources';
 
 const RESEARCH_COLOR_OWNED_BG = 'rgba(74, 222, 128, 0.6)';
 const RESEARCH_COLOR_UNOWNED_BG = 'rgba(47, 60, 101, 0.45)';
@@ -29,12 +30,13 @@ const RESEARCH_STAT_ICON_SPECS: Record<string, StatIconSpec> = {
   researchRevealRadius: { glyph: '◎', offsetX: 0, offsetY: 0},
 };
 
-const RESOURCE_GLYPHS: Record<string, StatIconSpec> = {
-  credits: { glyph: '✦', offsetX: 0, offsetY: 2 },
-  chronotraces: { glyph: '⧖', offsetX: 0, offsetY: 0 },
-  timeFlux: { glyph: '∿', offsetX: 0, offsetY: 1 },
-  shards: { glyph: '⌁', offsetX: 0, offsetY: 0 },
-  skillPoints: { glyph: '◌', offsetX: 0, offsetY: 0 },
+const RESOURCE_ICON_OFFSETS: Record<string, Omit<StatIconSpec, 'glyph'>> = {
+  credits: { offsetX: 0, offsetY: 2 },
+  chronotraces: { offsetX: 0, offsetY: 0 },
+  timeFlux: { offsetX: 0, offsetY: 1 },
+  shards: { offsetX: 0, offsetY: 0 },
+  shardDust: { offsetX: 0, offsetY: 0 },
+  skillPoints: { offsetX: 0, offsetY: 0 },
 };
 
 export function getStatGlyph(statKey: string): string {
@@ -43,8 +45,7 @@ export function getStatGlyph(statKey: string): string {
 }
 
 export function getResourceGlyph(resourceKey: string): string {
-  const spec = RESOURCE_GLYPHS[resourceKey];
-  return spec?.glyph || '⚠';
+  return getResourceSpecByAnyKey(resourceKey).glyph;
 }
 
 const nodeSquareCache: Map<number, MaxSquareResult> = new Map();
@@ -239,7 +240,7 @@ function drawNodeOverlay(
     return;
   }
 
-  // Resource nodes: draw the resource icon (e.g. ✦ for credits)
+  // Resource nodes: draw the resource icon
   if (type === 'resource' && !covert) {
     drawResourceIconForNode(ctx, cells, archetype, owned, origin, hexSize);
     return;
@@ -343,8 +344,8 @@ function drawResourceIconForNode(
   if (!resourceKey) return;
   if (!cells.length) return;
 
-  const spec = RESOURCE_GLYPHS[resourceKey];
-  if (!spec) return;
+  const offsets = RESOURCE_ICON_OFFSETS[resourceKey]!;
+  const glyph = getResourceSpecByAnyKey(resourceKey).glyph;
 
   const nodeId = cells.length > 0 ? cells[0].nodeId : -1;
   const axialCells: Point2[] = cells.map(info => info.axial);
@@ -383,8 +384,8 @@ function drawResourceIconForNode(
     fontSize = Math.min(fontSize, maxIconSize);
   }
 
-  centerX += spec.offsetX;
-  centerY += spec.offsetY;
+  centerX += offsets.offsetX;
+  centerY += offsets.offsetY;
 
   ctx.save();
   ctx.globalAlpha = owned ? 1 : 0.95;
@@ -392,7 +393,7 @@ function drawResourceIconForNode(
   ctx.textBaseline = 'middle';
   ctx.font = `bold ${fontSize}px sans-serif`;
   ctx.fillStyle = 'rgba(248, 250, 252, 0.96)';
-  ctx.fillText(spec.glyph, centerX, centerY);
+  ctx.fillText(glyph, centerX, centerY);
   ctx.restore();
 }
 

@@ -2,7 +2,8 @@ import type { LootRarity, RaidDefinition } from "./RaidLib";
 import type { GearDefinition, RawGearDefinition } from './GearLib';
 import { parseGearDefinitions } from './GearLib';
 import type { GearCategoryDefinition } from './GearCategoryLib';
-import type { QuestDefinition } from './QuestLib';
+import type { QuestDefinition, RawQuestDefinition } from './QuestLib';
+import { normalizeQuestDefinition } from './QuestLib';
 import { ItemDefinition } from "./ItemLib";
 import type { MonsterDefinition } from './MonsterLib';
 import monstersData from '../data/monsters';
@@ -49,7 +50,7 @@ export class Lib {
     return { common: [], uncommon: [], rare: [], legendary: [] };
   }
 
-  private _buildItemPoolsByRarity(ids?: string[]): Record<LootRarity, string[]> {
+  public buildItemPoolsByRarity(ids?: string[]): Record<LootRarity, string[]> {
     if (!Array.isArray(ids) || ids.length === 0) return this._emptyItemPoolsByRarity();
     const pools: Record<LootRarity, string[]> = this._emptyItemPoolsByRarity();
     for (const id of ids) {
@@ -80,7 +81,7 @@ export class Lib {
             name: def.name,
             description: def.description,
             baseLootChance: def.baseLootChance,
-            items: def.items,
+            items: Array.isArray(def.items) ? def.items : [],
             encounters: def.encounters,
             order: orderIndex++,
             zoneCollapseSec: def.zoneCollapseSec,
@@ -95,7 +96,7 @@ export class Lib {
             name: withId.name,
             description: withId.description,
             baseLootChance: withId.baseLootChance,
-            items: Array.isArray(withId.items) ? [...withId.items] : undefined,
+            items: Array.isArray(withId.items) ? [...withId.items] : [],
             encounters: (withId.encounters || []).map(step => ({
               count: Math.max(0, step.count | 0),
               // Encounter objects in our union are flat; shallow-clone is sufficient
@@ -227,13 +228,21 @@ export class Lib {
       }
 
       for (const raid of this.raidSources.values()) {
-        raid.itemPoolsByRarity = this._buildItemPoolsByRarity(raid.items);
+        raid.itemPoolsByRarity = this.buildItemPoolsByRarity(raid.items);
       }
       for (const raid of this.raids.values()) {
-        raid.itemPoolsByRarity = this._buildItemPoolsByRarity(raid.items);
+        raid.itemPoolsByRarity = this.buildItemPoolsByRarity(raid.items);
       }
 
-      this.quests = this._processDataDefinitions<QuestDefinition>(questsData as unknown as Record<string, QuestDefinition>);
+      {
+        const rawQuests = questsData as unknown as Record<string, RawQuestDefinition>;
+        const map = new Map<string, QuestDefinition>();
+        for (const id in rawQuests) {
+          if (!Object.prototype.hasOwnProperty.call(rawQuests, id)) continue;
+          map.set(id, normalizeQuestDefinition(id, rawQuests[id]));
+        }
+        this.quests = map;
+      }
       {
         const raw: Record<string, any> = monstersData as unknown as Record<string, any>;
         const map = new Map<string, MonsterDefinition>();

@@ -23,6 +23,7 @@ import { renderResearchBaseLayer } from '../logic/drawResearch';
 import { findCheapestPath, indexToAxial, axialToIndex, calculateVisibility, calculateResearchNodePrice } from '../logic/Research';
 import { globalInputQueue } from '../logic/Model';
 import { CmdResearchNode } from '../logic/input/InputCommands';
+import { getResourceSpec } from '../logic/Resources';
 
 const container = ref<HTMLDivElement | null>(null);
 const baseCanvas = ref<HTMLCanvasElement | null>(null);
@@ -74,7 +75,8 @@ defineExpose({
   HEX_SIZE,
 });
 
-const RESEARCH_PATH_OBSTACLE_ICON_COLOR = '#b1dcff';
+const chronotracesSpec = getResourceSpec('chronotraces');
+const RESEARCH_PATH_OBSTACLE_ICON_COLOR = chronotracesSpec.color;
 
 onMounted(() => {
   setupCanvases();
@@ -315,14 +317,14 @@ function renderHighlightLayer() {
        lineWidth: 2,
      });
 
-     // Draw ⧖ icon for obstacle cells that will be destroyed (cost > 0)
+     // Draw resource icon for obstacle cells that will be destroyed (cost > 0)
      if (cellData && cellData.cost > 0) {
        ctx.save();
        ctx.fillStyle = RESEARCH_PATH_OBSTACLE_ICON_COLOR;
        ctx.textAlign = 'center';
        ctx.textBaseline = 'middle';
        ctx.font = `bold ${HEX_SIZE * 1.2}px system-ui, -apple-system, Segoe UI, sans-serif`;
-       ctx.fillText('⧖', center.x, center.y);
+       ctx.fillText(chronotracesSpec.glyph, center.x, center.y);
        ctx.restore();
      }
   }

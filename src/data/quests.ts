@@ -1,11 +1,19 @@
-import type { QuestDefinition } from '../logic/QuestLib';
+import type { RawQuestDefinition } from '../logic/QuestLib';
 
-// Minimal quests for raid testing/progression (Stage 8)
-const quests: Record<string, Omit<QuestDefinition, 'id'>> = {
-  q_reach_5: {
-    name: 'Establish a Foothold',
-    encounterTimeMin: 10,
+const quests: Record<string, RawQuestDefinition> = {
+  sheg_1: {
+    name: 'Explore new locations',
     raidRestriction: ['shegolskoe'],
+    encounters: [
+      { kind: 'WalkMutation', count: 3 },
+    ],
+  },
+  sheg_2_1: {
+    name: 'Break through a spikder',
+    raidRestriction: ['shegolskoe'],
+    encounters: [
+      { kind: 'AddMonsterMutation', monsterId: 'spikder', count: 1 },
+    ],
     rewards: { skillPoints: 1 },
   },
   q_sp_training_1: {
@@ -26,7 +34,6 @@ const quests: Record<string, Omit<QuestDefinition, 'id'>> = {
       { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 3 },
     ],
   },
-  // Ozernoye completion rewards
   q_reach_oz_boost_2: {
     name: 'Survey the Lakefront',
     encounterTimeMin: 10,
@@ -54,7 +61,6 @@ const quests: Record<string, Omit<QuestDefinition, 'id'>> = {
       { kind: 'AddMonsterMutation', monsterId: 'flower', count: 1 },
     ],
   },
-  // Quest that injects a timed QuestEncounter into Shegolskoe
   q_soil_sample: {
     name: 'Anomaly Soil Sample',
     encounterLine: 'Gathering anomaly soil',
@@ -62,7 +68,6 @@ const quests: Record<string, Omit<QuestDefinition, 'id'>> = {
     raidRestriction: ['shegolskoe'],
     rewards: { skillPoints: 1 },
   },
-  // While active, adds a distorted encounter to Shegolskoe
   q_add_rat_to_shegolskoe: {
     name: 'Infestation in Shegolskoe',
     encounterTimeMin: 0,

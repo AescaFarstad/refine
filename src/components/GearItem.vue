@@ -22,7 +22,7 @@
     <!-- Bottom-right weight label (no special background); hidden when zero -->
     <div class="g-weight" v-if="gear.weight > 0">{{ gear.weight }} w</div>
 
-    <div class="g-price" v-if="price > 0">{{ price.toLocaleString() }}✦</div>
+    <div class="g-price" v-if="price > 0">{{ price.toLocaleString() }}{{ creditsSpec.glyph }}</div>
   </button>
 
 </template>
@@ -32,6 +32,7 @@ import { computed, toRefs, ref, onMounted } from 'vue';
 import type { GearDefinition } from '../logic/GearLib';
 import atlasStorage from '../logic/AtlasStorage';
 import GearStatsHint from './GearStatsHint.vue';
+import { getResourceSpec } from '../logic/Resources';
 
 const props = defineProps<{
   gear: GearDefinition;
@@ -43,6 +44,8 @@ const props = defineProps<{
 }>();
 
 defineEmits<{ (e: 'toggle'): void }>();
+
+const creditsSpec = getResourceSpec('credits');
 
 // expose individual props to template for convenience
 const { gear, selected, unaffordable, blocked, price, hintRight } = toRefs(props);

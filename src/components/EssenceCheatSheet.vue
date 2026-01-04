@@ -40,6 +40,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { uiState } from '../logic/UIState';
 import atlasStorage from '../logic/AtlasStorage';
 import { ESSENCE_CREDITS, ESSENCE_CHRONOTRACES, ESSENCE_TEMPORAL_FLUX } from '../logic/Const';
+import { getResourceSpec } from '../logic/Resources';
 
 const source = ref<HTMLImageElement | null>(atlasStorage.getItemsSource());
 const ready = ref<boolean>(atlasStorage.isItemsAtlasLoaded());
@@ -108,13 +109,16 @@ function essenceDisplayName(k: string): string {
 }
 
 function essenceEffectText(k: string): string {
+  const credits = getResourceSpec('credits');
+  const chronotraces = getResourceSpec('chronotraces');
+  const timeFlux = getResourceSpec('timeFlux');
   switch (k) {
     case 'red':
-      return `gives ${ESSENCE_CREDITS}✦ credits`;
+      return `gives ${ESSENCE_CREDITS}${credits.glyph} ${credits.name.toLowerCase()}`;
     case 'blue':
-      return `gives ${ESSENCE_CHRONOTRACES}⧗ chronotraces`;
+      return `gives ${ESSENCE_CHRONOTRACES}${chronotraces.glyph} ${chronotraces.name.toLowerCase()}`;
     case 'green':
-      return `gives ${ESSENCE_TEMPORAL_FLUX}∿ time flux`;
+      return `gives ${ESSENCE_TEMPORAL_FLUX}${timeFlux.glyph} ${timeFlux.name.toLowerCase()}`;
     case 'yellow':
       return '+1 effective count for adjacent';
     case 'orange':

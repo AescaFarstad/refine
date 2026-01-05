@@ -65,11 +65,12 @@ handlersByName.set('CheatUnlockAllGear', (gs, cheat) => {
 });
 
 handlersByName.set('CheatAddResources', (gs, cheat) => {
-  gs.credits += 100000;
-  gs.chronotraces += 100000;
-  gs.timeFlux += 100000;
-  gs.shardDust += 100000;
-  gs.skillPoints += 100;
+  const c = cheat as CheatAddResources;
+  gs.credits += c.credits;
+  gs.chronotraces += c.chronotraces;
+  gs.timeFlux += c.timeFlux;
+  gs.shardDust += c.shardDust;
+  gs.skillPoints += c.skillPoints;
 });
 
 handlersByName.set('CheatUnlockAllRaids', (gs, cheat) => {

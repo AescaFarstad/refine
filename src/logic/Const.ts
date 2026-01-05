@@ -6,6 +6,8 @@ export const ESSENCE_CHRONOTRACES = 10;
 export const ESSENCE_TEMPORAL_FLUX = 1;
 export const REFINE_TIME = 4 * 3600
 export const FAILURE_PER_EMPTY_CELL = 5
+export const CYAN_SUCCESS_BONUS_PCT = 10
+export const MAGENTA_SUCCESS_PENALTY_PCT = 25
 export const REFINE_TIME_NAME = {
   terribly_slow: "Terribly Slow",
   slow: "Slow",
@@ -19,4 +21,6 @@ export const WAFER_UPGRADE_BASE_COST = 100;
 
 export const RESEARCH_PANE_SIZE = 100;
 export const RESEARCH_OBSTACLE_PRICE = 5;
-export const RESEARCH_OBSTACLE_PRICE_GROWTH = 5;
+export const RESEARCH_OBSTACLE_PRICE_GROWTH = 3;
+
+export const TMP_LOOT_BUFF_PER_FULL_BAGS_SKIP_PCT = 1;

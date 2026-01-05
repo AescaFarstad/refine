@@ -4,6 +4,7 @@ export class Perks {
   static readonly BIOPSY = 'Biopsy';
   static readonly IMMOVABLE_WALL = 'Immovable Wall';
   static readonly STUN = 'Stun';
+  static readonly PAINKILLER = 'Painkiller';
 }
 
 export default Perks;

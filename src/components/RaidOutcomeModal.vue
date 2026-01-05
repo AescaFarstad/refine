@@ -95,7 +95,7 @@ import { CmdAknowledgeOutcome } from '../logic/input/InputCommands';
 import ItemDisplay from './ItemDisplay.vue';
 import { formatDurationHM } from '../logic/StringUtils';
 import { useRaidAgain } from '../logic/useRaidAgain';
-import type { FightEncounterLogEntry, LootEncounterLogEntry, RaidEventLogEntry } from '../logic/RaidLog';
+import type { RaidEventLogEntry } from '../logic/RaidLog';
 import RaidOutcomeLogPlayback from './raidOutcome/RaidOutcomeLogPlayback.vue';
 import { describeMutation } from '../logic/RaidMutation';
 import { getResourceSpec, type ResourceKey } from '../logic/Resources';
@@ -122,7 +122,7 @@ const shownNonSummonedCount = computed(() => {
   const entries = logEntries.value.slice(0, shownCount.value);
   let count = 0;
   for (const e of entries) {
-    if (e.kind === 'FightEncounter' && (e as FightEncounterLogEntry).summoned) continue;
+    if (e.kind === 'FightEncounter' && e.summoned) continue;
     count++;
   }
   return count;
@@ -137,21 +137,8 @@ const raidTitle = computed(() => {
 
 const raidSuccess = computed(() => outcome.value.success);
 
-// Summary: aggregate gained and discarded items across the entire log
-function aggregateItems(discarded: boolean): Array<{ id: string; quantity: number }> {
-  const counts: Record<string, number> = {};
-  for (const e of logEntries.value) {
-    if (e.kind !== 'LootEncounter') continue;
-    const le = e as LootEncounterLogEntry;
-    if (le.skipped) continue;
-    if (!le.itemId) continue;
-    if (le.discarded !== discarded) continue;
-    counts[le.itemId] = (counts[le.itemId] || 0) + 1;
-  }
-  return Object.entries(counts).map(([id, quantity]) => ({ id, quantity }));
-}
-const gainedItems = computed(() => aggregateItems(false));
-const discardedItems = computed(() => aggregateItems(true));
+const gainedItems = computed(() => (outcome.value.looted || []).filter(it => (it.quantity || 0) > 0));
+const discardedItems = computed(() => (outcome.value.discarded || []).filter(it => (it.quantity || 0) > 0));
 
 const zoneChangeText = computed(() => {
   return outcome.value.zoneChange || '';
@@ -262,7 +249,7 @@ function formatHMS(totalSec?: number): string { return formatDurationHM(totalSec
 
 <style scoped>
 .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: grid; place-items: center; z-index: 10000; }
-.modal { width: 780px; max-width: 96vw; background: linear-gradient(180deg, rgba(20,28,40,0.98), rgba(10,15,26,0.94)); border: 1px solid var(--panel-border); border-radius: 6px; box-shadow: 0 24px 64px rgba(0,0,0,0.7), inset 0 1px 0 var(--panel-shine); padding: 16px; height: min(1000px, 95vh); display: grid; grid-template-rows: auto 1fr auto; }
+.modal { width: 880px; max-width: 96vw; background: linear-gradient(180deg, rgba(20,28,40,0.98), rgba(10,15,26,0.94)); border: 1px solid var(--panel-border); border-radius: 6px; box-shadow: 0 24px 64px rgba(0,0,0,0.7), inset 0 1px 0 var(--panel-shine); padding: 16px; height: min(1000px, 95vh); display: grid; grid-template-rows: auto 1fr auto; }
 .modal-header { display: grid; grid-template-rows: auto auto; align-items: start; gap: 8px; }
 .modal-title { margin: 0; font-size: 18px; letter-spacing: 0.02em; display: flex; align-items: baseline; gap: 10px; }
 .modal-title .raiding { font-weight: 400; }

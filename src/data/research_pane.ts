@@ -5,12 +5,12 @@ export const researchPane: ResearchPlacementInput[] = [
   { archetypeId: 'hub', cells: { x: 0, y: 0 }, initiallyOwned: true },
 
 
-  { archetypeId: 'stat_vision', cells: { x: 1, y: -3 } },
+  { archetypeId: 'res_credits', cells: { x: 1, y: -3 } },
   { archetypeId: 'stat_weight', cells: { x: 3, y: -2 } },
   { archetypeId: 'stat_vision', cells: { x: 2, y: 1 } },
   { archetypeId: 'stat_hp', cells: { x: -1, y: 3 } },
   { archetypeId: 'res_skillPoint', cells: { x: -2, y: -1 } },
-  { archetypeId: 'stat_vision', cells: { x: -3, y: 2 } },
+  { archetypeId: 'stat_volume', cells: { x: -3, y: 2 } },
 
 
   { archetypeId: 'gear_machete', cells: { x: 1, y: 5 }, radius: 1 },
@@ -68,6 +68,10 @@ export const researchPane: ResearchPlacementInput[] = [
   { archetypeId: 'res_credits', cells: { x: 17, y: -10 } },
   { archetypeId: 'res_credits', cells: { x: 15, y: -8 } },
   { archetypeId: 'res_credits', cells: { x: 4, y: -7 } },
+  { archetypeId: 'stat_vision', cells: { x: -10, y: 9 } },
+  { archetypeId: 'stat_vision', cells: { x: -3, y: -4 } },
+  { archetypeId: 'stat_vision', cells: { x: 9, y: -4 } },
+  { archetypeId: 'stat_hp', cells: { x: -8, y: -2 } },
 ];
 
 export const researchPaneEmptyCells: Point2[] = [

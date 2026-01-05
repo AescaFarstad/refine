@@ -42,7 +42,9 @@ january 2
 january 3
   refactoring, defensive programming clean-up, balancing
 january 4
-  quests, images
+  quests, images, first raid balance
+january 5
+  discovery, magenta essence, minor features
 
 
 Images:
@@ -79,11 +81,6 @@ npx vue-tsc --noEmit 2>&1
 npx tsc --noEmit --skipLibCheck src/logic/Research.ts 2>&1
 
 
-nodes that unlock gear should draw the corresponding gear icon over them
-but we need to draw it in the center of the combined space of all the cells which correspond to that node
-How do we do that?
-
-
 Once you were full of regret.
 And fractured time to visit the multiverses of your untaken decisions.
 Yet the entropy creeps fast.
@@ -93,43 +90,12 @@ To come back to the universe where your life has meaning.
 Where your loved ones wait.
 Escape the loop through the maze of time!
 
-Whistle kettle
-taxi sign lamp
-Tea caddy tin
-Pub brass tap handle
-police cap
-Woollen tartan blanket
-English bone china saucer
-moleskin pocket notebook
-Knitted school scarf
-Miniature seaside souvenir lighthouse
-
-loupe
-wall
-binoculars
-eye
-smole grenade
-stun thing
-light boots
-nail gun
-metal detector
-revolver facing left
-trauma kit
-bandage
-stim patch
-plasma bag
-bio foam dispencer
-surgical stappler
 
 summons
 remains
 
-decoy
-weight
-road weaves
-search
-fight
-investigate
+
+hands opening a rib cage
 
 
 Firearms check-up
@@ -155,4 +121,30 @@ quest to stabilize the zone
 known items in this raid
 
 descriptions for perks
-summoned encounters shouldn't advance displayed progress
+
+
+better prediction of the collapsing zone
+
+quest rewards description impr
+
+
+maze rewards
+
+
+
+Burdock Seeds
+Xeno Hound Liver
+Distorted Brains
+Flower Human Roots
+Invisible Stalker Dust
+Spikder Spikes
+Scorch Ash
+Black Octopus Glands
+Lightning Zealot Ectoplasm
+Dendroid Bark
+Turned Soldier Radio
+Car Squid Spark Plug
+Devourer Swarm Coils
+The Hive Sting
+Devil\'s Finger Scale
+Hedgehog Shell

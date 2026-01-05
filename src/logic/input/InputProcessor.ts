@@ -1,7 +1,9 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAknowledgeOutcome, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule } from './InputCommands';
+import { CmdStartRaid, CmdAdvanceTime, CmdAknowledgeOutcome, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal } from './InputCommands';
+import { discover } from '../Discover';
+import { DISCOVERY } from '../DiscoveryLib';
 import { EvtRefineryDone } from '../evt/Evt';
 import { computeRefinePreviewChem, computeEffectiveEssences } from '../RefinePreview';
 import type { Point2 } from '../core/math';
@@ -9,7 +11,6 @@ import { runRaid, recomputeActiveRaidParams, toggleGearForRaid, recomputeActiveR
 import { pickAndApplyRaidSuccessMutation, describeMutation, questIsAvailable } from '../RaidMutation';
 import { placeMolecule, removeMolecule, enableCellWithFloodfill, computeWaferUpgradePrice } from '../Wafer';
 import { applyResearchPurchase } from '../Research';
-import type { LootEncounterLogEntry } from '../RaidLog';
 
 type Handler = (gs: GameState, cmd: CmdInput) => void;
 const handlersByName = new Map<string, Handler>();
@@ -54,20 +55,13 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
 
   gs.gameTime += result.timeSpentSec;
 
-  if (result.success) {
-    const lootCounts: Record<string, number> = {};
-    for (const e of result.log.entries) {
-      if (e.kind !== 'LootEncounter') continue;
-      const le = e as LootEncounterLogEntry;
-      if (le.skipped) continue;
-      if (le.discarded) continue;
-      if (!le.itemId) continue;
-      const id = le.itemId;
-      lootCounts[id] = (lootCounts[id] || 0) + 1;
-    }
+  const raidEntry = gs.unlockedRaids.find(r => r.id === c.id)!;
+  raidEntry.tmpLootBuff = gs.raid.tmpLootBuffNextRaidPct;
 
-    for (const [id, qty] of Object.entries(lootCounts)) {
+  if (result.success) {
+    for (const [id, qty] of Object.entries(result.bagItemCounts)) {
       const q = qty | 0;
+      if (q <= 0) continue;
       const essence = gs.lib.getItem(id).essence;
       for (const k of Object.keys(essence))
         gs.encounteredEssences[k] = true;
@@ -97,9 +91,12 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
     log: result.log,
     timeSpentSec: result.timeSpentSec,
     plannedEncounters: result.plannedEncounters,
-    looted: [],
-    discardedByVolume: [],
-    discardedByLuck: [],
+    looted: Object.entries(result.bagItemCounts)
+      .map(([id, quantity]) => ({ id, quantity: quantity | 0 }))
+      .filter(it => it.quantity > 0),
+    discarded: Object.entries(result.discardedItemCounts)
+      .map(([id, quantity]) => ({ id, quantity: quantity | 0 }))
+      .filter(it => it.quantity > 0),
     skillPointsGained: result.skillPointsGained,
     questsCompleted: result.questsCompleted,
     resourcesGained: result.resourcesGained,
@@ -229,10 +226,10 @@ handlersByName.set('CmdPlaceMolecule', (gs, cmd) => {
   computeEffectiveEssences(gs.wafer);
 });
 
-handlersByName.set('CmdRemoveMolecule', (gs, cmd) => {
-  const c = cmd as CmdRemoveMolecule;
+  handlersByName.set('CmdRemoveMolecule', (gs, cmd) => {
+    const c = cmd as CmdRemoveMolecule;
 
-  const existing = gs.wafer.items[c.itemIdx];
+  const existing = gs.wafer.items[c.itemIdx]!;
   removeMolecule(gs.wafer, c.itemIdx);
   computeEffectiveEssences(gs.wafer);
 
@@ -293,6 +290,10 @@ handlersByName.set('CmdUpgradeGearCategory', (gs, cmd) => {
 
   gs.skillPoints = currentSP - cost;
   gs.gearLevels[catId] = currentSlots + 1;
+});
+
+handlersByName.set('CmdOpenGearUpgradeModal', (gs) => {
+  discover(gs, DISCOVERY.GEAR_UPGRADE_MODAL_OPENED);
 });
 
 

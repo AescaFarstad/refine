@@ -118,18 +118,18 @@ export class Lib {
       this.gear = parseGearDefinitions(gearData as unknown as Record<string, RawGearDefinition>);
 
       {
-        const raw: Record<string, any> = itemsData as unknown as Record<string, any>;
+        const raw = itemsData as unknown as Record<string, ItemDefinition & { devOnly?: boolean }>;
 
         // First pass: create items with temporary order
         const map = new Map<string, ItemDefinition>();
         for (const key in raw) {
           if (!Object.prototype.hasOwnProperty.call(raw, key)) continue;
-          const d = raw[key] || {};
+          const d = raw[key];
 
           // Handle both string and numeric rarities
           let rarity: ItemDefinition['rarity'];
           if (typeof d.rarity === 'string') {
-            rarity = d.rarity as ItemDefinition['rarity'];
+            rarity = d.rarity;
           } else {
             const rn = Number.isFinite(d.rarity) ? Number(d.rarity) : 1;
             rarity = (rn >= 4
@@ -145,9 +145,11 @@ export class Lib {
             id: key,
             name: d.name,
             volume: d.volume,
-            essence: d.essence || {},
+            essence: d.essence,
             rarity,
+            molecule: d.molecule,
             order: 999999, // temporary, will be updated below
+            score: d.score,
           };
           map.set(key, def);
         }
@@ -173,7 +175,7 @@ export class Lib {
         const otherItems: string[] = [];
 
         for (const itemId of map.keys()) {
-          const d = raw[itemId] || {};
+          const d = raw[itemId];
           const isDev = d.devOnly === true;
           const isRemains = itemId.includes('remains');
           const raidOrder = itemToRaid.get(itemId);

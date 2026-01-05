@@ -120,3 +120,7 @@ export class CmdUpgradeGearCategory implements CmdInput {
     this.categoryId = args.categoryId;
   }
 }
+
+export class CmdOpenGearUpgradeModal implements CmdInput {
+  readonly name = 'CmdOpenGearUpgradeModal';
+}

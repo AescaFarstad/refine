@@ -17,6 +17,8 @@
         :minor="minor"
         :show-molecule="showMolecule"
         :no-tooltip="noTooltip"
+        :show-score="showScores"
+        :show-volume="showVolumes"
       />
     </div>
   </div>
@@ -43,6 +45,8 @@ const props = defineProps<{
   noTooltip?: boolean;
   showRarityLabels?: boolean;
   rarityLabels?: Record<string, string>;
+  showScores?: boolean;
+  showVolumes?: boolean;
 }>();
 
 const emit = defineEmits<{

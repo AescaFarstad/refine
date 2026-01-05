@@ -1,5 +1,5 @@
 import type { ActiveRaid, GameState } from './GameState';
-import type { FightEncounterLogEntry, FightEvent, LootEncounterLogEntry } from './RaidLog';
+import { createFightEncounterLogEntry, type FightEncounterLogEntry, type FightEvent, type LootEncounterLogEntry } from './RaidLog';
 import Perks from './Perks';
 import { FEATURE_SUMMON, FEATURE_SELF_DESTRUCT, SUMMON_CHANCE_PER_ROUND } from './MonsterFeatures';
 
@@ -108,9 +108,10 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
       monsterHp = theirHpAfter;
       if (monsterHp <= 0) {
         // Only create monster loot encounter if we have biopsy chance AND have spare volume in bags
+        // AND the monster did not self-destruct (self-destructing monsters leave no corpse)
         const capacity = gs.volume + r.bagsVolume;
         const hasRoom = r.usedVolume < capacity;
-        if (r.biopsyChance > 0 && m.lootItemId && hasRoom) {
+        if (r.biopsyChance > 0 && m.lootItemId && hasRoom && !monsterSelfDestructed) {
           biopsyTriggered = true;
           fightLog[fightLog.length - 1].biopsyTriggered = true;
         }
@@ -198,19 +199,15 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
   }
 
   // Prepare entry
-  const entry: FightEncounterLogEntry & { monsterId: string; monsterName: string; timeSpentSec: number } = {
-    kind: 'FightEncounter',
+  const entry: FightEncounterLogEntry & { monsterId: string; monsterName: string; timeSpentSec: number } = createFightEncounterLogEntry({
     dieFromOvertime,
     fightLog,
     monsterId,
     monsterName,
     timeSpentSec: totalTime,
-    elapsedTotalSec: 0,
-    hpBeforeRegen: 0,
-    hpAfterRegen: 0,
     selfDestructed: monsterSelfDestructed,
     summoned,
-  };
+  });
 
   const extras: LootEncounterLogEntry[] = [];
 

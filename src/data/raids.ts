@@ -4,7 +4,7 @@ const raids: Record<string, Omit<RaidDefinition, 'id' | 'order' | 'itemPoolsByRa
   shegolskoe: {
     name: 'Shegolskoe',
     description: 'A small abandoned village, scattered with relics of everyday life. Hostile creatures roam its ruins.',
-    baseLootChance: 35,
+    baseLootChance: 45,
     zoneCollapseSec: 10200,
     zoneCollapseStepPerMutation: 300,
     items: [
@@ -21,10 +21,11 @@ const raids: Record<string, Omit<RaidDefinition, 'id' | 'order' | 'itemPoolsByRa
       'gas_mask_gp5',
       'document_holder',
       'soviet_watch',
+      'light_bulb',
     ],
     encounters: [
       { count: 2, encounter: { type: 'WalkEncounter' } },
-      { count: 4, encounter: { type: 'FightEncounter', monsterId: 'hound' } },
+      { count: 5, encounter: { type: 'FightEncounter', monsterId: 'hound' } },
       { count: 1, encounter: { type: 'FightEncounter', monsterId: 'distorted' } },
       { count: 12, encounter: { type: 'LootEncounter' } }
     ],

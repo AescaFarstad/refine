@@ -1,0 +1,7 @@
+[
+  priority:20
+  input_folder:split
+  job:pack
+  output_folder:packed
+  name:items
+]

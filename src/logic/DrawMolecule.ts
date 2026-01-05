@@ -199,6 +199,7 @@ function getEssenceColorFallback(essence: string): string {
     gray: '#9ca3af',
     orange: '#fb923c',
     cyan: '#00ffff',
+    magenta: '#ff00ff',
   };
   return colors[essence] || '#888888';
 }

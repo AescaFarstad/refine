@@ -10,7 +10,7 @@ export interface WaferCell {
   itemIdx: number | null;
   essence: string | null;
   // Effective essence after color-changing atoms are applied; derived each time preview is computed.
-  effectiveEssence?: string | null;
+  effectiveEssence: string | null;
   canBeUpgraded: boolean; // Cached: can this cell be enabled?
   signatures: number[];
 }
@@ -33,7 +33,7 @@ export interface Wafer {
   // Fixed-size grid centered at ORIGIN
   cells: Map<string, WaferCell>; // Key: "q,r"
 
-  items: PlacedItem[];
+  items: Array<PlacedItem | null>;
 
   // Derived values
   essenceTotals: Record<string, number>;
@@ -154,7 +154,7 @@ export function placeMolecule(
 export function removeMolecule(wafer: Wafer, itemIdx: number): void {
   if (itemIdx < 0 || itemIdx >= wafer.items.length) return;
 
-  const item = wafer.items[itemIdx];
+  const item = wafer.items[itemIdx]!;
 
   for (const atom of item.molecule.atoms) {
     const cell = getCell(wafer, { x: atom.x, y: atom.y });
@@ -165,7 +165,7 @@ export function removeMolecule(wafer: Wafer, itemIdx: number): void {
   }
 
   // Remove from items array (set to null, don't splice to preserve indices)
-  wafer.items[itemIdx] = null as any;
+  wafer.items[itemIdx] = null;
 
   updateDerivedValues(wafer);
 }

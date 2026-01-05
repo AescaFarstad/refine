@@ -16,6 +16,7 @@
           <th></th>
           <th>Count</th>
           <th>Health</th>
+          <th>Damage</th>
           <th>Chance to hit them</th>
           <th>Chance to block their attack</th>
           <th>Ability</th>
@@ -26,6 +27,7 @@
           <td>{{ row.name }}</td>
           <td>{{ row.count }}</td>
           <td>{{ row.hp }}</td>
+          <td>{{ row.damage }}</td>
           <td>{{ row.hitPct }}%</td>
           <td>{{ row.blockPct }}%</td>
           <td>
@@ -52,7 +54,7 @@
         <tr>
           <td>Scavenge sites</td>
           <td>{{ lootCount }}</td>
-          <td>{{ lootChancePct }}%</td>
+          <td>{{ lootChanceBasePct }}%<template v-if="lootChanceBuffPct"> + {{ lootChanceBuffPct }}%</template></td>
         </tr>
       </tbody>
     </table>
@@ -88,6 +90,7 @@ import { MIN_WALK_SPEED } from '../logic/GameState';
 import type { RaidDefinition } from '../logic/RaidLib';
 import GearStatsHint from './GearStatsHint.vue';
 import { FEATURE_SUMMON, FEATURE_SELF_DESTRUCT, SUMMON_CHANCE_PER_ROUND } from '../logic/MonsterFeatures';
+import { Perks } from '../logic/Perks';
 
 const selectedRaid = computed<RaidDefinition | null>(() => {
   // Touch reactive key for updates
@@ -123,9 +126,8 @@ const bagsCapacity = computed(() => {
   // Depend on raidKey for gear changes and on uiState.volume for base stat changes
   uiState.raidKey; uiState.volume;
   const gs = getGameState();
-  const base = Math.max(0, gs.volume);
-  const gear = Math.max(0, gs.raid.bagsVolume);
-  return base + gear;
+  // gs.raid.bagsVolume already includes gs.volume (set in Raid.ts) plus gear bonuses
+  return Math.max(0, gs.raid.bagsVolume);
 });
 
 const distanceKm = computed(() => {
@@ -139,7 +141,9 @@ const distanceKm = computed(() => {
 });
 
 	function speedKmHFor(hpNow: number): number {
-	  const hpM = Math.max(0, hpNow) / Math.max(1e-9, maxHp.value);
+	  const gs = getGameState();
+	  const hasPainkiller = (gs.raid.perks || []).includes(Perks.PAINKILLER);
+	  const hpM = hasPainkiller ? 1 : Math.max(0, hpNow) / Math.max(1e-9, maxHp.value);
 	  const wM = Math.max(0, maxWeight.value - (weight.value || 0)) / Math.max(1e-9, maxWeight.value);
 	  // Treat MIN_WALK_SPEED as an unscaled baseline: only the portion above MIN scales with weight.
 	  const baseExcess = Math.max(0, Math.max(MIN_WALK_SPEED, baseSpeed.value) - MIN_WALK_SPEED);
@@ -195,7 +199,7 @@ const encCounts = computed(() => {
 });
 
 // Monster encounter table
-interface MonsterRow { id: string; name: string; hp: number; hitPct: number; blockPct: number; count: number; canSummon: boolean; canSelfDestruct: boolean; armor: number; damageCap: number }
+interface MonsterRow { id: string; name: string; hp: number; damage: number; hitPct: number; blockPct: number; count: number; canSummon: boolean; canSelfDestruct: boolean; armor: number; damageCap: number }
 function clamp01(v: number): number { return Math.max(0, Math.min(100, Math.round(v))); }
 const monsterRows = computed<MonsterRow[]>(() => {
   const raid = selectedRaid.value;
@@ -221,7 +225,7 @@ const monsterRows = computed<MonsterRow[]>(() => {
     const canSelfDestruct = m.features.includes(FEATURE_SELF_DESTRUCT);
     const armor = m.armor || 0;
     const damageCap = m.damageCap || 0;
-    rows.push({ id, name: m.name, hp: Math.max(0, m.hp || 0), hitPct: hit, blockPct: block, count: counts[id] || 0, canSummon, canSelfDestruct, armor, damageCap });
+    rows.push({ id, name: m.name, hp: Math.max(0, m.hp || 0), damage: Math.max(0, m.damage || 0), hitPct: hit, blockPct: block, count: counts[id] || 0, canSummon, canSelfDestruct, armor, damageCap });
   }
   // Stable name sort
   rows.sort((a, b) => (a.name < b.name ? -1 : 1));
@@ -249,14 +253,19 @@ function getAbilities(row: MonsterRow): Ability[] {
 
 // Loot table (single row)
 const lootCount = computed(() => encCounts.value.loot | 0);
-const lootChancePct = computed(() => {
+const lootChanceBasePct = computed(() => {
+  uiState.raidKey;
   const r = selectedRaid.value;
   const gs = getGameState();
   if (!r || !gs) return 0;
-  const base = Math.max(0, Math.min(100, r.baseLootChance || 0));
-  const bonus = Math.max(0, Math.min(100, gs.raid.lootChanceBonus || 0));
-  const v = Math.max(0, Math.min(100, Math.round(base + bonus)));
+  const v = Math.max(0, Math.min(100, Math.round(r.baseLootChance + gs.raid.lootChanceBonus)));
   return v;
+});
+const lootChanceBuffPct = computed(() => {
+  uiState.raidKey;
+  const gs = getGameState();
+  if (!gs) return 0;
+  return Math.max(0, Math.round(gs.raid.tmpLootBuffAppliedPct));
 });
 
 </script>

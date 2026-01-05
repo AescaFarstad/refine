@@ -10,6 +10,7 @@ import { ArtefactType, Chase } from "../maze/Chase";
 import generateIceMaze from "../maze/IceMazeGen";
 import { clearWafer } from "./Wafer";
 import { calculateVisibility } from "./Research";
+import { ensureShardDiscovery } from "./Discover";
 
 const TIME_SPEED_MAX = 3800;
 const TIME_SPEED_MIN = 300;
@@ -43,6 +44,9 @@ let lastWaferMouse: { x: number; y: number } | null = null;
 // deltaTime is in seconds
 export function update(gs: GameState, deltaTime: number): void {
   initOrAdvanceMaze(gs);
+  if (gs.maze) {
+    gs.maze.maxMoves = Math.floor(gs.timeFlux);
+  }
   gs.maze?.update(deltaTime);
 
   if (IS_DEBUG && gs.cheats && gs.cheats.length > 0) {
@@ -50,6 +54,7 @@ export function update(gs: GameState, deltaTime: number): void {
   }
 
   updateShards(gs, deltaTime);
+  ensureShardDiscovery(gs);
 
   if (gs.lastRaidOutcome || gs.lastRefineryOutcome) {
     return;

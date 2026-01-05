@@ -1,0 +1,7 @@
+[
+  priority:5
+  input_folder:source/gear
+  job:monowhite
+  tolerance:5%
+  output_folder:monowhites
+]

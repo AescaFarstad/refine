@@ -16,7 +16,7 @@
 
     <!-- Styled tooltip with all effects shown on hover -->
     <div class="hint" role="tooltip" aria-hidden="true" ref="hintEl">
-      <GearStatsHint :gear="gear" />
+      <GearStatsHint :gear="gear" :blocked="blocked" />
     </div>
 
     <!-- Bottom-right weight label (no special background); hidden when zero -->

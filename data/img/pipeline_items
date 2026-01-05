@@ -1,0 +1,137 @@
+[
+  priority:10
+  input_folder:source/items
+  size:96x96
+  job:split_trim
+  output_folder:split
+]
+
+{
+  image:ChatGPT Image Oct 12, 2025, 06_42_52 PM.png
+  content:enamel_mug crystal_decanter porcelain_figurine mechanical_clock
+}
+
+{
+  image:ChatGPT Image Oct 12, 2025, 08_42_00 PM.png
+  content:vinyl_record soviet_watch vintage_camera document_holder
+}
+
+{
+  image:ChatGPT Image Oct 12, 2025, 09_15_01 PM.png
+  content:fur_shapka condensed_milk wrench soviet_champagne
+}
+
+{
+  image:ChatGPT Image Oct 12, 2025, 07_08_47 PM.png
+  content:vodka_bottle canned_sprats tea_brick old_cigarettes
+}
+
+{
+  image:ChatGPT Image Oct 12, 2025, 08_01_46 PM.png
+  content:honey_jar pickled_vegetables multimeter hand_drill
+}
+
+{
+  image:ChatGPT Image Oct 12, 2025, 07_59_22 PM.png
+  content:work_gloves rubber_boots lab_coat protective_goggles
+}
+
+{
+  image:ChatGPT Image Oct 12, 2025, 07_13_51 PM.png
+  content:geiger_counter gas_mask_gp5 chemical_kit soviet_flashlight
+}
+
+{
+  image:ChatGPT Image Oct 12, 2025, 07_25_49 PM.png
+  content:rotary_phone field_phone signal_flare dosimeter
+}
+
+{
+  image:ChatGPT Image Oct 12, 2025, 07_37_54 PM.png
+  content:lucky_coin photo_album foreign_currency olympic_badge
+}
+
+{
+  image:ChatGPT Image Oct 12, 2025, 08_39_42 PM.png
+  content:soviet_knife mess_kit canvas_tent sleeping_bag
+}
+
+{
+  image:ChatGPT Image Oct 12, 2025, 07_56_49 PM.png
+  content:iodine_bottle bandage_tin signal_pistol smoke_grenade
+}
+
+{
+  image:ChatGPT Image Oct 12, 2025, 08_07_31 PM.png
+  content:door_handle window_latch padlock chain_link
+}
+
+{
+  image:ChatGPT Image Oct 12, 2025, 08_16_35 PM.png
+  content:light_bulb fuse_box electrical_wire insulation_tape
+}
+
+{
+  image:ChatGPT Image Oct 12, 2025, 08_19_41 PM.png
+  content:inventory_keys bicycle_pedal calipers hammer
+}
+
+{
+  image:ChatGPT Image Oct 12, 2025, 08_25_19 PM.png
+  content:vase handkerchief ruined_ammo_box aluminium_bowl
+}
+
+{
+  image:ChatGPT Image Oct 12, 2025, 08_35_23 PM.png
+  content:ruined_ammo_cartridge tin_grain_box portable_radio tabletop_lamp
+}
+
+{
+  image:ChatGPT Image Oct 12, 2025, 08_52_26 PM.png
+  content:red_rubber_ball christmas_ball frying_pan ruined_ammunition_7_62
+}
+
+{
+  image:ChatGPT Image Dec 28, 2025, 01_43_52 PM.png
+  content:_ taxi_sign _ tap_handle
+}
+
+{
+  image:ChatGPT Image Dec 28, 2025, 01_45_29 PM.png
+  content:police_cap blanket _ notebook
+}
+
+{
+  image:ChatGPT Image Dec 28, 2025, 01_53_34 PM.png
+  content:scarf miniature_lighthouse _ kettle
+}
+
+{
+  image:ChatGPT Image Dec 28, 2025, 02_01_04 PM.png
+  content:tea_cup tin_can book toy_train
+}
+
+{
+  image:ChatGPT Image Jan 5, 2026, 01_06_12 AM.png
+  content: flower_remains hedgehog_remains burdock_remains !lime_hide!
+}
+
+{
+  image:ChatGPT Image Jan 5, 2026, 12_38_36 AM.png
+  content: !burdock! hound_remains distorted_remains !heart!
+}
+
+{
+  image:ChatGPT Image Jan 5, 2026, 12_41_32 AM.png
+  content: stalker_remains finger_remains scorch_remains octopus_remains
+}
+
+{
+  image:ChatGPT Image Jan 5, 2026, 12_48_08 AM.png
+  content: devourer_remains hive_remains !red_foam! spikder_remains
+}
+
+{
+  image:ChatGPT Image Jan 5, 2026, 12_56_05 AM.png
+  content: lightning_remains dendroid_remains soldier_remains squid_remains
+}

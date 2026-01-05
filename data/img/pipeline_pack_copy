@@ -1,0 +1,7 @@
+[
+  priority:30
+  job:copy
+  input_folder:packed
+  output_folder:../../public/images
+]
+

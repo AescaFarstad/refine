@@ -7,8 +7,8 @@
           <div class="cat-right">
             <button
               v-if="canShowUpgradeButton(cat)"
-              class="upgrade-btn"
-              @click="openUpgradeModal"
+              :class="['upgrade-btn', { 'pulse': shouldPulseUpgradeButton }]"
+              @click="openUpgradeModal(cat)"
               title="Upgrade gear categories"
             >+</button>
             <div class="slots" :aria-label="usedCount(cat) + '/' + allowedSlots(cat)">{{ slotCircles(cat) }}</div>
@@ -39,9 +39,10 @@ import { computed } from 'vue';
 import GearItem from './GearItem.vue';
 import { uiState, getGameState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
-import { CmdStartRaid, CmdToggleGear } from '../logic/input/InputCommands';
+import { CmdToggleGear, CmdOpenGearUpgradeModal } from '../logic/input/InputCommands';
 import type { GearDefinition } from '../logic/GearLib';
 import type { RaidDefinition } from '../logic/RaidLib';
+import { DISCOVERY } from '../logic/DiscoveryLib';
 
 const activeRaidId = computed(() => uiState.activeRaidId || (uiState.raidOrder[0] || ''));
 const selectedRaid = computed<RaidDefinition | null>(() => uiState.raids.find(r => r.id === activeRaidId.value) || null);
@@ -149,10 +150,11 @@ function toggleItemWithLimit(cat: string, id: string): void {
 }
 
 function canShowUpgradeButton(cat: string): boolean {
+  // Use reactive uiState.skillPoints to trigger re-render when skill points change
+  if ((uiState.skillPoints || 0) <= 0) return false;
+
   const gs = getGameState();
   if (!gs) return false;
-
-  if ((gs.skillPoints || 0) <= 0) return false;
 
   const def = gs.lib.gearCategories.get(cat);
   if (!def) return false;
@@ -163,12 +165,20 @@ function canShowUpgradeButton(cat: string): boolean {
   const costs = (def as any).unlockCost || [];
   const currentSlots = Math.max(0, gs.gearLevels?.[cat] ?? 0);
   const nextIndex = currentSlots - 1; // costs[0] is for 2nd slot (from 1 to 2)
-  if (nextIndex < 0 || nextIndex >= costs.length) return false; // max level reached
+  if (nextIndex < 0 || nextIndex >= costs.length) return false;
 
   return true;
 }
 
-function openUpgradeModal(): void {
+const shouldPulseUpgradeButton = computed(() => {
+  const _dep = uiState.discoveryCounter;
+  const gs = getGameState();
+  return gs?.discoveries?.[DISCOVERY.GEAR_UPGRADE_MODAL_OPENED] !== true;
+});
+
+function openUpgradeModal(category: string): void {
+  uiState.gearUpgradeFocusCategory = category;
+  globalInputQueue.push(new CmdOpenGearUpgradeModal());
   uiState.gearUpgradeModalOpen = true;
 }
 
@@ -198,5 +208,10 @@ function openUpgradeModal(): void {
 .gear-cat .slots { font-variant-numeric: tabular-nums; }
 .upgrade-btn { padding: 2px 8px; font-size: 14px; font-weight: 900; background: rgba(34, 197, 94, 0.18); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 3px; cursor: pointer; transition: all 100ms ease; }
 .upgrade-btn:hover { background: rgba(34, 197, 94, 0.28); transform: scale(1.05); }
+.upgrade-btn.pulse { animation: pulse-glow 1.5s ease-in-out infinite; }
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 4px rgba(34, 197, 94, 0.4); }
+  50% { box-shadow: 0 0 12px rgba(34, 197, 94, 0.8), 0 0 20px rgba(34, 197, 94, 0.4); }
+}
 .gear-items { display: grid; gap: 6px; }
 </style>

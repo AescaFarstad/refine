@@ -65,6 +65,8 @@ export class GameState {
 
   public items: Array<Item> = [];
   public encounteredEssences: Record<string, true> = {};
+  public discoveries: Record<string, true> = {};
+  public discoveryCounter: number = 0;
 
   public maze: IceMaze | null = null;
   public mazeLevelIndex: number = 0;
@@ -73,8 +75,11 @@ export class GameState {
 
 
   public cheats: Array<CheatInput> = IS_DEBUG ? [
-    new CheatAddResources(),
+    new CheatAddResources({ credits: 100000, chronotraces: 100000, timeFlux: 0, shardDust: 10000, skillPoints: 100 }),
     new CheatAddRaidItems({ id: "shegolskoe", count: 10 }),
+    new CheatAddRaidItems({ id: "ozernoye", count: 10 }),
+    new CheatAddRaidItems({ id: "dyatlovsk", count: 10 }),
+    new CheatAddRaidItems({ id: "birdmundshire", count: 10 }),
     new CheatUnlockAllGear(),
     new CheatUnlockAllRaids()
   ] : [];
@@ -122,6 +127,8 @@ export class ActiveRaid {
   public damage: number = 1;
   public perks: string[] = [];
   public lootChanceBonus: number = 0;
+  public tmpLootBuffAppliedPct: number = 0;
+  public tmpLootBuffNextRaidPct: number = 0;
   public hitChance: number = 60;
   public blockChance: number = 30;
   public reflectOnHitPct: number = 0;   // monster hits you
@@ -140,6 +147,8 @@ export class Raid {
   public questsDone: number = 0;
   public questProgress: number = 0;
   public lootingRarityBuff: number = 0;
+  public tmpLootBuff: number = 0;
+  
 }
 
 export class RaidOutcome {
@@ -150,8 +159,7 @@ export class RaidOutcome {
   public unlockedRaidId: string | null = null;
   public plannedEncounters: number = 0;
   public looted: Array<Item> = [];
-  public discardedByVolume: Array<Item> = [];
-  public discardedByLuck: Array<Item> = [];
+  public discarded: Array<Item> = [];
   public barelyInTime: boolean = false;
 
   public log: RaidEventLog = { entries: [] };

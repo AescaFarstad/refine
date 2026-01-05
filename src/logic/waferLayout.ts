@@ -1,6 +1,6 @@
 // Wafer layout configuration for built-in cell buffs.
-// Buffs are defined per axial coordinate (x = q, y = r) and only affect
-// standard essences (red/green/blue) when computing effective totals.
+// Buffs are defined per axial coordinate (x = q, y = r) and apply to the same
+// essence-count mechanic as yellow/orange adjacency buffs.
 
 export interface WaferBuffCell {
   x: number;

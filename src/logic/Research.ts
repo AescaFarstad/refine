@@ -201,6 +201,9 @@ function applyResearchNodeEffect(gs: GameState, lib: ResearchLib, nodeId: number
         case 'shards':
           gs.shardDust += amount;
           break;
+        case 'skillPoints':
+          gs.skillPoints += amount;
+          break;
         default:
           break;
       }

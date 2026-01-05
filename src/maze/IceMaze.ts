@@ -13,7 +13,7 @@ interface ActorAnimation {
 
 export class IceMaze {
   public readonly dimensions: Point2;
-  public readonly maxMoves: number;
+  public maxMoves: number;
   public movesMade: number = 0;
 
   public state: ChaseState;

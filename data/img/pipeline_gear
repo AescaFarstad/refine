@@ -1,0 +1,132 @@
+[
+  priority:10
+  input_folder:monowhites
+  size:96x96
+  job:split_trim
+  output_folder:split
+]
+
+{
+  image:ChatGPT Image Nov 30, 2025, 03_38_22 PM.png
+  content:ak_rifle vest reckon_drone frag_grenade
+}
+
+{
+  image:ChatGPT Image Nov 30, 2025, 03_40_27 PM.png
+  content:revolver spring_boots flash_grenade _
+}
+
+{
+  image:ChatGPT Image Nov 30, 2025, 03_46_17 PM.png
+  content:case rucksack aspirator_probe robodog
+}
+
+{
+  image:ChatGPT Image Nov 30, 2025, 03_46_36 PM.png
+  content:spear backpack fist _
+}
+
+{
+  image:ChatGPT Image Nov 30, 2025, 03_47_25 PM.png
+  content:cargo_drone fighter_drone field_scanner machete
+}
+
+{
+  image:ChatGPT Image Nov 30, 2025, 03_51_34 PM.png
+  content:helmet armor_plates cargo_harness _
+}
+
+{
+  image:ChatGPT Image Nov 30, 2025, 03_52_17 PM.png
+  content:band_aid medkit injector _
+}
+
+{
+  image:ChatGPT Image Nov 30, 2025, 03_52_45 PM.png
+  content:scope laser_sight _ _
+}
+
+{
+  image:ChatGPT Image Nov 30, 2025, 04_46_02 PM.png
+  content:uzi sniper_rifle _  _
+}
+
+{
+  image:ChatGPT Image Nov 30, 2025, 04_08_47 PM.png
+  content:ak_rifle _ m4_rifle scar_rifle
+}
+
+{
+  image:ChatGPT Image Nov 30, 2025, 04_12_12 PM.png
+  content:_ spiked_armor pouches cargo_trolley
+}
+
+{
+  image:ChatGPT Image Nov 30, 2025, 04_14_02 PM.png
+  content:visor shield collar caps
+}
+
+{
+  image:ChatGPT Image Nov 30, 2025, 04_06_05 PM.png
+  content:_ shotgun _ _
+}
+
+{
+  image:ChatGPT Image Jan 4, 2026, 02_55_55 PM.png
+  content:loupe wall binoculars eye
+}
+
+{
+  image:ChatGPT Image Jan 4, 2026, 02_59_06 PM.png
+  content:smoke_grenade stun_gun trainers nail_gun
+}
+
+{
+  image:ChatGPT Image Jan 4, 2026, 04_49_44 PM.png
+  content:_ field_scanner spring_boots2 robodog2
+}
+
+{
+  image:ChatGPT Image Jan 4, 2026, 04_23_35 PM.png
+  content:bone_saw uzi2 frag_grenade2 robodog2
+}
+
+{
+  image:ChatGPT Image Jan 4, 2026, 03_32_07 PM.png
+  content:thorough_search firearms_maintenance breaking_entering flashbang
+}
+
+{
+  image:ChatGPT Image Jan 4, 2026, 03_27_03 PM.png
+  content:_ preapply_medicine _ _
+}
+
+{
+  image:ChatGPT Image Jan 4, 2026, 03_23_24 PM.png
+  content:ammunition_belt no_scavenging safe_routes _
+}
+
+{
+  image:ChatGPT Image Jan 4, 2026, 03_17_42 PM.png
+  content:decoy bullet armor_straps questions
+}
+
+{
+  image:ChatGPT Image Jan 4, 2026, 03_11_22 PM.png
+  content:weight winding_road rummaging swords_crossed
+}
+
+{
+  image:ChatGPT Image Jan 4, 2026, 03_06_24 PM.png
+  content:stim_patch plasma_bag foam_dispenser stapler
+}
+
+{
+  image:ChatGPT Image Jan 4, 2026, 03_03_09 PM.png
+  content:mine_sweeper revolver2 trauma_kit bandage
+}
+
+{
+  image:ChatGPT Image Jan 4, 2026, 11_04_59 PM.png
+  content:desintegration zone beckon lock
+}

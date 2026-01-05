@@ -1,7 +1,15 @@
 import type { Wafer } from './Wafer';
 import { getCell } from './Wafer';
 import { axialNeighbors } from './HexMath';
-import { ESSENCE_CREDITS, ESSENCE_CHRONOTRACES, ESSENCE_TEMPORAL_FLUX, REFINE_TIME, FAILURE_PER_EMPTY_CELL } from './Const';
+import {
+    CYAN_SUCCESS_BONUS_PCT,
+    ESSENCE_CREDITS,
+    ESSENCE_CHRONOTRACES,
+    ESSENCE_TEMPORAL_FLUX,
+    FAILURE_PER_EMPTY_CELL,
+    MAGENTA_SUCCESS_PENALTY_PCT,
+    REFINE_TIME,
+} from './Const';
 import { getWaferBuffAt } from './waferLayout';
 
 export interface RefinePreviewChem {
@@ -36,7 +44,7 @@ const COLOR_CHANGER_TARGET: Record<string, string> = {
     gold: 'yellow',
 };
 
-const STANDARD_ESSENCES = new Set(['red', 'green', 'blue']);
+const BUFFABLE_ESSENCES = new Set(['red', 'green', 'blue', 'cyan', 'magenta']);
 
 export function computeEffectiveEssences(wafer: Wafer): void {
     const baseEssenceByKey: Record<string, string> = {};
@@ -215,20 +223,20 @@ function computeEffectiveEssenceTotals(wafer: Wafer): {
         effectiveTotals[effEssence] = (effectiveTotals[effEssence] || 0) + 1;
     }
 
-    // Initialize totals for standard essences: they will be recomputed with yellow/orange buffs.
+    // Initialize totals for buffable essences: they will be recomputed with yellow/orange buffs.
     for (const k of Object.keys(effectiveTotals)) {
-        if (STANDARD_ESSENCES.has(k)) {
+        if (BUFFABLE_ESSENCES.has(k)) {
             effectiveTotals[k] = 0;
         }
     }
 
-    // Compute effective counts for red/green/blue with yellow/orange buffs
+    // Compute effective counts for buffable essences with yellow/orange buffs
     // and built-in wafer cell buffs, based on the already transformed colors.
     for (const cell of wafer.cells.values()) {
         if (!cell.enabled) continue;
         const key = `${cell.x},${cell.y}`;
         const effEssence = cell.effectiveEssence ?? cell.essence;
-        if (!effEssence || !STANDARD_ESSENCES.has(effEssence)) continue;
+        if (!effEssence || !BUFFABLE_ESSENCES.has(effEssence)) continue;
 
         const pos = { x: cell.x, y: cell.y };
 
@@ -271,10 +279,12 @@ export function computeRefinePreviewChem(wafer: Wafer): RefinePreviewChem {
     const { essenceTotals, cellEffectiveCounts } = computeEffectiveEssenceTotals(wafer);
 
     const cyanCount = essenceTotals['cyan'] || 0;
-    const cyanReduction = cyanCount * 10;
+    const cyanReduction = cyanCount * CYAN_SUCCESS_BONUS_PCT;
+    const magentaCount = essenceTotals['magenta'] || 0;
+    const magentaPenalty = magentaCount * MAGENTA_SUCCESS_PENALTY_PCT;
 
     const baseFailureChance = wafer.emptyCount * FAILURE_PER_EMPTY_CELL;
-    const failureChancePct = Math.min(100, Math.max(0, baseFailureChance - cyanReduction));
+    const failureChancePct = Math.min(100, Math.max(0, baseFailureChance + magentaPenalty - cyanReduction));
 
     const baseYieldPct = 100;
 

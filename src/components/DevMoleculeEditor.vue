@@ -24,6 +24,8 @@
           :items="filteredItems"
           :copy-id-on-click="true"
           :raid-filter-mode="true"
+          :show-scores="true"
+          :show-volumes="true"
           :available-raids="availableRaids"
           :active-raid-filter="activeRaidFilter"
           :show-rarity-label="true"

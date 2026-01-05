@@ -17,7 +17,7 @@ const gear: Record<string, RawGearDefinition> = {
     speedPercent: 50,
     price: 30,
     weight: 0,
-    image: 'rubber_boots',
+    image: 'trainers',
   },
   sprint_boots: {
     name: 'Sprint Boots',
@@ -26,14 +26,15 @@ const gear: Record<string, RawGearDefinition> = {
     maxWeight: 4,
     price: 75,
     weight: 1,
-    image: 'spring_boots',
+    image: 'spring_boots2',
   },
   painkillers: {
     name: 'Painkillers',
     category: 'medicine',
-    hp: 4,
+    hp: 6,
     price: 30,
     weight: 1,
+    perk: 'Painkiller',
     image: 'injector',
   },
   bandage: {
@@ -42,7 +43,7 @@ const gear: Record<string, RawGearDefinition> = {
     regenAfterEncounter: 1,
     price: 50,
     weight: 1,
-    image: 'band_aid',
+    image: 'bandage',
   },
   stim_patch: {
     name: 'Stim Patch',
@@ -51,7 +52,7 @@ const gear: Record<string, RawGearDefinition> = {
     regenPerKm: 3,
     price: 90,
     weight: 1,
-    image: 'band_aid',
+    image: 'stim_patch',
   },
   plasma_bag: {
     name: 'Plasma Bag',
@@ -59,12 +60,12 @@ const gear: Record<string, RawGearDefinition> = {
     regenPerKm: 7,
     price: 150,
     weight: 2,
-    image: 'band_aid',
+    image: 'plasma_bag',
   },
   medkit_basic: {
     name: 'Medkit',
     category: 'medicine',
-    hp: 12,
+    hp: 16,
     price: 100,
     weight: 1,
     image: 'medkit',
@@ -72,11 +73,11 @@ const gear: Record<string, RawGearDefinition> = {
   trauma_kit: {
     name: 'Trauma Kit',
     category: 'medicine',
-    hp: 8,
+    hp: 12,
     regenPerKm: 1,
     price: 200,
     weight: 2,
-    image: 'bandage_tin',
+    image: 'trauma_kit',
   },
   surgical_stapler: {
     name: 'Surgical Stapler',
@@ -84,16 +85,15 @@ const gear: Record<string, RawGearDefinition> = {
     regenAfterEncounter: 2,
     price: 150,
     weight: 2,
-    image: 'medkit',
+    image: 'stapler',
   },
   biofoam: {
     name: 'Biofoam Dispenser',
     category: 'devices',
-    hp: 6,
     regenAfterEncounter: 3,
     price: 230,
     weight: 3,
-    image: 'injector',
+    image: 'foam_dispenser',
   },
   backpack: {
     name: 'Backpack',
@@ -134,7 +134,7 @@ const gear: Record<string, RawGearDefinition> = {
     damage: 1,
     price: 120,
     weight: 1,
-    image: 'aspirator_probe',
+    image: 'bone_saw',
     biopsyChance: 30
   },
   metal_detector: {
@@ -143,7 +143,7 @@ const gear: Record<string, RawGearDefinition> = {
     lootChance: 20,
     price: 150,
     weight: 1,
-    image: 'geiger_counter',
+    image: 'mine_sweeper',
   },
   field_scanner: {
     name: 'Field Scanner',
@@ -197,7 +197,7 @@ const gear: Record<string, RawGearDefinition> = {
     chanceToHit: 15,
     price: 100,
     weight: 2,
-    image: 'signal_pistol',
+    image: 'nail_gun',
   },
   stun_baton: {
     name: 'Stun Baton',
@@ -206,13 +206,13 @@ const gear: Record<string, RawGearDefinition> = {
     damage: 1,
     price: 250,
     weight: 2,
-    image: 'soviet_flashlight',
+    image: 'stun_gun',
   },
   kevlar_helmet: {
     name: 'Kevlar Helmet',
     category: 'armor',
-    chanceToBlock: 15,
-    hp: 2,
+    chanceToBlock: 20,
+    hp: 3,
     price: 100,
     weight: 2,
     image: 'helmet',
@@ -221,7 +221,7 @@ const gear: Record<string, RawGearDefinition> = {
     name: 'Kevlar Vest',
     category: 'armor',
     chanceToBlock: 20,
-    hp: 8,
+    hp: 10,
     price: 200,
     weight: 5,
     image: 'vest',
@@ -232,7 +232,7 @@ const gear: Record<string, RawGearDefinition> = {
     chanceToHit: 10,
     price: 60,
     weight: 1,
-    image: 'flash_grenade',
+    image: 'flashbang',
   },
   frag_grenade: {
     name: 'Frag Grenade',
@@ -240,7 +240,7 @@ const gear: Record<string, RawGearDefinition> = {
     damage: 2,
     price: 120,
     weight: 1,
-    image: 'frag_grenade',
+    image: 'frag_grenade2',
   },
   thorough_search: {
     name: 'Thorough Search',
@@ -248,6 +248,7 @@ const gear: Record<string, RawGearDefinition> = {
     perk: 'Thorough Search',
     price: 0,
     weight: 0,
+    image: 'thorough_search',
   },
   immovable_wall: {
     name: 'Immovable Wall',
@@ -257,6 +258,7 @@ const gear: Record<string, RawGearDefinition> = {
     chanceToBlock: -30,
     price: 0,
     weight: 0,
+    image: 'wall',
   },
   firearms_checkup: {
     name: 'Firearms Check-up',
@@ -266,6 +268,7 @@ const gear: Record<string, RawGearDefinition> = {
     bonusDamagePerCategory: { ranged_weapons: 1 },
     price: 0,
     weight: 0,
+    image: 'firearms_maintenance',
   },
   preapply_medicine: {
     name: 'Pre-apply Medicine',
@@ -275,6 +278,7 @@ const gear: Record<string, RawGearDefinition> = {
     bonusHpPerCategory: { medicine: 2 },
     price: 0,
     weight: 0,
+    image: 'preapply_medicine',
   },
   adjust_armor: {
     name: 'Adjust Armor',
@@ -285,6 +289,7 @@ const gear: Record<string, RawGearDefinition> = {
     bonusHpPerCategory: { armor: 1 },
     price: 0,
     weight: 0,
+    image: 'armor_straps',
   },
   safer_routes: {
     name: 'Safer Routes',
@@ -293,6 +298,7 @@ const gear: Record<string, RawGearDefinition> = {
     walkMultiplier: 2,
     price: 0,
     weight: 0,
+    image: 'safe_routes',
   },
   no_scavenging: {
     name: 'No Scavenging',
@@ -302,6 +308,7 @@ const gear: Record<string, RawGearDefinition> = {
     ignoreLootEncounters: true,
     price: 0,
     weight: 0,
+    image: 'no_scavenging',
   },
   spiked_armor: {
     name: 'Spiked Armor',
@@ -345,7 +352,7 @@ const gear: Record<string, RawGearDefinition> = {
     chanceToHit: 10,
     price: 100,
     weight: 1,
-    image: 'protective_goggles',
+    image: 'binoculars',
   },
   ak_rifle: {
     name: 'AK Rifle',
@@ -362,7 +369,7 @@ const gear: Record<string, RawGearDefinition> = {
     chanceToHit: 15,
     price: 150,
     weight: 2,
-    image: 'revolver',
+    image: 'revolver2',
   },
   uzi: {
     name: 'Uzi',
@@ -371,7 +378,7 @@ const gear: Record<string, RawGearDefinition> = {
     chanceToHit: 5,
     price: 200,
     weight: 3,
-    image: 'uzi',
+    image: 'uzi2',
   },
   sniper_rifle: {
     name: 'Sniper Rifle',

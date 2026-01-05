@@ -4,6 +4,7 @@ import { parsePipeline, type PipelineJob } from './pipeline_parse.ts';
 import { runSplitTrimJob } from './split_trim_job.ts';
 import { runPackJob } from './pack_job.ts';
 import { runCopyJob } from './copy_job.ts';
+import { runMonowhiteJob } from './monowhite_job.ts';
 
 async function listPipelineFiles(dir: string): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true });
@@ -73,6 +74,15 @@ async function main() {
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error(`copy failed for pipeline ${path.basename(file)}: ${msg}`);
+      }
+    } else if (jobType === 'monowhite') {
+      console.log(`Running monowhite on ${path.basename(file)}...`);
+      try {
+        await runMonowhiteJob(job, dataDir);
+        console.log(`Finished monowhite for ${path.basename(file)}`);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`monowhite failed for pipeline ${path.basename(file)}: ${msg}`);
       }
     } else if (jobType) {
       console.log(`Unknown job: ${jobType} — skipping.`);

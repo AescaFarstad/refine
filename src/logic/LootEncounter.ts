@@ -1,10 +1,63 @@
 import type { ActiveRaid, GameState } from './GameState';
 import type { LootRarity } from './RaidLib';
-import type { LootEncounterLogEntry } from './RaidLog';
+import { createLootEncounterLogEntry, createMonsterLootEncounterLogEntry, type LootEncounterLogEntry, type MonsterLootEncounterLogEntry } from './RaidLog';
 import Perks from './Perks';
+import { TMP_LOOT_BUFF_PER_FULL_BAGS_SKIP_PCT } from './Const';
+import type { ItemDefinition } from './ItemLib';
 
 function clamp(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v));
+}
+
+function rarityRank(r: ItemDefinition['rarity']): number {
+  switch (r) {
+    case 'common': return 0;
+    case 'uncommon': return 1;
+    case 'rare': return 2;
+    case 'legendary': return 3;
+  }
+}
+
+function findReplacementCandidate(
+  gs: GameState,
+  usedVolumeBefore: number,
+  capacity: number,
+  newItemId: string,
+  bagItemCounts: Record<string, number>
+): { replacedItemId: string; usedVolumeAfter: number } | null {
+  const newDef = gs.lib.getItem(newItemId);
+  const newAfter = usedVolumeBefore + newDef.volume;
+  if (newAfter <= capacity) return null;
+
+  let best: { replacedItemId: string; usedVolumeAfter: number; replacedScore: number; replacedVolume: number } | null = null;
+
+  for (const [oldItemId, count] of Object.entries(bagItemCounts)) {
+    if (count <= 0) continue;
+    const oldDef = gs.lib.getItem(oldItemId);
+    const usedAfter = usedVolumeBefore - oldDef.volume + newDef.volume;
+    if (usedAfter > capacity) continue;
+
+    const newScoreOkHigherRarity = (newDef.score >= oldDef.score * 1.1) && (rarityRank(newDef.rarity) > rarityRank(oldDef.rarity));
+    const newScoreOkSameOrLowerRarity = (newDef.score >= oldDef.score * 1.2) && (rarityRank(newDef.rarity) <= rarityRank(oldDef.rarity));
+    if (!newScoreOkHigherRarity && !newScoreOkSameOrLowerRarity) continue;
+
+    const candidate = { replacedItemId: oldItemId, usedVolumeAfter: usedAfter, replacedScore: oldDef.score, replacedVolume: oldDef.volume };
+    if (!best) {
+      best = candidate;
+      continue;
+    }
+    if (candidate.replacedScore !== best.replacedScore) {
+      if (candidate.replacedScore < best.replacedScore) best = candidate;
+      continue;
+    }
+    if (candidate.replacedVolume !== best.replacedVolume) {
+      if (candidate.replacedVolume > best.replacedVolume) best = candidate;
+      continue;
+    }
+  }
+
+  if (!best) return null;
+  return { replacedItemId: best.replacedItemId, usedVolumeAfter: best.usedVolumeAfter };
 }
 
 export interface LootEncounterContext {
@@ -13,55 +66,41 @@ export interface LootEncounterContext {
   baseLootChance: number;
 }
 
-export function handleLootLikeEncounter(gs: GameState, r: ActiveRaid, ctx: LootEncounterContext): LootEncounterLogEntry {
+export function handleLootLikeEncounter(
+  gs: GameState,
+  r: ActiveRaid,
+  ctx: LootEncounterContext,
+  bagItemCounts: Record<string, number>,
+  discardedItemCounts: Record<string, number>
+): LootEncounterLogEntry {
   const before = Math.max(0, r.usedVolume || 0);
-
-  // If bags already full, skip searching altogether
   if (before >= r.bagsVolume) {
-    return {
-      kind: 'LootEncounter',
-      source: 'raid',
+    r.tmpLootBuffNextRaidPct += TMP_LOOT_BUFF_PER_FULL_BAGS_SKIP_PCT;
+    return createLootEncounterLogEntry({
       skipped: true,
-      timeSpentSec: 0,
-      elapsedTotalSec: 0,
-      myRoll: 0,
-      checkValue: 0,
-      itemId: '',
+      skipReason: 'bags_full',
+      tmpLootBuffNextRaidPct: r.tmpLootBuffNextRaidPct,
       capacity: r.bagsVolume,
       volumeBefore: before,
       volumeAfter: before,
-      discarded: false,
-      requiredVolume: 0,
-      biopsyChance: 0,
-      biopsyRoll: 0,
-      biopsySuccess: false,
-    };
+    });
   }
 
   const thorough = (r.perks || []).includes(Perks.THOROUGH_SEARCH);
   const timeSpentSec = 300 + (thorough ? 300 : 0);
 
-  const checkValue = clamp(ctx.baseLootChance + r.lootChanceBonus, 0, 100);
+  const checkValue = clamp(ctx.baseLootChance + r.lootChanceBonus + r.tmpLootBuffAppliedPct, 0, 100);
   const myRoll = Math.floor(gs.random.get() * 100);
 
-  const entry: LootEncounterLogEntry = {
-    kind: 'LootEncounter',
-    source: 'raid',
-    skipped: false,
+  const entry: LootEncounterLogEntry = createLootEncounterLogEntry({
     timeSpentSec,
-    elapsedTotalSec: 0,
     myRoll,
     checkValue,
-    itemId: '',
+    tmpLootBuffNextRaidPct: r.tmpLootBuffNextRaidPct,
     capacity: r.bagsVolume,
     volumeBefore: before,
     volumeAfter: before,
-    discarded: false,
-    requiredVolume: 0,
-    biopsyChance: 0,
-    biopsyRoll: 0,
-    biopsySuccess: false,
-  };
+  });
 
   if (myRoll > checkValue) {
     // No valuables found
@@ -122,40 +161,67 @@ export function handleLootLikeEncounter(gs: GameState, r: ActiveRaid, ctx: LootE
     r.usedVolume = after;
     entry.volumeAfter = after;
     entry.discarded = false;
+    bagItemCounts[picked] = (bagItemCounts[picked] ?? 0) + 1;
   } else {
-    entry.volumeAfter = before;
-    entry.discarded = true;
-    entry.requiredVolume = Math.max(0, after - r.bagsVolume);
+    const replacement = findReplacementCandidate(gs, before, r.bagsVolume, picked, bagItemCounts);
+    if (replacement) {
+      r.usedVolume = replacement.usedVolumeAfter;
+      entry.volumeAfter = replacement.usedVolumeAfter;
+      entry.replacedItemId = replacement.replacedItemId;
+      entry.discarded = false;
+      entry.requiredVolume = 0;
+      bagItemCounts[replacement.replacedItemId] = (bagItemCounts[replacement.replacedItemId] ?? 0) - 1;
+      if (bagItemCounts[replacement.replacedItemId] <= 0) delete bagItemCounts[replacement.replacedItemId];
+      bagItemCounts[picked] = (bagItemCounts[picked] ?? 0) + 1;
+      discardedItemCounts[replacement.replacedItemId] = (discardedItemCounts[replacement.replacedItemId] ?? 0) + 1;
+    } else {
+      entry.volumeAfter = before;
+      entry.discarded = true;
+      entry.requiredVolume = Math.max(0, after - r.bagsVolume);
+      discardedItemCounts[picked] = (discardedItemCounts[picked] ?? 0) + 1;
+    }
   }
 
   return entry;
 }
 
-export function handleMonsterLootEncounter(gs: GameState, r: ActiveRaid, itemId: string, biopsyChance: number): LootEncounterLogEntry {
+export function handleMonsterLootEncounter(
+  gs: GameState,
+  r: ActiveRaid,
+  itemId: string,
+  biopsyChance: number,
+  bagItemCounts: Record<string, number>,
+  discardedItemCounts: Record<string, number>
+): MonsterLootEncounterLogEntry {
   const before = Math.max(0, r.usedVolume || 0);
   const timeSpentSec = 60; // fixed 1 minute to harvest
+
+  if (before >= r.bagsVolume) {
+    return createMonsterLootEncounterLogEntry({
+      skipped: true,
+      skipReason: 'bags_full',
+      tmpLootBuffNextRaidPct: r.tmpLootBuffNextRaidPct,
+      capacity: r.bagsVolume,
+      volumeBefore: before,
+      volumeAfter: before,
+      biopsyChance,
+    });
+  }
 
   const biopsyRoll = Math.floor(gs.random.get() * 100);
   const biopsySuccess = biopsyRoll < biopsyChance;
 
-  const entry: LootEncounterLogEntry = {
-    kind: 'LootEncounter',
-    source: 'monster',
-    skipped: false,
+  const entry: MonsterLootEncounterLogEntry = createMonsterLootEncounterLogEntry({
     timeSpentSec,
-    elapsedTotalSec: 0,
-    myRoll: 0,
-    checkValue: 0,
     itemId,
-    capacity : r.bagsVolume,
+    tmpLootBuffNextRaidPct: r.tmpLootBuffNextRaidPct,
+    capacity: r.bagsVolume,
     volumeBefore: before,
     volumeAfter: before,
-    discarded: false,
-    requiredVolume: 0,
     biopsyChance,
     biopsyRoll,
     biopsySuccess,
-  };
+  });
 
   if (!biopsySuccess) {
     entry.itemId = '';
@@ -169,10 +235,25 @@ export function handleMonsterLootEncounter(gs: GameState, r: ActiveRaid, itemId:
     r.usedVolume = after;
     entry.volumeAfter = after;
     entry.discarded = false;
+    bagItemCounts[itemId] = (bagItemCounts[itemId] ?? 0) + 1;
   } else {
-    entry.volumeAfter = before;
-    entry.discarded = true;
-    entry.requiredVolume = Math.max(0, after - r.bagsVolume);
+    const replacement = findReplacementCandidate(gs, before, r.bagsVolume, itemId, bagItemCounts);
+    if (replacement) {
+      r.usedVolume = replacement.usedVolumeAfter;
+      entry.volumeAfter = replacement.usedVolumeAfter;
+      entry.replacedItemId = replacement.replacedItemId;
+      entry.discarded = false;
+      entry.requiredVolume = 0;
+      bagItemCounts[replacement.replacedItemId] = (bagItemCounts[replacement.replacedItemId] ?? 0) - 1;
+      if (bagItemCounts[replacement.replacedItemId] <= 0) delete bagItemCounts[replacement.replacedItemId];
+      bagItemCounts[itemId] = (bagItemCounts[itemId] ?? 0) + 1;
+      discardedItemCounts[replacement.replacedItemId] = (discardedItemCounts[replacement.replacedItemId] ?? 0) + 1;
+    } else {
+      entry.volumeAfter = before;
+      entry.discarded = true;
+      entry.requiredVolume = Math.max(0, after - r.bagsVolume);
+      discardedItemCounts[itemId] = (discardedItemCounts[itemId] ?? 0) + 1;
+    }
   }
 
   return entry;

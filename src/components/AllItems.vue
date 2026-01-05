@@ -57,6 +57,8 @@
         :show-molecule="isHovering"
         :show-rarity-labels="showRarityLabel"
         :rarity-labels="rarityLabelsMap"
+        :show-scores="showScores"
+        :show-volumes="showVolumes"
         clickable
         draggable
         no-tooltip
@@ -85,6 +87,8 @@ const props = defineProps<{
   availableRaids?: Array<{ id: string; name: string; order: number }>;
   activeRaidFilter?: string | null;
   showRarityLabel?: boolean;
+  showScores?: boolean;
+  showVolumes?: boolean;
 }>();
 const emit = defineEmits<{
   (e: 'pick-item', id: string): void;

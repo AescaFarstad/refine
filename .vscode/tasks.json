@@ -1,0 +1,124 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "ART all",
+      "type": "shell",
+      "command": "node",
+      "args": [
+        "--import",
+        "data:text/javascript,import { register } from \"node:module\"; import { pathToFileURL } from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"));",
+        "src/pipeline/run_pipeline.ts"
+      ],
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always"
+      }
+    },
+    {
+      "label": "test",
+      "type": "shell",
+      "command": "node",
+      "args": [
+        "--import",
+        "data:text/javascript,import { register } from \"node:module\"; import { pathToFileURL } from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"));",
+        "src/pipeline/debug_erode.ts"
+      ],
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always"
+      }
+    },
+    {
+      "label": "ART essences",
+      "type": "shell",
+      "command": "node",
+      "args": [
+        "--import",
+        "data:text/javascript,import { register } from \"node:module\"; import { pathToFileURL } from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"));",
+        "src/pipeline/run_pipeline.ts",
+        "essence",
+        "pack"
+      ],
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always"
+      }
+    },
+    {
+      "label": "ART items",
+      "type": "shell",
+      "command": "node",
+      "args": [
+        "--import",
+        "data:text/javascript,import { register } from \"node:module\"; import { pathToFileURL } from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"));",
+        "src/pipeline/run_pipeline.ts",
+        "items",
+        "pack"
+      ],
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always"
+      }
+    },
+    {
+      "label": "ART gear",
+      "type": "shell",
+      "command": "node",
+      "args": [
+        "--import",
+        "data:text/javascript,import { register } from \"node:module\"; import { pathToFileURL } from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"));",
+        "src/pipeline/run_pipeline.ts",
+        "monowhite",
+        "gear",
+        "pack"
+      ],
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always"
+      }
+    },
+    {
+      "label": "run dev",
+      "type": "shell",
+      "command": "gnome-terminal",
+      "args": [
+        "--",
+        "bash",
+        "-c",
+        "cd '${workspaceFolder}' && npm run dev; exec bash"
+      ],
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "mount",
+      "type": "shell",
+      "command": "gnome-terminal",
+      "args": [
+        "--",
+        "bash",
+        "-c",
+        "cd '${workspaceFolder}' && sudo ../setup_dev_mounts.sh; exec bash"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}

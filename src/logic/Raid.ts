@@ -1,7 +1,7 @@
 import type { GameState, ActiveRaid } from './GameState';
 import type { RaidDefinition, EncounterDef, FightEncounterDef, QuestEncounterDef } from './RaidLib';
 import type { GearDefinition } from './GearLib';
-import type { RaidEventLog } from './RaidLog';
+import { createLootEncounterLogEntry, createMonsterLootEncounterLogEntry, createQuestEncounterLogEntry, createZoneCollapseLogEntry, type LootEncounterLogEntry, type MonsterLootEncounterLogEntry, type RaidEventLog } from './RaidLog';
 import { handleWalkEncounter } from './WalkEncounter';
 import { handleLootLikeEncounter, handleMonsterLootEncounter } from './LootEncounter';
 import { handleFightEncounter } from './FightEncounter';
@@ -13,6 +13,8 @@ import type { QuestResourceRewards } from './QuestLib';
 export interface RaidRunResult {
   success: boolean;
   log: RaidEventLog;
+  bagItemCounts: Record<string, number>;
+  discardedItemCounts: Record<string, number>;
   timeSpentSec: number;
   plannedEncounters: number;
   barelyInTime: boolean;
@@ -220,6 +222,8 @@ function cloneActiveRaidState(r: ActiveRaid): ActiveRaid {
     damage: r.damage,
     perks: [...r.perks],
     lootChanceBonus: r.lootChanceBonus,
+    tmpLootBuffAppliedPct: r.tmpLootBuffAppliedPct,
+    tmpLootBuffNextRaidPct: r.tmpLootBuffNextRaidPct,
     hitChance: r.hitChance,
     blockChance: r.blockChance,
     reflectOnHitPct: r.reflectOnHitPct,
@@ -230,6 +234,7 @@ function cloneActiveRaidState(r: ActiveRaid): ActiveRaid {
 
 export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean = false): RaidRunResult {
   const raid = dryRun ? cloneActiveRaidState(gs.raid) : gs.raid;
+  raid.tmpLootBuffNextRaidPct = 0;
   // When running for real, use the game state's random generator (affects game state)
   // When doing a dry run/simulation, create a temporary random that doesn't affect game state
   const simRnd = dryRun
@@ -237,6 +242,8 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
     : gs.random;
   const gsForRun: GameState = dryRun ? ({ ...gs, random: simRnd, raid }) : gs;
   const log: RaidEventLog = { entries: [] };
+  const bagItemCounts: Record<string, number> = {};
+  const discardedItemCounts: Record<string, number> = {};
   // Elapsed time since the beginning of the raid
   let timeSpentSec = 0;
   let barelyInTime = false;
@@ -277,18 +284,18 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
       );
 
       if (hasUnsafeEncounters) {
-        const collapseEntry = {
-          kind: 'ZoneCollapse' as const,
-          timeSpentSec: 0,
+        const collapseEntry = createZoneCollapseLogEntry({
           elapsedTotalSec: timeSpentSec,
           timeLimit: zoneCollapseLimit,
           elapsedTime: timeSpentSec,
-        };
+        });
         log.entries.push(collapseEntry);
         raid.hp = 0;
         return {
           success: false,
           log,
+          bagItemCounts,
+          discardedItemCounts,
           timeSpentSec,
           plannedEncounters,
           barelyInTime: false,
@@ -302,6 +309,30 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         };
       } else {
         barelyInTime = true;
+        for (const skippedEnc of remainingEncounters) {
+          if (skippedEnc.type === 'LootEncounter' || skippedEnc.type === 'MonsterLootEncounter') {
+            const skippedEntry: LootEncounterLogEntry | MonsterLootEncounterLogEntry =
+              skippedEnc.type === 'MonsterLootEncounter'
+                ? createMonsterLootEncounterLogEntry({
+                  skipped: true,
+                  skipReason: 'zone_collapsing',
+                  elapsedTotalSec: timeSpentSec,
+                  capacity: raid.bagsVolume,
+                  volumeBefore: raid.usedVolume,
+                  volumeAfter: raid.usedVolume,
+                })
+                : createLootEncounterLogEntry({
+                  skipped: true,
+                  skipReason: 'zone_collapsing',
+                  elapsedTotalSec: timeSpentSec,
+                  capacity: raid.bagsVolume,
+                  volumeBefore: raid.usedVolume,
+                  volumeAfter: raid.usedVolume,
+                });
+            log.entries.push(skippedEntry);
+          }
+        }
+        queue.length = 0;
       }
     }
 
@@ -323,7 +354,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
       case 'QuestEncounter': {
         const qid = enc.questId;
         const quest = gsForRun.lib.quests.get(qid)!;
-        const entry = { kind: 'QuestEncounter' as const, questId: qid, success: true, timeSpentSec: Math.round(quest.encounterTimeMin * 60), elapsedTotalSec: 0 };
+        const entry = createQuestEncounterLogEntry({ questId: qid, success: true, timeSpentSec: Math.round(quest.encounterTimeMin * 60) });
         timeSpentSec += entry.timeSpentSec;
         entry.elapsedTotalSec = timeSpentSec;
         log.entries.push(entry);
@@ -334,7 +365,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
           baseLootChance: raidDef.baseLootChance,
           items: raidDef.items,
           poolsByRarity: raidDef.itemPoolsByRarity,
-        });
+        }, bagItemCounts, discardedItemCounts);
         timeSpentSec += entry.timeSpentSec;
         entry.elapsedTotalSec = timeSpentSec;
         log.entries.push(entry);
@@ -366,6 +397,8 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
           return {
             success: false,
             log,
+            bagItemCounts,
+            discardedItemCounts,
             timeSpentSec,
             plannedEncounters,
             barelyInTime: false,
@@ -390,7 +423,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
       case 'MonsterLootEncounter': {
         const mid = enc.monsterId;
         const m = gsForRun.lib.monsters.get(mid)!;
-        const entry = handleMonsterLootEncounter(gsForRun, raid, m.lootItemId, raid.biopsyChance);
+        const entry = handleMonsterLootEncounter(gsForRun, raid, m.lootItemId, raid.biopsyChance, bagItemCounts, discardedItemCounts);
         timeSpentSec += entry.timeSpentSec;
         entry.elapsedTotalSec = timeSpentSec;
         log.entries.push(entry);
@@ -485,6 +518,8 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
   return {
     success: true,
     log,
+    bagItemCounts,
+    discardedItemCounts,
     timeSpentSec,
     plannedEncounters,
     barelyInTime,
@@ -563,10 +598,15 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
   gs.raid.blockChance = gs.chanceToBlock;
   gs.raid.perks = [];
   gs.raid.lootChanceBonus = 0;
+  gs.raid.tmpLootBuffAppliedPct = 0;
+  gs.raid.tmpLootBuffNextRaidPct = 0;
   gs.raid.reflectOnHitPct = 0;
   gs.raid.reflectOnBlockPct = 0;
   gs.raid.biopsyChance = 0;
   gs.selectedGearPrice = 0;
+
+  const raidEntry = gs.unlockedRaids.find(r => r.id === raidId)!;
+  gs.raid.tmpLootBuffAppliedPct = raidEntry.tmpLootBuff;
 
   const gearIds: string[] = gs.loadouts[raidId] ?? [];
   const appliedGearIds = new Set<string>();

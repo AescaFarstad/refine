@@ -39,7 +39,13 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { uiState } from '../logic/UIState';
 import atlasStorage from '../logic/AtlasStorage';
-import { ESSENCE_CREDITS, ESSENCE_CHRONOTRACES, ESSENCE_TEMPORAL_FLUX } from '../logic/Const';
+import {
+  CYAN_SUCCESS_BONUS_PCT,
+  ESSENCE_CREDITS,
+  ESSENCE_CHRONOTRACES,
+  ESSENCE_TEMPORAL_FLUX,
+  MAGENTA_SUCCESS_PENALTY_PCT,
+} from '../logic/Const';
 import { getResourceSpec } from '../logic/Resources';
 
 const source = ref<HTMLImageElement | null>(atlasStorage.getItemsSource());
@@ -80,7 +86,7 @@ function essenceLetter(k: string): string {
 const encounteredEssenceKeys = computed<string[]>(() => {
   const keys = (uiState.encounteredEssences || []).filter(Boolean);
   const uniq = Array.from(new Set(keys));
-  const order = ['red', 'green', 'blue', 'yellow', 'cyan', 'orange', 'indigo', 'crimson', 'emerald', 'gold', 'gray'];
+  const order = ['red', 'green', 'blue', 'yellow', 'cyan', 'magenta', 'orange', 'indigo', 'crimson', 'emerald', 'gold', 'gray'];
   const orderIdx: Record<string, number> = {};
   order.forEach((k, i) => { orderIdx[k] = i; });
   return uniq.sort((a, b) => {
@@ -99,6 +105,7 @@ function essenceDisplayName(k: string): string {
     yellow: 'Yellow',
     orange: 'Orange',
     cyan: 'Cyan',
+    magenta: 'Magenta',
     indigo: 'Indigo',
     crimson: 'Crimson',
     emerald: 'Emerald',
@@ -124,7 +131,9 @@ function essenceEffectText(k: string): string {
     case 'orange':
       return 'Doubles adjacent';
     case 'cyan':
-      return '10% refining success';
+      return `${CYAN_SUCCESS_BONUS_PCT}% refining success`;
+    case 'magenta':
+      return `-${MAGENTA_SUCCESS_PENALTY_PCT}% refining success`;
     case 'indigo':
       return 'Converts adjacent clusters to blue';
     case 'crimson':

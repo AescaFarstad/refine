@@ -1,5 +1,6 @@
 <template>
-  <div v-if="hintRows.length > 0">
+  <div>
+    <div v-if="blocked" class="blocked-warning">No spare slots in this category</div>
     <div class="hint-row" v-for="(row, i) in hintRows" :key="i">
       <span class="hint-label">{{ row.label }}</span>
       <span class="hint-value">{{ row.value }}</span>
@@ -13,6 +14,7 @@ import type { GearDefinition } from '../logic/GearLib';
 
 const props = defineProps<{
   gear: GearDefinition;
+  blocked?: boolean;
 }>();
 
 function fmtSigned(n: number, suffix = ''): string {
@@ -25,8 +27,8 @@ const hintRows = computed((): Array<{ label: string; value: string }> => {
   const g = props.gear;
   const rows: Array<{ label: string; value: string }> = [];
 
-  if (g.speedPercent) rows.push({ label: 'Speed', value: `${fmtSigned(g.speedPercent, '%')}` });
-  if (g.speedFlat) rows.push({ label: 'Speed (flat)', value: `${fmtSigned(g.speedFlat)}` });
+  if (g.speedPercent) rows.push({ label: 'Walking speed', value: `${fmtSigned(g.speedPercent, '%')}` });
+  if (g.speedFlat) rows.push({ label: 'Flat speed bonus', value: `${fmtSigned(g.speedFlat, ' km/h')}` });
   if (g.regenPerKm) rows.push({ label: 'Regen', value: `${fmtSigned(g.regenPerKm)} hp/km` });
   if (g.regenAfterEncounter) rows.push({ label: 'Regen/encounter', value: `${fmtSigned(g.regenAfterEncounter)} hp` });
 
@@ -48,6 +50,14 @@ const hintRows = computed((): Array<{ label: string; value: string }> => {
 </script>
 
 <style scoped>
+
+.blocked-warning {
+  color: #f87171;
+  font-weight: 900;
+  font-size: 14px;
+  margin-bottom: 6px;
+  white-space: nowrap;
+}
 
 .hint-row {
   white-space: nowrap;

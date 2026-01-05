@@ -6,7 +6,12 @@ dist
 .vite
 *.log
 .idea
-.vscode
-/data/
+/.vscode/*
+!/.vscode/tasks.json
+
+/data/*
+!/data/img/
+/data/img/*
+!/data/img/pipeline*
 /public/
 /history/

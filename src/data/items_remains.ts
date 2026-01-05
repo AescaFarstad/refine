@@ -46,7 +46,7 @@ const remainsDefinitions: Record<string, { name: string; volume: number; rarity?
   flower_remains: {
     name: 'Flower Human Roots',
     volume: 1,
-    rarity: 1,
+    rarity: 2,
     molecule: {
       atoms: [
         { color: 'blue', x: 0, y: 0 },
@@ -62,7 +62,7 @@ const remainsDefinitions: Record<string, { name: string; volume: number; rarity?
   stalker_remains: {
     name: 'Invisible Stalker Dust',
     volume: 1,
-    rarity: 1,
+    rarity: 2,
     molecule: {
       atoms: [
         { color: 'green', x: 0, y: 0 },
@@ -96,7 +96,7 @@ const remainsDefinitions: Record<string, { name: string; volume: number; rarity?
   scorch_remains: {
     name: 'Scorch Ash',
     volume: 2,
-    rarity: 1,
+    rarity: 2,
     molecule: {
       atoms: [
         { color: 'red', x: -1, y: 0 },
@@ -112,7 +112,7 @@ const remainsDefinitions: Record<string, { name: string; volume: number; rarity?
   octopus_remains: {
     name: 'Black Octopus Glands',
     volume: 6,
-    rarity: 1,
+    rarity: 3,
     molecule: {
       atoms: [
         { color: 'gray', x: 0, y: -1 },
@@ -136,7 +136,7 @@ const remainsDefinitions: Record<string, { name: string; volume: number; rarity?
   lightning_remains: {
     name: 'Lightning Zealot Ectoplasm',
     volume: 1,
-    rarity: 1,
+    rarity: 3,
     molecule: {
       atoms: [
         { color: 'gray', x: 0, y: -1 },
@@ -155,7 +155,7 @@ const remainsDefinitions: Record<string, { name: string; volume: number; rarity?
   dendroid_remains: {
     name: 'Dendroid Bark',
     volume: 1,
-    rarity: 1,
+    rarity: 2,
     molecule: {
       atoms: [
         { color: 'gray', x: -1, y: 0 },
@@ -185,7 +185,7 @@ const remainsDefinitions: Record<string, { name: string; volume: number; rarity?
   squid_remains: {
     name: 'Car Squid Spark Plug',
     volume: 1,
-    rarity: 1,
+    rarity: 4,
     molecule: {
       atoms: [
         { color: 'yellow', x: 0, y: -2 },
@@ -203,7 +203,7 @@ const remainsDefinitions: Record<string, { name: string; volume: number; rarity?
   devourer_remains: {
     name: 'Devourer Swarm Coils',
     volume: 1,
-    rarity: 1,
+    rarity: 3,
     molecule: {
       atoms: [
         { color: 'gray', x: 1, y: -1 },
@@ -221,7 +221,7 @@ const remainsDefinitions: Record<string, { name: string; volume: number; rarity?
   hive_remains: {
     name: 'The Hive Sting',
     volume: 1,
-    rarity: 1,
+    rarity: 3,
     molecule: {
       atoms: [
         { color: 'yellow', x: 1, y: -1 },
@@ -238,7 +238,7 @@ const remainsDefinitions: Record<string, { name: string; volume: number; rarity?
   finger_remains: {
     name: 'Devil\'s Finger Scale',
     volume: 1,
-    rarity: 1,
+    rarity: 4,
     molecule: {
       atoms: [
         { color: 'orange', x: -1, y: 0 },
@@ -252,7 +252,7 @@ const remainsDefinitions: Record<string, { name: string; volume: number; rarity?
   hedgehog_remains: {
     name: 'Hedgehog Shell',
     volume: 1,
-    rarity: 1,
+    rarity: 4,
     molecule: {
       atoms: [
         { color: 'gray', x: -1, y: -2 },

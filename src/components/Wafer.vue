@@ -13,7 +13,7 @@
         :cell-effective-counts="preview.cellEffectiveCounts"
         :use-effective-essence="!draggingItem"
         :show-buff-overlays="true"
-        :show-upgrade-hints="canAffordAnyUpgrade"
+        :show-upgrade-hints="showWaferUpgrades"
         @hover="onHover"
         @click="onClick"
         @pickup="onPickup"
@@ -33,7 +33,7 @@
         Drag items here to refine them into resources
       </div>
       <div
-        v-if="hasUpgradePreview && canAffordAnyUpgrade && !showRefineAnim"
+        v-if="hasUpgradePreview && showWaferUpgrades && !showRefineAnim"
         class="wafer-upgrade-hint"
         :class="{ insufficient: !canAffordUpgrade }"
       >
@@ -109,7 +109,7 @@
         <div class="stat-row">
           <span class="stat-label">Failure Chance:</span>
           <span class="stat-value" :class="failureClass">{{ preview.failureChancePct }}%</span>
-          <span class="stat-source" v-if="preview.emptyCells > 0 || cyanEssences > 0">
+          <span class="stat-source" v-if="preview.emptyCells > 0 || cyanEssences > 0 || magentaEssences > 0">
             <template v-if="preview.emptyCells > 0">
               from {{ preview.emptyCells }} empty cells
             </template>
@@ -117,6 +117,14 @@
               <template v-if="preview.emptyCells > 0">, </template>
               -{{ cyanReduction }}% from {{ cyanEssences }}
               <template v-for="(key, idx) in cyanEssenceKeys" :key="key">
+                <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
+                <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
+              </template>
+            </template>
+            <template v-if="magentaEssences > 0">
+              <template v-if="preview.emptyCells > 0 || cyanEssences > 0">, </template>
+              +{{ magentaPenalty }}% from {{ magentaEssences }}
+              <template v-for="(key, idx) in magentaEssenceKeys" :key="key">
                 <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
                 <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
               </template>
@@ -166,11 +174,13 @@ import { formatDurationHM } from '../logic/StringUtils';
 import { globalInputQueue } from '../logic/Model';
 import { CmdPlaceMolecule, CmdRemoveMolecule, CmdGrowWafer } from '../logic/input/InputCommands';
 import atlasStorage from '../logic/AtlasStorage';
+import { DISCOVERY } from '../logic/DiscoveryLib';
 // All snapping handled via MoleculeUtils.translateForSnap
 import { translateForSnap, rotateMolecule } from '../logic/MoleculeUtils';
 import { HEX_SIZE, WAFER_CANVAS_WIDTH, WAFER_CANVAS_HEIGHT } from '../logic/RefineUIBehaviour';
 import { updateManualDragMolecule } from '../logic/ManualDrag';
 import { getResourceSpec } from '../logic/Resources';
+import { CYAN_SUCCESS_BONUS_PCT, MAGENTA_SUCCESS_PENALTY_PCT } from '../logic/Const';
 
 
 const props = defineProps<{
@@ -230,21 +240,22 @@ const refineProgress = computed(() => activeRefinery.value?.progressPct || 0);
 const timeRemaining = computed(() => formatDurationHM(activeRefinery.value?.timeRemainingSec || 0));
 
 const hasUpgradePreview = computed(() => !!upgradeHoverCells.value && upgradeHoverCells.value.length > 0);
+const showWaferUpgrades = computed(() => {
+  // Touch discoveryCounter to trigger recompute when discoveries change
+  const _dep = uiState.discoveryCounter;
+  const gs = getGameState();
+  const hasDiscoveredShards = gs?.discoveries?.[DISCOVERY.SHARDS] === true;
+  return hasDiscoveredShards || uiState.shardDust > 0 || uiState.waferUpgradesPurchased > 0;
+});
 const upgradeCost = computed(() => {
   if (!hasUpgradePreview.value) return 0;
-  const purchased = (uiState as any).waferUpgradesPurchased || 0;
-  return computeWaferUpgradePrice(purchased);
+  return computeWaferUpgradePrice(uiState.waferUpgradesPurchased);
 });
 const canAffordUpgrade = computed(() => {
   return hasUpgradePreview.value && upgradeCost.value > 0 && uiState.shardDust >= upgradeCost.value;
 });
-const canAffordAnyUpgrade = computed(() => {
-  const purchased = (uiState as any).waferUpgradesPurchased || 0;
-  const cost = computeWaferUpgradePrice(purchased);
-  return hasGrownWafer.value || uiState.shardDust >= cost;
-});
 
-watch(canAffordAnyUpgrade, (enabled) => {
+watch(showWaferUpgrades, (enabled) => {
   if (!enabled) upgradeHoverCells.value = null;
 });
 
@@ -316,7 +327,19 @@ const cyanEssenceKeys = computed(() => {
 });
 
 const cyanReduction = computed(() => {
-  return cyanEssences.value * 10;
+  return cyanEssences.value * CYAN_SUCCESS_BONUS_PCT;
+});
+
+const magentaEssences = computed(() => {
+  return preview.value.essenceTotals?.magenta || 0;
+});
+
+const magentaEssenceKeys = computed(() => {
+  return magentaEssences.value > 0 ? ['magenta'] : [];
+});
+
+const magentaPenalty = computed(() => {
+  return magentaEssences.value * MAGENTA_SUCCESS_PENALTY_PCT;
 });
 
 const failureClass = computed(() => {
@@ -387,7 +410,7 @@ function essenceIconStyle(k: string): Record<string, string> {
 }
 
 function essenceLetter(k: string): string {
-  const m: Record<string, string> = { red: 'R', green: 'G', blue: 'B', yellow: 'Y', cyan: 'C' };
+  const m: Record<string, string> = { red: 'R', green: 'G', blue: 'B', yellow: 'Y', cyan: 'C', magenta: 'M' };
   return m[k] || k?.[0]?.toUpperCase?.() || '?';
 }
 
@@ -422,12 +445,12 @@ function onHover(pos: Point2 | null) {
     return;
   }
 
-  if (!canAffordAnyUpgrade.value) {
+  if (!showWaferUpgrades.value) {
     upgradeHoverCells.value = null;
   }
 
   // Wafer growth preview (only when not dragging an item)
-  if (canAffordAnyUpgrade.value && !props.draggingItem && pos && wafer.value) {
+  if (showWaferUpgrades.value && !props.draggingItem && pos && wafer.value) {
     const cell = getCell(wafer.value, pos as Point2);
     if (cell && !cell.enabled && cell.canBeUpgraded) {
       const region = computeUpgradeableRegion(wafer.value, pos as Point2);
@@ -481,6 +504,7 @@ function onClick(pos: Point2) {
     ghostPosition.value = null;
     emit('clear-dragging');
   } else {
+    if (!showWaferUpgrades.value) return;
     if (!wafer.value) return;
     const cell = getCell(wafer.value, pos);
     if (!cell || cell.enabled || !cell.canBeUpgraded) return;
@@ -488,8 +512,7 @@ function onClick(pos: Point2) {
     const region = computeUpgradeableRegion(wafer.value, pos);
     if (!region || region.length === 0) return;
 
-    const purchased = (uiState as any).waferUpgradesPurchased || 0;
-    const cost = computeWaferUpgradePrice(purchased);
+    const cost = computeWaferUpgradePrice(uiState.waferUpgradesPurchased);
     if (cost <= 0) return;
     if (uiState.shardDust < cost) return;
 

@@ -200,7 +200,7 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
   },
   crystal_decanter: {
     name: 'Decanter',
-    volume: 6,
+    volume: 5,
     rarity: 4,
     molecule: {
       atoms: [
@@ -1404,6 +1404,16 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
     rarity: 1,
     molecule: {
       atoms: [{ color: 'cyan', x: 0, y: 0 }],
+      connections: [],
+    },
+    devOnly: true,
+  },
+  dev_atom_magenta: {
+    name: 'Dev Atom (Magenta)',
+    volume: 0,
+    rarity: 1,
+    molecule: {
+      atoms: [{ color: 'magenta', x: 0, y: 0 }],
       connections: [],
     },
     devOnly: true,

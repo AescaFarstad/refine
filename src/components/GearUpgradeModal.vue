@@ -2,7 +2,7 @@
   <div v-if="visible" class="modal-backdrop" @click.self="close">
     <div class="modal">
       <header class="modal-header">
-        <h3 class="modal-title">{{ skillPointsSpec.name }}: {{ skillPoints }}{{ skillPointsSpec.glyph }}</h3>
+        <h3 class="modal-title">{{ skillPointsSpec.name }}: {{ skillPoints }}</h3>
       </header>
 
       <section class="modal-body">
@@ -10,7 +10,7 @@
           <div
             v-for="cat in visibleCategories"
             :key="cat.id"
-            class="category-row"
+            :class="['category-row', { 'highlighted': cat.id === focusCategory, 'flash': cat.id === focusCategory }]"
           >
             <div class="category-name">{{ cat.name }}</div>
             <div class="category-slots">{{ slotCircles(cat.id) }}</div>
@@ -48,12 +48,13 @@ import { getResourceSpec } from '../logic/Resources';
 const visible = computed(() => uiState.gearUpgradeModalOpen);
 
 const skillPoints = computed(() => {
-  const gs = getGameState();
-  return Math.max(0, gs?.skillPoints || 0);
+  return Math.max(0, uiState.skillPoints || 0);
 });
 
 const skillPointsSpec = getResourceSpec('skillPoints');
 const skillPointsLabelLower = skillPointsSpec.name.toLowerCase();
+
+const focusCategory = computed(() => uiState.gearUpgradeFocusCategory);
 
 interface CategoryInfo {
   id: string;
@@ -178,7 +179,29 @@ function close(): void {
   padding: 10px 12px;
   background: rgba(255, 255, 255, 0.03);
   border-radius: 4px;
+  transition: background 0.3s ease;
 }
+
+.category-row.highlighted {
+  background: rgba(79, 209, 197, 0.15);
+  border: 1px solid rgba(79, 209, 197, 0.3);
+}
+
+.category-row.flash {
+  animation: flash-highlight 0.8s ease-out;
+}
+
+@keyframes flash-highlight {
+  0% {
+    background: rgba(79, 209, 197, 0.4);
+    box-shadow: 0 0 20px rgba(79, 209, 197, 0.6);
+  }
+  100% {
+    background: rgba(79, 209, 197, 0.15);
+    box-shadow: none;
+  }
+}
+
 
 .category-name {
   font-weight: 700;
@@ -199,13 +222,15 @@ function close(): void {
 .category-action {
   display: flex;
   justify-content: flex-end;
+  min-height: 32px;
+  align-items: center;
 }
 
 .requirement-label {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-secondary);
   opacity: 0.6;
-  padding: 8px 12px;
+  padding: 6px 10px;
   font-style: italic;
 }
 

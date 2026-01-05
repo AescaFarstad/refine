@@ -1,16 +1,22 @@
 <template>
   <template v-if="entry.skipped">
-    <div class="note-row">Bags are full. Skipping search.</div>
+    <div class="note-row" v-if="entry.skipReason === 'zone_collapsing'">Zone collapsing. Skipping search.</div>
+    <div class="note-row dimmed" v-else-if="entry.kind === 'LootEncounter'">
+      Bags are full.<br />
+      Skipping search, but taking note about this place.<br />
+      Next raid: <b style="color: white">+1%</b> chance to loot an item.
+    </div>
+    <div class="note-row dimmed" v-else>Bags are full. Skipping search.</div>
   </template>
   <template v-else>
-    <template v-if="entry.source === 'monster' && entry.biopsyChance > 0 && !entry.biopsySuccess && shownStep >= 1">
-      <div class="note-row dimmed">The monster's remains were scattered and spoiled (<b>{{ entry.biopsyChance }}</b> vs {{ entry.biopsyRoll }})</div>
+    <template v-if="isMonsterLoot && entry.biopsyChance > 0 && !entry.biopsySuccess && shownStep >= 1">
+      <div class="note-row dimmed">The monster's remains were scattered or spoiled (<b>{{ entry.biopsyChance }}</b> vs {{ entry.biopsyRoll }})</div>
     </template>
     <template v-else>
       <div class="loot-cols" :class="{ hasItem: !!entry.itemId && shownStep >= 1 }">
         <div class="lc col1">
           <template v-if="shownStep >= 1">
-            <template v-if="entry.source === 'monster' && entry.biopsyChance > 0">
+            <template v-if="isMonsterLoot && entry.biopsyChance > 0">
               <div class="line outcome">Found <b>{{ itemName(entry.itemId) }}</b>! (<b>{{ entry.biopsyChance }}</b> vs {{ entry.biopsyRoll }})</div>
             </template>
             <template v-else>
@@ -23,10 +29,11 @@
             </template>
           </template>
 
-          <template v-if="entry.itemId && (entry.source === 'monster' ? shownStep >= 1 : shownStep >= 2)">
+          <template v-if="entry.itemId && (isMonsterLoot ? shownStep >= 1 : shownStep >= 2)">
             <div class="line bags">
               <template v-if="!entry.discarded">
                 Bags volume: <b>{{ entry.volumeAfter }} / {{ entry.capacity }}</b>
+                <template v-if="entry.replacedItemId">.<br />Replaced <b>{{ itemName(entry.replacedItemId) }}</b>.</template>
               </template>
               <template v-else>
                 Bags volume: <b>{{ entry.volumeBefore }} / {{ entry.capacity }}</b>. Need {{ entry.requiredVolume }} more. Discarded.
@@ -42,7 +49,10 @@
           <div class="colR-grid" :class="{ notyet: shownStep < 1 }">
             <div class="vol" v-if="shownStep >= 1">Volume: {{ itemVolume(entry.itemId) }}</div>
             <div class="icon-wrap">
-              <ItemDisplay :id="entry.itemId" :minor="true" :class="{ 'loot-kept': !entry.discarded }" />
+              <div class="replaced-item-wrap" :class="{ empty: !entry.replacedItemId }">
+                <ItemDisplay v-if="entry.replacedItemId" :id="entry.replacedItemId" :minor="true" class="replaced-item" />
+              </div>
+              <ItemDisplay :id="entry.itemId" :minor="true" :class="{ 'loot-kept': !entry.discarded, 'loot-discarded': !!entry.discarded }" />
             </div>
           </div>
         </div>
@@ -53,16 +63,17 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { LootEncounterLogEntry } from '../../logic/RaidLog';
+import type { LootEncounterLogEntry, MonsterLootEncounterLogEntry } from '../../logic/RaidLog';
 import { getGameLib } from '../../logic/UIState';
 import ItemDisplay from '../ItemDisplay.vue';
 
 const props = defineProps<{
-  entry: LootEncounterLogEntry;
+  entry: LootEncounterLogEntry | MonsterLootEncounterLogEntry;
   shownStep: number;
 }>();
 
 const shownStep = computed(() => Math.max(0, props.shownStep || 0));
+const isMonsterLoot = computed(() => props.entry.kind === 'MonsterLootEncounter');
 
 function itemName(id?: string): string {
   const itemId = (id || '').trim();

@@ -8,6 +8,7 @@ import type { Lib } from './Lib';
 import { createWafer, type Wafer } from './Wafer';
 import type { Point2 } from './ItemLib';
 import { IS_DEBUG } from './Const';
+import { DISCOVERY } from './DiscoveryLib';
 
 export interface UIRaidDef extends RaidDefinition { }
 
@@ -30,6 +31,7 @@ export const uiState = reactive({
   chronotraces: 0,
   timeFlux: 0,
   shardDust: 0,
+  skillPoints: 0,
   timeMinutes: 0,
   canAdvanceTime: false,
   timeActive: false,
@@ -59,6 +61,9 @@ export const uiState = reactive({
   activeTab: 'raid' as 'raid' | 'refine' | 'research' | 'maze',
 
   gearUpgradeModalOpen: false,
+  gearUpgradeFocusCategory: '' as string,
+  hasDiscoveredGearUpgradeModal: false,
+  hasEverHadShards: false,
 
   cheatOpen: false,
   devAtlasKey: '' as '' | 'items',
@@ -68,6 +73,7 @@ export const uiState = reactive({
   refinery: null as UIRefinery | null,
   items: [] as Array<{ id: string; quantity: number }>,
   encounteredEssences: [] as string[],
+  discoveryCounter: 0,
   waferUpgradesPurchased: 0,
   wafer: createWafer(2) as Wafer,
   waferSize: { x: 0, y: 0 } as Point2,
@@ -113,6 +119,7 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.chronotraces = game.chronotraces;
   uiState.timeFlux = game.timeFlux ?? 0;
   uiState.shardDust = game.shardDust || 0;
+  uiState.skillPoints = game.skillPoints || 0;
   // Model tracks time in seconds; UI needs minutes for display
   uiState.timeMinutes = Math.floor((game.gameTime || 0) / 60);
   uiState.canAdvanceTime = !!game.nextEvt;
@@ -121,7 +128,7 @@ export function SyncUIFromGameState(game: GameState): void {
   const loadoutIds = (game.loadouts && game.raid && game.raid.id) ? game.loadouts[game.raid.id] : null;
   const loadoutKey = Array.isArray(loadoutIds) ? [...loadoutIds].sort().join(',') : '';
   const rk = game.raid
-    ? `${game.raid.id}|${game.raid.hp}|${game.raid.maxHp}|${game.raid.baseSpeed}|${game.raid.speedBonusPct}|${game.raid.speedBonusFlat}|${game.raid.regenPerKm}|${game.raid.regenAfterEncounter}|${game.raid.weight}|${game.raid.maxWeight}|${(game.raid.damage ?? game.damage ?? 1)}|${game.raid.bagsVolume}|${game.raid.usedVolume}|${game.raid.lootChanceBonus}|${game.raid.hitChance}|${game.raid.blockChance}|${game.raid.reflectOnHitPct}|${game.raid.reflectOnBlockPct}|${game.raid.biopsyChance}|${loadoutKey}`
+    ? `${game.raid.id}|${game.raid.hp}|${game.raid.maxHp}|${game.raid.baseSpeed}|${game.raid.speedBonusPct}|${game.raid.speedBonusFlat}|${game.raid.regenPerKm}|${game.raid.regenAfterEncounter}|${game.raid.weight}|${game.raid.maxWeight}|${(game.raid.damage ?? game.damage ?? 1)}|${game.raid.bagsVolume}|${game.raid.usedVolume}|${game.raid.lootChanceBonus}|${game.raid.tmpLootBuffAppliedPct}|${game.raid.hitChance}|${game.raid.blockChance}|${game.raid.reflectOnHitPct}|${game.raid.reflectOnBlockPct}|${game.raid.biopsyChance}|${loadoutKey}`
     : '';
   if (rk !== lastRaidKey) {
     uiState.raidKey = rk;
@@ -186,6 +193,12 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.refinery = refinery;
   uiState.items = (game.items || []).map(it => ({ id: it.id, quantity: it.quantity }));
   uiState.encounteredEssences = Object.keys(game.encounteredEssences || {});
+  uiState.discoveryCounter = game.discoveryCounter;
+  uiState.hasDiscoveredGearUpgradeModal = game.discoveries[DISCOVERY.GEAR_UPGRADE_MODAL_OPENED] === true;
+  uiState.hasEverHadShards =
+    (game.discoveries[DISCOVERY.SHARDS] === true) ||
+    (game.shardDust > 0) ||
+    (game.waferUpgradesPurchased > 0);
 
   uiState.wafer = game.wafer;
   uiState.waferSize = game.waferSize;

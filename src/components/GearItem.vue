@@ -20,7 +20,11 @@
     </div>
 
     <!-- Bottom-right weight label (no special background); hidden when zero -->
-    <div class="g-weight" v-if="gear.weight > 0">{{ gear.weight }} w</div>
+    <div class="g-weight" v-if="gear.weight > 0">
+      <span class="g-weight-num">{{ gear.weight }}</span>
+      <span v-if="source && weightFrame" class="g-weight-icon" :style="weightIconStyle" aria-hidden="true" />
+      <span v-else class="g-weight-fallback" aria-hidden="true">w</span>
+    </div>
 
     <div class="g-price" v-if="price > 0">{{ price.toLocaleString() }}{{ creditsSpec.glyph }}</div>
   </button>
@@ -70,6 +74,8 @@ const gearFrame = computed(() => {
   return atlasStorage.getItemsFrame(imageKey);
 });
 
+const weightFrame = computed(() => (ready.value ? atlasStorage.getItemsFrame('weight') : null));
+
 const spriteStyle = computed(() => {
   if (!source.value || !gearFrame.value) return {} as Record<string, string>;
   const f = gearFrame.value;
@@ -78,6 +84,25 @@ const spriteStyle = computed(() => {
   // Scale to fit within 48x48 container while maintaining aspect ratio
   const containerSize = 48;
   const scale = Math.min(containerSize / f.w, containerSize / f.h, 1); // Don't upscale, only downscale
+  const displayW = f.w * scale;
+  const displayH = f.h * scale;
+  return {
+    width: displayW + 'px',
+    height: displayH + 'px',
+    backgroundImage: `url(${source.value.src})`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
+    backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
+  } as Record<string, string>;
+});
+
+const weightIconStyle = computed(() => {
+  if (!source.value || !weightFrame.value) return {} as Record<string, string>;
+  const f = weightFrame.value;
+  const atlasW = source.value.naturalWidth;
+  const atlasH = source.value.naturalHeight;
+  const containerSize = 12;
+  const scale = Math.min(containerSize / f.w, containerSize / f.h, 1);
   const displayW = f.w * scale;
   const displayH = f.h * scale;
   return {
@@ -218,22 +243,43 @@ function updateHintSide(): void {
 
 .g-weight {
   position: absolute;
-  bottom: 6px;
-  right: 8px;
+  bottom: 4px;
+  right: 6px;
   font-size: 12px;
   color: var(--text-secondary);
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1;
+}
+
+.g-weight-num {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.g-weight-icon {
+  display: inline-block;
+  flex-shrink: 0;
+  opacity: 0.95;
+}
+
+.g-weight-fallback {
+  font-size: 11px;
+  font-weight: 800;
 }
 .g-price {
   position: absolute;
   top: 0;
   right: 0;
-  padding: 4px 8px;
+  padding: 3px 6px;
   border-bottom-left-radius: 6px;
   border-top-right-radius: 4px;
   background: rgba(255,255,255,0.08); /* dim badge */
   color: var(--text-primary);          /* bright price text */
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 900;
 }
 </style>

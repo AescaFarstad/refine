@@ -30,7 +30,7 @@ const hintRows = computed((): Array<{ label: string; value: string }> => {
   if (g.speedPercent) rows.push({ label: 'Walking speed', value: `${fmtSigned(g.speedPercent, '%')}` });
   if (g.speedFlat) rows.push({ label: 'Flat speed bonus', value: `${fmtSigned(g.speedFlat, ' km/h')}` });
   if (g.regenPerKm) rows.push({ label: 'Regen', value: `${fmtSigned(g.regenPerKm)} hp/km` });
-  if (g.regenAfterEncounter) rows.push({ label: 'Regen/encounter', value: `${fmtSigned(g.regenAfterEncounter)} hp` });
+  if (g.regenAfterEncounter) rows.push({ label: 'Regen after combat', value: `${fmtSigned(g.regenAfterEncounter)} hp` });
 
   if (g.hp) rows.push({ label: 'HP', value: `${fmtSigned(g.hp)}` });
   if (g.damage) rows.push({ label: 'Damage', value: `${fmtSigned(g.damage)}` });

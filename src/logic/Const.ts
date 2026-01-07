@@ -1,5 +1,5 @@
-export const IS_DEBUG = true;
-// export const IS_DEBUG = false;
+// export const IS_DEBUG = true;
+export const IS_DEBUG = false;
 
 export const ESSENCE_CREDITS = 10;
 export const ESSENCE_CHRONOTRACES = 10;

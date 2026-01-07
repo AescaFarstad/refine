@@ -74,7 +74,10 @@
               :class="{ active: activeMode === arch.id }"
               @click="placeArchetype(arch.id)"
             >
-              <span class="archetype-icon">{{ arch.icon }}</span>
+              <div v-if="arch.icon.kind === 'itemImage'" class="gear-sprite-wrap">
+                <div class="gear-sprite" :style="getGearSpriteStyle(arch.icon.key)" />
+              </div>
+              <span v-else class="archetype-icon">{{ arch.icon.key }}</span>
               <span class="archetype-label">{{ arch.label }}</span>
             </button>
           </div>
@@ -155,7 +158,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { uiState, getGameState, getGameLib } from '../logic/UIState';
 import { indexToAxial } from '../logic/Research';
-import { getStatGlyph, getResourceGlyph } from '../logic/drawResearch';
+import { getStatIcon, getResourceGlyph, type ResearchStatIcon } from '../logic/drawResearch';
 import atlasStorage from '../logic/AtlasStorage';
 import { setResearchRevealRadius } from '../logic/Model';
 
@@ -221,7 +224,7 @@ const availableArchetypes = computed(() => {
     }
   }
 
-  const nonGear: Array<{ id: string; label: string; icon: string; type: string }> = [];
+  const nonGear: Array<{ id: string; label: string; icon: ResearchStatIcon; type: string }> = [];
   const gear: Array<{ id: string; label: string; gearId?: string; imageKey?: string; isAlreadyUnlocked: boolean }> = [];
 
   lib.research.archetypes.forEach((archetype, id) => {
@@ -243,18 +246,18 @@ const availableArchetypes = computed(() => {
       const reward = rewards.find(r => r.kind === 'stat');
       const stat = reward && reward.kind === 'stat' ? reward.stat : '';
       const label = stat || id;
-      const icon = getStatGlyph(stat);
+      const icon = getStatIcon(stat);
       nonGear.push({ id, label, icon, type: 'stat' });
     } else if (archetype.type === 'resource') {
       const reward = rewards.find(r => r.kind === 'resource');
       const resource = reward && reward.kind === 'resource' ? reward.resource : '';
       const amount = reward && reward.kind === 'resource' ? reward.amount : 0;
       const label = `${resource} (${amount})`;
-      const icon = getResourceGlyph(resource);
+      const icon: ResearchStatIcon = { kind: 'glyph', key: getResourceGlyph(resource) };
       nonGear.push({ id, label, icon, type: 'resource' });
     } else {
       const label = id;
-      const icon = '⚠';
+      const icon: ResearchStatIcon = { kind: 'glyph', key: '⚠' };
       nonGear.push({ id, label, icon, type: archetype.type });
     }
   });

@@ -164,3 +164,32 @@ The time flux should be drawn in the cells.
 In case of now anough time flux, a message should be shown "Can't move left, need X more time flux"
 Reseting or regenerating returns time flux back to the player.
 Moving should actually spend time flux.
+
+break down:
+preparing
+walking
+looting
+fighting
+investigating
+
+medical - +hp when you find an item
+
+quest descriptions
+perk descriptions
+
+skill window should tell that it increases slots
+
+weird quest hint (Unlocks)
+
+track updates to essence cheet sheet
+
+bug: removed items are still refined
+swap carry weight and credits
+health under health (or something)
+
+No info about unlocking another raid
+change setup -> take new quests
+sometimes molecule refuses to rotate when picked up
+rucksask should have additional buff
+rename regenAfterEncounter
+no valuables here should display teh roll

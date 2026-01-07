@@ -664,7 +664,7 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
       ],
     },
   },
-  smoke_grenade: {
+  item_smoke_grenade: {
     name: 'Smoke Grenade',
     volume: 1,
     rarity: 1,

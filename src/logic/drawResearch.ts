@@ -17,20 +17,27 @@ const RESEARCH_COLOR_SPECIAL_OVERT_UNOWNED_BG = 'rgba(234, 179, 8, 0.55)'; // ye
 const RESEARCH_COLOR_OBSTACLE_MARKER = 'rgba(131, 145, 164, 0.9)';
 
 interface StatIconSpec {
-  glyph: string;
   offsetX: number;
   offsetY: number;
 }
 
-const RESEARCH_STAT_ICON_SPECS: Record<string, StatIconSpec> = {
-  damage: { glyph: '✴', offsetX: 0.5, offsetY: 2 },
-  health: { glyph: '❤︎', offsetX: 0, offsetY: 3 },
-  volume: { glyph: '⌞ ⌝', offsetX: 0, offsetY: 2 },
-  baseMaxWeight: { glyph: 'w', offsetX: 0.5, offsetY: 0 },
-  researchRevealRadius: { glyph: '◎', offsetX: 0, offsetY: 0 },
+type ResearchStatIconKind = 'glyph' | 'itemImage';
+
+interface ResearchStatIconSpec extends StatIconSpec {
+  kind: ResearchStatIconKind;
+  key: string;
+}
+
+const RESEARCH_STAT_ICON_SPECS: Record<string, ResearchStatIconSpec> = {
+  damage: { kind: 'glyph', key: '✴', offsetX: 0.5, offsetY: 2 },
+  health: { kind: 'glyph', key: '❤︎', offsetX: 0, offsetY: 3 },
+  volume: { kind: 'glyph', key: '⌞ ⌝', offsetX: 0, offsetY: 2 },
+  baseMaxWeight: { kind: 'itemImage', key: 'weight', offsetX: 0.5, offsetY: 0 },
+  researchRevealRadius: { kind: 'glyph', key: '◎', offsetX: 0, offsetY: 0 },
+  speed: { kind: 'itemImage', key: 'trainers', offsetX: 0, offsetY: 0 },
 };
 
-const RESOURCE_ICON_OFFSETS: Record<string, Omit<StatIconSpec, 'glyph'>> = {
+const RESOURCE_ICON_OFFSETS: Record<string, StatIconSpec> = {
   credits: { offsetX: 0, offsetY: 2 },
   chronotraces: { offsetX: 0, offsetY: 0 },
   timeFlux: { offsetX: 0, offsetY: 1 },
@@ -40,12 +47,22 @@ const RESOURCE_ICON_OFFSETS: Record<string, Omit<StatIconSpec, 'glyph'>> = {
 };
 
 export function getStatGlyph(statKey: string): string {
-  const spec = RESEARCH_STAT_ICON_SPECS[statKey];
-  return spec?.glyph || '⾘';
+  const icon = getStatIcon(statKey);
+  return icon.kind === 'glyph' ? icon.key : '⾘';
 }
 
 export function getResourceGlyph(resourceKey: string): string {
   return getResourceSpecByAnyKey(resourceKey).glyph;
+}
+
+export type ResearchStatIcon =
+  | { kind: 'glyph'; key: string }
+  | { kind: 'itemImage'; key: string };
+
+export function getStatIcon(statKey: string): ResearchStatIcon {
+  const spec = RESEARCH_STAT_ICON_SPECS[statKey];
+  if (!spec) return { kind: 'glyph', key: '⾘' };
+  return { kind: spec.kind, key: spec.key };
 }
 
 const nodeSquareCache: Map<number, MaxSquareResult> = new Map();
@@ -263,7 +280,7 @@ function drawNodeOverlay(
   ctx.restore();
 }
 
-function getStatIconSpec(statKey: string | undefined): StatIconSpec | null {
+function getStatIconSpec(statKey: string | undefined): ResearchStatIconSpec | null {
   if (!statKey) return null;
   const spec = RESEARCH_STAT_ICON_SPECS[statKey];
   return spec || null;
@@ -296,12 +313,12 @@ function drawStatIconForNode(
 
   let centerX: number;
   let centerY: number;
-  let maxIconSize: number | null = null;
+  let layoutMaxIconSize: number | null = null;
 
   if (layout) {
     centerX = layout.center.x * hexSize + origin.x;
     centerY = layout.center.y * hexSize + origin.y;
-    maxIconSize = layout.side * hexSize * 0.9;
+    layoutMaxIconSize = layout.side * hexSize * 0.9;
   } else {
     let sumX = 0;
     let sumY = 0;
@@ -316,20 +333,48 @@ function drawStatIconForNode(
 
   let fontSize = hexSize * 1.1;
   fontSize = Math.max(12, fontSize);
-  if (maxIconSize != null) {
-    fontSize = Math.min(fontSize, maxIconSize);
+  if (layoutMaxIconSize != null) {
+    fontSize = Math.min(fontSize, layoutMaxIconSize);
   }
 
   centerX += spec.offsetX;
   centerY += spec.offsetY;
 
+  if (spec.kind === 'glyph') {
+    ctx.save();
+    ctx.globalAlpha = owned ? 1 : 0.95;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `bold ${fontSize}px sans-serif`;
+    ctx.fillStyle = 'rgba(248, 250, 252, 0.96)'; // light text on dark background
+    ctx.fillText(spec.key, centerX, centerY);
+    ctx.restore();
+    return;
+  }
+
+  const source = atlasStorage.getItemsSource();
+  const frame = atlasStorage.getItemsFrame(spec.key);
+  if (!source || !frame) return;
+
+  const iconMaxSize = (layoutMaxIconSize != null ? layoutMaxIconSize : hexSize * 1.6) * 0.75;
+  const scale = Math.min(iconMaxSize / frame.w, iconMaxSize / frame.h);
+  const drawW = frame.w * scale;
+  const drawH = frame.h * scale;
+
   ctx.save();
-  ctx.globalAlpha = owned ? 1 : 0.95;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = `bold ${fontSize}px sans-serif`;
-  ctx.fillStyle = 'rgba(248, 250, 252, 0.96)'; // light text on dark background
-  ctx.fillText(spec.glyph, centerX, centerY);
+  ctx.globalAlpha = owned ? 1 : 0.9;
+  ctx.translate(centerX, centerY);
+  ctx.drawImage(
+    source,
+    frame.x,
+    frame.y,
+    frame.w,
+    frame.h,
+    -drawW / 2,
+    -drawH / 2,
+    drawW,
+    drawH
+  );
   ctx.restore();
 }
 

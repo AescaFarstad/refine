@@ -13,8 +13,14 @@ interface ActorAnimation {
 
 export class IceMaze {
   public readonly dimensions: Point2;
-  public maxMoves: number;
   public movesMade: number = 0;
+  public timeFluxAvailable: number = 0;
+  public cellTimeFlux: boolean[][] = [];
+  public cellTimeFluxVersion: number = 0;
+  public lastMoveError: string = '';
+  private lastMoveErrorUntil: number = 0;
+  private pendingTimeFlux: Array<{ cell: Point2; index: number }> = [];
+  private pendingTimeFluxNext: number = 0;
 
   public state: ChaseState;
   private settings: ChaseSettings;
@@ -41,14 +47,16 @@ export class IceMaze {
   public visualTakenKeys: Array<boolean> = [];
 
   // Pending input (queued during animation)
-  private pendingMove: Point2 | null = null;
+  private pendingMove: { dir: Point2; label: string } | null = null;
 
   constructor(dimensions: Point2, maxMoves: number, seed: number) {
     this.dimensions = {
       x: Math.max(3, Math.floor(dimensions.x)),
       y: Math.max(3, Math.floor(dimensions.y)),
     };
-    this.maxMoves = Math.max(0, Math.floor(maxMoves));
+    this.timeFluxAvailable = Math.max(0, Math.floor(maxMoves));
+    this.movesMade = 0;
+    this.cellTimeFlux = this.makeCellTimeFlux();
 
     this.settings = {
       seed: seed | 0,
@@ -69,6 +77,10 @@ export class IceMaze {
   update(deltaTime: number): void {
     this.currentTime += deltaTime;
 
+    if (this.lastMoveError && this.currentTime >= this.lastMoveErrorUntil) {
+      this.lastMoveError = '';
+    }
+
     // Track if we were animating before this update (real anims only)
     const wasAnimatingReal = (this.playerAnim !== null || this.demonAnims.size > 0);
 
@@ -78,6 +90,7 @@ export class IceMaze {
       if (elapsed >= this.playerAnim.duration) {
         this.playerVisualPos.x = this.state.player.cell.x;
         this.playerVisualPos.y = this.state.player.cell.y;
+        this.commitPendingTimeFlux(Infinity, true);
         this.playerAnim = null;
         // Sync visual key state when animation completes
         this.visualTakenKeys = this.state.takenKeys.slice();
@@ -86,6 +99,12 @@ export class IceMaze {
         const eased = this.easeInOutCubic(t);
         this.playerVisualPos.x = math.lerp(this.playerAnim.startPos.x, this.playerAnim.endPos.x, eased);
         this.playerVisualPos.y = math.lerp(this.playerAnim.startPos.y, this.playerAnim.endPos.y, eased);
+        const totalDist =
+          Math.abs(this.playerAnim.endPos.x - this.playerAnim.startPos.x) +
+          Math.abs(this.playerAnim.endPos.y - this.playerAnim.startPos.y);
+        const traveled = eased * totalDist;
+        const reachedIndex = Math.min(totalDist, Math.floor(traveled + 1e-6));
+        this.commitPendingTimeFlux(reachedIndex, traveled > 1e-6);
       }
     }
 
@@ -117,22 +136,28 @@ export class IceMaze {
     if (wasAnimatingReal && !animatingRealNow && this.pendingMove && !Chase.isSolved(this.state)) {
       const move = this.pendingMove;
       this.pendingMove = null;
-      this.tryMove(move);
+      this.tryMove(move.dir, move.label);
     }
   }
 
   reset(seed?: number): void {
     if (typeof seed === "number") this.settings.seed = seed | 0;
     this.movesMade = 0;
+    this.cellTimeFlux = this.makeCellTimeFlux();
+    this.cellTimeFluxVersion = 0;
     this.state = Chase.create(this.settings);
     this.playerAnim = null;
     this.demonAnims.clear();
     this.demonVisualPos.clear();
     this.pendingMove = null;
+    this.pendingTimeFlux = [];
+    this.pendingTimeFluxNext = 0;
     this.currentTime = 0;
     this.solveHoldUntil = 0;
     this.playerVisualPos = { x: this.state.player.cell.x, y: this.state.player.cell.y };
     this.visualTakenKeys = this.state.takenKeys.slice();
+    this.lastMoveError = '';
+    this.lastMoveErrorUntil = 0;
   }
 
   isAnimating(): boolean {
@@ -143,25 +168,33 @@ export class IceMaze {
     );
   }
 
-  tryMove(direction: Point2): boolean {
+  tryMove(direction: Point2, label?: string): boolean {
+    const moveLabel = label ?? this.labelForDirection(direction);
     // Store input as pending if animating
     if (this.isAnimating()) {
-      this.pendingMove = { x: direction.x, y: direction.y };
+      this.pendingMove = { dir: { x: direction.x, y: direction.y }, label: moveLabel };
       return false;
     }
 
-    // No budget left
-    if (this.movesMade >= this.maxMoves) return false;
-
-    // Determine the full slide target and distance first. If we can't afford the
-    // entire move, reject the input without changing state.
+    // Determine the full slide target first. If we can't afford the missing
+    // time flux for the entire path, reject the input without changing state.
     const startCell = this.state.player.cell;
     const endCell = Chase.nextCell(startCell, direction, this.state.cells);
     if (!endCell) return false; // can't move in that direction
 
-    const requiredDist = Math.abs(endCell.x - startCell.x) + Math.abs(endCell.y - startCell.y);
-    const remaining = this.maxMoves - this.movesMade;
-    if (requiredDist > remaining) return false; // insufficient budget for full slide
+    const pathCells = this.getCellsAlongMove(startCell, endCell, direction);
+    const missingWithIndex: Array<{ cell: Point2; index: number }> = [];
+    for (let i = 0; i < pathCells.length; i++) {
+      const c = pathCells[i]!;
+      if (!this.cellTimeFlux[c.x]![c.y]) missingWithIndex.push({ cell: c, index: i });
+    }
+    const missing = missingWithIndex.length;
+    if (missing > this.timeFluxAvailable) {
+      const deficit = missing - this.timeFluxAvailable;
+      this.lastMoveError = `Can't move ${moveLabel}, need ${deficit} more time flux`;
+      this.lastMoveErrorUntil = this.currentTime + 2.5;
+      return false;
+    }
 
     const playerPrev = this.state.player.cell;
     const demonPrevPositions = new Map<Actor, Point2>();
@@ -172,8 +205,11 @@ export class IceMaze {
     const moved = Chase.move(this.state, direction);
 
     if (moved) {
-      // Deduct move budget by distance traveled
-      this.movesMade += requiredDist;
+      // Queue spending/drawing: commit time flux only as the player reaches cells.
+      this.pendingTimeFlux = missingWithIndex;
+      this.pendingTimeFluxNext = 0;
+      this.lastMoveError = '';
+      this.lastMoveErrorUntil = 0;
 
       // Start player animation with distance-based duration (with minimum)
       const playerDist = Math.abs(this.state.player.cell.x - playerPrev.x) + Math.abs(this.state.player.cell.y - playerPrev.y);
@@ -203,6 +239,59 @@ export class IceMaze {
     }
 
     return moved;
+  }
+
+  private makeCellTimeFlux(): boolean[][] {
+    const out: boolean[][] = new Array(this.dimensions.x);
+    for (let x = 0; x < this.dimensions.x; x++) {
+      out[x] = new Array(this.dimensions.y);
+      for (let y = 0; y < this.dimensions.y; y++) out[x]![y] = false;
+    }
+    return out;
+  }
+
+  private getCellsAlongMove(start: Point2, end: Point2, dir: Point2): Point2[] {
+    const stepX = dir.x === 0 ? 0 : dir.x > 0 ? 1 : -1;
+    const stepY = dir.y === 0 ? 0 : dir.y > 0 ? 1 : -1;
+
+    const out: Point2[] = [];
+    let x = start.x | 0;
+    let y = start.y | 0;
+    while (true) {
+      out.push({ x, y });
+      if (x === (end.x | 0) && y === (end.y | 0)) break;
+      x += stepX;
+      y += stepY;
+    }
+    return out;
+  }
+
+  private commitPendingTimeFlux(reachedIndex: number, movedOutOfStart: boolean): void {
+    while (this.pendingTimeFluxNext < this.pendingTimeFlux.length) {
+      const entry = this.pendingTimeFlux[this.pendingTimeFluxNext]!;
+      if (entry.index > reachedIndex) break;
+      if (entry.index === 0 && !movedOutOfStart) break;
+      this.pendingTimeFluxNext++;
+
+      const c = entry.cell;
+      if (this.cellTimeFlux[c.x]![c.y]) continue;
+      this.cellTimeFlux[c.x]![c.y] = true;
+      this.cellTimeFluxVersion++;
+      this.movesMade += 1;
+      this.timeFluxAvailable -= 1;
+    }
+    if (this.pendingTimeFluxNext >= this.pendingTimeFlux.length) {
+      this.pendingTimeFlux = [];
+      this.pendingTimeFluxNext = 0;
+    }
+  }
+
+  private labelForDirection(dir: Point2): string {
+    if (dir.x === -1 && dir.y === 0) return 'left';
+    if (dir.x === 1 && dir.y === 0) return 'right';
+    if (dir.x === 0 && dir.y === -1) return 'up';
+    if (dir.x === 0 && dir.y === 1) return 'down';
+    return 'that way';
   }
 
   private easeInOutCubic(t: number): number {

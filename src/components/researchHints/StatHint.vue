@@ -34,8 +34,14 @@ const statDescriptions: Record<string, string> = {
   chanceToBlock: 'Chance to Block',
 };
 
-const statId = computed(() => props.archetype?.stat || '');
-const statIncrease = computed(() => props.archetype?.value || 0);
+const statReward = computed(() => {
+  if (!props.archetype) return null;
+  const r = props.archetype.rewards.find(r => r.kind === 'stat');
+  return r && r.kind === 'stat' ? r : null;
+});
+
+const statId = computed(() => statReward.value?.stat || '');
+const statIncrease = computed(() => statReward.value?.value || 0);
 
 const statDescription = computed(() => {
   const id = statId.value;

@@ -48,7 +48,6 @@ const gear: Record<string, RawGearDefinition> = {
   stim_patch: {
     name: 'Stim Patch',
     category: 'medicine',
-    regenAfterEncounter: 1,
     regenPerKm: 3,
     price: 90,
     weight: 1,
@@ -82,7 +81,7 @@ const gear: Record<string, RawGearDefinition> = {
   surgical_stapler: {
     name: 'Surgical Stapler',
     category: 'medicine',
-    regenAfterEncounter: 2,
+    regenAfterEncounter: 1,
     price: 150,
     weight: 2,
     image: 'stapler',
@@ -90,7 +89,7 @@ const gear: Record<string, RawGearDefinition> = {
   biofoam: {
     name: 'Biofoam Dispenser',
     category: 'devices',
-    regenAfterEncounter: 3,
+    regenAfterEncounter: 2,
     price: 230,
     weight: 3,
     image: 'foam_dispenser',
@@ -194,8 +193,8 @@ const gear: Record<string, RawGearDefinition> = {
     name: 'Nail Gun',
     category: 'ranged_weapons',
     damage: 1,
-    chanceToHit: 15,
-    price: 100,
+    chanceToHit: 10,
+    price: 80,
     weight: 2,
     image: 'nail_gun',
   },

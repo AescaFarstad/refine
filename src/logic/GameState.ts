@@ -13,6 +13,7 @@ import { initResearchCells } from "./Research";
 import gearCategories from "../data/gear_categories";
 import type { RaidEventLog } from './RaidLog';
 import type { RaidMutation } from './RaidMutation';
+import type { Reward } from './Reward';
 
 export const DEFAULT_SPEED: number = 6;
 export const MIN_WALK_SPEED: number = 1; // km/h
@@ -164,9 +165,8 @@ export class RaidOutcome {
 
   public log: RaidEventLog = { entries: [] };
   public timeSpentSec: number = 0;
-  public skillPointsGained: number = 0;
   public questsCompleted: string[] = [];
-  public resourcesGained: ResourceDelta = { credits: 0, chronotraces: 0, timeFlux: 0, shardDust: 0 };
+  public rewardsApplied: Reward[] = [];
   public raidMutationsApplied: RaidMutation[] = [];
   public raidItemsAdded: string[] = [];
   public lootChanceDeltaApplied: number = 0;

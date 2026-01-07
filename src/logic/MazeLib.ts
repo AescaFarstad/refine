@@ -1,4 +1,5 @@
 import type { Point2 } from './core/math';
+import type { Reward } from './Reward';
 
 export type ArtefactName = 'BOMB' | 'EYE' | 'FREEZE';
 
@@ -24,4 +25,5 @@ export interface MazeDefinition {
   fill?: Array<Point2>;
   // Optional text
   description?: string;
+  reward: Reward[];
 }

@@ -174,15 +174,21 @@ type RewardChip = { text: string; class: string; style?: Record<string, string> 
 
 const rewardChips = computed<RewardChip[]>(() => {
   const out: RewardChip[] = [];
-  const sp = outcome.value.skillPointsGained || 0;
-  if (sp > 0) out.push({ text: `+${sp}${getResourceSpec('skillPoints').glyph}`, class: 'res', style: resourceChipStyle('skillPoints') });
+  const rewards = outcome.value.rewardsApplied || [];
 
-  const r = outcome.value.resourcesGained;
-  const rewardResourceKeys = ['credits', 'chronotraces', 'timeFlux', 'shardDust'] as const;
-  for (const k of rewardResourceKeys) {
-    const v = r[k] || 0;
+  const resourceTotals: Record<string, number> = {};
+  for (const r of rewards) {
+    if (r.kind === 'resource') {
+      resourceTotals[r.resource] = (resourceTotals[r.resource] || 0) + r.amount;
+    }
+  }
+
+  const resourceKeys = ['skillPoints', 'credits', 'chronotraces', 'timeFlux', 'shardDust'] as const;
+  for (const k of resourceKeys) {
+    const v = resourceTotals[k] || 0;
     if (v > 0) out.push({ text: `+${v}${getResourceSpec(k).glyph}`, class: 'res', style: resourceChipStyle(k) });
   }
+
   return out;
 });
 

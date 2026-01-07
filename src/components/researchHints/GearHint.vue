@@ -29,7 +29,11 @@ const props = defineProps<{
 
 const creditsSpec = getResourceSpec('credits');
 
-const gearId = computed(() => props.archetype?.gearId || '');
+const gearId = computed(() => {
+  if (!props.archetype) return '';
+  const reward = props.archetype.rewards.find(r => r.kind === 'unlock_gear');
+  return reward && reward.kind === 'unlock_gear' ? reward.gearId : '';
+});
 
 const gear = computed(() => {
   if (!gearId.value) return null;

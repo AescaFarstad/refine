@@ -229,19 +229,28 @@ const availableArchetypes = computed(() => {
 
     const isAlreadyPlaced = placedArchetypes.has(id);
 
+    const rewards = archetype.rewards || [];
+
     if (archetype.type === 'gear') {
-      const label = archetype.gearId || id;
+      const reward = rewards.find(r => r.kind === 'unlock_gear');
+      const gearId = reward && reward.kind === 'unlock_gear' ? reward.gearId : undefined;
+      const label = gearId || id;
       // Get gear definition for image key
-      const gearDef = archetype.gearId ? lib.gear.get(archetype.gearId) : null;
+      const gearDef = gearId ? lib.gear.get(gearId) : null;
       const imageKey = gearDef?.image;
-      gear.push({ id, label, gearId: archetype.gearId, imageKey, isAlreadyUnlocked: isAlreadyPlaced });
+      gear.push({ id, label, gearId, imageKey, isAlreadyUnlocked: isAlreadyPlaced });
     } else if (archetype.type === 'stat') {
-      const label = archetype.stat || id;
-      const icon = getStatGlyph(archetype.stat || '');
+      const reward = rewards.find(r => r.kind === 'stat');
+      const stat = reward && reward.kind === 'stat' ? reward.stat : '';
+      const label = stat || id;
+      const icon = getStatGlyph(stat);
       nonGear.push({ id, label, icon, type: 'stat' });
     } else if (archetype.type === 'resource') {
-      const label = `${archetype.resource} (${archetype.amount})`;
-      const icon = getResourceGlyph(archetype.resource || '');
+      const reward = rewards.find(r => r.kind === 'resource');
+      const resource = reward && reward.kind === 'resource' ? reward.resource : '';
+      const amount = reward && reward.kind === 'resource' ? reward.amount : 0;
+      const label = `${resource} (${amount})`;
+      const icon = getResourceGlyph(resource);
       nonGear.push({ id, label, icon, type: 'resource' });
     } else {
       const label = id;

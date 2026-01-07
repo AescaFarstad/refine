@@ -97,9 +97,8 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
     discarded: Object.entries(result.discardedItemCounts)
       .map(([id, quantity]) => ({ id, quantity: quantity | 0 }))
       .filter(it => it.quantity > 0),
-    skillPointsGained: result.skillPointsGained,
     questsCompleted: result.questsCompleted,
-    resourcesGained: result.resourcesGained,
+    rewardsApplied: result.rewardsApplied,
     raidMutationsApplied: result.raidMutationsApplied,
     raidItemsAdded: result.raidItemsAdded,
     lootChanceDeltaApplied: result.lootChanceDeltaApplied,
@@ -165,7 +164,10 @@ handlersByName.set('CmdMazeMove', (gs, cmd) => {
     down: { x: 0, y: 1 },
     right: { x: 1, y: 0 },
   };
-  gs.maze!.tryMove(deltaByDir[c.dir]);
+  const maze = gs.maze!;
+  maze.timeFluxAvailable = Math.floor(gs.timeFlux);
+  maze.tryMove(deltaByDir[c.dir], c.dir);
+  gs.timeFlux = maze.timeFluxAvailable;
 });
 
 handlersByName.set('CmdMazeReset', (gs, cmd) => {
@@ -174,7 +176,10 @@ handlersByName.set('CmdMazeReset', (gs, cmd) => {
 
 handlersByName.set('CmdMazeRestart', (gs, cmd) => {
   // Restart current level without regenerating layout (same seed/settings)
-  gs.maze!.reset();
+  const maze = gs.maze!;
+  gs.timeFlux += maze.movesMade;
+  maze.timeFluxAvailable = Math.floor(gs.timeFlux);
+  maze.reset();
 });
 
 handlersByName.set('CmdSelectRaid', (gs, cmd) => {

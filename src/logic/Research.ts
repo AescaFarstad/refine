@@ -1,5 +1,6 @@
 import type { GameState, ResearchCell } from './GameState';
 import type { ResearchLib, ResearchNodeInstance } from './ResearchLib';
+import { applyReward } from './Reward';
 import { calculateResearchDistances, calculateResearchPath, type ResearchPathResult } from './ResearchPath';
 import { RESEARCH_PANE_SIZE, RESEARCH_OBSTACLE_PRICE, RESEARCH_OBSTACLE_PRICE_GROWTH } from './Const';
 
@@ -175,52 +176,8 @@ function applyResearchNodeEffect(gs: GameState, lib: ResearchLib, nodeId: number
   const archetype = lib.archetypes.get(node.archetypeId);
   if (!archetype) return;
 
-  switch (archetype.type) {
-    case 'stat': {
-      const key = archetype.stat;
-      const value = archetype.value || 0;
-      if (!key || !Number.isFinite(value)) return;
-      const anyGs = gs as any;
-      const current = Number(anyGs[key] || 0);
-      anyGs[key] = current + value;
-      break;
-    }
-    case 'resource': {
-      const amount = archetype.amount || 0;
-      if (!amount) return;
-      switch (archetype.resource) {
-        case 'credits':
-          gs.credits += amount;
-          break;
-        case 'chronotraces':
-          gs.chronotraces += amount;
-          break;
-        case 'timeFlux':
-          gs.timeFlux += amount;
-          break;
-        case 'shards':
-          gs.shardDust += amount;
-          break;
-        case 'skillPoints':
-          gs.skillPoints += amount;
-          break;
-        default:
-          break;
-      }
-      break;
-    }
-    case 'gear': {
-      const id = archetype.gearId;
-      if (!id) return;
-      const list = gs.unlockedGear || (gs.unlockedGear = []);
-      if (!list.includes(id)) {
-        list.push(id);
-      }
-      break;
-    }
-    default:
-      // obstacle / empty: no special effect on ownership
-      break;
+  for (const reward of archetype.rewards) {
+    applyReward(gs, reward);
   }
 }
 

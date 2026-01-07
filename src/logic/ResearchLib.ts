@@ -1,15 +1,12 @@
 import type { Point2 } from './core/math';
+import type { Reward } from './Reward';
 
 export type ResearchNodeType = 'obstacle' | 'empty' | 'stat' | 'gear' | 'resource' | 'void';
 
 export interface ResearchArchetypeDef {
   type: ResearchNodeType;
   covert?: boolean;
-  stat?: string;
-  value?: number;
-  resource?: string;
-  amount?: number;
-  gearId?: string;
+  rewards: Reward[];
 }
 
 export interface ResearchPlacementInput {
@@ -29,11 +26,7 @@ export interface ResearchArchetype {
   id: string;
   type: ResearchNodeType;
   covert: boolean;
-  stat: string;
-  value: number;
-  resource: string;
-  amount: number;
-  gearId: string;
+  rewards: Reward[];
 }
 
 
@@ -85,7 +78,7 @@ export class ResearchLib {
   public archetypes: Map<string, ResearchArchetype> = new Map();
   public nodes: Map<number, ResearchNodeInstance> = new Map();
 
-  constructor() {}
+  constructor() { }
 
   public load(
     archetypes: Record<string, ResearchArchetypeDef>,
@@ -101,14 +94,10 @@ export class ResearchLib {
     for (const id in archetypes) {
       const input = archetypes[id];
       const arch: ResearchArchetype = {
-        id: id,
+        id,
         type: input.type,
         covert: input.covert ?? false,
-        stat: input.stat ?? "",
-        value: input.value ?? 0,
-        resource: input.resource ?? "",
-        amount: input.amount ?? 0,
-        gearId: input.gearId ?? "",
+        rewards: input.rewards,
       };
       this.archetypes.set(arch.id, arch);
     }
@@ -123,11 +112,7 @@ export class ResearchLib {
             id: archetypeId,
             type: 'gear',
             covert: false,
-            stat: "",
-            value: 0,
-            resource: "",
-            amount: 0,
-            gearId: gearId,
+            rewards: [{ kind: 'unlock_gear', gearId: gearId }],
           };
           this.archetypes.set(arch.id, arch);
         }

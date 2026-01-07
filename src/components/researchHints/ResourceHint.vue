@@ -19,8 +19,14 @@ const props = defineProps<{
 }>();
 
 
-const resourceKey = computed(() => props.archetype?.resource || '');
-const amount = computed(() => props.archetype?.amount || 0);
+const resourceReward = computed(() => {
+  if (!props.archetype) return null;
+  const r = props.archetype.rewards.find(r => r.kind === 'resource');
+  return r && r.kind === 'resource' ? r : null;
+});
+
+const resourceKey = computed(() => resourceReward.value?.resource || '');
+const amount = computed(() => resourceReward.value?.amount || 0);
 
 const spec = computed(() => {
   if (!resourceKey.value) return null;

@@ -81,8 +81,6 @@ export const uiState = reactive({
   waferVersion: 0,
 
   mazeLevelIndex: 0,
-  mazeMovesMade: 0,
-  mazeMaxMoves: 0,
   mazeKeysCollected: 0,
   mazeTotalKeys: 0,
   mazeFailed: false,
@@ -218,15 +216,11 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.mazeLevelIndex = game.mazeLevelIndex || 0;
   const maze = game.maze;
   if (maze) {
-    uiState.mazeMovesMade = maze.movesMade || 0;
-    uiState.mazeMaxMoves = maze.maxMoves || 0;
     uiState.mazeKeysCollected = maze.state?.keysCollected || 0;
     uiState.mazeTotalKeys = maze.state?.keys?.length || 0;
     uiState.mazeFailed = !!maze.state?.failed;
     uiState.mazeSolved = (maze.state?.keys?.length || 0) === (maze.state?.keysCollected || 0);
   } else {
-    uiState.mazeMovesMade = 0;
-    uiState.mazeMaxMoves = 0;
     uiState.mazeKeysCollected = 0;
     uiState.mazeTotalKeys = 0;
     uiState.mazeFailed = false;

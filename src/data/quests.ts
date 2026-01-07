@@ -16,12 +16,10 @@ const quests: Record<string, RawQuestDefinition> = {
     encounters: [
       { kind: 'AddMonsterMutation', monsterId: 'spikder', count: 1 },
     ],
-    rewards: {
-      lootChanceDelta: 5,
-      raidMutations: [
-        { kind: 'LootMutation', count: 1 },
-      ],
-    },
+    rewards: [
+      { kind: 'raid_loot_chance', delta: 5 },
+      { kind: 'raid_mutation', mutation: { kind: 'LootMutation', count: 1 } },
+    ],
   },
   break_flower: {
     name: 'Break through a flower human',
@@ -30,11 +28,9 @@ const quests: Record<string, RawQuestDefinition> = {
     encounters: [
       { kind: 'AddMonsterMutation', monsterId: 'flower', count: 1 },
     ],
-    rewards: {
-      raidMutations: [
-        { kind: 'LootMutation', count: 3 },
-      ],
-    },
+    rewards: [
+      { kind: 'raid_mutation', mutation: { kind: 'LootMutation', count: 3 } },
+    ],
   },
   break_distorted_pack: {
     name: 'Break through a pack of distorted',
@@ -43,10 +39,10 @@ const quests: Record<string, RawQuestDefinition> = {
     encounters: [
       { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 3 },
     ],
-    rewards: {
-      addRaidItems: ['red_rubber_ball'],
-      lootingRarityBuffDelta: 10,
-    },
+    rewards: [
+      { kind: 'raid_add_item', itemId: 'red_rubber_ball' },
+      { kind: 'raid_rarity_buff', delta: 10 },
+    ],
   },
   locate_next_zone: {
     name: 'Locate another zone',
@@ -56,9 +52,9 @@ const quests: Record<string, RawQuestDefinition> = {
     encounters: [
       { kind: 'WalkMutation', count: 5 },
     ],
-    rewards: {
-      unlocks: ['ozernoye'],
-    },
+    rewards: [
+      { kind: 'unlock_raid', raidId: 'ozernoye' },
+    ],
   },
 };
 

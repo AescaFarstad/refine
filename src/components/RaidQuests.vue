@@ -81,20 +81,27 @@ function chipStyleForResource(key: ResourceKey): ChipStyle {
 }
 
 function formatRewardsChips(q: QuestDefinition): HintChip[] {
-  const r = q.rewards;
+  const rewards = q.rewards;
   const chips: HintChip[] = [];
-  const sp = r.skillPoints || 0;
-  if (sp > 0) chips.push({ text: `+${sp}${getResourceSpec('skillPoints').glyph}`, class: 'res', style: chipStyleForResource('skillPoints') });
 
-  const res = r.resources;
-  const rewardResourceKeys = ['credits', 'chronotraces', 'timeFlux', 'shardDust'] as const;
-  for (const k of rewardResourceKeys) {
-    const v = res[k] || 0;
+  const resourceTotals: Record<string, number> = {};
+  let unlockCount = 0;
+
+  for (const r of rewards) {
+    if (r.kind === 'resource') {
+      resourceTotals[r.resource] = (resourceTotals[r.resource] || 0) + r.amount;
+    } else if (r.kind === 'unlock' || r.kind === 'unlock_raid' || r.kind === 'unlock_gear' || r.kind === 'unlock_quest') {
+      unlockCount++;
+    }
+  }
+
+  const resourceKeys = ['skillPoints', 'credits', 'chronotraces', 'timeFlux', 'shardDust'] as const;
+  for (const k of resourceKeys) {
+    const v = resourceTotals[k] || 0;
     if (v > 0) chips.push({ text: `+${v}${getResourceSpec(k).glyph}`, class: 'res', style: chipStyleForResource(k) });
   }
 
-  const unlocks = r.unlocks.length;
-  if (unlocks > 0) chips.push({ text: `Unlocks ${unlocks}`, class: 'unlocks' });
+  if (unlockCount > 0) chips.push({ text: `Unlocks ${unlockCount}`, class: 'unlocks' });
 
   return chips;
 }
@@ -117,35 +124,28 @@ function hintSections(q: QuestDefinition): HintRow[] {
     if (desc) out.push({ label: 'Active effects:', value: desc, chips: [] });
   }
 
-  const r = q.rewards;
+  const rewards = q.rewards;
+  const gs = getGameState();
+  const lib = getGameLib();
 
-  // Raid modifiers - each on its own line
-  if (r.lootChanceDelta) {
-    out.push({ label: 'Raid:', value: `Loot chance ${r.lootChanceDelta >= 0 ? '+' : ''}${r.lootChanceDelta}%`, chips: [] });
-  }
-  if (r.lootingRarityBuffDelta) {
-    out.push({ label: 'Raid:', value: `Loot rarity ${r.lootingRarityBuffDelta >= 0 ? '+' : ''}${r.lootingRarityBuffDelta}`, chips: [] });
-  }
-  if (r.raidMutations.length) {
-    const gs = getGameState();
-    const desc = r.raidMutations
-      .map(m => describeMutation(gs!, m))
-      .filter((s): s is string => !!s && s.length > 0)
-      .join('; ');
-    if (desc) out.push({ label: 'Raid:', value: desc, chips: [] });
-  }
-  if (r.addRaidItems.length) {
-    if (q.showAddedItems) {
-      const lib = getGameLib()!;
-      const names = r.addRaidItems.map(id => lib.getItem(id).name).join(', ');
-      out.push({ label: 'Raid:', value: `Drops: ${names}`, chips: [] });
-    } else {
-      out.push({ label: 'Raid:', value: 'New items can be found in raid', chips: [] });
+  for (const r of rewards) {
+    if (r.kind === 'raid_loot_chance') {
+      out.push({ label: 'Raid:', value: `Loot chance ${r.delta >= 0 ? '+' : ''}${r.delta}%`, chips: [] });
+    } else if (r.kind === 'raid_rarity_buff') {
+      out.push({ label: 'Raid:', value: `Loot rarity ${r.delta >= 0 ? '+' : ''}${r.delta}`, chips: [] });
+    } else if (r.kind === 'raid_mutation' && gs) {
+      const desc = describeMutation(gs, r.mutation);
+      if (desc) out.push({ label: 'Raid:', value: desc, chips: [] });
+    } else if (r.kind === 'raid_add_item' && lib) {
+      if (q.showAddedItems) {
+        const name = lib.getItem(r.itemId).name;
+        out.push({ label: 'Raid:', value: `Drops: ${name}`, chips: [] });
+      } else {
+        out.push({ label: 'Raid:', value: 'New items can be found in raid', chips: [] });
+      }
+    } else if (r.kind === 'unlock_raid') {
+      out.push({ label: 'Reward:', value: 'Discover a new raid location', chips: [] });
     }
-  }
-
-  if (r.unlocks.length) {
-    out.push({ label: 'Reward:', value: 'Discover a new raid location', chips: [] });
   }
 
   const rewardChips = formatRewardsChips(q);

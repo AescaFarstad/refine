@@ -27,7 +27,7 @@ const RESEARCH_STAT_ICON_SPECS: Record<string, StatIconSpec> = {
   health: { glyph: '❤︎', offsetX: 0, offsetY: 3 },
   volume: { glyph: '⌞ ⌝', offsetX: 0, offsetY: 2 },
   baseMaxWeight: { glyph: 'w', offsetX: 0.5, offsetY: 0 },
-  researchRevealRadius: { glyph: '◎', offsetX: 0, offsetY: 0},
+  researchRevealRadius: { glyph: '◎', offsetX: 0, offsetY: 0 },
 };
 
 const RESOURCE_ICON_OFFSETS: Record<string, Omit<StatIconSpec, 'glyph'>> = {
@@ -129,10 +129,9 @@ export function renderResearchBaseLayer(
 
 function getGearDefinitionForArchetype(lib: Lib, archetype: ResearchArchetype | null): GearDefinition | null {
   if (!archetype) return null;
-  if (archetype.type !== 'gear') return null;
-  const id = archetype.gearId;
-  if (!id) return null;
-  return lib.gear.get(id) || null;
+  const reward = archetype.rewards.find(r => r.kind === 'unlock_gear');
+  if (!reward || reward.kind !== 'unlock_gear') return null;
+  return lib.gear.get(reward.gearId) || null;
 }
 
 function getVisualStyle(archetype: ResearchArchetype | null, owned: boolean): {
@@ -278,7 +277,9 @@ function drawStatIconForNode(
   origin: Point2,
   hexSize: number
 ): void {
-  const spec = getStatIconSpec(archetype.stat);
+  const reward = archetype.rewards.find(r => r.kind === 'stat');
+  if (!reward || reward.kind !== 'stat') return;
+  const spec = getStatIconSpec(reward.stat);
   if (!spec) return;
   if (!cells.length) return;
 
@@ -340,7 +341,9 @@ function drawResourceIconForNode(
   origin: Point2,
   hexSize: number
 ): void {
-  const resourceKey = archetype.resource;
+  const reward = archetype.rewards.find(r => r.kind === 'resource');
+  if (!reward || reward.kind !== 'resource') return;
+  const resourceKey = reward.resource;
   if (!resourceKey) return;
   if (!cells.length) return;
 

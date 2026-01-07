@@ -11,6 +11,7 @@ import generateIceMaze from "../maze/IceMazeGen";
 import { clearWafer } from "./Wafer";
 import { calculateVisibility } from "./Research";
 import { ensureShardDiscovery } from "./Discover";
+import { applyReward } from "./Reward";
 
 const TIME_SPEED_MAX = 3800;
 const TIME_SPEED_MIN = 300;
@@ -45,9 +46,12 @@ let lastWaferMouse: { x: number; y: number } | null = null;
 export function update(gs: GameState, deltaTime: number): void {
   initOrAdvanceMaze(gs);
   if (gs.maze) {
-    gs.maze.maxMoves = Math.floor(gs.timeFlux);
+    gs.maze.timeFluxAvailable = Math.floor(gs.timeFlux);
   }
   gs.maze?.update(deltaTime);
+  if (gs.maze) {
+    gs.timeFlux = gs.maze.timeFluxAvailable;
+  }
 
   if (IS_DEBUG && gs.cheats && gs.cheats.length > 0) {
     processCheats(gs);
@@ -265,6 +269,9 @@ function initOrAdvanceMaze(gs: GameState) {
   // Reset requested by input
   if (gs.labirinthResetRequested) {
     gs.labirinthResetRequested = false;
+    if (gs.maze) {
+      gs.timeFlux += gs.maze.movesMade;
+    }
     const idx = clampIndex(gs.mazeLevelIndex);
     const def = levels[idx];
     const seed = Math.floor(gs.random.get_in_range(1, 0x7fffffff));
@@ -290,6 +297,18 @@ function initOrAdvanceMaze(gs: GameState) {
   // Auto-advance when solved (wait for animations to finish)
   const solved = Chase.isSolved(gs.maze.state);
   if (solved && !gs.maze.isAnimating()) {
+
+    const currentLevelIdx = clampIndex(gs.mazeLevelIndex);
+    const currentDef = levels[currentLevelIdx];
+
+    gs.timeFlux = 0;
+
+    if (currentDef && currentDef.reward && Array.isArray(currentDef.reward)) {
+      for (const r of currentDef.reward) {
+        applyReward(gs, r);
+      }
+    }
+
     const next = clampIndex(gs.mazeLevelIndex + 1);
     gs.mazeLevelIndex = next;
     // Rebuild immediately at next level

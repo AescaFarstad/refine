@@ -3,7 +3,8 @@
     <div class="topbar">
       <div class="title">Ice Maze — {{ levelTitle }}</div>
       <div class="stats">
-        <span>{{ timeFluxSpec.name }} remains: {{ movesLeft }}{{ timeFluxSpec.glyph }}</span>
+        <span>{{ timeFluxSpec.name }} remains: {{ timeFluxRemaining }}{{ timeFluxSpec.glyph }}</span>
+        <span v-if="rewardsText" class="reward">Reward: {{ rewardsText }}</span>
         <span v-if="totalKeys > 0" class="arrows-of-time">
           <span class="arrows-label">Arrows of time:</span>
           <span class="arrows">
@@ -37,7 +38,7 @@
       <canvas ref="staticCanvasEl" class="canvas canvas-static"></canvas>
       <canvas ref="dynamicCanvasEl" class="canvas canvas-dynamic"></canvas>
     </div>
-    <div class="hint">Use WASD to move. R to reset.</div>
+    <div class="hint" :class="{ bad: !!moveError }">{{ moveError || 'Use WASD to move. R to reset.' }}</div>
   </div>
 
 </template>
@@ -70,19 +71,33 @@ const levelTitle = computed(() => {
   return (lv && lv.name) || `Level ${levelIndex.value + 1}`;
 });
 
-const movesMade = computed(() => uiState.mazeMovesMade);
-const maxMoves = computed(() => uiState.mazeMaxMoves);
-const movesLeft = computed(() => Math.max(0, (uiState.mazeMaxMoves || 0) - (uiState.mazeMovesMade || 0)));
+const timeFluxRemaining = computed(() => Math.max(0, Math.floor(uiState.timeFlux || 0)));
 const keysCollected = computed(() => uiState.mazeKeysCollected);
 const totalKeys = computed(() => uiState.mazeTotalKeys);
 const failed = computed(() => uiState.mazeFailed);
 const solved = computed(() => uiState.mazeSolved);
 
 const timeFluxSpec = getResourceSpec('timeFlux');
+const moveError = ref('');
 
 const artefactsTaken = computed(() => {
   const game = getGameState()?.maze;
   return game?.state?.artefacts?.filter((a: any) => a.taken).length || 0;
+});
+
+const rewardsText = computed(() => {
+  const lv = getLevels()[levelIndex.value];
+  if (!lv || !lv.reward || !Array.isArray(lv.reward)) return '';
+  return lv.reward
+    .map(r => {
+      if (r.kind === 'resource') {
+        const spec = getResourceSpec(r.resource);
+        return `${r.amount}${spec.glyph}`;
+      }
+      return '';
+    })
+    .filter(s => s.length > 0)
+    .join(' ');
 });
 
 // Top bar visual representation of keys (updates when visualTakenKeys change)
@@ -241,6 +256,26 @@ function drawStatic() {
   }
   ctx.restore();
 
+  // Time flux invested into cells (spent once per cell)
+  const tf = game.cellTimeFlux;
+  ctx.save();
+  ctx.globalAlpha = 0.7;
+  ctx.fillStyle = timeFluxSpec.color;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const fontSize = Math.max(10, Math.floor(tile * 0.55));
+  ctx.font = `700 ${fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace`;
+  for (let x = 0; x < cols; x++) {
+    for (let y = 0; y < rows; y++) {
+      if (cells[x]![y]!.isObstacle) continue;
+      if (!tf[x]![y]) continue;
+      const cx = ox + (x + 0.5) * tile;
+      const cy = oy + (y + 0.5) * tile;
+      ctx.fillText(timeFluxSpec.glyph, cx, cy);
+    }
+  }
+  ctx.restore();
+
   // Keys — draw an arrow on an adjacent obstacle cell,
   // pointing from the key cell toward that obstacle.
   for (let i = 0; i < game.state.keys.length; i++) {
@@ -381,10 +416,13 @@ function frameLoop(ts: number) {
     return;
   }
 
+  moveError.value = game.lastMoveError || '';
+
   // Check if visual key state or artifacts have changed
   // (these change asynchronously after animations, so watchers won't catch them)
   const currentVisualKeyState = game.visualTakenKeys.join(',') + '|' + 
-    game.state.artefacts.map((a: any) => a.taken ? '1' : '0').join('');
+    game.state.artefacts.map((a: any) => a.taken ? '1' : '0').join('') + '|' +
+    (game.cellTimeFluxVersion || 0);
 
   if (currentVisualKeyState !== lastVisualKeyState) {
     needsStaticRedraw = true;
@@ -416,7 +454,8 @@ onMounted(() => {
   const game = getGameState()?.maze;
   if (game) {
     lastVisualKeyState = game.visualTakenKeys.join(',') + '|' + 
-      game.state.artefacts.map((a: any) => a.taken ? '1' : '0').join('');
+      game.state.artefacts.map((a: any) => a.taken ? '1' : '0').join('') + '|' +
+      (game.cellTimeFluxVersion || 0);
     topBarVisualKeys.value = game.visualTakenKeys.slice();
   }
 
@@ -435,7 +474,7 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.lab-root { display: flex; flex-direction: column; gap: 8px; min-height: 420px; }
+.lab-root { display: flex; flex-direction: column; gap: 8px; height: 100%; max-height: 800px; }
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .title { font-weight: 700; letter-spacing: 0.03em; color: var(--accent); }
 .stats { display: flex; gap: 12px; font-size: 13px; color: var(--text-secondary); }
@@ -443,13 +482,15 @@ onBeforeUnmount(() => {
 .stats .arrows { display: inline-flex; align-items: center; gap: 6px; }
 .stats .arrow-icon { display: inline-block; }
 .stats .good { color: #34d399; font-weight: 700; }
+.stats .reward { color: #fbbf24; font-weight: 700; }
 .stats .bad { color: #ef4444; font-weight: 700; }
 .actions { display: flex; gap: 8px; }
 .btn { background: rgba(80, 120, 160, 0.15); border: 1px solid var(--panel-border); color: var(--text-primary); border-radius: 4px; padding: 6px 10px; cursor: pointer; }
 .btn:hover { background: rgba(80, 120, 160, 0.25); }
-.canvas-container { position: relative; flex: 1; min-height: 300px; }
-.canvas { width: 100%; height: 100%; display: block; border-radius: 6px; position: absolute; top: 0; left: 0; }
+.canvas-container { position: relative; flex: 1; min-height: 300px; max-height: 720px; }
+.canvas { width: 100%; height: 100%; display: block; position: absolute; top: 0; left: 0; }
 .canvas-static { z-index: 1; }
 .canvas-dynamic { z-index: 2; }
 .hint { font-size: 12px; color: var(--text-secondary); }
+.hint.bad { color: #ef4444; font-weight: 700; }
 </style>

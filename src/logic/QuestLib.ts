@@ -1,20 +1,5 @@
 import type { RaidMutation } from './RaidMutation';
-export interface QuestResourceRewards {
-  credits: number;
-  chronotraces: number;
-  timeFlux: number;
-  shardDust: number;
-}
-
-export interface QuestRewards {
-  skillPoints: number;
-  unlocks: string[];
-  raidMutations: RaidMutation[];
-  lootChanceDelta: number;
-  lootingRarityBuffDelta: number;
-  resources: QuestResourceRewards;
-  addRaidItems: string[];
-}
+import type { Reward } from './Reward';
 
 export interface QuestDefinition {
   id: string;
@@ -23,16 +8,11 @@ export interface QuestDefinition {
   autoaccept: boolean;
   requiresRaidSuccesses: number;
   requiresRaidQuestCompletions: number;
-  rewards: QuestRewards;
+  rewards: Reward[];
   encounterLine: string;
   encounterTimeMin: number;
   encounters: RaidMutation[];
   showAddedItems: boolean;
-}
-
-export type RawQuestResourceRewards = Partial<QuestResourceRewards>;
-export interface RawQuestRewards extends Partial<Omit<QuestRewards, 'resources'>> {
-  resources?: RawQuestResourceRewards;
 }
 
 export interface RawQuestDefinition {
@@ -41,7 +21,7 @@ export interface RawQuestDefinition {
   autoaccept?: boolean;
   requiresRaidSuccesses?: number;
   requiresRaidQuestCompletions?: number;
-  rewards?: RawQuestRewards;
+  rewards?: Reward[];
   encounterLine?: string;
   encounterTimeMin?: number;
   encounters?: RaidMutation[];
@@ -49,22 +29,6 @@ export interface RawQuestDefinition {
 }
 
 export function normalizeQuestDefinition(id: string, raw: RawQuestDefinition): QuestDefinition {
-  const rewardsRaw = raw.rewards ?? {};
-  const rewards: QuestRewards = {
-    skillPoints: rewardsRaw.skillPoints ?? 0,
-    unlocks: rewardsRaw.unlocks ?? [],
-    raidMutations: rewardsRaw.raidMutations ?? [],
-    lootChanceDelta: rewardsRaw.lootChanceDelta ?? 0,
-    lootingRarityBuffDelta: rewardsRaw.lootingRarityBuffDelta ?? 0,
-    resources: {
-      credits: rewardsRaw.resources?.credits ?? 0,
-      chronotraces: rewardsRaw.resources?.chronotraces ?? 0,
-      timeFlux: rewardsRaw.resources?.timeFlux ?? 0,
-      shardDust: rewardsRaw.resources?.shardDust ?? 0,
-    },
-    addRaidItems: rewardsRaw.addRaidItems ?? [],
-  };
-
   return {
     id,
     name: raw.name ?? id,
@@ -72,7 +36,7 @@ export function normalizeQuestDefinition(id: string, raw: RawQuestDefinition): Q
     autoaccept: raw.autoaccept ?? false,
     requiresRaidSuccesses: raw.requiresRaidSuccesses ?? 0,
     requiresRaidQuestCompletions: raw.requiresRaidQuestCompletions ?? 0,
-    rewards,
+    rewards: raw.rewards ?? [],
     encounterLine: raw.encounterLine ?? '',
     encounterTimeMin: raw.encounterTimeMin ?? 0,
     encounters: raw.encounters ?? [],

@@ -17,7 +17,10 @@ export const mazeDefinitions: Record<string, Omit<MazeDefinition, 'id'>> = {
     spawnProbability: 0,
     maxDemons: 0,
     artefacts: [],
-    description: 'Open grid. One finish key. No demons, no eyes.'
+    description: 'Open grid. One finish key. No demons, no eyes.',
+    reward: [
+      { kind: 'resource', resource: 'chronotraces', amount: 30 }
+    ],
   },
   maze_2: {
     name: 'Walls Intro',
@@ -29,6 +32,9 @@ export const mazeDefinitions: Record<string, Omit<MazeDefinition, 'id'>> = {
     maxDemons: 0,
     artefacts: [],
     description: 'Some random walls. Still safe.',
+    reward: [
+      { kind: 'resource', resource: 'chronotraces', amount: 70 }
+    ],
     useFixedLayout: true,
     spawn: { x: 1, y: 3 },
     keys: [{ x: 3, y: 4 }],
@@ -44,9 +50,12 @@ export const mazeDefinitions: Record<string, Omit<MazeDefinition, 'id'>> = {
     maxDemons: 0,
     artefacts: [],
     description: 'More obstacles for ice-sliding decisions.',
+    reward: [
+      { kind: 'unlock_raid', raidId: 'dyatlovsk' },
+    ],
     useFixedLayout: true,
     spawn: { x: 3, y: 7 },
-    keys: [{ x: 3, y: 1 },{ x: 3, y: 3 },{ x: 3, y: 6 }],
+    keys: [{ x: 3, y: 1 }, { x: 3, y: 3 }, { x: 3, y: 6 }],
     fill: [{ x: 7, y: 1 }, { x: 1, y: 3 }, { x: 2, y: 3 }, { x: 1, y: 4 }, { x: 6, y: 4 }, { x: 1, y: 5 }, { x: 4, y: 6 }, { x: 7, y: 6 }, { x: 2, y: 7 }, { x: 7, y: 7 }],
   },
   maze_4: {
@@ -58,7 +67,11 @@ export const mazeDefinitions: Record<string, Omit<MazeDefinition, 'id'>> = {
     spawnProbability: 0,
     maxDemons: 0,
     artefacts: [],
-    description: 'Adds an Eye artefact for visibility flair.'
+    description: 'Adds an Eye artefact for visibility flair.',
+    reward: [
+      { kind: 'resource', resource: 'credits', amount: 250 },
+      { kind: 'resource', resource: 'chronotraces', amount: 10 }
+    ],
   },
   maze_5: {
     name: 'Key Intro',
@@ -69,7 +82,11 @@ export const mazeDefinitions: Record<string, Omit<MazeDefinition, 'id'>> = {
     spawnProbability: 0,
     maxDemons: 0,
     artefacts: [],
-    description: 'Collect a single key to finish.'
+    description: 'Collect a single key to finish.',
+    reward: [
+      { kind: 'resource', resource: 'credits', amount: 300 },
+      { kind: 'resource', resource: 'chronotraces', amount: 15 }
+    ],
   },
   maze_6: {
     name: 'Two Keys',
@@ -80,7 +97,11 @@ export const mazeDefinitions: Record<string, Omit<MazeDefinition, 'id'>> = {
     spawnProbability: 0,
     maxDemons: 0,
     artefacts: [],
-    description: 'Two keys, still no enemies.'
+    description: 'Two keys, still no enemies.',
+    reward: [
+      { kind: 'resource', resource: 'credits', amount: 400 },
+      { kind: 'resource', resource: 'chronotraces', amount: 20 }
+    ],
   },
   maze_7: {
     name: 'Slow Demon',
@@ -91,7 +112,12 @@ export const mazeDefinitions: Record<string, Omit<MazeDefinition, 'id'>> = {
     spawnProbability: 0.0,
     maxDemons: 1,
     artefacts: [],
-    description: 'One slow-spawning demon.'
+    description: 'One slow-spawning demon.',
+    reward: [
+      { kind: 'resource', resource: 'credits', amount: 500 },
+      { kind: 'resource', resource: 'chronotraces', amount: 30 },
+      { kind: 'resource', resource: 'shardDust', amount: 10 }
+    ],
   },
   maze_8: {
     name: 'More Demons',
@@ -102,7 +128,12 @@ export const mazeDefinitions: Record<string, Omit<MazeDefinition, 'id'>> = {
     spawnProbability: 0.0,
     maxDemons: 2,
     artefacts: [],
-    description: 'Two keys with occasional demons and a freeze.'
+    description: 'Two keys with occasional demons and a freeze.',
+    reward: [
+      { kind: 'resource', resource: 'credits', amount: 750 },
+      { kind: 'resource', resource: 'chronotraces', amount: 50 },
+      { kind: 'resource', resource: 'shardDust', amount: 25 }
+    ],
   },
   maze_9: {
     name: 'Finale',
@@ -113,7 +144,13 @@ export const mazeDefinitions: Record<string, Omit<MazeDefinition, 'id'>> = {
     spawnProbability: 0.3,
     maxDemons: 3,
     artefacts: [],
-    description: 'Demons and multiple keys for the final challenge.'
+    description: 'Demons and multiple keys for the final challenge.',
+    reward: [
+      { kind: 'resource', resource: 'credits', amount: 1000 },
+      { kind: 'resource', resource: 'chronotraces', amount: 100 },
+      { kind: 'resource', resource: 'shardDust', amount: 50 },
+      { kind: 'resource', resource: 'skillPoints', amount: 1 }
+    ]
   },
 };
 

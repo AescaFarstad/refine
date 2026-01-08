@@ -73,6 +73,7 @@ export const uiState = reactive({
   refinery: null as UIRefinery | null,
   items: [] as Array<{ id: string; quantity: number }>,
   encounteredEssences: [] as string[],
+  seenEssences: [] as string[],
   discoveryCounter: 0,
   waferUpgradesPurchased: 0,
   wafer: createWafer(2) as Wafer,
@@ -126,7 +127,7 @@ export function SyncUIFromGameState(game: GameState): void {
   const loadoutIds = (game.loadouts && game.raid && game.raid.id) ? game.loadouts[game.raid.id] : null;
   const loadoutKey = Array.isArray(loadoutIds) ? [...loadoutIds].sort().join(',') : '';
   const rk = game.raid
-    ? `${game.raid.id}|${game.raid.hp}|${game.raid.maxHp}|${game.raid.baseSpeed}|${game.raid.speedBonusPct}|${game.raid.speedBonusFlat}|${game.raid.regenPerKm}|${game.raid.regenAfterEncounter}|${game.raid.weight}|${game.raid.maxWeight}|${(game.raid.damage ?? game.damage ?? 1)}|${game.raid.bagsVolume}|${game.raid.usedVolume}|${game.raid.lootChanceBonus}|${game.raid.tmpLootBuffAppliedPct}|${game.raid.hitChance}|${game.raid.blockChance}|${game.raid.reflectOnHitPct}|${game.raid.reflectOnBlockPct}|${game.raid.biopsyChance}|${loadoutKey}`
+    ? `${game.raid.id}|${game.raid.hp}|${game.raid.maxHp}|${game.raid.baseSpeed}|${game.raid.speedBonusPct}|${game.raid.speedBonusFlat}|${game.raid.regenPerKm}|${game.raid.regenAfterCombat}|${game.raid.weight}|${game.raid.maxWeight}|${(game.raid.damage ?? game.damage ?? 1)}|${game.raid.bagsVolume}|${game.raid.usedVolume}|${game.raid.lootChanceBonus}|${game.raid.tmpLootBuffAppliedPct}|${game.raid.hitChance}|${game.raid.blockChance}|${game.raid.reflectOnHitPct}|${game.raid.reflectOnBlockPct}|${game.raid.biopsyChance}|${loadoutKey}`
     : '';
   if (rk !== lastRaidKey) {
     uiState.raidKey = rk;
@@ -190,7 +191,8 @@ export function SyncUIFromGameState(game: GameState): void {
   }
   uiState.refinery = refinery;
   uiState.items = (game.items || []).map(it => ({ id: it.id, quantity: it.quantity }));
-  uiState.encounteredEssences = Object.keys(game.encounteredEssences || {});
+  uiState.encounteredEssences = Object.keys(game.encounteredEssences);
+  uiState.seenEssences = Object.keys(game.seenEssences);
   uiState.discoveryCounter = game.discoveryCounter;
   uiState.hasDiscoveredGearUpgradeModal = game.discoveries[DISCOVERY.GEAR_UPGRADE_MODAL_OPENED] === true;
   uiState.hasEverHadShards =

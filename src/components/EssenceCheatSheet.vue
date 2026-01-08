@@ -4,6 +4,7 @@
       ref="anchorEl"
       type="button"
       class="trigger"
+      :class="{ pulse: pulse }"
       aria-label="Essence cheat-sheet"
       @focus="open"
       @blur="close"
@@ -23,7 +24,7 @@
         No essences encountered yet.
       </div>
       <div v-else class="list">
-        <div v-for="k in encounteredEssenceKeys" :key="'cheat-' + k" class="row">
+        <div v-for="k in encounteredEssenceKeys" :key="'cheat-' + k" class="row" :class="{ new: newEssences[k] }">
           <span v-if="getEssenceFrame(k) && source" class="icon" :style="essenceIconStyle(18, k)" />
           <span v-else class="letter">{{ essenceLetter(k) }}</span>
           <span class="name">{{ essenceDisplayName(k) }}</span>
@@ -38,6 +39,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { uiState } from '../logic/UIState';
+import { globalInputQueue } from '../logic/Model';
+import { CmdMarkEssencesSeen } from '../logic/input/InputCommands';
 import atlasStorage from '../logic/AtlasStorage';
 import {
   CYAN_SUCCESS_BONUS_PCT,
@@ -47,6 +50,11 @@ import {
   MAGENTA_SUCCESS_PENALTY_PCT,
 } from '../logic/Const';
 import { getResourceSpec } from '../logic/Resources';
+
+const props = withDefaults(defineProps<{ pulse: boolean }>(), { pulse: false });
+const pulse = computed(() => props.pulse);
+
+const newEssences = ref<Record<string, true>>({});
 
 const source = ref<HTMLImageElement | null>(atlasStorage.getItemsSource());
 const ready = ref<boolean>(atlasStorage.isItemsAtlasLoaded());
@@ -176,6 +184,13 @@ function position(): void {
 function open(): void {
   if (isOpen.value) return;
   isOpen.value = true;
+  const seen = new Set(uiState.seenEssences);
+  const next: Record<string, true> = {};
+  for (const k of encounteredEssenceKeys.value) {
+    if (!seen.has(k)) next[k] = true;
+  }
+  newEssences.value = next;
+  globalInputQueue.push(new CmdMarkEssencesSeen());
   void nextTick(() => position());
   window.addEventListener('resize', position);
   window.addEventListener('scroll', position, true);
@@ -183,6 +198,7 @@ function open(): void {
 
 function close(): void {
   isOpen.value = false;
+  newEssences.value = {};
   window.removeEventListener('resize', position);
   window.removeEventListener('scroll', position, true);
 }
@@ -212,6 +228,14 @@ onBeforeUnmount(() => close());
   opacity: 0.9;
 }
 .trigger:hover { opacity: 1; }
+.trigger.pulse {
+  border-radius: 8px;
+  animation: pulse-essences 1700ms ease-in-out infinite;
+}
+@keyframes pulse-essences {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); background: rgba(56, 189, 248, 0.0); }
+  50% { box-shadow: 0 0 0 6px rgba(56, 189, 248, 0.12); background: rgba(56, 189, 248, 0.05); }
+}
 .tooltip {
   position: fixed;
   z-index: 5000;
@@ -231,8 +255,20 @@ onBeforeUnmount(() => close());
 .tooltip.above { transform: translateY(-100%); }
 .title { font-size: 14px; font-weight: 800; margin-bottom: 8px; color: #f8fafc; letter-spacing: 0.02em; }
 .empty { font-size: 14px; opacity: 0.85; }
-.list { display: grid; grid-template-columns: 18px max-content 10px max-content; column-gap: 6px; row-gap: 8px; align-items: center; justify-items: start; }
-.row { display: contents; }
+.list { display: flex; flex-direction: column; gap: 8px; }
+.row {
+  display: grid;
+  grid-template-columns: 18px max-content 10px max-content;
+  column-gap: 6px;
+  align-items: center;
+  justify-items: start;
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+.row.new {
+  background: rgba(34, 211, 238, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.18);
+}
 .icon { display: inline-block; width: 18px; height: 18px; border-radius: 4px; }
 .letter { display: inline-grid; place-items: center; width: 18px; height: 18px; font-weight: 900; font-size: 12px; border-radius: 4px; background: rgba(255,255,255,0.08); }
 .icon, .letter { align-self: center; grid-column: 1; }

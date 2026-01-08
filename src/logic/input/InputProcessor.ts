@@ -1,7 +1,7 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAknowledgeOutcome, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal } from './InputCommands';
+import { CmdStartRaid, CmdAdvanceTime, CmdAknowledgeOutcome, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdMarkEssencesSeen } from './InputCommands';
 import { discover } from '../Discover';
 import { DISCOVERY } from '../DiscoveryLib';
 import { EvtRefineryDone } from '../evt/Evt';
@@ -17,6 +17,12 @@ const handlersByName = new Map<string, Handler>();
 
 handlersByName.set('CmdAdvanceTime', (gs, cmd) => {
   gs.timeActive = true;
+});
+
+handlersByName.set('CmdMarkEssencesSeen', (gs, cmd) => {
+  for (const k of Object.keys(gs.encounteredEssences)) {
+    gs.seenEssences[k] = true;
+  }
 });
 
 handlersByName.set('CmdStartRaid', (gs, cmd) => {
@@ -63,8 +69,10 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
       const q = qty | 0;
       if (q <= 0) continue;
       const essence = gs.lib.getItem(id).essence;
-      for (const k of Object.keys(essence))
+      for (const [k, v] of Object.entries(essence)) {
+        if (!v) continue;
         gs.encounteredEssences[k] = true;
+      }
       const existing = gs.items.find(x => x.id === id);
       if (existing) existing.quantity += q;
       else gs.items.push({ id, quantity: q });
@@ -119,25 +127,12 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
 handlersByName.set('CmdStartRefining', (gs, cmd) => {
   if (gs.nextEvt && gs.nextEvt.name === 'EvtRefineryDone') return;
 
-  const itemCounts = new Map<string, number>();
-  // Use gs.wafer as the source of truth
+  // Items are removed from inventory as they are placed onto the wafer.
+  let hasAny = false;
   for (const placed of gs.wafer.items) {
-    if (!placed) continue;
-    const id = placed.id;
-    itemCounts.set(id, (itemCounts.get(id) || 0) + 1);
+    if (placed) { hasAny = true; break; }
   }
-
-  if (itemCounts.size === 0) return;
-
-  for (const [itemId, count] of itemCounts) {
-    const entry = gs.items.find(x => x.id === itemId);
-    if (!entry) continue;
-    entry.quantity -= count;
-    if (entry.quantity <= 0) {
-      const i = gs.items.indexOf(entry);
-      if (i >= 0) gs.items.splice(i, 1);
-    }
-  }
+  if (!hasAny) return;
 
   const preview = computeRefinePreviewChem(gs.wafer);
   gs.refiningDuration = Math.max(0, Math.round(preview.timeSec));
@@ -155,7 +150,6 @@ handlersByName.set('CmdAcknowledgeRefineryOutcome', (gs, cmd) => {
   gs.lastRefineryOutcome = null;
 });
 
-// Maze controls: movement via InputProcessor (Vue only dispatches commands)
 handlersByName.set('CmdMazeMove', (gs, cmd) => {
   const c = cmd as CmdMazeMove;
   const deltaByDir: Record<MazeDir, Point2> = {
@@ -241,8 +235,10 @@ handlersByName.set('CmdPlaceMolecule', (gs, cmd) => {
   const itemId = existing.id;
 
   const essence = gs.lib.getItem(itemId).essence;
-  for (const k of Object.keys(essence))
+  for (const [k, v] of Object.entries(essence)) {
+    if (!v) continue;
     gs.encounteredEssences[k] = true;
+  }
   const invEntry = gs.items.find(x => x.id === itemId);
   if (invEntry) invEntry.quantity += 1;
   else gs.items.push({ id: itemId, quantity: 1 });

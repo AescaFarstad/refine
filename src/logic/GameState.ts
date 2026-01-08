@@ -66,6 +66,7 @@ export class GameState {
 
   public items: Array<Item> = [];
   public encounteredEssences: Record<string, true> = {};
+  public seenEssences: Record<string, true> = {};
   public discoveries: Record<string, true> = {};
   public discoveryCounter: number = 0;
 
@@ -120,10 +121,10 @@ export class ActiveRaid {
   public speedBonusPct: number = 0;
   public speedBonusFlat: number = 0;
   public regenPerKm: number = 0;
-  public regenAfterEncounter: number = 0;
+  public regenAfterCombat: number = 0;
   public weight: number = 0;
   public maxWeight: number = 10;
-  public bagsVolume: number = 0;
+  public bagsVolume: number = 10;
   public usedVolume: number = 0;
   public damage: number = 1;
   public perks: string[] = [];

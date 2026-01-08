@@ -76,6 +76,7 @@ const origin: Point2 = { x: WAFER_CANVAS_WIDTH / 2, y: WAFER_CANVAS_HEIGHT / 2 }
 
 const hoverItemIdx = ref<number | null>(null);
 const connectionStart = ref<Point2 | null>(null);
+const manualDragging = ref(false);
 
 
 onMounted(async () => {
@@ -329,8 +330,7 @@ function onMouseDown(event: MouseEvent) {
   if (!canvas) return;
 
   if (event.button === 2) {
-    event.preventDefault();
-    emit('rotate');
+    console.log('[WaferView] mousedown right-click', { button: event.button });
     return;
   }
 
@@ -351,6 +351,7 @@ function onMouseDown(event: MouseEvent) {
   if (hoverItemIdx.value !== null) {
     const item = props.wafer.items[hoverItemIdx.value];
     if (item) {
+      manualDragging.value = true;
       startManualDrag({ id: item.id, molecule: item.molecule }, event);
       emit('pickup', hoverItemIdx.value);
     }
@@ -390,6 +391,7 @@ function onMouseUp(event: MouseEvent) {
 
   // Only left click triggers placement
   if (event.button !== 0) return;
+  if (manualDragging.value) return;
 
   const { x: pixelX, y: pixelY } = eventToCanvasPixel(event, canvas);
   const axial = pixelToAxial({ x: pixelX, y: pixelY }, HEX_SIZE, origin);
@@ -409,11 +411,8 @@ function onMouseUp(event: MouseEvent) {
 }
 
 function onPointerDown(event: PointerEvent) {
-  // Handle right-click for rotation
   if (event.button === 2) {
-    event.preventDefault();
-    event.stopPropagation();
-    emit('rotate');
+    console.log('[WaferView] pointerdown right-click', { button: event.button, buttons: event.buttons, pointerType: event.pointerType });
     return;
   }
 }
@@ -421,6 +420,7 @@ function onPointerDown(event: PointerEvent) {
 function onKeyDown(event: KeyboardEvent) {
   if (event.key === ' ') {
     event.preventDefault();
+    console.log('[WaferView] keydown space');
     emit('rotate');
   }
 }
@@ -428,6 +428,7 @@ function onKeyDown(event: KeyboardEvent) {
 function onContextMenu(event: MouseEvent) {
   event.preventDefault();
   event.stopPropagation();
+  console.log('[WaferView] contextmenu -> rotate');
   emit('rotate');
 }
 
@@ -476,6 +477,7 @@ function onManualDragEnd(e: CustomEvent) {
   const canvas = overlayCanvas.value;
   if (!canvas || !e?.detail) return;
   const { clientX, clientY, canceled } = e.detail as any;
+  manualDragging.value = false;
   if (canceled) return;
   setManualDragFollowerVisible(true);
   const rect = canvas.getBoundingClientRect();

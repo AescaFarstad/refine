@@ -40,7 +40,7 @@ const gear: Record<string, RawGearDefinition> = {
   bandage: {
     name: 'Bandage',
     category: 'medicine',
-    regenAfterEncounter: 1,
+    regenAfterCombat: 1,
     price: 50,
     weight: 1,
     image: 'bandage',
@@ -81,7 +81,7 @@ const gear: Record<string, RawGearDefinition> = {
   surgical_stapler: {
     name: 'Surgical Stapler',
     category: 'medicine',
-    regenAfterEncounter: 1,
+    regenAfterCombat: 1,
     price: 150,
     weight: 2,
     image: 'stapler',
@@ -89,7 +89,7 @@ const gear: Record<string, RawGearDefinition> = {
   biofoam: {
     name: 'Biofoam Dispenser',
     category: 'devices',
-    regenAfterEncounter: 2,
+    regenAfterCombat: 2,
     price: 230,
     weight: 3,
     image: 'foam_dispenser',
@@ -107,6 +107,7 @@ const gear: Record<string, RawGearDefinition> = {
     category: 'bags',
     volume: 25,
     price: 110,
+    maxWeight: 5,
     weight: 2,
     image: 'rucksack',
   },

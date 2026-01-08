@@ -124,3 +124,8 @@ export class CmdUpgradeGearCategory implements CmdInput {
 export class CmdOpenGearUpgradeModal implements CmdInput {
   readonly name = 'CmdOpenGearUpgradeModal';
 }
+
+export class CmdMarkEssencesSeen implements CmdInput {
+  readonly name = 'CmdMarkEssencesSeen';
+  constructor() { }
+}

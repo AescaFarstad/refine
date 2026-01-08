@@ -407,9 +407,9 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
             lootingRarityBuffDeltaApplied,
           };
         }
-        if (raid.regenAfterEncounter > 0) {
+        if (raid.regenAfterCombat > 0) {
           const hpBefore = raid.hp;
-          raid.hp = Math.min(raid.maxHp, raid.hp + raid.regenAfterEncounter);
+          raid.hp = Math.min(raid.maxHp, raid.hp + raid.regenAfterCombat);
           const hpAfter = raid.hp;
           fight.entry.hpBeforeRegen = hpBefore;
           fight.entry.hpAfterRegen = hpAfter;
@@ -560,7 +560,7 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
   gs.raid.speedBonusPct = 0;
   gs.raid.speedBonusFlat = 0;
   gs.raid.regenPerKm = 0;
-  gs.raid.regenAfterEncounter = 0;
+  gs.raid.regenAfterCombat = 0;
   gs.raid.weight = 0;
   gs.raid.maxWeight = gs.baseMaxWeight;
   gs.raid.bagsVolume = gs.volume;
@@ -589,7 +589,7 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
     gs.raid.speedBonusPct += g.speedPercent;
     gs.raid.speedBonusFlat += g.speedFlat;
     gs.raid.regenPerKm += g.regenPerKm;
-    gs.raid.regenAfterEncounter += g.regenAfterEncounter;
+    gs.raid.regenAfterCombat += g.regenAfterCombat;
     gs.raid.weight += g.weight;
     gs.raid.maxWeight += g.maxWeight;
     gs.raid.hp += g.hp;

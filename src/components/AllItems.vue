@@ -34,7 +34,7 @@
           <span class="ess-total">{{ essenceTotals[k] || 0 }}</span>
         </span>
       </button>
-      <EssenceCheatSheet />
+      <EssenceCheatSheet :pulse="hasUnseenEssences" />
     </div>
     <div v-if="raidFilterMode && availableRaids && availableRaids.length" class="raid-filter-row">
       <button
@@ -155,6 +155,11 @@ const orderedKeys: string[] = ['red', 'green', 'blue', 'yellow'];
 const essenceKeys = computed<string[]>(() => {
   const keys = Array.from(new Set([...orderedKeys, ...Object.keys(essenceTotals.value)]));
   return keys.filter(k => (essenceTotals.value[k] || 0) > 0);
+});
+
+const hasUnseenEssences = computed(() => {
+  const seen = new Set(uiState.seenEssences);
+  return uiState.encounteredEssences.some(k => !seen.has(k));
 });
 
 const activeSort = ref<string>('');

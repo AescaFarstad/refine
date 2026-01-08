@@ -152,18 +152,6 @@ Devil\'s Finger Scale
 Hedgehog Shell
 
 
-maze levels each should specify a reward
-
-When the maze level is completed, all time flux should be reset to 0
-
-
-Change the way time flux is spent in iace maze.
-It is spent once per cell when we enter it or move out of it (in case of the very first cell)
-So instead of calculating distance, we should calculate how many cells along the move are missing time flux and add it there. Or refuse to move if the stored time flux is not enough.
-The time flux should be drawn in the cells.
-In case of now anough time flux, a message should be shown "Can't move left, need X more time flux"
-Reseting or regenerating returns time flux back to the player.
-Moving should actually spend time flux.
 
 break down:
 preparing
@@ -177,19 +165,21 @@ medical - +hp when you find an item
 quest descriptions
 perk descriptions
 
-skill window should tell that it increases slots
 
-weird quest hint (Unlocks)
+!weird quest hint (Unlocks)
 
-track updates to essence cheet sheet
+!track updates to essence cheet sheet
 
-bug: removed items are still refined
-swap carry weight and credits
-health under health (or something)
+!bug: removed items are still refined
+!swap carry weight and credits
+!health under health (or something)
+!skill window should tell that it increases slots
+!No info about unlocking another raid
+!change setup -> take new quests
+!rucksask should have additional buff
+!rename regenAfterCombat
+!no valuables here should display the roll
 
-No info about unlocking another raid
-change setup -> take new quests
-sometimes molecule refuses to rotate when picked up
-rucksask should have additional buff
-rename regenAfterEncounter
-no valuables here should display teh roll
+
+
+?sometimes molecule refuses to rotate when picked up

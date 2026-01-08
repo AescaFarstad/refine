@@ -58,8 +58,13 @@
         <section class="zone-change" v-if="zoneChangeText">
           <div class="zc">Your activity has changed the zone: <strong>{{ zoneChangeText }}</strong>.</div>
         </section>
-        <section class="new-quests" v-if="raidSuccess && newQuestNames.length">
-          <div class="nq" v-for="(name, i) in newQuestNames" :key="i">New investigation available: <strong>{{ name }}</strong></div>
+        <section class="new-quests" v-if="raidSuccess && newQuests.length">
+          <div class="nq" v-for="(quest, i) in newQuests" :key="i">
+            <span class="nq-text">New investigation available: <strong class="nq-quest-name">{{ quest.name }}</strong></span>
+            <div class="nq-hint" role="tooltip">
+              <QuestHint :quest="quest" />
+            </div>
+          </div>
         </section>
       </section>
       <section class="death-note" v-if="timelineComplete && !raidSuccess">
@@ -78,7 +83,7 @@
             >{{ raidAgainButtonLabel }}</button>
             <span class="tooltip" v-if="!canRaidAgain">{{ raidAgainDisabledReason }}</span>
           </span>
-          <button class="btn primary" @click="changeSetup">Change Setup</button>
+          <button class="btn primary" @click="changeSetup">{{ newQuests.length > 0 ? 'Review unlocked investigations' : 'Change Setup' }}</button>
           <button class="btn primary" @click="goRefine">Refine</button>
         </template>
       </footer>
@@ -93,6 +98,7 @@ import { uiState, getGameLib, getGameState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
 import { CmdAknowledgeOutcome } from '../logic/input/InputCommands';
 import ItemDisplay from './ItemDisplay.vue';
+import QuestHint from './QuestHint.vue';
 import { formatDurationHM } from '../logic/StringUtils';
 import { useRaidAgain } from '../logic/useRaidAgain';
 import type { RaidEventLogEntry } from '../logic/RaidLog';
@@ -144,10 +150,10 @@ const zoneChangeText = computed(() => {
   return outcome.value.zoneChange || '';
 });
 
-const newQuestNames = computed(() => {
+const newQuests = computed(() => {
   const ids = outcome.value.newQuestsAvailable;
   const lib = getGameLib()!;
-  return ids.map(id => lib.quests.get(id)!.name);
+  return ids.map(id => lib.quests.get(id)!);
 });
 
 const finalHp = computed(() => {
@@ -274,7 +280,37 @@ function formatHMS(totalSec?: number): string { return formatDurationHM(totalSec
 .zone-change { margin-top: 10px; padding: 8px 10px; border: none; border-radius: 6px; background: rgba(255,255,255,0.03); }
 .zone-change .zc { font-weight: 400; }
 .new-quests { margin-top: 10px; display: grid; gap: 6px; }
-.new-quests .nq { padding: 8px 10px; border-radius: 6px; background: rgba(250, 204, 21, 0.08); border: 1px solid rgba(250, 204, 21, 0.25); font-weight: 500; color: rgba(250, 204, 21, 0.95); }
+.new-quests .nq { padding: 8px 10px; border-radius: 6px; background: rgba(250, 204, 21, 0.08); border: 1px solid rgba(250, 204, 21, 0.25); font-weight: 500; color: rgba(250, 204, 21, 0.95); position: relative; }
+.nq-text { display: block; }
+.nq-hint {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  display: none;
+  z-index: 20;
+  background: var(--hint-bg);
+  border: 1px solid var(--hint-border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  min-width: 160px;
+  width: max-content;
+  max-width: 75vw;
+  box-shadow: inset 0 1px 0 var(--panel-shine), 0 8px 24px rgba(0,0,0,0.5);
+  pointer-events: none;
+}
+.nq-hint::before {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 12px;
+  width: 10px;
+  height: 10px;
+  background: var(--hint-bg);
+  border-right: 1px solid var(--hint-border);
+  border-bottom: 1px solid var(--hint-border);
+  transform: rotate(45deg);
+}
+.nq:hover .nq-hint { display: block; }
 .barely-in-time { margin-top: 10px; padding: 8px 10px; border: none; border-radius: 6px; background: rgba(251, 146, 60, 0.10); border: 1px solid rgba(251, 146, 60, 0.3); }
 .barely-in-time .bt { font-weight: 500; color: #fb923c; font-style: italic; }
 .final-state { margin-top: 10px; display: flex; gap: 10px; }

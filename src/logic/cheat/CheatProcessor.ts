@@ -46,8 +46,10 @@ handlersByName.set('CheatAddRaidItems', (gs, cheat) => {
 
   function addToInventory(id: string, qty: number): void {
     const essence = gs.lib.getItem(id).essence;
-    for (const k of Object.keys(essence))
+    for (const [k, v] of Object.entries(essence)) {
+      if (!v) continue;
       gs.encounteredEssences[k] = true;
+    }
     const inv = gs.items;
     const existing = inv.find(x => x.id === id);
     if (existing) existing.quantity += qty;

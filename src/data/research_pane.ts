@@ -5,8 +5,8 @@ export const researchPane: ResearchPlacementInput[] = [
   { archetypeId: 'hub', cells: { x: 0, y: 0 }, initiallyOwned: true },
 
 
-  { archetypeId: 'res_credits', cells: { x: 1, y: -3 } },
-  { archetypeId: 'stat_weight', cells: { x: 3, y: -2 } },
+  { archetypeId: 'stat_weight', cells: { x: 1, y: -3 } },
+  { archetypeId: 'res_credits', cells: { x: 3, y: -2 } },
   { archetypeId: 'stat_vision', cells: { x: 2, y: 1 } },
   { archetypeId: 'stat_hp', cells: { x: -1, y: 3 } },
   { archetypeId: 'res_skillPoint', cells: { x: -2, y: -1 } },
@@ -93,6 +93,7 @@ export const researchPane: ResearchPlacementInput[] = [
   { archetypeId: 'res_timeFlux', cells: { x: 13, y: 2 } },
   { archetypeId: 'res_skillPoint', cells: { x: 1, y: -10 } },
   { archetypeId: 'stat_speed', cells: { x: -3, y: 7 } },
+  { archetypeId: 'res_shards', cells: { x: -4, y: 6 } },
 ];
 
 export const researchPaneEmptyCells: Point2[] = [

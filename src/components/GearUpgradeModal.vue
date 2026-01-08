@@ -2,7 +2,10 @@
   <div v-if="visible" class="modal-backdrop" @click.self="close">
     <div class="modal">
       <header class="modal-header">
-        <h3 class="modal-title">{{ skillPointsSpec.name }}: {{ skillPoints }}</h3>
+        <div>
+          <h3 class="modal-title">{{ skillPointsSpec.name }}: {{ skillPoints }}</h3>
+          <p class="modal-subtitle">Increase how many items from the category can be equipped at once</p>
+        </div>
       </header>
 
       <section class="modal-body">
@@ -160,6 +163,15 @@ function close(): void {
   font-size: 18px;
   font-weight: 800;
   letter-spacing: 0.02em;
+}
+
+.modal-subtitle {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  letter-spacing: 0.01em;
 }
 
 .modal-body {

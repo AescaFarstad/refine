@@ -430,7 +430,7 @@ export function describeMutation(gs: GameState, mutation: RaidMutation): string 
       const from = gs.lib.monsters.get(mutation.fromMonsterId)!.name;
       const to = gs.lib.monsters.get(mutation.toMonsterId)!.name;
       const cnt = Math.max(1, Math.trunc(mutation.count));
-      if (cnt === 1) return `a ${to} came in place of the ${from}`;
+      if (cnt === 1) return `a ${to} replaced one of the ${from}`;
       return `${cnt} ${to} replaced ${cnt} ${from}`;
     }
     case 'QuestMutation': {

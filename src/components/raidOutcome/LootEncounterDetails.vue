@@ -24,7 +24,14 @@
                 <div class="line outcome">Found <b>{{ itemName(entry.itemId) }}</b>!</div>
               </template>
               <template v-else>
-                <div class="line outcome dimmed">No valuables here</div>
+                <div class="line outcome dimmed">
+                  No valuables here
+                  <span class="roll-info">
+                    (<span class="roll-target">{{ entry.checkValue }}</span>
+                    <span class="roll-vs">vs</span>
+                    <span class="roll-self">{{ entry.myRoll }}</span>)
+                  </span>
+                </div>
               </template>
             </template>
           </template>
@@ -33,7 +40,7 @@
             <div class="line bags">
               <template v-if="!entry.discarded">
                 Bags volume: <b>{{ entry.volumeAfter }} / {{ entry.capacity }}</b>
-                <template v-if="entry.replacedItemId">.<br />Replaced <b>{{ itemName(entry.replacedItemId) }}</b>.</template>
+                <template v-if="entry.replacedItemId">. Not enough...<br /> Must drop something. Replaced <b>{{ itemName(entry.replacedItemId) }}</b>.</template>
               </template>
               <template v-else>
                 Bags volume: <b>{{ entry.volumeBefore }} / {{ entry.capacity }}</b>. Need {{ entry.requiredVolume }} more. Discarded.

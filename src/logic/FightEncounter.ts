@@ -1,7 +1,7 @@
 import type { ActiveRaid, GameState } from './GameState';
 import { createFightEncounterLogEntry, type FightEncounterLogEntry, type FightEvent, type LootEncounterLogEntry } from './RaidLog';
 import Perks from './Perks';
-import { FEATURE_SUMMON, FEATURE_SELF_DESTRUCT, SUMMON_CHANCE_PER_ROUND } from './MonsterFeatures';
+import { FEATURE_SUMMON, FEATURE_SELF_DESTRUCT, FEATURE_RETALIATES, SUMMON_CHANCE_PER_ROUND } from './MonsterFeatures';
 
 function clamp(v: number, lo: number, hi: number): number { return Math.max(lo, Math.min(hi, v)); }
 
@@ -35,6 +35,7 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
   const hasStun = r.perks.includes(Perks.STUN);
   const canSummon = m.features.includes(FEATURE_SUMMON);
   const canSelfDestruct = m.features.includes(FEATURE_SELF_DESTRUCT);
+  const canRetaliate = m.features.includes(FEATURE_RETALIATES);
   const armor = m.armor;
   const damageCap = m.damageCap;
 
@@ -57,7 +58,7 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
     const myRoll = Math.floor(gs.random.get() * 100);
 
     if (myRoll <= hitCheck) {
-      // Hit landed; they don't counter-attack this round
+      // Hit landed
       let dmg = r.damage;
       if (damageCap > 0) dmg = Math.min(dmg, damageCap);
       dmg = Math.max(0, dmg - armor);
@@ -74,9 +75,24 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         // Calculate actual hit chances (not clamped) for display
         hitChanceAfter = baseHit + 25 - theirDodge;
       }
+
+      // If monster has retaliate feature, they counter-attack even though we hit (unless they died)
+      let theirHit = 0;
+      let blockCheck = 0;
+      let blocked = false;
+      let received = 0;
+      if (canRetaliate && theirHpAfter > 0) {
+        blockCheck = clamp(baseBlock - theirAccuracy, 0, 100);
+        theirHit = Math.floor(gs.random.get() * 100);
+        blocked = (theirHit <= blockCheck);
+        received = blocked ? 0 : theirDamage;
+      }
+      const myHpAfter = myHpBefore - received;
+      r.hp = myHpAfter;
+
       // Check for summon at end of round (only if both combatants survive and not already summoned)
       let summonJustTriggered = false;
-      if (canSummon && !summonedMonsterId && myHpBefore > 0 && theirHpAfter > 0 && Math.floor(gs.random.get() * 100) < SUMMON_CHANCE_PER_ROUND) {
+      if (canSummon && !summonedMonsterId && myHpAfter > 0 && theirHpAfter > 0 && Math.floor(gs.random.get() * 100) < SUMMON_CHANCE_PER_ROUND) {
         summonedMonsterId = monsterId;
         summonJustTriggered = true;
       }
@@ -85,17 +101,17 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         theirDodgeValue: hitCheck,
         damageDealt: dmg,
         reflectedDamage: 0,
-        theirHitValue: 0,
-        myBlockRoll: 0,
-        damageReceived: 0,
+        theirHitValue: theirHit,
+        myBlockRoll: blockCheck,
+        damageReceived: received,
         timeSpentSec: roundTime,
         elapsedTotalSec: 0,
         biopsyTriggered: false,
         theirHpBefore,
         theirHpAfter,
         myHpBefore,
-        myHpAfter: myHpBefore,
-        blocked: false,
+        myHpAfter,
+        blocked,
         hitLanded: true,
         stunTriggered: stunJustTriggered,
         hitChanceBefore,
@@ -106,6 +122,10 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
       fightLog.push(ev);
       totalTime += roundTime;
       monsterHp = theirHpAfter;
+      if (r.hp <= 0) {
+        // Defeat from counterattack
+        break;
+      }
       if (monsterHp <= 0) {
         // Only create monster loot encounter if we have biopsy chance AND have spare volume in bags
         // AND the monster did not self-destruct (self-destructing monsters leave no corpse)

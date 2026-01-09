@@ -8,14 +8,16 @@ import atlasStorage from './logic/AtlasStorage';
 import { getRepresentation } from './logic/LogNumbers';
 import { getHypRepresentation } from './logic/HypNumbers';
 import { initResearchCells } from './logic/Research';
+import { initDebug } from './logic/DebugInit';
 
 getRepresentation(2000);
 getHypRepresentation(2000);
 // Create GameState first so UI state can assume its presence
 const gameState = new GameState();
 
-// Initialize research cells from lib definitions
 initResearchCells(gameState, gameState.lib.research);
+
+initDebug(gameState);
 
 void atlasStorage.loadItemsAtlas();
 

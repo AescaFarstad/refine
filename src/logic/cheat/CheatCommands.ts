@@ -1,3 +1,5 @@
+import type { Point2 } from '../core/math';
+
 export interface CheatInput {
   name: string;
 }
@@ -38,3 +40,10 @@ export class CheatUnlockAllRaids implements CheatInput {
   constructor() {}
 }
 
+export class CheatLoadResearchState implements CheatInput {
+  readonly name = 'CheatLoadResearchState';
+  readonly ownedCells: Point2[];
+  constructor(args: { ownedCells?: Point2[] }) {
+    this.ownedCells = args.ownedCells ?? [];
+  }
+}

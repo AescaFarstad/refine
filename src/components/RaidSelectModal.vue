@@ -16,8 +16,8 @@
               :class="{ active: r.id === previewRaidId, locked: isLocked(r) }"
               type="button"
               :disabled="isLocked(r)"
-              @click="onPreview(r.id)"
-              @dblclick="onSelect(r.id)"
+              @mouseenter="onPreview(r.id)"
+              @click="onSelect(r.id)"
             >
               <div class="raid-title">{{ r.name }}</div>
               <div v-if="isLocked(r)" class="raid-locked">
@@ -40,12 +40,9 @@
                 </template>
               </div>
               <RaidDetailsAbridged :raid="previewRaid" />
-              <button class="select-btn" type="button" :disabled="isLocked(previewRaid)" @click="onSelect(previewRaid.id)">
-                Select This Raid
-              </button>
             </template>
             <div v-else class="no-preview">
-              Select a raid to see details
+              Hover over a raid to see details
             </div>
           </div>
         </div>

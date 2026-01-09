@@ -170,7 +170,7 @@ export interface ResearchPurchaseResult {
   price: number;
 }
 
-function applyResearchNodeEffect(gs: GameState, lib: ResearchLib, nodeId: number): void {
+export function applyResearchNodeEffect(gs: GameState, lib: ResearchLib, nodeId: number): void {
   const node = lib.nodes.get(nodeId);
   if (!node) return;
   const archetype = lib.archetypes.get(node.archetypeId);

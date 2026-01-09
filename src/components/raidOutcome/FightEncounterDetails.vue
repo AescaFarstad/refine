@@ -15,7 +15,7 @@
 
         <div class="note-row stun-note" v-if="ev.stunTriggered" v-html="stunLine(ev)"></div>
 
-        <template v-if="!ev.hitLanded">
+        <template v-if="!ev.hitLanded || (ev.hitLanded && ev.theirHitValue > 0)">
           <div class="fr-grid">
             <div class="cell who">They</div>
             <div class="cell outcome" :class="(!ev.blocked && ev.damageReceived > 0) ? 'hit-they' : 'miss-they'"><strong>{{ ev.selfDestructed ? 'EXPLODE!' : ((!ev.blocked && ev.damageReceived > 0) ? 'HIT!' : 'MISS!') }}</strong></div>

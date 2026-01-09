@@ -1,7 +1,7 @@
-import type { RawQuestDefinition } from '../logic/QuestLib';
+import type { RawQuestDefinition } from '../../logic/QuestLib';
 
 const quests: Record<string, RawQuestDefinition> = {
-  explore_loot_locations: {
+  shegolskoe_explore_loot_locations: {
     name: 'Explore new loot locations',
     raidRestriction: ['shegolskoe'],
     requiresRaidSuccesses: 1,
@@ -9,7 +9,7 @@ const quests: Record<string, RawQuestDefinition> = {
       { kind: 'WalkMutation', count: 3 },
     ],
   },
-  break_spikder: {
+  shegolskoe_break_spikder: {
     name: 'Break through a spikder',
     requiresRaidQuestCompletions: 1,
     raidRestriction: ['shegolskoe'],
@@ -21,7 +21,7 @@ const quests: Record<string, RawQuestDefinition> = {
       { kind: 'raid_mutation', mutation: { kind: 'LootMutation', count: 1 } },
     ],
   },
-  break_flower: {
+  shegolskoe_break_flower: {
     name: 'Break through a flower human',
     requiresRaidQuestCompletions: 1,
     raidRestriction: ['shegolskoe'],
@@ -32,7 +32,7 @@ const quests: Record<string, RawQuestDefinition> = {
       { kind: 'raid_mutation', mutation: { kind: 'LootMutation', count: 3 } },
     ],
   },
-  break_distorted_pack: {
+  shegolskoe_break_distorted_pack: {
     name: 'Break through a pack of distorted',
     requiresRaidQuestCompletions: 1,
     raidRestriction: ['shegolskoe'],
@@ -44,7 +44,7 @@ const quests: Record<string, RawQuestDefinition> = {
       { kind: 'raid_rarity_buff', delta: 10 },
     ],
   },
-  locate_next_zone: {
+  shegolskoe_locate_next_zone: {
     name: 'Locate another zone',
     requiresRaidQuestCompletions: 3,
     raidRestriction: ['shegolskoe'],

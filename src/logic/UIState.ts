@@ -7,7 +7,6 @@ import { computeRefinePreviewChem } from './RefinePreview';
 import type { Lib } from './Lib';
 import { createWafer, type Wafer } from './Wafer';
 import type { Point2 } from './ItemLib';
-import { IS_DEBUG } from './Const';
 import { DISCOVERY } from './DiscoveryLib';
 
 export interface UIRaidDef extends RaidDefinition { }
@@ -68,7 +67,7 @@ export const uiState = reactive({
   cheatOpen: false,
   devAtlasKey: '' as '' | 'items',
   devMoleculeEditorOpen: false,
-  editResearchOpen: IS_DEBUG,
+  editResearchOpen: false,
 
   refinery: null as UIRefinery | null,
   items: [] as Array<{ id: string; quantity: number }>,

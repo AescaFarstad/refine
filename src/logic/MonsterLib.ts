@@ -9,5 +9,6 @@ export interface MonsterDefinition {
   features: string[];
   armor: number;     // flat damage reduction on all incoming damage
   damageCap: number; // max damage per hit (0 = no cap)
+  upgrade?: string;  // optional: specific monster ID to upgrade to
 }
 

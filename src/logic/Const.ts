@@ -1,5 +1,7 @@
-// export const IS_DEBUG = true;
-export const IS_DEBUG = false;
+export let IS_DEBUG = false;
+export function setIsDebug(enabled: boolean): void {
+  IS_DEBUG = enabled;
+}
 
 export const ESSENCE_CREDITS = 10;
 export const ESSENCE_CHRONOTRACES = 10;

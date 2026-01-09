@@ -1,7 +1,8 @@
 import { type GameState, Raid } from '../GameState';
 import type { CheatInput } from './CheatCommands';
-import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources, CheatUnlockAllRaids } from './CheatCommands';
+import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources, CheatUnlockAllRaids, CheatLoadResearchState } from './CheatCommands';
 import type { EncounterDef } from '../RaidLib';
+import { applyResearchNodeEffect, axialToIndex, calculateVisibility } from '../Research';
 
 type Handler = (gs: GameState, cheat: CheatInput) => void;
 const handlersByName = new Map<string, Handler>();
@@ -78,6 +79,46 @@ handlersByName.set('CheatAddResources', (gs, cheat) => {
 handlersByName.set('CheatUnlockAllRaids', (gs, cheat) => {
   const allRaidIds = Array.from(gs.lib.raids.keys());
   gs.unlockedRaids = allRaidIds.map(id => new Raid(id));
+});
+
+handlersByName.set('CheatLoadResearchState', (gs, cheat) => {
+  const c = cheat as CheatLoadResearchState;
+  const previouslyOwnedNodes = new Set<number>();
+  for (const cell of gs.researchCells) {
+    if (cell.owned && cell.nodeId >= 0) {
+      previouslyOwnedNodes.add(cell.nodeId);
+    }
+  }
+
+  const ownedCellIdx = new Set<number>();
+  for (const p of c.ownedCells) {
+    const idx = axialToIndex(p.x, p.y);
+    if (idx < 0) {
+      throw new Error(`[CheatLoadResearchState] Out-of-bounds cell: (${p.x}, ${p.y})`);
+    }
+    if (gs.researchCells[idx].blocked) {
+      throw new Error(`[CheatLoadResearchState] Cannot own blocked cell: (${p.x}, ${p.y})`);
+    }
+    ownedCellIdx.add(idx);
+  }
+
+  const nowOwnedNodes = new Set<number>();
+  let ownedPaidCells = 0;
+  for (let idx = 0; idx < gs.researchCells.length; idx++) {
+    const cell = gs.researchCells[idx];
+    const isOwned = ownedCellIdx.has(idx) && !cell.blocked;
+    cell.owned = isOwned;
+    if (isOwned && cell.cost > 0) ownedPaidCells++;
+    if (isOwned && cell.nodeId >= 0) nowOwnedNodes.add(cell.nodeId);
+  }
+
+  gs.researchOwnedCount = ownedPaidCells;
+  for (const nodeId of nowOwnedNodes) {
+    if (!previouslyOwnedNodes.has(nodeId)) {
+      applyResearchNodeEffect(gs, gs.lib.research, nodeId);
+    }
+  }
+  calculateVisibility(gs, gs.lib.research);
 });
 
 export function processCheats(gs: GameState): void {

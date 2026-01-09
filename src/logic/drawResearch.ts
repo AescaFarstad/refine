@@ -26,15 +26,16 @@ type ResearchStatIconKind = 'glyph' | 'itemImage';
 interface ResearchStatIconSpec extends StatIconSpec {
   kind: ResearchStatIconKind;
   key: string;
+  scale: number;
 }
 
 const RESEARCH_STAT_ICON_SPECS: Record<string, ResearchStatIconSpec> = {
-  damage: { kind: 'glyph', key: '✴', offsetX: 0.5, offsetY: 2 },
-  health: { kind: 'glyph', key: '❤︎', offsetX: 0, offsetY: 3 },
-  volume: { kind: 'glyph', key: '⌞ ⌝', offsetX: 0, offsetY: 2 },
-  baseMaxWeight: { kind: 'itemImage', key: 'weight', offsetX: 0.5, offsetY: 0 },
-  researchRevealRadius: { kind: 'glyph', key: '◎', offsetX: 0, offsetY: 0 },
-  speed: { kind: 'itemImage', key: 'trainers', offsetX: 0, offsetY: 0 },
+  damage: { kind: 'glyph', key: '✴', offsetX: 0.5, offsetY: 2, scale: 1.0 },
+  health: { kind: 'glyph', key: '❤︎', offsetX: 0, offsetY: 3, scale: 1.0 },
+  volume: { kind: 'glyph', key: '⌞ ⌝', offsetX: 0, offsetY: 2, scale: 1.0 },
+  baseMaxWeight: { kind: 'itemImage', key: 'weight', offsetX: 0.5, offsetY: 0, scale: 1.0 },
+  researchRevealRadius: { kind: 'itemImage', key: 'eye', offsetX: 0, offsetY: 0, scale: 1.3 },
+  speed: { kind: 'itemImage', key: 'trainers', offsetX: 0, offsetY: 0, scale: 1.0 },
 };
 
 const RESOURCE_ICON_OFFSETS: Record<string, StatIconSpec> = {
@@ -337,6 +338,8 @@ function drawStatIconForNode(
     fontSize = Math.min(fontSize, layoutMaxIconSize);
   }
 
+  fontSize *= spec.scale;
+
   centerX += spec.offsetX;
   centerY += spec.offsetY;
 
@@ -357,7 +360,7 @@ function drawStatIconForNode(
   if (!source || !frame) return;
 
   const iconMaxSize = (layoutMaxIconSize != null ? layoutMaxIconSize : hexSize * 1.6) * 0.75;
-  const scale = Math.min(iconMaxSize / frame.w, iconMaxSize / frame.h);
+  const scale = Math.min(iconMaxSize / frame.w, iconMaxSize / frame.h) * spec.scale;
   const drawW = frame.w * scale;
   const drawH = frame.h * scale;
 

@@ -16,6 +16,12 @@
         <button type="button" class="btn" @click="copyAllToClipboard">
           Copy All
         </button>
+        <button type="button" class="btn" @click="copyResearchStateCheatToClipboard">
+          Copy State
+        </button>
+        <button type="button" class="btn" @click="runHardcodedResearchStateCheat">
+          Apply State
+        </button>
       </div>
 
       <div class="mode-row">
@@ -161,6 +167,7 @@ import { indexToAxial } from '../logic/Research';
 import { getStatIcon, getResourceGlyph, type ResearchStatIcon } from '../logic/drawResearch';
 import atlasStorage from '../logic/AtlasStorage';
 import { setResearchRevealRadius } from '../logic/Model';
+import { CheatLoadResearchState } from '../logic/cheat/CheatCommands';
 
 type Point = { x: number; y: number };
 
@@ -435,6 +442,56 @@ async function copyNewlyPlacedToClipboard() {
   } catch (err) {
     console.error('Failed to copy to clipboard:', err);
   }
+}
+
+function getOwnedResearchCells(): Array<{ x: number; y: number }> {
+  const gs = getGameState();
+  const coords: Array<{ x: number; y: number }> = [];
+  for (let idx = 0; idx < gs.researchCells.length; idx++) {
+    const cell = gs.researchCells[idx];
+    if (!cell.owned || cell.blocked) continue;
+    coords.push(indexToAxial(idx));
+  }
+  coords.sort((a, b) => (a.y === b.y ? a.x - b.x : a.y - b.y));
+  return coords;
+}
+
+function formatCheatLoadResearchState(ownedCells: Array<{ x: number; y: number }>): string {
+  if (ownedCells.length === 0) {
+    return "new CheatLoadResearchState({ ownedCells: [] })";
+  }
+
+  const lines: string[] = [];
+  lines.push('new CheatLoadResearchState({');
+  lines.push('  ownedCells: [');
+  for (let i = 0; i < ownedCells.length; i += 6) {
+    const chunk = ownedCells.slice(i, i + 6);
+    lines.push('    ' + chunk.map(p => `{ x: ${p.x}, y: ${p.y} }`).join(', ') + ',');
+  }
+  lines.push('  ],');
+  lines.push('})');
+  return lines.join('\n');
+}
+
+async function copyResearchStateCheatToClipboard() {
+  const ownedCells = getOwnedResearchCells();
+  const code = formatCheatLoadResearchState(ownedCells);
+  try {
+    await navigator.clipboard.writeText(code);
+  } catch (err) {
+    console.error('Failed to copy to clipboard:', err);
+  }
+}
+
+const HARD_CODED_OWNED_CELLS: Array<{ x: number; y: number }> = [
+  { x: 0, y: 0 },
+  { x: 1, y: 0 },
+  { x: 0, y: 1 },
+];
+
+function runHardcodedResearchStateCheat() {
+  const gs = getGameState();
+  gs.cheats.push(new CheatLoadResearchState({ ownedCells: HARD_CODED_OWNED_CELLS }));
 }
 
 function clearNewlyPlaced() {

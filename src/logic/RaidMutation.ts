@@ -218,6 +218,11 @@ export function questMeetsRaidRequirements(gs: GameState, q: QuestDefinition, ra
 
   if (successesSum < q.requiresRaidSuccesses) return false;
   if (questCompletionsSum < q.requiresRaidQuestCompletions) return false;
+
+  for (const requiredQuestId of q.requiresQuestIds) {
+    if (!gs.completedQuests.includes(requiredQuestId)) return false;
+  }
+
   return true;
 }
 
@@ -356,9 +361,19 @@ export function buildSuccessMutationCandidates(gs: GameState, raidId: string): W
       const maxIdx = Math.max(...monsters.map(m => idx.get(m.id) ?? 0));
       const upgradable = monsters.filter(m => (idx.get(m.id) ?? 0) < maxIdx);
       const pick = upgradable.length ? upgradable[Math.floor(gs.random.get() * upgradable.length)] : monsters[0];
-      const fromI = idx.get(pick.id) ?? 0;
-      const toI = Math.min(idsSorted.length - 1, fromI + 1);
-      const toId = idsSorted[toI];
+
+      const monsterDef = lib.monsters.get(pick.id);
+      let toId: string | undefined;
+
+      if (monsterDef?.upgrade && monsterDef.upgrade.trim() !== '') {
+        toId = monsterDef.upgrade;
+      } else {
+        // Fall back to the strength-based upgrade system
+        const fromI = idx.get(pick.id) ?? 0;
+        const toI = Math.min(idsSorted.length - 1, fromI + 1);
+        toId = idsSorted[toI];
+      }
+
       // Weight based on strength sum rule
       const origSum = strengthSum(lib, original);
       const curSum = strengthSum(lib, current);

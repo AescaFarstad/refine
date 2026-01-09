@@ -8,6 +8,7 @@ export interface QuestDefinition {
   autoaccept: boolean;
   requiresRaidSuccesses: number;
   requiresRaidQuestCompletions: number;
+  requiresQuestIds: string[];
   rewards: Reward[];
   encounterLine: string;
   encounterTimeMin: number;
@@ -21,6 +22,7 @@ export interface RawQuestDefinition {
   autoaccept?: boolean;
   requiresRaidSuccesses?: number;
   requiresRaidQuestCompletions?: number;
+  requiresQuestIds?: string[];
   rewards?: Reward[];
   encounterLine?: string;
   encounterTimeMin?: number;
@@ -36,6 +38,7 @@ export function normalizeQuestDefinition(id: string, raw: RawQuestDefinition): Q
     autoaccept: raw.autoaccept ?? false,
     requiresRaidSuccesses: raw.requiresRaidSuccesses ?? 0,
     requiresRaidQuestCompletions: raw.requiresRaidQuestCompletions ?? 0,
+    requiresQuestIds: raw.requiresQuestIds ?? [],
     rewards: raw.rewards ?? [],
     encounterLine: raw.encounterLine ?? '',
     encounterTimeMin: raw.encounterTimeMin ?? 0,

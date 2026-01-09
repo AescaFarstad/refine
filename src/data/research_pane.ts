@@ -99,7 +99,7 @@ export const researchPane: ResearchPlacementInput[] = [
 export const researchPaneEmptyCells: Point2[] = [
   { x: 0, y: -9 }, { x: -1, y: -8 }, { x: -3, y: -6 }, { x: -3, y: -5 }, { x: -4, y: -4 }, { x: -1, y: -4 },
   { x: -9, y: -3 }, { x: 8, y: -3 }, { x: 10, y: -1 }, { x: 11, y: -1 }, { x: 4, y: 0 }, { x: 13, y: 1 },
-  { x: 14, y: 1 }, { x: -4, y: 7 }, { x: -3, y: 8 },
+  { x: 14, y: 1 }, { x: -3, y: 8 },
 ];
 
 export const researchPaneVoidCells: Point2[] = [

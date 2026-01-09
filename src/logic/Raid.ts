@@ -9,6 +9,7 @@ import { handlePreparationEncounter, createPreparationEncounter } from './Prepar
 import SeededRandom from './core/SeededRandom';
 import { cloneRaid, applyRaidMutation, questIsActive, type RaidMutation } from './RaidMutation';
 import { applyReward, type Reward } from './Reward';
+import { Perks } from './Perks';
 
 export interface RaidRunResult {
   success: boolean;
@@ -486,6 +487,16 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
     }
 
     raidEntry.questCompletions += questsCompleted.length;
+
+    // Apply permanent Stabilizer Beacon mutation on successful completion
+    if (gsForRun.raid.perks.includes(Perks.STABILIZER_BEACON) && !raidEntry.stabilizerBeaconApplied) {
+      const stabilizerTimeSec = 25 * 60; // 25 minutes in seconds
+      const mutation: RaidMutation = { kind: 'ZoneCollapseTimeMutation', amount: stabilizerTimeSec };
+      const raidDefToChange = gsForRun.lib.raids.get(raidId)!;
+      applyRaidMutation(raidDefToChange, mutation);
+      raidEntry.stabilizerBeaconApplied = true;
+      raidMutationsApplied.push(mutation);
+    }
   }
 
   return {
@@ -526,6 +537,14 @@ export function getEffectiveRaidDefinition(gs: GameState, raidId: string): RaidD
   });
   const gear = loadoutGear(gs, raidId);
   applyGearToRaidDefinition(def, gear);
+
+  // Apply Stabilizer Beacon temporary zone collapse time bonus
+  const hasStabilizerBeacon = gear.some(g => g.perk === Perks.STABILIZER_BEACON);
+  if (hasStabilizerBeacon) {
+    const stabilizerTimeSec = 25 * 60; // 25 minutes in seconds
+    def.zoneCollapseSec = Math.max(0, (def.zoneCollapseSec || 0) + stabilizerTimeSec);
+  }
+
   return def;
 }
 

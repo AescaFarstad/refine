@@ -4,8 +4,6 @@ import SeededRandom from "./core/SeededRandom";
 import { Essence } from "./ItemLib";
 import type { Point2 } from "./core/math";
 import type { CheatInput } from './cheat/CheatCommands';
-import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources, CheatUnlockAllRaids } from './cheat/CheatCommands';
-import { IS_DEBUG } from './Const';
 import type { IceMaze } from "../maze/IceMaze";
 import type { Wafer } from "./Wafer";
 import { createWafer } from "./Wafer";
@@ -76,15 +74,7 @@ export class GameState {
 
 
 
-  public cheats: Array<CheatInput> = IS_DEBUG ? [
-    new CheatAddResources({ credits: 100000, chronotraces: 100000, timeFlux: 0, shardDust: 10000, skillPoints: 100 }),
-    new CheatAddRaidItems({ id: "shegolskoe", count: 10 }),
-    new CheatAddRaidItems({ id: "ozernoye", count: 10 }),
-    new CheatAddRaidItems({ id: "dyatlovsk", count: 10 }),
-    new CheatAddRaidItems({ id: "birdmundshire", count: 10 }),
-    new CheatUnlockAllGear(),
-    new CheatUnlockAllRaids()
-  ] : [];
+  public cheats: Array<CheatInput> = [];
 
   public unlocks: string[] = [];
   public completedQuests: string[] = [];
@@ -150,7 +140,8 @@ export class Raid {
   public questProgress: number = 0;
   public lootingRarityBuff: number = 0;
   public tmpLootBuff: number = 0;
-  
+  public stabilizerBeaconApplied: boolean = false;
+
 }
 
 export class RaidOutcome {

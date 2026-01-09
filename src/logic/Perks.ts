@@ -5,6 +5,7 @@ export class Perks {
   static readonly IMMOVABLE_WALL = 'Immovable Wall';
   static readonly STUN = 'Stun';
   static readonly PAINKILLER = 'Painkiller';
+  static readonly STABILIZER_BEACON = 'Stabilizer Beacon';
 }
 
 export default Perks;

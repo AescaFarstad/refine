@@ -8,7 +8,8 @@ const monsters: Record<string, Omit<MonsterDefinition, 'id' | 'features' | 'armo
     accuracy: 90,
     damage: 5,
     lootItemId: 'burdock_remains',
-    features:['self_destruct_on_attack']
+    features:['self_destruct_on_attack'],
+    upgrade: "spikder"
   },
   hound: {
     name: 'Xeno Hound',
@@ -18,6 +19,17 @@ const monsters: Record<string, Omit<MonsterDefinition, 'id' | 'features' | 'armo
     damage: 1,
     lootItemId: 'hound_remains',
     features:['summon_chance_per_encounter'],
+    upgrade: "arch_hound"
+  },
+  arch_hound: {
+    name: 'Xeno Arch-hound',
+    hp: 3,
+    dodge: 50,
+    accuracy: 50,
+    damage: 1,
+    lootItemId: 'hound_remains',
+    features:['summon_chance_per_encounter2'],
+    upgrade: "distorted"
   },
   distorted: {
     name: 'The Distorted',
@@ -26,6 +38,8 @@ const monsters: Record<string, Omit<MonsterDefinition, 'id' | 'features' | 'armo
     accuracy: 40,
     damage: 1,
     lootItemId: 'distorted_remains',
+    features:['retaliates'],
+    upgrade: "flower"
   },
   flower: {
     name: 'Flower Human',
@@ -35,6 +49,17 @@ const monsters: Record<string, Omit<MonsterDefinition, 'id' | 'features' | 'armo
     damage: 2,
     lootItemId: 'flower_remains',
     armor: 1,
+    upgrade: "mortiflower"
+  },
+  mortiflower: {
+    name: 'Mortiflower Human',
+    hp: 25,
+    dodge: 40,
+    accuracy: 55,
+    damage: 2,
+    lootItemId: 'flower_remains',
+    armor: 2,
+    upgrade: "dendroid"
   },
   stalker: {
     name: 'Invisible Stalker',
@@ -51,11 +76,12 @@ const monsters: Record<string, Omit<MonsterDefinition, 'id' | 'features' | 'armo
     accuracy: 25,
     damage: 2,
     lootItemId: 'spikder_remains',
+    upgrade: "octopus"
   },
   scorch: {
     name: 'Scorch',
     hp: 20,
-    dodge: 35,
+    dodge: 45,
     accuracy: 40,
     damage: 7,
     lootItemId: 'scorch_remains',
@@ -63,7 +89,7 @@ const monsters: Record<string, Omit<MonsterDefinition, 'id' | 'features' | 'armo
   octopus: {
     name: 'Black Octopus',
     hp: 25,
-    dodge: 35,
+    dodge: 45,
     accuracy: 80,
     damage: 4,
     lootItemId: 'octopus_remains',
@@ -71,7 +97,7 @@ const monsters: Record<string, Omit<MonsterDefinition, 'id' | 'features' | 'armo
   lightning: {
     name: 'Lightning Zealot',
     hp: 10,
-    dodge: 35,
+    dodge: 45,
     accuracy: 70,
     damage: 7,
     lootItemId: 'lightning_remains',
@@ -80,10 +106,11 @@ const monsters: Record<string, Omit<MonsterDefinition, 'id' | 'features' | 'armo
   dendroid: {
     name: 'Dendroid',
     hp: 25,
-    dodge: 35,
+    dodge: 45,
     accuracy: 60,
-    damage: 5,
+    damage: 3,
     lootItemId: 'dendroid_remains',
+    features:['retaliates'],
   },
   soldier: {
     name: 'Turned Soldier',

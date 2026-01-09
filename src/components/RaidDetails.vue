@@ -18,7 +18,7 @@
           <th>Health</th>
           <th>Damage</th>
           <th>Chance to hit them</th>
-          <th>Chance to block their attack</th>
+          <th>Chance to block them</th>
           <th>Ability</th>
         </tr>
       </thead>
@@ -89,7 +89,7 @@ import { uiState, getGameState, getGameLib } from '../logic/UIState';
 import { MIN_WALK_SPEED } from '../logic/GameState';
 import type { RaidDefinition } from '../logic/RaidLib';
 import GearStatsHint from './GearStatsHint.vue';
-import { FEATURE_SUMMON, FEATURE_SELF_DESTRUCT, SUMMON_CHANCE_PER_ROUND } from '../logic/MonsterFeatures';
+import { FEATURE_SUMMON, FEATURE_SELF_DESTRUCT, FEATURE_RETALIATES, SUMMON_CHANCE_PER_ROUND } from '../logic/MonsterFeatures';
 import { Perks } from '../logic/Perks';
 
 const selectedRaid = computed<RaidDefinition | null>(() => {
@@ -199,7 +199,7 @@ const encCounts = computed(() => {
 });
 
 // Monster encounter table
-interface MonsterRow { id: string; name: string; hp: number; damage: number; hitPct: number; blockPct: number; count: number; canSummon: boolean; canSelfDestruct: boolean; armor: number; damageCap: number }
+interface MonsterRow { id: string; name: string; hp: number; damage: number; hitPct: number; blockPct: number; count: number; canSummon: boolean; canSelfDestruct: boolean; canRetaliate: boolean; armor: number; damageCap: number }
 function clamp01(v: number): number { return Math.max(0, Math.min(100, Math.round(v))); }
 const monsterRows = computed<MonsterRow[]>(() => {
   const raid = selectedRaid.value;
@@ -223,9 +223,10 @@ const monsterRows = computed<MonsterRow[]>(() => {
     const block = clamp01((blockBase) - Math.max(0, Math.min(100, m.accuracy || 0)));
     const canSummon = m.features.includes(FEATURE_SUMMON);
     const canSelfDestruct = m.features.includes(FEATURE_SELF_DESTRUCT);
+    const canRetaliate = m.features.includes(FEATURE_RETALIATES);
     const armor = m.armor || 0;
     const damageCap = m.damageCap || 0;
-    rows.push({ id, name: m.name, hp: Math.max(0, m.hp || 0), damage: Math.max(0, m.damage || 0), hitPct: hit, blockPct: block, count: counts[id] || 0, canSummon, canSelfDestruct, armor, damageCap });
+    rows.push({ id, name: m.name, hp: Math.max(0, m.hp || 0), damage: Math.max(0, m.damage || 0), hitPct: hit, blockPct: block, count: counts[id] || 0, canSummon, canSelfDestruct, canRetaliate, armor, damageCap });
   }
   // Stable name sort
   rows.sort((a, b) => (a.name < b.name ? -1 : 1));
@@ -241,6 +242,9 @@ function getAbilities(row: MonsterRow): Ability[] {
   }
   if (row.canSelfDestruct) {
     abilities.push({ name: 'Explodes', tooltip: 'When this monster successfully attacks, it explodes' });
+  }
+  if (row.canRetaliate) {
+    abilities.push({ name: 'Retaliates', tooltip: 'Counterattacks even when hit' });
   }
   if (row.armor > 0) {
     abilities.push({ name: `Armor\u00A0${row.armor}`, tooltip: `All incoming damage is decreased by ${row.armor}` });

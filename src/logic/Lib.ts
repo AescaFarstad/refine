@@ -9,7 +9,10 @@ import type { MonsterDefinition } from './MonsterLib';
 import monstersData from '../data/monsters';
 import type { MazeDefinition } from './MazeLib';
 import raidsData from '../data/raids';
-import questsData from '../data/quests';
+import questsShegolskoeData from '../data/quests/quests_shegolskoe';
+import questsOzernoyeData from '../data/quests/quests_ozernoye';
+import questsDyatlovskData from '../data/quests/quests_dyatlovsk';
+import questsBirdmundshireData from '../data/quests/quests_birdmundshire';
 import gearData from '../data/gear';
 import gearCategoriesData from '../data/gear_categories';
 import itemsData from '../data/items';
@@ -237,11 +240,17 @@ export class Lib {
       }
 
       {
-        const rawQuests = questsData as unknown as Record<string, RawQuestDefinition>;
+        // Merge quest data from all raid-specific files
+        const allRawQuests: Record<string, RawQuestDefinition> = {
+          ...(questsShegolskoeData as unknown as Record<string, RawQuestDefinition>),
+          ...(questsOzernoyeData as unknown as Record<string, RawQuestDefinition>),
+          ...(questsDyatlovskData as unknown as Record<string, RawQuestDefinition>),
+          ...(questsBirdmundshireData as unknown as Record<string, RawQuestDefinition>),
+        };
         const map = new Map<string, QuestDefinition>();
-        for (const id in rawQuests) {
-          if (!Object.prototype.hasOwnProperty.call(rawQuests, id)) continue;
-          map.set(id, normalizeQuestDefinition(id, rawQuests[id]));
+        for (const id in allRawQuests) {
+          if (!Object.prototype.hasOwnProperty.call(allRawQuests, id)) continue;
+          map.set(id, normalizeQuestDefinition(id, allRawQuests[id]));
         }
         this.quests = map;
       }

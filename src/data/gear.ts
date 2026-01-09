@@ -487,6 +487,14 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 1,
     image: 'smoke_grenade',
   },
+  stabilizer_beacon: {
+    name: 'Stabilizer Beacon',
+    category: 'devices',
+    price: 250,
+    weight: 5,
+    image: 'beckon',
+    perk: 'Stabilizer Beacon',
+  },
   /*
   summon_slimy_mound: {
     name: 'Summon Slimy Mound',

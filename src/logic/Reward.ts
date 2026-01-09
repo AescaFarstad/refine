@@ -1,6 +1,7 @@
 import { Raid, type GameState } from './GameState';
 import type { RaidMutation } from './RaidMutation';
 import { applyPermanentRaidMutation } from './RaidMutation';
+import { discover } from './Discover';
 
 export type Reward =
   | { kind: 'resource'; resource: 'credits' | 'chronotraces' | 'timeFlux' | 'shardDust' | 'skillPoints'; amount: number }
@@ -9,6 +10,7 @@ export type Reward =
   | { kind: 'unlock_gear'; gearId: string }
   | { kind: 'unlock_raid'; raidId: string }
   | { kind: 'unlock_quest'; questId: string }
+  | { kind: 'discovery'; discoveryId: string }
 
   | { kind: 'stat'; stat: string; value: number }
 
@@ -52,6 +54,10 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
       break;
 
     case 'unlock_quest':
+      break;
+
+    case 'discovery':
+      discover(gs, reward.discoveryId);
       break;
 
     case 'raid_mutation': {

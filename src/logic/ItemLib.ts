@@ -1,3 +1,5 @@
+import type { RaidDefinition } from './RaidLib';
+
 export type Essence = Record<string, number>;
 
 export const DEFAULT_ESSENCE_KEYS: string[] = [
@@ -53,11 +55,12 @@ export type RawItemDefinition = Omit<ItemDefinition, 'id' | 'essence' | 'rarity'
   molecule?: Molecule;
   essence?: Essence;
   rarity?: number | ItemDefinition['rarity'];
+  devOnly?: boolean;
 };
 
 export function processItemDefinitions(
   defs: Record<string, RawItemDefinition>
-): Record<string, ItemDefinition> {
+): Record<string, ItemDefinition & { devOnly?: boolean }> {
   const extraEssenceScores: Record<string, number> = {
     magenta: -3,
     red: 1,
@@ -77,7 +80,7 @@ export function processItemDefinitions(
     connections: [],
   };
 
-  const result: Record<string, ItemDefinition> = {};
+  const result: Record<string, ItemDefinition & { devOnly?: boolean }> = {};
   for (const [key, def] of Object.entries(defs)) {
     const essence: Essence = {};
     for (const k of DEFAULT_ESSENCE_KEYS) essence[k] = 0;
@@ -124,4 +127,94 @@ export function processItemDefinitions(
     };
   }
   return result;
+}
+
+export function parseItemDefinitionsWithOrder(
+  raw: Record<string, ItemDefinition & { devOnly?: boolean }>,
+  raids: Iterable<RaidDefinition>
+): Map<string, ItemDefinition> {
+  const map = new Map<string, ItemDefinition>();
+  for (const key in raw) {
+    if (!Object.prototype.hasOwnProperty.call(raw, key)) continue;
+    const d = raw[key];
+
+    let rarity: ItemDefinition['rarity'];
+    if (typeof d.rarity === 'string') {
+      rarity = d.rarity;
+    } else {
+      const rn = Number.isFinite(d.rarity) ? Number(d.rarity) : 1;
+      rarity = (rn >= 4
+        ? 'legendary'
+        : rn === 3
+          ? 'rare'
+          : rn === 2
+            ? 'uncommon'
+            : 'common') as ItemDefinition['rarity'];
+    }
+
+    map.set(key, {
+      id: key,
+      name: d.name,
+      volume: d.volume,
+      essence: d.essence,
+      rarity,
+      molecule: d.molecule,
+      order: 999999,
+      score: d.score,
+    });
+  }
+
+  const itemToRaid = new Map<string, number>();
+  for (const raid of raids) {
+    for (const itemId of raid.items) {
+      if (!itemToRaid.has(itemId)) itemToRaid.set(itemId, raid.order);
+    }
+  }
+
+  const devItems: string[] = [];
+  const remainsItems: string[] = [];
+  const raidItems: Map<number, string[]> = new Map();
+  const otherItems: string[] = [];
+
+  for (const itemId of map.keys()) {
+    const d = raw[itemId];
+    const isDev = d.devOnly === true;
+    const isRemains = itemId.includes('remains');
+    const raidOrder = itemToRaid.get(itemId);
+
+    if (isDev) {
+      devItems.push(itemId);
+    } else if (isRemains) {
+      remainsItems.push(itemId);
+    } else if (raidOrder !== undefined) {
+      let arr = raidItems.get(raidOrder);
+      if (!arr) {
+        arr = [];
+        raidItems.set(raidOrder, arr);
+      }
+      arr.push(itemId);
+    } else {
+      otherItems.push(itemId);
+    }
+  }
+
+  devItems.sort();
+  remainsItems.sort();
+  otherItems.sort();
+  for (const items of raidItems.values()) items.sort();
+
+  let currentOrder = 0;
+
+  for (const itemId of devItems) map.get(itemId)!.order = currentOrder++;
+  for (const itemId of remainsItems) map.get(itemId)!.order = currentOrder++;
+
+  const sortedRaidOrders = Array.from(raidItems.keys()).sort((a, b) => a - b);
+  for (const raidOrder of sortedRaidOrders) {
+    const items = raidItems.get(raidOrder)!;
+    for (const itemId of items) map.get(itemId)!.order = currentOrder++;
+  }
+
+  for (const itemId of otherItems) map.get(itemId)!.order = currentOrder++;
+
+  return map;
 }

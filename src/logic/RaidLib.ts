@@ -62,3 +62,55 @@ export interface RaidDefinition {
   zoneCollapseSec: number;
   zoneCollapseStepPerMutation: number;
 }
+
+export type RawRaidDefinition = Omit<RaidDefinition, 'id' | 'order' | 'itemPoolsByRarity'>;
+
+function emptyItemPoolsByRarity(): Record<LootRarity, string[]> {
+  return { common: [], uncommon: [], rare: [], legendary: [] };
+}
+
+export function parseRaidDefinitions(raw: Record<string, RawRaidDefinition>): {
+  raidSources: Map<string, RaidDefinition>;
+  raids: Map<string, RaidDefinition>;
+} {
+  const raidSources = new Map<string, RaidDefinition>();
+  const raidsCopy = new Map<string, RaidDefinition>();
+  let orderIndex = 0;
+
+  for (const id in raw) {
+    if (!Object.prototype.hasOwnProperty.call(raw, id)) continue;
+    const def = raw[id];
+    const withId: RaidDefinition = {
+      id,
+      name: def.name,
+      description: def.description,
+      baseLootChance: def.baseLootChance,
+      items: def.items,
+      encounters: def.encounters,
+      order: orderIndex++,
+      zoneCollapseSec: def.zoneCollapseSec,
+      zoneCollapseStepPerMutation: def.zoneCollapseStepPerMutation,
+      itemPoolsByRarity: emptyItemPoolsByRarity(),
+    };
+    raidSources.set(id, withId);
+
+    const cloned: RaidDefinition = {
+      id: withId.id,
+      name: withId.name,
+      description: withId.description,
+      baseLootChance: withId.baseLootChance,
+      items: [...withId.items],
+      encounters: withId.encounters.map(step => ({
+        count: Math.max(0, step.count | 0),
+        encounter: { ...step.encounter },
+      })),
+      order: withId.order,
+      zoneCollapseSec: withId.zoneCollapseSec,
+      zoneCollapseStepPerMutation: withId.zoneCollapseStepPerMutation,
+      itemPoolsByRarity: emptyItemPoolsByRarity(),
+    };
+    raidsCopy.set(id, cloned);
+  }
+
+  return { raidSources, raids: raidsCopy };
+}

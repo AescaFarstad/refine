@@ -62,7 +62,7 @@ const raids: Record<string, Omit<RaidDefinition, 'id' | 'order' | 'itemPoolsByRa
     name: 'Dyatlovsk',
     description: 'A frontier town deep in contaminated territory. Dense anomalous growth has reclaimed the streets.',
     baseLootChance: 40,
-    zoneCollapseSec: 15400,
+    zoneCollapseSec: 8400,
     zoneCollapseStepPerMutation: 360,
     items: [
       'aluminium_bowl',

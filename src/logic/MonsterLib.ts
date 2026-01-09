@@ -12,3 +12,28 @@ export interface MonsterDefinition {
   upgrade?: string;  // optional: specific monster ID to upgrade to
 }
 
+export type RawMonsterDefinition =
+  & Omit<MonsterDefinition, 'id' | 'features' | 'armor' | 'damageCap'>
+  & { features?: string[]; armor?: number; damageCap?: number };
+
+export function parseMonsterDefinitions(raw: Record<string, RawMonsterDefinition>): Map<string, MonsterDefinition> {
+  const map = new Map<string, MonsterDefinition>();
+  for (const key in raw) {
+    if (!Object.prototype.hasOwnProperty.call(raw, key)) continue;
+    const d = raw[key];
+    map.set(key, {
+      id: key,
+      name: d.name,
+      hp: d.hp,
+      dodge: d.dodge,
+      accuracy: d.accuracy,
+      damage: d.damage,
+      lootItemId: d.lootItemId,
+      features: d.features ?? [],
+      armor: Math.max(0, d.armor ?? 0),
+      damageCap: Math.max(0, d.damageCap ?? 0),
+      upgrade: d.upgrade,
+    });
+  }
+  return map;
+}

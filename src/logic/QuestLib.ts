@@ -46,3 +46,15 @@ export function normalizeQuestDefinition(id: string, raw: RawQuestDefinition): Q
     showAddedItems: raw.showAddedItems ?? false,
   };
 }
+
+export function buildQuestMapFromSources(
+  sources: Array<Record<string, RawQuestDefinition>>
+): Map<string, QuestDefinition> {
+  const merged: Record<string, RawQuestDefinition> = Object.assign({}, ...sources);
+  const map = new Map<string, QuestDefinition>();
+  for (const id in merged) {
+    if (!Object.prototype.hasOwnProperty.call(merged, id)) continue;
+    map.set(id, normalizeQuestDefinition(id, merged[id]));
+  }
+  return map;
+}

@@ -27,3 +27,25 @@ export interface MazeDefinition {
   description?: string;
   reward: Reward[];
 }
+
+export type RawMazeDefinition = Omit<MazeDefinition, 'id'>;
+
+export function parseMazeDefinitions(raw: Record<string, RawMazeDefinition>): Map<string, MazeDefinition> {
+  const map = new Map<string, MazeDefinition>();
+  for (const key in raw) {
+    if (!Object.prototype.hasOwnProperty.call(raw, key)) continue;
+    map.set(key, { ...raw[key], id: key });
+  }
+  return map;
+}
+
+export function buildOrderedMazeLevels(map: Map<string, MazeDefinition>): MazeDefinition[] {
+  const arr: Array<{ idx: number; id: string; def: MazeDefinition }> = [];
+  map.forEach((def, id) => {
+    const m = /^l(\d+)_/.exec(id);
+    const idx = m ? parseInt(m[1] || '0', 10) : Number.POSITIVE_INFINITY;
+    arr.push({ idx: isNaN(idx) ? Number.POSITIVE_INFINITY : idx, id, def });
+  });
+  arr.sort((a, b) => (a.idx === b.idx ? (a.id < b.id ? -1 : 1) : a.idx - b.idx));
+  return arr.map(o => o.def);
+}

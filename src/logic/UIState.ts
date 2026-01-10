@@ -61,6 +61,7 @@ export const uiState = reactive({
   raidTimeBreakdownOverallSec: createRaidTimeBreakdownSec() as RaidTimeBreakdownSec,
   raidTimeBreakdownSuccessSec: createRaidTimeBreakdownSec() as RaidTimeBreakdownSec,
   raidTimeBreakdownFailureSec: createRaidTimeBreakdownSec() as RaidTimeBreakdownSec,
+  raidTimeBreakdownZoneCollapseSec: createRaidTimeBreakdownSec() as RaidTimeBreakdownSec,
   raidDamageBreakdownOverall: createRaidDamageBreakdown() as RaidDamageBreakdown,
   raidDamageBreakdownSuccess: createRaidDamageBreakdown() as RaidDamageBreakdown,
   raidDamageBreakdownFailure: createRaidDamageBreakdown() as RaidDamageBreakdown,
@@ -182,6 +183,7 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.raidTimeBreakdownOverallSec = game.raidTimeBreakdownOverallSec;
   uiState.raidTimeBreakdownSuccessSec = game.raidTimeBreakdownSuccessSec;
   uiState.raidTimeBreakdownFailureSec = game.raidTimeBreakdownFailureSec;
+  uiState.raidTimeBreakdownZoneCollapseSec = game.raidTimeBreakdownZoneCollapseSec;
   uiState.raidDamageBreakdownOverall = game.raidDamageBreakdownOverall;
   uiState.raidDamageBreakdownSuccess = game.raidDamageBreakdownSuccess;
   uiState.raidDamageBreakdownFailure = game.raidDamageBreakdownFailure;

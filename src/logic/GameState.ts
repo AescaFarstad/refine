@@ -101,6 +101,7 @@ export class GameState {
   public raidTimeBreakdownOverallSec: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
   public raidTimeBreakdownSuccessSec: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
   public raidTimeBreakdownFailureSec: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
+  public raidTimeBreakdownZoneCollapseSec: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
   public raidDamageBreakdownOverall: RaidDamageBreakdown = createRaidDamageBreakdown();
   public raidDamageBreakdownSuccess: RaidDamageBreakdown = createRaidDamageBreakdown();
   public raidDamageBreakdownFailure: RaidDamageBreakdown = createRaidDamageBreakdown();

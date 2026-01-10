@@ -113,10 +113,28 @@ const zoneCollapseDeathPct = computed(() => Math.max(0, Math.min(100, Math.round
 const survivalChance = computed(() => Math.max(0, Math.min(100, Math.round(uiState.raidSurvivalPct || 0))));
 const survivalBreakdownTooltip = computed(() => {
   const count = uiState.raidTimeBreakdownSimulations;
-  return `Estimated based on ${count} virtual attempts.\nResults may vary from simulation to simulation.`;
+  const monsterDeaths = uiState.raidMonsterDeaths;
+  const zoneCollapseDeaths = uiState.raidZoneCollapseDeaths;
+  const monsterDeathPct = Math.round((monsterDeaths / count) * 100);
+  const zoneCollapseDeathPct = Math.round((zoneCollapseDeaths / count) * 100);
+
+  let tooltip = `Estimated based on ${count} virtual attempts.`;
+  if (monsterDeathPct > 0) {
+    tooltip += `\nDeaths from monsters: ${monsterDeathPct}%`;
+  }
+  if (zoneCollapseDeathPct > 0) {
+    tooltip += `\nDeaths from zone collapse: ${zoneCollapseDeathPct}%`;
+  }
+  tooltip += `\nResults may vary from simulation to simulation.`;
+
+  return tooltip;
 });
 
-const estimatedTime = computed(() => formatDurationHM(Math.max(0, uiState.raidTimeEstimateSec || 0)));
+const estimatedTime = computed(() => {
+  const sec = uiState.raidTimeEstimateSec;
+  if (sec === undefined || sec === null || sec <= 0) return '—';
+  return formatDurationHM(sec);
+});
 const timeInHours = computed(() => (uiState.raidTimeEstimateSec || 0) / 3600);
 const timeBreakdownTooltip = computed(() => {
   const count = uiState.raidTimeBreakdownSimulations;

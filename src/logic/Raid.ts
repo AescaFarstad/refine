@@ -26,7 +26,9 @@ export interface RaidRunResult {
   raidItemsAdded: string[];
   lootChanceDeltaApplied: number;
   lootingRarityBuffDeltaApplied: number;
-  reimbursedCredits?: number;
+  reimbursedCredits: number;
+  diedToMonster: boolean;
+  diedToZoneCollapse: boolean;
 }
 
 function loadoutGear(gs: GameState, raidId: string): GearDefinition[] {
@@ -252,6 +254,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
   let timeSpentSec = 0;
   const timeBreakdownSec: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
   let barelyInTime = false;
+  let diedToZoneCollapse = false;
   const questsCompleted: string[] = [];
   const rewardsApplied: Reward[] = [];
   const raidMutationsApplied: RaidMutation[] = [];
@@ -281,7 +284,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
     const enc = queue.shift()!;
 
     const zoneCollapseLimit = raidDef.zoneCollapseSec;
-    if (zoneCollapseLimit > 0 && timeSpentSec >= zoneCollapseLimit) {
+    if (zoneCollapseLimit > 0 && timeSpentSec >= zoneCollapseLimit && !diedToZoneCollapse) {
       const remainingEncounters = [enc, ...queue];
       const hasUnsafeEncounters = remainingEncounters.some(e =>
         e.type !== 'LootEncounter' && e.type !== 'MonsterLootEncounter'
@@ -294,23 +297,33 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
           elapsedTime: timeSpentSec,
         });
         log.entries.push(collapseEntry);
-        raid.hp = 0;
-        return {
-          success: false,
-          log,
-          bagItemCounts,
-          discardedItemCounts,
-          timeSpentSec,
-          timeBreakdownSec,
-          plannedEncounters,
-          barelyInTime: false,
-          questsCompleted,
-          rewardsApplied,
-          raidMutationsApplied,
-          raidItemsAdded,
-          lootChanceDeltaApplied,
-          lootingRarityBuffDeltaApplied,
-        };
+
+        if (dryRun) {
+          // In dry runs, mark as zone collapse death but continue processing to get full time estimate
+          diedToZoneCollapse = true;
+        } else {
+          // In real raids, stop immediately
+          raid.hp = 0;
+          return {
+            success: false,
+            log,
+            bagItemCounts,
+            discardedItemCounts,
+            timeSpentSec,
+            timeBreakdownSec,
+            plannedEncounters,
+            barelyInTime: false,
+            questsCompleted,
+            rewardsApplied,
+            raidMutationsApplied,
+            raidItemsAdded,
+            lootChanceDeltaApplied,
+            lootingRarityBuffDeltaApplied,
+            reimbursedCredits: 0,
+            diedToMonster: false,
+            diedToZoneCollapse: true,
+          };
+        }
       } else {
         barelyInTime = true;
         for (const skippedEnc of remainingEncounters) {
@@ -424,6 +437,8 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
             lootChanceDeltaApplied,
             lootingRarityBuffDeltaApplied,
             reimbursedCredits,
+            diedToMonster: true,
+            diedToZoneCollapse: false,
           };
         }
         if (raid.regenAfterCombat > 0) {
@@ -520,7 +535,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
   }
 
   return {
-    success: true,
+    success: !diedToZoneCollapse,
     log,
     bagItemCounts,
     discardedItemCounts,
@@ -534,6 +549,9 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
     raidItemsAdded,
     lootChanceDeltaApplied,
     lootingRarityBuffDeltaApplied,
+    reimbursedCredits: 0,
+    diedToMonster: false,
+    diedToZoneCollapse,
   };
 }
 
@@ -574,13 +592,15 @@ export function recomputeActiveRaidEstimates(gs: GameState, simulations = 100): 
   let wins = 0;
   let zoneCollapseDeaths = 0;
   let monsterDeaths = 0;
-  let successTimeSum = 0;
+  let completionTimeSum = 0; // Sum of times for runs that completed (wins + zone collapse deaths)
   const overallSum: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
   const successSum: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
   const failureSum: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
+  const zoneCollapseSum: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
   const overallDamageSum: RaidDamageBreakdown = createRaidDamageBreakdown();
   const successDamageSum: RaidDamageBreakdown = createRaidDamageBreakdown();
   const failureDamageSum: RaidDamageBreakdown = createRaidDamageBreakdown();
+  const monsterDeathDamageSum: RaidDamageBreakdown = createRaidDamageBreakdown();
   const add = (dst: RaidTimeBreakdownSec, src: RaidTimeBreakdownSec): void => {
     dst.totalSec += src.totalSec;
     dst.fightingSec += src.fightingSec;
@@ -646,24 +666,30 @@ export function recomputeActiveRaidEstimates(gs: GameState, simulations = 100): 
     addDamage(overallDamageSum, dmg);
     if (res.success) {
       wins++;
-      successTimeSum += res.timeBreakdownSec.totalSec;
+      completionTimeSum += res.timeBreakdownSec.totalSec;
       add(successSum, res.timeBreakdownSec);
       addDamage(successDamageSum, dmg);
+    } else if (res.diedToZoneCollapse) {
+      // Zone collapse death: counts as failure but contributes to time estimate
+      // Damage from zone collapse deaths is NOT included in failure damage breakdown
+      zoneCollapseDeaths++;
+      completionTimeSum += res.timeBreakdownSec.totalSec;
+      add(failureSum, res.timeBreakdownSec);
+      add(zoneCollapseSum, res.timeBreakdownSec);
     } else {
+      // Monster death: counts as failure and does NOT contribute to time estimate
+      // Only monster deaths contribute to failure damage breakdown
+      monsterDeaths++;
       add(failureSum, res.timeBreakdownSec);
       addDamage(failureDamageSum, dmg);
-      const hasZoneCollapse = res.log.entries.some(entry => entry.kind === 'ZoneCollapse');
-      if (hasZoneCollapse) {
-        zoneCollapseDeaths++;
-      } else {
-        monsterDeaths++;
-      }
+      addDamage(monsterDeathDamageSum, dmg);
     }
   }
   const failures = simulations - wins;
+  const completedRuns = wins + zoneCollapseDeaths;
   gs.raidSurvivalEstimatePct = Math.round((wins / simulations) * 100);
-  // If no wins, use zone collapse time as estimate (if applicable), otherwise 0
-  gs.raidTimeEstimateSec = wins > 0 ? Math.round(successTimeSum / wins) : (def.zoneCollapseSec || 0);
+  // Time estimate is based on runs that completed (wins + zone collapse deaths), excluding monster deaths
+  gs.raidTimeEstimateSec = completedRuns > 0 ? Math.round(completionTimeSum / completedRuns) : (def.zoneCollapseSec || 0);
   gs.raidZoneCollapseDeathPct = Math.round((zoneCollapseDeaths / simulations) * 100);
   gs.raidZoneCollapseDeaths = zoneCollapseDeaths;
   gs.raidMonsterDeaths = monsterDeaths;
@@ -673,9 +699,10 @@ export function recomputeActiveRaidEstimates(gs: GameState, simulations = 100): 
   gs.raidTimeBreakdownOverallSec = avg(overallSum, simulations);
   gs.raidTimeBreakdownSuccessSec = avg(successSum, wins);
   gs.raidTimeBreakdownFailureSec = avg(failureSum, failures);
+  gs.raidTimeBreakdownZoneCollapseSec = avg(zoneCollapseSum, zoneCollapseDeaths);
   gs.raidDamageBreakdownOverall = avgDamage(overallDamageSum, simulations);
   gs.raidDamageBreakdownSuccess = avgDamage(successDamageSum, wins);
-  gs.raidDamageBreakdownFailure = avgDamage(failureDamageSum, failures);
+  gs.raidDamageBreakdownFailure = avgDamage(monsterDeathDamageSum, monsterDeaths);
 }
 
 export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {

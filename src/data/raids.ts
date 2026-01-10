@@ -3,6 +3,7 @@ import type { RaidDefinition } from '../logic/RaidLib';
 const raids: Record<string, Omit<RaidDefinition, 'id' | 'order' | 'itemPoolsByRarity' >> = {
   shegolskoe: {
     name: 'Shegolskoe',
+    locationImageId: 'shegolskoe',
     description: 'A small abandoned village, scattered with relics of everyday life. Hostile creatures roam its ruins.',
     baseLootChance: 45,
     zoneCollapseSec: 10200,
@@ -32,6 +33,7 @@ const raids: Record<string, Omit<RaidDefinition, 'id' | 'order' | 'itemPoolsByRa
   },
   ozernoye: {
     name: 'Ozernoye',
+    locationImageId: 'ozernoye',
     description: 'A lakeside settlement overtaken by anomalous activity. Many scavengers never returned from its shores.',
     baseLootChance: 40,
     zoneCollapseSec: 12800,
@@ -60,6 +62,7 @@ const raids: Record<string, Omit<RaidDefinition, 'id' | 'order' | 'itemPoolsByRa
   },
   dyatlovsk: {
     name: 'Dyatlovsk',
+    locationImageId: 'dyatlovsk',
     description: 'A frontier town deep in contaminated territory. Dense anomalous growth has reclaimed the streets.',
     baseLootChance: 40,
     zoneCollapseSec: 8400,
@@ -89,6 +92,7 @@ const raids: Record<string, Omit<RaidDefinition, 'id' | 'order' | 'itemPoolsByRa
   },
   birdmundshire: {
     name: 'Birdmundshire',
+    locationImageId: 'birdmunshire',
     description: 'An English coastal town consumed by the Zone. Strange flowers bloom where people once walked.',
     baseLootChance: 55,
     zoneCollapseSec: 14400,

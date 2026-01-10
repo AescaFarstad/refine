@@ -1,0 +1,7 @@
+[
+  priority:15
+  job:resize
+  input_folder:source/locations
+  output_folder:locations
+  width:1000
+]

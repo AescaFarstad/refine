@@ -5,6 +5,7 @@ import { runSplitTrimJob } from './split_trim_job.ts';
 import { runPackJob } from './pack_job.ts';
 import { runCopyJob } from './copy_job.ts';
 import { runMonowhiteJob } from './monowhite_job.ts';
+import { runResizeJob } from './resize_job.ts';
 
 async function listPipelineFiles(dir: string): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true });
@@ -83,6 +84,15 @@ async function main() {
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error(`monowhite failed for pipeline ${path.basename(file)}: ${msg}`);
+      }
+    } else if (jobType === 'resize') {
+      console.log(`Running resize on ${path.basename(file)}...`);
+      try {
+        await runResizeJob(job, dataDir);
+        console.log(`Finished resize for ${path.basename(file)}`);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`resize failed for pipeline ${path.basename(file)}: ${msg}`);
       }
     } else if (jobType) {
       console.log(`Unknown job: ${jobType} — skipping.`);

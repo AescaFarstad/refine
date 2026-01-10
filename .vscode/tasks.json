@@ -94,6 +94,25 @@
       }
     },
     {
+      "label": "ART locations",
+      "type": "shell",
+      "command": "node",
+      "args": [
+        "--import",
+        "data:text/javascript,import { register } from \"node:module\"; import { pathToFileURL } from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"));",
+        "src/pipeline/run_pipeline.ts",
+        "locations",
+        "copy"
+      ],
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always"
+      }
+    },
+    {
       "label": "run dev",
       "type": "shell",
       "command": "gnome-terminal",

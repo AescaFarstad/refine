@@ -56,6 +56,9 @@ async function ensureLoaded() {
     case 'items':
       await atlasStorage.loadItemsAtlas();
       break;
+    case 'locations':
+      await atlasStorage.loadLocationsAtlas();
+      break;
   }
 }
 

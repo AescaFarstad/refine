@@ -190,6 +190,8 @@ export function cloneRaid(def: RaidDefinition): RaidDefinition {
   return {
     id: def.id,
     name: def.name,
+    locationImageId: def.locationImageId,
+    description: def.description,
     baseLootChance: def.baseLootChance,
     items: [...def.items],
     itemPoolsByRarity: def.itemPoolsByRarity,

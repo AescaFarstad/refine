@@ -53,6 +53,7 @@ export type EncounterDef =
 export interface RaidDefinition {
   id: string;
   name: string;
+  locationImageId: string;
   description?: string;
   baseLootChance: number;
   items: string[];
@@ -83,6 +84,7 @@ export function parseRaidDefinitions(raw: Record<string, RawRaidDefinition>): {
     const withId: RaidDefinition = {
       id,
       name: def.name,
+      locationImageId: def.locationImageId,
       description: def.description,
       baseLootChance: def.baseLootChance,
       items: def.items,
@@ -97,6 +99,7 @@ export function parseRaidDefinitions(raw: Record<string, RawRaidDefinition>): {
     const cloned: RaidDefinition = {
       id: withId.id,
       name: withId.name,
+      locationImageId: withId.locationImageId,
       description: withId.description,
       baseLootChance: withId.baseLootChance,
       items: [...withId.items],

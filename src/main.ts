@@ -20,6 +20,7 @@ initResearchCells(gameState, gameState.lib.research);
 initDebug(gameState);
 
 void atlasStorage.loadItemsAtlas();
+void atlasStorage.loadLocationsAtlas();
 
 // Sync UI immediately so initial values render before mounting
 SyncUIFromGameState(gameState);

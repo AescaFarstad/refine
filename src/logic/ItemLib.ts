@@ -44,6 +44,7 @@ export interface ItemDefinition {
   name: string;
   volume: number;
   essence: Essence;
+  remains: boolean;
   // Rarity used for loot tables (always normalized to string values)
   rarity: 'common' | 'uncommon' | 'rare' | 'legendary';
   molecule: Molecule;
@@ -51,7 +52,7 @@ export interface ItemDefinition {
   score: number;
 }
 
-export type RawItemDefinition = Omit<ItemDefinition, 'id' | 'essence' | 'rarity' | 'order' | 'score' | 'molecule'> & {
+export type RawItemDefinition = Omit<ItemDefinition, 'id' | 'essence' | 'rarity' | 'order' | 'score' | 'molecule' | 'remains'> & {
   molecule?: Molecule;
   essence?: Essence;
   rarity?: number | ItemDefinition['rarity'];
@@ -120,6 +121,7 @@ export function processItemDefinitions(
       ...def,
       id: key,
       essence,
+      remains: key.endsWith('_remains'),
       rarity,
       molecule,
       order: 0,
@@ -157,6 +159,7 @@ export function parseItemDefinitionsWithOrder(
       name: d.name,
       volume: d.volume,
       essence: d.essence,
+      remains: d.remains,
       rarity,
       molecule: d.molecule,
       order: 999999,
@@ -179,7 +182,7 @@ export function parseItemDefinitionsWithOrder(
   for (const itemId of map.keys()) {
     const d = raw[itemId];
     const isDev = d.devOnly === true;
-    const isRemains = itemId.includes('remains');
+    const isRemains = d.remains;
     const raidOrder = itemToRaid.get(itemId);
 
     if (isDev) {

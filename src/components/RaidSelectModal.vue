@@ -2,10 +2,7 @@
   <Teleport to="body">
     <div v-if="visible" class="modal-overlay" @click.self="$emit('close')">
       <div class="modal-content">
-        <div class="modal-header">
-          <h2>Select Raid</h2>
-          <button class="close-btn" type="button" @click="$emit('close')">✕</button>
-        </div>
+        <button v-if="!previewRaid" class="close-btn close-btn-overlay-global" type="button" @click="$emit('close')">✕</button>
         <div class="modal-body">
           <!-- Left: raid list -->
           <div class="raid-list">
@@ -19,6 +16,11 @@
               @mouseenter="onPreview(r.id)"
               @click="onSelect(r.id)"
             >
+              <div
+                v-if="locationsAtlasReady && locationsAtlasSource"
+                class="raid-bg"
+                :style="raidBackgroundStyle(r)"
+              />
               <div class="raid-title">{{ r.name }}</div>
               <div v-if="isLocked(r)" class="raid-locked">
                 <span class="txt">Locked</span>
@@ -28,18 +30,61 @@
           <!-- Right: raid preview -->
           <div class="raid-preview">
             <template v-if="previewRaid">
-              <div class="preview-image">
-                <!-- Placeholder for raid image -->
-                <div class="image-placeholder">[ Raid Image ]</div>
+              <div class="preview-image" :style="previewImageStyle">
+                <button class="close-btn close-btn-overlay" type="button" @click="$emit('close')">✕</button>
+                <img
+                  v-if="locationsAtlasReady && locationsAtlasSource"
+                  class="location-atlas"
+                  :src="locationsAtlasSource.src"
+                  :style="previewLocationAtlasStyle"
+                  alt=""
+                  draggable="false"
+                >
+                <div v-else class="image-placeholder">[ Raid Image ]</div>
+                <div class="ov ov-title">{{ previewRaid.name }}</div>
+
+                <div class="ov ov-left">
+                  <div class="ov-row">
+                    <div v-if="itemsAtlasReady" class="ov-icon" :style="encounterIconStyle('winding_road')" />
+                    <div class="ov-label">Walking</div>
+                    <div class="ov-value">{{ distanceKm }} km</div>
+                  </div>
+                  <div v-if="lootCount > 0" class="ov-row">
+                    <div v-if="itemsAtlasReady" class="ov-icon" :style="encounterIconStyle('rummaging')" />
+                    <div class="ov-label">Scavenge</div>
+                    <div class="ov-value">×{{ lootCount }}</div>
+                  </div>
+                  <div v-if="zoneCollapseTime" class="ov-row">
+                    <div v-if="itemsAtlasReady" class="ov-icon" :style="encounterIconStyle('desintegration')" />
+                    <div class="ov-label">Collapse</div>
+                    <div class="ov-value">{{ zoneCollapseTime }}</div>
+                  </div>
+                </div>
+
+                <div v-if="monsterSummary.length" class="ov ov-monsters">
+                  <div v-for="m in monsterSummary" :key="m.id" class="ov-monster">
+                    <div class="ov-monster-name">{{ m.name }}</div>
+                    <div class="ov-monster-count">×{{ m.count }}</div>
+                  </div>
+                </div>
+
+                <div v-if="foundRegularItems.length || foundRemainsItems.length" class="ov ov-bottom">
+                  <div class="ov-items" :class="{ split: foundRegularItems.length && foundRemainsItems.length }">
+                    <div v-if="foundRegularItems.length" class="ov-items-block">
+                      <ItemGrid :items="foundRegularItems" minor />
+                    </div>
+                    <div v-if="foundRemainsItems.length" class="ov-items-block">
+                      <ItemGrid :items="foundRemainsItems" minor />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="preview-name">{{ previewRaid.name }}</div>
               <div class="preview-description">
                 {{ previewRaid.description || 'A challenging expedition into dangerous territory.' }}
                 <template v-if="previewRaid.zoneCollapseSec && previewRaid.zoneCollapseSec > 0">
                   <br>Extract before zone collapse in {{ formatDurationHM(previewRaid.zoneCollapseSec) }} or perish.
                 </template>
               </div>
-              <RaidDetailsAbridged :raid="previewRaid" />
             </template>
             <div v-else class="no-preview">
               Hover over a raid to see details
@@ -52,13 +97,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { uiState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
 import { CmdSelectRaid } from '../logic/input/InputCommands';
-import type { RaidDefinition } from '../logic/RaidLib';
-import RaidDetailsAbridged from './RaidDetailsAbridged.vue';
+import type { FightEncounterDef, RaidDefinition } from '../logic/RaidLib';
 import { formatDurationHM } from '../logic/StringUtils';
+import ItemGrid from './ItemGrid.vue';
+import atlasStorage from '../logic/AtlasStorage';
+import { locationsAtlasFrames, locationsAtlasMeta } from '../data/locationsAtlas';
 
 const props = defineProps<{ visible: boolean }>();
 const emit = defineEmits<{ close: [], selected: [] }>();
@@ -68,6 +115,167 @@ const previewRaidId = ref<string | null>(null);
 const previewRaid = computed<RaidDefinition | null>(() => {
   if (!previewRaidId.value) return null;
   return uiState.raids.find(r => r.id === previewRaidId.value) || null;
+});
+
+const itemsAtlasSource = ref<HTMLImageElement | null>(atlasStorage.getItemsSource());
+const itemsAtlasReady = ref<boolean>(atlasStorage.isItemsAtlasLoaded());
+const locationsAtlasSource = ref<HTMLImageElement | null>(atlasStorage.getLocationsSource());
+const locationsAtlasReady = ref<boolean>(atlasStorage.isLocationsAtlasLoaded());
+onMounted(async () => {
+  if (!itemsAtlasReady.value) {
+    try { await atlasStorage.loadItemsAtlas(); } catch (_e) { /* noop */ }
+    itemsAtlasReady.value = atlasStorage.isItemsAtlasLoaded();
+    itemsAtlasSource.value = atlasStorage.getItemsSource();
+  }
+  if (!locationsAtlasReady.value) {
+    try { await atlasStorage.loadLocationsAtlas(); } catch (_e) { /* noop */ }
+    locationsAtlasReady.value = atlasStorage.isLocationsAtlasLoaded();
+    locationsAtlasSource.value = atlasStorage.getLocationsSource();
+  }
+});
+
+function encounterIconStyle(iconKey: string): Record<string, string> {
+  const source = itemsAtlasSource.value!;
+  const f = atlasStorage.getItemsFrame(iconKey)!;
+  const atlasW = source.naturalWidth;
+  const atlasH = source.naturalHeight;
+  const containerSize = 18;
+  const scale = Math.min(containerSize / f.w, containerSize / f.h, 1);
+  const displayW = f.w * scale;
+  const displayH = f.h * scale;
+  return {
+    width: displayW + 'px',
+    height: displayH + 'px',
+    backgroundImage: `url(${source.src})`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
+    backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
+  };
+}
+
+function raidBackgroundStyle(raid: RaidDefinition): Record<string, string> {
+  const source = locationsAtlasSource.value;
+  if (!source) return {};
+
+  const frame = locationsAtlasFrames[raid.locationImageId];
+  if (!frame) return {};
+
+  const atlasW = source.naturalWidth;
+  const atlasH = source.naturalHeight;
+
+  // Calculate scale to cover the card (320px width, 72px height)
+  const cardWidth = 320;
+  const cardHeight = 72;
+
+  // Scale to cover the card while maintaining aspect ratio
+  const scaleX = cardWidth / frame.w;
+  const scaleY = cardHeight / frame.h;
+  const scale = Math.max(scaleX, scaleY);
+
+  // Calculate position - centered horizontally, ~27.5% down vertically
+  const scaledFrameW = frame.w * scale;
+  const scaledFrameH = frame.h * scale;
+  const offsetX = (scaledFrameW - cardWidth) / 2;
+  const offsetY = scaledFrameH * 0.275 - cardHeight / 2;
+
+  return {
+    backgroundImage: `url(${source.src})`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: `-${frame.x * scale + offsetX}px -${frame.y * scale + offsetY}px`,
+    backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
+  };
+}
+
+const previewLocationFrame = computed(() => {
+  const raid = previewRaid.value;
+  if (!raid) return null;
+  return locationsAtlasFrames[raid.locationImageId] || null;
+});
+
+const previewLocationAtlasStyle = computed<Record<string, string>>(() => {
+  if (!locationsAtlasReady.value || !previewLocationFrame.value || !locationsAtlasMeta) return {} as Record<string, string>;
+  const f = previewLocationFrame.value;
+  return {
+    width: `calc(100% * ${locationsAtlasMeta.w / f.w})`,
+    height: `calc(100% * ${locationsAtlasMeta.h / f.h})`,
+    transform: `translate(-${(f.x / locationsAtlasMeta.w) * 100}%, -${(f.y / locationsAtlasMeta.h) * 100}%)`,
+  };
+});
+
+const previewImageStyle = computed<Record<string, string>>(() => {
+  const f = previewLocationFrame.value!;
+  return { width: `${f.w}px`, height: `${f.h}px` };
+});
+
+const lootCount = computed(() => {
+  const raid = previewRaid.value;
+  if (!raid) return 0;
+  let count = 0;
+  for (const e of raid.encounters || []) {
+    if (e.encounter.type === 'LootEncounter') {
+      count += Math.max(0, Math.floor(e.count || 0));
+    }
+  }
+  return count;
+});
+
+const distanceKm = computed(() => {
+  const raid = previewRaid.value;
+  if (!raid) return 0;
+  let km = 0;
+  for (const e of raid.encounters || []) {
+    if (e.encounter.type === 'WalkEncounter') {
+      km += Math.max(0, Math.floor(e.count || 0));
+    }
+  }
+  return km;
+});
+
+const zoneCollapseTime = computed(() => {
+  const raid = previewRaid.value;
+  if (!raid || !raid.zoneCollapseSec || raid.zoneCollapseSec <= 0) return null;
+  return formatDurationHM(raid.zoneCollapseSec);
+});
+
+interface MonsterSummary { id: string; name: string; count: number }
+const monsterSummary = computed<MonsterSummary[]>(() => {
+  const raid = previewRaid.value;
+  if (!raid) return [];
+  const lib = uiState.lib!;
+  const counts: Record<string, number> = {};
+  for (const step of raid.encounters || []) {
+    if (step.encounter.type !== 'FightEncounter') continue;
+    const id = (step.encounter as FightEncounterDef).monsterId;
+    const c = Math.max(0, step.count | 0);
+    counts[id] = (counts[id] || 0) + c;
+  }
+  const rows: MonsterSummary[] = [];
+  for (const id of Object.keys(counts)) {
+    const m = lib.monsters.get(id)!;
+    rows.push({ id, name: m.name, count: counts[id] || 0 });
+  }
+  rows.sort((a, b) => (a.name < b.name ? -1 : 1));
+  return rows;
+});
+
+const foundItemIds = computed<string[]>(() => {
+  const id = previewRaidId.value;
+  if (!id) return [];
+  return uiState.raidFoundItemIdsByRaidId[id] ?? [];
+});
+
+const foundRegularItems = computed(() => {
+  const lib = uiState.lib!;
+  return foundItemIds.value
+    .filter(id => !lib.getItem(id).remains)
+    .map(id => ({ id, quantity: 1 }));
+});
+
+const foundRemainsItems = computed(() => {
+  const lib = uiState.lib!;
+  return foundItemIds.value
+    .filter(id => lib.getItem(id).remains)
+    .map(id => ({ id, quantity: 1 }));
 });
 
 function isLocked(r: RaidDefinition): boolean {
@@ -114,48 +322,52 @@ function firstUnlockedRaidId(): string | null {
   z-index: 9000;
 }
 .modal-content {
+  position: relative;
   background: var(--bg-2);
   border: 1px solid var(--panel-border);
   border-radius: 8px;
-  width: 95vw;
-  max-width: 1200px;
+  width: 97vw;
+  max-width: 1380px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--panel-border);
-}
-.modal-header h2 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
 .close-btn {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
+  border: 1px solid var(--panel-border);
+  background: rgba(15, 23, 42, 0.5);
+  color: var(--text-primary);
   font-size: 18px;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  z-index: 10;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 .close-btn:hover {
+  background: rgba(26, 35, 50, 0.7);
   color: var(--text-primary);
+  border-color: var(--accent);
+}
+.close-btn-overlay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+.close-btn-overlay-global {
+  position: absolute;
+  top: 12px;
+  right: 12px;
 }
 .modal-body {
   display: grid;
-  grid-template-columns: 1fr 1.5fr;
+  grid-template-columns: 320px minmax(0, 1fr);
   gap: 16px;
   padding: 16px;
   overflow: auto;
   flex: 1;
+  scrollbar-gutter: stable;
 }
 /* Left panel: raid list */
 .raid-list {
@@ -164,14 +376,15 @@ function firstUnlockedRaidId(): string | null {
   gap: 8px;
   overflow-y: auto;
   max-height: 60vh;
+  scrollbar-gutter: stable;
 }
 .raid-card {
   position: relative;
   height: 72px;
-  border: none;
+  border: 2px solid var(--panel-border);
   outline: none;
-  border-radius: 6px;
-  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+  background: var(--panel-bg);
   color: var(--text-primary);
   cursor: pointer;
   display: grid;
@@ -179,20 +392,50 @@ function firstUnlockedRaidId(): string | null {
   font-weight: 800;
   letter-spacing: 0.02em;
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 var(--panel-shine);
+  transition: all 0.15s ease;
+}
+.raid-card:hover:not(:disabled):not(.locked) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), inset 0 1px 0 var(--panel-shine);
+  border-color: var(--accent);
+  background: var(--bg-2);
+}
+.raid-card:active:not(:disabled):not(.locked) {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3), inset 0 1px 0 var(--panel-shine);
+}
+.raid-bg {
+  position: absolute;
+  inset: 0;
+  opacity: 0.4;
+  z-index: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.raid-card:hover:not(:disabled):not(.locked) .raid-bg {
+  opacity: 0.55;
 }
 .raid-card.active {
   background: rgba(74, 222, 128, 0.15);
+  border-color: rgba(74, 222, 128, 0.4);
+  box-shadow: 0 2px 8px rgba(74, 222, 128, 0.3), inset 0 1px 0 rgba(74, 222, 128, 0.2);
 }
 .raid-card.locked {
-  --locked-color: rgba(255,255,255,0.2);
+  --locked-color: var(--text-disabled);
   opacity: 0.7;
   cursor: not-allowed;
   border: 3px solid var(--locked-color);
+}
+.raid-card.locked .raid-bg {
+  filter: blur(3px);
 }
 .raid-card:disabled {
   cursor: not-allowed;
 }
 .raid-title {
+  position: relative;
+  z-index: 1;
   font-size: 16px;
 }
 .raid-card.locked::after {
@@ -232,13 +475,25 @@ function firstUnlockedRaidId(): string | null {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow-x: auto;
 }
 .preview-image {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  background: rgba(255,255,255,0.03);
+  position: relative;
+  background: var(--bg-0);
   border-radius: 6px;
   overflow: hidden;
+  margin: 0 auto;
+}
+.location-atlas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  max-width: none;
+  max-height: none;
+  image-rendering: auto;
+  user-select: none;
+  pointer-events: none;
 }
 .image-placeholder {
   width: 100%;
@@ -248,14 +503,107 @@ function firstUnlockedRaidId(): string | null {
   color: var(--text-secondary);
   font-style: italic;
 }
-.preview-name {
-  font-size: 22px;
-  font-weight: 900;
-}
 .preview-description {
   color: var(--text-secondary);
   font-size: 15px;
   line-height: 1.5;
+  min-height: calc(1.5em * 4);
+}
+.ov {
+  position: absolute;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid var(--panel-border);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.ov-title {
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 14px;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+  background: rgba(15, 23, 42, 0.5);
+}
+.ov-left {
+  top: 10px;
+  left: 10px;
+  display: grid;
+  row-gap: 7px;
+  min-width: 180px;
+  font-size: 13px;
+}
+.ov-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  column-gap: 10px;
+  align-items: center;
+}
+.ov-icon {
+  image-rendering: auto;
+  filter: grayscale(1) brightness(0.95);
+  opacity: 0.85;
+  justify-self: center;
+}
+.ov-label {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
+  opacity: 0.85;
+}
+.ov-value {
+  font-weight: 900;
+  color: var(--text-primary);
+}
+.ov-monsters {
+  top: 115px;
+  left: 10px;
+  display: grid;
+  row-gap: 7px;
+  font-size: 13px;
+}
+.ov-monster {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 12px;
+  align-items: baseline;
+}
+.ov-monster-name {
+  font-weight: 800;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ov-monster-count {
+  font-weight: 900;
+  color: var(--text-primary);
+}
+.ov-bottom {
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  padding: 10px;
+  background: rgba(23, 33, 47, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.ov-items {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.ov-items.split {
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.ov-items-block {
+  min-width: 0;
 }
 .no-preview {
   display: grid;
@@ -287,4 +635,18 @@ function firstUnlockedRaidId(): string | null {
   background: rgba(34,197,94,0.10);
   border-color: rgba(34,197,94,0.22);
 }
+
+.modal-body::-webkit-scrollbar { width: 10px; }
+.modal-body::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 5px; }
+.modal-body::-webkit-scrollbar-thumb { background: rgba(79, 209, 197, 0.3); border-radius: 5px; border: 2px solid rgba(0, 0, 0, 0.2); }
+.modal-body::-webkit-scrollbar-thumb:hover { background: rgba(79, 209, 197, 0.5); }
+.modal-body::-webkit-scrollbar-thumb:active { background: rgba(79, 209, 197, 0.6); }
+.modal-body { scrollbar-width: thin; scrollbar-color: rgba(79, 209, 197, 0.3) rgba(0, 0, 0, 0.2); }
+
+.raid-list::-webkit-scrollbar { width: 10px; }
+.raid-list::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 5px; }
+.raid-list::-webkit-scrollbar-thumb { background: rgba(79, 209, 197, 0.3); border-radius: 5px; border: 2px solid rgba(0, 0, 0, 0.2); }
+.raid-list::-webkit-scrollbar-thumb:hover { background: rgba(79, 209, 197, 0.5); }
+.raid-list::-webkit-scrollbar-thumb:active { background: rgba(79, 209, 197, 0.6); }
+.raid-list { scrollbar-width: thin; scrollbar-color: rgba(79, 209, 197, 0.3) rgba(0, 0, 0, 0.2); }
 </style>

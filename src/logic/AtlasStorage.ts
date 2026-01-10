@@ -1,5 +1,8 @@
 // Pure storage/utilities for sprite atlases; derived atlases are generated externally.
 
+import { itemsAtlasFrames, itemsAtlasMeta } from '../data/itemsAtlas';
+import { locationsAtlasFrames, locationsAtlasMeta } from '../data/locationsAtlas';
+
 export interface AtlasFrame {
   x: number;
   y: number;
@@ -17,7 +20,7 @@ export interface AtlasData {
   meta?: AtlasMeta;
 }
 
-export type AtlasKey = 'items';
+export type AtlasKey = 'items' | 'locations';
 
 /**
  * Simple storage for sprite atlases.
@@ -27,6 +30,9 @@ export class AtlasStorage {
   private itemsAtlas: AtlasData | null = null;
   private itemsAtlasLoaded = false;
   private itemsAtlasLoading: Promise<void> | null = null;
+  private locationsAtlas: AtlasData | null = null;
+  private locationsAtlasLoaded = false;
+  private locationsAtlasLoading: Promise<void> | null = null;
   private moleculeAtlas: Map<string, string>;
 
   constructor() {
@@ -38,30 +44,16 @@ export class AtlasStorage {
     if (this.itemsAtlasLoaded) return;
     if (this.itemsAtlasLoading) return this.itemsAtlasLoading;
 
-    const jsonUrl = '/images/items.json';
-
     this.itemsAtlasLoading = (async () => {
-      const framesObj = await this.fetchAtlasJson(jsonUrl);
+      // Use bundled JSON data
+      const frames = new Map<string, AtlasFrame>();
+      for (const [key, frame] of Object.entries(itemsAtlasFrames)) {
+        frames.set(key, frame);
+      }
 
       // Prefer WebP with alpha; fall back to PNG if unavailable.
-      // Add a cache-busting version derived from atlas content to keep
-      // image and JSON in lockstep.
-      const hash = (() => {
-        let h = 2166136261 >>> 0; // FNV-like
-        const keys = Object.keys(framesObj).filter(k => k !== '__meta').sort();
-        for (const k of keys) {
-          const f = (framesObj as any)[k] as AtlasFrame;
-          const mix = (f.x | 0) ^ (f.y << 8) ^ (f.w << 16) ^ (f.h << 24);
-          for (let i = 0; i < k.length; i++) h = (h ^ k.charCodeAt(i)) * 16777619 >>> 0;
-          h = (h ^ mix) * 16777619 >>> 0;
-        }
-        return (h >>> 0).toString(16);
-      })();
-      const metaW = (this.itemsAtlas?.meta?.w) || (framesObj.__meta?.w) || 0;
-      const metaH = (this.itemsAtlas?.meta?.h) || (framesObj.__meta?.h) || 0;
-      const ver = `${metaW}x${metaH}-${hash}`;
-      const webpUrl = `/images/items.webp?v=${ver}`;
-      const pngUrl = `/images/items.png?v=${ver}`;
+      const webpUrl = `/images/items.webp`;
+      const pngUrl = `/images/items.png`;
 
       let source: AtlasSource | null = null;
       try {
@@ -70,22 +62,7 @@ export class AtlasStorage {
         source = await this.loadImage(pngUrl);
       }
 
-      const frames = new Map<string, AtlasFrame>();
-      let meta: AtlasMeta | undefined = undefined;
-      for (const key of Object.keys(framesObj)) {
-        const entry = (framesObj as any)[key];
-        if (key === '__meta' && entry && typeof entry.w === 'number' && typeof entry.h === 'number') {
-          meta = { w: entry.w, h: entry.h, padding: typeof entry.padding === 'number' ? entry.padding : undefined };
-          continue;
-        }
-        const f = entry as AtlasFrame;
-        if (f && typeof f.x === 'number' && typeof f.y === 'number' && typeof f.w === 'number' && typeof f.h === 'number') {
-          frames.set(key, { x: f.x, y: f.y, w: f.w, h: f.h });
-        }
-      }
-
-      this.itemsAtlas = { source: source!, frames, meta };
-
+      this.itemsAtlas = { source: source!, frames, meta: itemsAtlasMeta || undefined };
       this.itemsAtlasLoaded = true;
     })()
       .catch((err) => {
@@ -114,6 +91,54 @@ export class AtlasStorage {
     return this.itemsAtlas?.frames.get(name) || null;
   }
 
+  /** Load the locations atlas if not already loaded. */
+  public async loadLocationsAtlas(): Promise<void> {
+    if (this.locationsAtlasLoaded) return;
+    if (this.locationsAtlasLoading) return this.locationsAtlasLoading;
+
+    this.locationsAtlasLoading = (async () => {
+      // Use bundled JSON data
+      const frames = new Map<string, AtlasFrame>();
+      for (const [key, frame] of Object.entries(locationsAtlasFrames)) {
+        frames.set(key, frame);
+      }
+
+      // Prefer WebP with alpha; fall back to PNG if unavailable.
+      const webpUrl = `/images/locations.webp`;
+      const pngUrl = `/images/locations.png`;
+
+      let source: AtlasSource | null = null;
+      try {
+        source = await this.loadImage(webpUrl);
+      } catch (_err) {
+        source = await this.loadImage(pngUrl);
+      }
+
+      this.locationsAtlas = { source: source!, frames, meta: locationsAtlasMeta || undefined };
+      this.locationsAtlasLoaded = true;
+    })()
+      .catch((err) => {
+        console.error('Failed to load locations atlas:', err);
+        this.locationsAtlasLoading = null;
+        this.locationsAtlasLoaded = false;
+        throw err;
+      });
+
+    return this.locationsAtlasLoading;
+  }
+
+  public isLocationsAtlasLoaded(): boolean {
+    return this.locationsAtlasLoaded;
+  }
+
+  public getLocationsSource(): AtlasSource | null {
+    return this.locationsAtlas?.source || null;
+  }
+
+  public getLocationsFrame(name: string): AtlasFrame | null {
+    return this.locationsAtlas?.frames.get(name) || null;
+  }
+
   public clearMoleculeAtlas(): void {
     this.moleculeAtlas.clear();
   }
@@ -132,6 +157,8 @@ export class AtlasStorage {
     switch (key) {
       case 'items':
         return this.itemsAtlas?.frames || null;
+      case 'locations':
+        return this.locationsAtlas?.frames || null;
     }
   }
 
@@ -139,6 +166,8 @@ export class AtlasStorage {
     switch (key) {
       case 'items':
         return this.itemsAtlas?.source || null;
+      case 'locations':
+        return this.locationsAtlas?.source || null;
     }
   }
 
@@ -146,16 +175,9 @@ export class AtlasStorage {
     switch (key) {
       case 'items':
         return this.itemsAtlas?.meta || null;
+      case 'locations':
+        return this.locationsAtlas?.meta || null;
     }
-  }
-
-  private async fetchAtlasJson(url: string): Promise<Record<string, any>> {
-    const res = await fetch(url, { cache: 'no-cache' });
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status} loading atlas json ${url}`);
-    }
-    const data = (await res.json()) as Record<string, any>;
-    return data || {};
   }
 
   private loadImage(url: string): Promise<HTMLImageElement> {
@@ -174,5 +196,5 @@ export default atlasStorage;
 
 // Helper to enumerate available atlases for tooling/dev UIs
 export function listAtlasKeys(): AtlasKey[] {
-  return ['items'];
+  return ['items', 'locations'];
 }

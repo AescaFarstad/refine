@@ -105,6 +105,7 @@ export class GameState {
   public raidDamageBreakdownOverall: RaidDamageBreakdown = createRaidDamageBreakdown();
   public raidDamageBreakdownSuccess: RaidDamageBreakdown = createRaidDamageBreakdown();
   public raidDamageBreakdownFailure: RaidDamageBreakdown = createRaidDamageBreakdown();
+  public raidFoundItemsVersion: number = 0;
 
   constructor() {
     for (const categoryId of Object.keys(gearCategories)) {
@@ -154,6 +155,7 @@ export class Raid {
   public lootingRarityBuff: number = 0;
   public tmpLootBuff: number = 0;
   public stabilizerBeaconApplied: boolean = false;
+  public foundItemIds: string[] = [];
 
 }
 

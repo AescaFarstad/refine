@@ -135,6 +135,22 @@ async function listImages(dir: string): Promise<string[]> {
     .map((name) => path.join(dir, name));
 }
 
+function parseIntSetting(name: string, raw: string | undefined, fallback: number): number {
+  const trimmed = (raw || '').trim();
+  if (!trimmed) return fallback;
+  const v = Number.parseInt(trimmed, 10);
+  if (!Number.isFinite(v)) throw new Error(`${name} must be an integer (got: ${raw})`);
+  return v;
+}
+
+function parseBoolSetting(name: string, raw: string | undefined, fallback: boolean): boolean {
+  const trimmed = (raw || '').trim().toLowerCase();
+  if (!trimmed) return fallback;
+  if (trimmed === 'true' || trimmed === '1') return true;
+  if (trimmed === 'false' || trimmed === '0') return false;
+  throw new Error(`${name} must be true/false (got: ${raw})`);
+}
+
 export async function runPackJob(job: PipelineJob, baseDir: string): Promise<void> {
   const inputFolder = job.settings.input_folder || 'split';
   const outputFolder = job.settings.output_folder || 'packed';
@@ -184,13 +200,22 @@ export async function runPackJob(job: PipelineJob, baseDir: string): Promise<voi
   const conv = await runCmd('convert', args);
   if (conv.code !== 0) throw new Error(`convert (compose atlas) failed: ${conv.stderr || conv.stdout}`);
 
-  // Also export lossless WebP with alpha for efficient delivery
+  // Also export WebP with alpha for efficient delivery
   const outWebp = path.join(outDir, `${atlasName}.webp`);
-  const webpArgs = [
+  const lossless = parseBoolSetting('webp_lossless', job.settings.webp_lossless, true);
+  const quality = parseIntSetting('webp_quality', job.settings.webp_quality, lossless ? 100 : 85);
+  const alphaQuality = parseIntSetting('webp_alpha_quality', job.settings.webp_alpha_quality, 100);
+  const methodRaw = (job.settings.webp_method || '').trim();
+  const method = methodRaw ? parseIntSetting('webp_method', methodRaw, 0) : null;
+
+  const webpArgs: string[] = [
     outImg,
-    '-define', 'webp:lossless=true',
-    '-define', 'webp:alpha-quality=100',
-    '-quality', '100',
+    ...(lossless ? (['-define', 'webp:lossless=true'] as const) : (['-define', 'webp:lossless=false'] as const)),
+    ...(method !== null ? (['-define', `webp:method=${method}`] as const) : ([] as const)),
+    '-define',
+    `webp:alpha-quality=${alphaQuality}`,
+    '-quality',
+    `${quality}`,
     outWebp,
   ];
   const convWebp = await runCmd('convert', webpArgs);

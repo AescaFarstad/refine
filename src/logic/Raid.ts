@@ -588,6 +588,10 @@ export function getEffectiveRaidDefinition(gs: GameState, raidId: string): RaidD
 }
 
 export function recomputeActiveRaidEstimates(gs: GameState, simulations = 100): void {
+  if (!gs.raid.id || !gs.lib.raids.has(gs.raid.id)) {
+    throw new Error('recomputeActiveRaidEstimates: no active raid id');
+    return;
+  }
   const def = getEffectiveRaidDefinition(gs, gs.raid.id);
   let wins = 0;
   let zoneCollapseDeaths = 0;
@@ -730,7 +734,8 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
   gs.raid.reimbursedPct = 0;
   gs.selectedGearPrice = 0;
 
-  const raidEntry = gs.unlockedRaids.find(r => r.id === raidId)!;
+  const raidEntry = gs.unlockedRaids.find(r => r.id === raidId);
+  if (!raidEntry) return;
   gs.raid.tmpLootBuffAppliedPct = raidEntry.tmpLootBuff;
 
   const gearIds: string[] = gs.loadouts[raidId] ?? [];

@@ -46,6 +46,7 @@ export const uiState = reactive({
   unlockedGear: [] as string[],
   activeQuests: [] as string[],
   questProgressById: {} as Record<string, number>,
+  raidFoundItemIdsByRaidId: {} as Record<string, string[]>,
 
   activeRaidId: '',
   selectedGearPrice: 0,
@@ -77,7 +78,7 @@ export const uiState = reactive({
   hasEverHadShards: false,
 
   cheatOpen: false,
-  devAtlasKey: '' as '' | 'items',
+  devAtlasKey: '' as '' | 'items' | 'locations',
   devMoleculeEditorOpen: false,
   editResearchOpen: false,
 
@@ -122,6 +123,8 @@ let gameRef: GameState | null = null;
 let lastRaidKey = '' as string;
 let lastWaferItemCount = 0;
 let lastWaferEnabledCount = 0;
+let lastRaidFoundItemsVersion = -1;
+let lastUnlockedRaidIdsKey = '';
 
 
 export function SyncUIFromGameState(game: GameState): void {
@@ -169,6 +172,20 @@ export function SyncUIFromGameState(game: GameState): void {
   const progress: Record<string, number> = {};
   game.unlockedRaids.forEach(r => { progress[r.id] = r.questProgress; });
   uiState.questProgressById = progress;
+
+  {
+    const unlockedKey = game.unlockedRaids.map(r => r.id).join('|');
+    const version = game.raidFoundItemsVersion | 0;
+    if (version !== lastRaidFoundItemsVersion || unlockedKey !== lastUnlockedRaidIdsKey) {
+      const found: Record<string, string[]> = {};
+      for (const r of game.unlockedRaids) {
+        found[r.id] = [...r.foundItemIds];
+      }
+      uiState.raidFoundItemIdsByRaidId = found;
+      lastRaidFoundItemsVersion = version;
+      lastUnlockedRaidIdsKey = unlockedKey;
+    }
+  }
 
   uiState.activeRaidId = game.raid.id;
   uiState.selectedGearPrice = game.selectedGearPrice ?? 0;

@@ -47,6 +47,8 @@ january 5
   discovery, magenta essence, minor features
 january 7
   rewards, balancing
+january 10
+  raid selection window redesign, raid images, style tweaks
 
 
 Images:
@@ -187,3 +189,8 @@ item for cashback in case of failure
 ?sometimes molecule refuses to rotate when picked up
 
 [ ] reimbursed
+
+
+Extract properties related to raid simulation from GameState into a single RaidSimulation object. 
+
+ItemDisplay hint should show the item molecule

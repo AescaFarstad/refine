@@ -68,6 +68,34 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
   const raidEntry = gs.unlockedRaids.find(r => r.id === c.id)!;
   raidEntry.tmpLootBuff = gs.raid.tmpLootBuffNextRaidPct;
 
+  {
+    const found = new Set<string>(raidEntry.foundItemIds);
+    for (const [id, qty] of Object.entries(result.bagItemCounts)) {
+      if ((qty | 0) > 0) found.add(id);
+    }
+    for (const [id, qty] of Object.entries(result.discardedItemCounts)) {
+      if ((qty | 0) > 0) found.add(id);
+    }
+    const next = Array.from(found);
+    next.sort((a, b) => {
+      const ao = gs.lib.getItem(a).order;
+      const bo = gs.lib.getItem(b).order;
+      if (ao !== bo) return ao - bo;
+      return a.localeCompare(b);
+    });
+    const prev = raidEntry.foundItemIds;
+    let changed = prev.length !== next.length;
+    if (!changed) {
+      for (let i = 0; i < next.length; i++) {
+        if (next[i] !== prev[i]) { changed = true; break; }
+      }
+    }
+    if (changed) {
+      raidEntry.foundItemIds = next;
+      gs.raidFoundItemsVersion++;
+    }
+  }
+
   if (result.success) {
     for (const [id, qty] of Object.entries(result.bagItemCounts)) {
       const q = qty | 0;

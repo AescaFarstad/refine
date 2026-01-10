@@ -11,18 +11,23 @@
         </div>
       </div>
     </div>
-    <div v-if="lootCount > 0" class="scavenge-row">
-      <span class="section-title">Scavenge sites:</span>
-      <span class="scavenge-count">×{{ lootCount }}</span>
+    <div v-if="lootCount > 0" class="stat-row">
+      <div v-if="itemsAtlasReady" class="stat-icon" :style="encounterIconStyle('rummaging')" />
+      <div class="stat-text">
+        <span class="section-title">Scavenge sites:</span>
+        <span class="stat-value">×{{ lootCount }}</span>
+      </div>
     </div>
-    <div class="stats-row">
-      <div class="stat-item">
+    <div class="stat-row">
+      <div v-if="itemsAtlasReady" class="stat-icon" :style="encounterIconStyle('winding_road')" />
+      <div class="stat-text">
         <span class="stat-label">Walking distance</span>
         <span class="stat-value">{{ distanceKm }} km</span>
       </div>
     </div>
-    <div v-if="zoneCollapseTime" class="stats-row">
-      <div class="stat-item">
+    <div v-if="zoneCollapseTime" class="stat-row">
+      <div v-if="itemsAtlasReady" class="stat-icon" :style="encounterIconStyle('desintegration')" />
+      <div class="stat-text">
         <span class="stat-label">Zone collapse</span>
         <span class="stat-value">{{ zoneCollapseTime }}</span>
       </div>
@@ -31,14 +36,43 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { getGameLib } from '../logic/UIState';
 import type { RaidDefinition } from '../logic/RaidLib';
 import { formatDurationHM } from '../logic/StringUtils';
+import atlasStorage from '../logic/AtlasStorage';
 
 const props = defineProps<{ raid: RaidDefinition }>();
 
 interface MonsterSummary { id: string; name: string; count: number }
+
+const itemsAtlasSource = ref<HTMLImageElement | null>(atlasStorage.getItemsSource());
+const itemsAtlasReady = ref<boolean>(atlasStorage.isItemsAtlasLoaded());
+onMounted(async () => {
+  if (itemsAtlasReady.value) return;
+  try { await atlasStorage.loadItemsAtlas(); } catch (_e) { /* noop */ }
+  itemsAtlasReady.value = atlasStorage.isItemsAtlasLoaded();
+  itemsAtlasSource.value = atlasStorage.getItemsSource();
+});
+
+function encounterIconStyle(iconKey: string): Record<string, string> {
+  const source = itemsAtlasSource.value!;
+  const f = atlasStorage.getItemsFrame(iconKey)!;
+  const atlasW = source.naturalWidth;
+  const atlasH = source.naturalHeight;
+  const containerSize = 22;
+  const scale = Math.min(containerSize / f.w, containerSize / f.h, 1);
+  const displayW = f.w * scale;
+  const displayH = f.h * scale;
+  return {
+    width: displayW + 'px',
+    height: displayH + 'px',
+    backgroundImage: `url(${source.src})`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
+    backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
+  };
+}
 
 const monsterSummary = computed<MonsterSummary[]>(() => {
   const raid = props.raid;
@@ -105,6 +139,23 @@ const zoneCollapseTime = computed(() => {
   font-size: 14px;
   color: var(--text-primary);
 }
+.stat-row {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  column-gap: 10px;
+  align-items: center;
+}
+.stat-icon {
+  image-rendering: auto;
+  filter: grayscale(1) brightness(0.95);
+  opacity: 0.85;
+  justify-self: center;
+}
+.stat-text {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
 .encounters-wrapper {
   display: flex;
   flex-direction: column;
@@ -134,26 +185,6 @@ const zoneCollapseTime = computed(() => {
 .enc-count {
   color: var(--text-secondary);
   font-weight: 700;
-}
-.scavenge-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 15px;
-}
-.scavenge-count {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-secondary);
-}
-.stats-row {
-  display: flex;
-  gap: 16px;
-}
-.stat-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 .stat-label {
   font-size: 13px;

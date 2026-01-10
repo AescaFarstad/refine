@@ -93,6 +93,17 @@ export class GameState {
   public raidSurvivalEstimatePct: number = 0;
   public raidTimeEstimateSec: number = 0;
   public raidZoneCollapseDeathPct: number = 0;
+  public raidZoneCollapseDeaths: number = 0;
+  public raidMonsterDeaths: number = 0;
+  public raidTimeBreakdownSimulations: number = 0;
+  public raidTimeBreakdownSuccesses: number = 0;
+  public raidTimeBreakdownFailures: number = 0;
+  public raidTimeBreakdownOverallSec: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
+  public raidTimeBreakdownSuccessSec: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
+  public raidTimeBreakdownFailureSec: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
+  public raidDamageBreakdownOverall: RaidDamageBreakdown = createRaidDamageBreakdown();
+  public raidDamageBreakdownSuccess: RaidDamageBreakdown = createRaidDamageBreakdown();
+  public raidDamageBreakdownFailure: RaidDamageBreakdown = createRaidDamageBreakdown();
 
   constructor() {
     for (const categoryId of Object.keys(gearCategories)) {
@@ -126,6 +137,7 @@ export class ActiveRaid {
   public reflectOnHitPct: number = 0;   // monster hits you
   public reflectOnBlockPct: number = 0; // you block monster
   public biopsyChance: number = 0;      // chance to successfully harvest monster loot
+  public reimbursedPct: number = 0;     // % of gear price reimbursed on combat death
 }
 
 
@@ -169,6 +181,7 @@ export class RaidOutcome {
   public finalMaxHp: number = 0;
   public finalBagsUsed: number = 0;
   public finalBagsCapacity: number = 0;
+  public reimbursedCredits: number = 0;
 }
 
 export class Item {
@@ -210,4 +223,43 @@ export interface ResearchCell {
   owned: boolean;
   cost: number;
   blocked: boolean; // the void cells
+}
+
+
+export interface RaidTimeBreakdownSec {
+  totalSec: number;
+  fightingSec: number;
+  walkingSec: number;
+  preparingSec: number;
+  scavengingSec: number;
+  dissectingSec: number;
+  investigatingSec: number;
+}
+
+export function createRaidTimeBreakdownSec(): RaidTimeBreakdownSec {
+  return {
+    totalSec: 0,
+    fightingSec: 0,
+    walkingSec: 0,
+    preparingSec: 0,
+    scavengingSec: 0,
+    dissectingSec: 0,
+    investigatingSec: 0,
+  };
+}
+
+export interface RaidDamageBreakdown {
+  totalDamageReceived: number;
+  damageReceivedByMonsterId: Record<string, number>;
+  hpGeneratedAfterCombat: number;
+  hpGeneratedWalking: number;
+}
+
+export function createRaidDamageBreakdown(): RaidDamageBreakdown {
+  return {
+    totalDamageReceived: 0,
+    damageReceivedByMonsterId: {},
+    hpGeneratedAfterCombat: 0,
+    hpGeneratedWalking: 0,
+  };
 }

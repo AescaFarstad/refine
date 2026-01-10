@@ -24,6 +24,7 @@ export interface WalkEncounterLogEntry {
   maxSpeedKmH: number;  // speed at full health (for comparison)
   maxHp: number;
   hasPainkiller: boolean;
+  hpHealed: number;
 }
 
 export interface QuestEncounterLogEntry {
@@ -170,6 +171,7 @@ export function createWalkEncounterLogEntry(init: Partial<WalkEncounterLogEntry>
     maxSpeedKmH: 0,
     maxHp: 0,
     hasPainkiller: false,
+    hpHealed: 0,
     ...rest,
   };
 }

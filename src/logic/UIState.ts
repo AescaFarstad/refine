@@ -1,6 +1,6 @@
 import { reactive, computed } from 'vue';
 import { formatDurationHM } from './StringUtils';
-import type { GameState, RaidOutcome, RefineryOutcome, Shard } from './GameState';
+import { createRaidDamageBreakdown, createRaidTimeBreakdownSec, type GameState, type RaidDamageBreakdown, type RaidOutcome, type RefineryOutcome, type Shard, type RaidTimeBreakdownSec } from './GameState';
 import type { RaidDefinition } from './RaidLib';
 import { getEffectiveRaidDefinition } from './Raid';
 import { computeRefinePreviewChem } from './RefinePreview';
@@ -53,6 +53,17 @@ export const uiState = reactive({
   raidSurvivalPct: 0,
   raidTimeEstimateSec: 0,
   raidZoneCollapseDeathPct: 0,
+  raidZoneCollapseDeaths: 0,
+  raidMonsterDeaths: 0,
+  raidTimeBreakdownSimulations: 0,
+  raidTimeBreakdownSuccesses: 0,
+  raidTimeBreakdownFailures: 0,
+  raidTimeBreakdownOverallSec: createRaidTimeBreakdownSec() as RaidTimeBreakdownSec,
+  raidTimeBreakdownSuccessSec: createRaidTimeBreakdownSec() as RaidTimeBreakdownSec,
+  raidTimeBreakdownFailureSec: createRaidTimeBreakdownSec() as RaidTimeBreakdownSec,
+  raidDamageBreakdownOverall: createRaidDamageBreakdown() as RaidDamageBreakdown,
+  raidDamageBreakdownSuccess: createRaidDamageBreakdown() as RaidDamageBreakdown,
+  raidDamageBreakdownFailure: createRaidDamageBreakdown() as RaidDamageBreakdown,
 
   lastOutcome: null as RaidOutcome | null,
   lastRefineryOutcome: null as RefineryOutcome | null,
@@ -92,6 +103,8 @@ export const uiState = reactive({
   researchEditVersion: 0,
   researchPlacementRadius: 0,
   researchNewlyPlaced: [] as Array<{ archetypeId: string; cells: { x: number; y: number }; radius: number }>,
+
+  questPrereqsVersion: 0,
 });
 
 // Formatted time display: "X days, HH:MM"
@@ -161,6 +174,17 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.raidSurvivalPct = game.raidSurvivalEstimatePct;
   uiState.raidTimeEstimateSec = game.raidTimeEstimateSec;
   uiState.raidZoneCollapseDeathPct = game.raidZoneCollapseDeathPct;
+  uiState.raidZoneCollapseDeaths = game.raidZoneCollapseDeaths;
+  uiState.raidMonsterDeaths = game.raidMonsterDeaths;
+  uiState.raidTimeBreakdownSimulations = game.raidTimeBreakdownSimulations;
+  uiState.raidTimeBreakdownSuccesses = game.raidTimeBreakdownSuccesses;
+  uiState.raidTimeBreakdownFailures = game.raidTimeBreakdownFailures;
+  uiState.raidTimeBreakdownOverallSec = game.raidTimeBreakdownOverallSec;
+  uiState.raidTimeBreakdownSuccessSec = game.raidTimeBreakdownSuccessSec;
+  uiState.raidTimeBreakdownFailureSec = game.raidTimeBreakdownFailureSec;
+  uiState.raidDamageBreakdownOverall = game.raidDamageBreakdownOverall;
+  uiState.raidDamageBreakdownSuccess = game.raidDamageBreakdownSuccess;
+  uiState.raidDamageBreakdownFailure = game.raidDamageBreakdownFailure;
 
   uiState.lastOutcome = game.lastRaidOutcome;
   uiState.lastRefineryOutcome = game.lastRefineryOutcome;

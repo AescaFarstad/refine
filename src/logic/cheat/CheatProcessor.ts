@@ -1,8 +1,10 @@
 import { type GameState, Raid } from '../GameState';
 import type { CheatInput } from './CheatCommands';
-import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources, CheatUnlockAllRaids, CheatLoadResearchState } from './CheatCommands';
+import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources, CheatUnlockAllRaids, CheatLoadResearchState, CheatUnlockAllQuests, CheatDisableQuestPrereqs, CheatGrantDiscoveries } from './CheatCommands';
 import type { EncounterDef } from '../RaidLib';
 import { applyResearchNodeEffect, axialToIndex, calculateVisibility } from '../Research';
+import { setEnableQuestPrereqs } from '../Const';
+import { discover } from '../Discover';
 
 type Handler = (gs: GameState, cheat: CheatInput) => void;
 const handlersByName = new Map<string, Handler>();
@@ -119,6 +121,23 @@ handlersByName.set('CheatLoadResearchState', (gs, cheat) => {
     }
   }
   calculateVisibility(gs, gs.lib.research);
+});
+
+handlersByName.set('CheatUnlockAllQuests', (gs, cheat) => {
+  const allQuestIds = Array.from(gs.lib.quests.keys());
+  gs.completedQuests = allQuestIds;
+});
+
+handlersByName.set('CheatDisableQuestPrereqs', (gs, cheat) => {
+  const c = cheat as CheatDisableQuestPrereqs;
+  setEnableQuestPrereqs(!c.disabled);
+});
+
+handlersByName.set('CheatGrantDiscoveries', (gs, cheat) => {
+  const c = cheat as CheatGrantDiscoveries;
+  for (const id of c.discoveryIds) {
+    discover(gs, id);
+  }
 });
 
 export function processCheats(gs: GameState): void {

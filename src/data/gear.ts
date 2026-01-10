@@ -163,6 +163,7 @@ const gear: Record<string, RawGearDefinition> = {
     price: 50,
     weight: 2,
     image: 'machete',
+    perk: 'Hack and slash',
   },
   spear: {
     name: 'Tactical Spear',
@@ -222,6 +223,7 @@ const gear: Record<string, RawGearDefinition> = {
     category: 'armor',
     chanceToBlock: 20,
     hp: 10,
+    volume: 5,
     price: 200,
     weight: 5,
     image: 'vest',
@@ -324,6 +326,7 @@ const gear: Record<string, RawGearDefinition> = {
     category: 'companions',
     maxWeight: 20,
     volume: 24,
+    reimbursed: 25,
     price: 300,
     weight: 0,
     image: 'robodog',
@@ -341,6 +344,7 @@ const gear: Record<string, RawGearDefinition> = {
     category: 'companions',
     maxWeight: 15,
     volume: 15,
+    reimbursed: 15,
     price: 200,
     weight: 0,
     image: 'cargo_drone',
@@ -494,6 +498,14 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 5,
     image: 'beckon',
     perk: 'Stabilizer Beacon',
+  },
+  distress_beacon: {
+    name: 'Distress Beacon',
+    category: 'devices',
+    price: 150,
+    weight: 2,
+    reimbursed: 50,
+    image: 'collar',
   },
   /*
   summon_slimy_mound: {

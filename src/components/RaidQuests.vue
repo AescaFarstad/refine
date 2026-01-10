@@ -41,6 +41,8 @@ const quests = computed<QuestDefinition[]>(() => {
   uiState.raidKey;
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   uiState.lastOutcome;
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.questPrereqsVersion;
 
   const lib = getGameLib();
   const id = activeRaidId.value;

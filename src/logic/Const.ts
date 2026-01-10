@@ -1,7 +1,7 @@
+import { uiState } from './UIState';
+
 export let IS_DEBUG = false;
-export function setIsDebug(enabled: boolean): void {
-  IS_DEBUG = enabled;
-}
+export let ENABLE_QUEST_PREREQS = true;
 
 export const ESSENCE_CREDITS = 10;
 export const ESSENCE_CHRONOTRACES = 10;
@@ -26,3 +26,16 @@ export const RESEARCH_OBSTACLE_PRICE = 5;
 export const RESEARCH_OBSTACLE_PRICE_GROWTH = 3;
 
 export const TMP_LOOT_BUFF_PER_FULL_BAGS_SKIP_PCT = 1;
+
+
+
+
+export function setIsDebug(enabled: boolean): void {
+  IS_DEBUG = enabled;
+}
+
+export function setEnableQuestPrereqs(enabled: boolean): void {
+  ENABLE_QUEST_PREREQS = enabled;
+  // Increment version to trigger Vue reactivity
+  uiState.questPrereqsVersion++;
+}

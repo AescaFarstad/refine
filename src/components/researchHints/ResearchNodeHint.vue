@@ -6,6 +6,7 @@
 import { computed } from 'vue';
 import type { ResearchCell } from '../../logic/GameState';
 import type { ResearchArchetype, ResearchNodeInstance, ResearchNodeType } from '../../logic/ResearchLib';
+import DiscoveryHint from './DiscoveryHint.vue';
 import GearHint from './GearHint.vue';
 import ResourceHint from './ResourceHint.vue';
 import StatHint from './StatHint.vue';
@@ -21,16 +22,18 @@ const nodeType = computed<ResearchNodeType>(() => {
   return props.archetype?.type ?? 'obstacle';
 });
 
-const hintComponent = computed(() => {
-  switch (nodeType.value) {
-    case 'gear':
-      return GearHint;
-    case 'resource':
-      return ResourceHint;
-    case 'stat':
-      return StatHint;
-    default:
-      return null;
-  }
-});
+  const hintComponent = computed(() => {
+    switch (nodeType.value) {
+      case 'gear':
+        return GearHint;
+      case 'resource':
+        return ResourceHint;
+      case 'stat':
+        return StatHint;
+      case 'discovery':
+        return DiscoveryHint;
+      default:
+        return null;
+    }
+  });
 </script>

@@ -59,6 +59,10 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
 
   const result = runRaid(gs, def);
 
+  if (result.reimbursedCredits) {
+    gs.credits += result.reimbursedCredits;
+  }
+
   gs.gameTime += result.timeSpentSec;
 
   const raidEntry = gs.unlockedRaids.find(r => r.id === c.id)!;
@@ -118,6 +122,7 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
     finalBagsUsed: gs.raid.usedVolume,
     finalBagsCapacity: gs.raid.bagsVolume,
     barelyInTime: result.barelyInTime,
+    reimbursedCredits: result.reimbursedCredits || 0,
   };
 
   recomputeActiveRaidParams(gs, c.id);
@@ -225,8 +230,8 @@ handlersByName.set('CmdPlaceMolecule', (gs, cmd) => {
   computeEffectiveEssences(gs.wafer);
 });
 
-  handlersByName.set('CmdRemoveMolecule', (gs, cmd) => {
-    const c = cmd as CmdRemoveMolecule;
+handlersByName.set('CmdRemoveMolecule', (gs, cmd) => {
+  const c = cmd as CmdRemoveMolecule;
 
   const existing = gs.wafer.items[c.itemIdx]!;
   removeMolecule(gs.wafer, c.itemIdx);

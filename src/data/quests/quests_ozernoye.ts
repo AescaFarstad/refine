@@ -6,6 +6,7 @@ const quests: Record<string, RawQuestDefinition> = {
     raidRestriction: ['ozernoye'],
     requiresRaidSuccesses: 1,
     encounters: [
+      { kind: 'WalkMutation', count: 1 },
       { kind: 'AddMonsterMutation', monsterId: 'flower', count: 3 },
     ],
     rewards: [
@@ -20,6 +21,7 @@ const quests: Record<string, RawQuestDefinition> = {
     raidRestriction: ['ozernoye'],
     requiresRaidSuccesses: 1,
     encounters: [
+      { kind: 'WalkMutation', count: 1 },
       { kind: 'AddMonsterMutation', monsterId: 'flower', count: 3 },
     ],
     rewards: [
@@ -71,8 +73,10 @@ const quests: Record<string, RawQuestDefinition> = {
     raidRestriction: [],
     requiresRaidSuccesses: 2,
     encounters: [
-      { kind: 'AddMonsterMutation', monsterId: 'hound', count: 5 },
-      { kind: 'AddMonsterMutation', monsterId: 'arch_hound', count: 5 },
+    ],
+    rewards: [
+      { kind: 'raid_mutation', mutation: { kind: 'AddMonsterMutation', monsterId: 'hound', count: 5 } },
+      { kind: 'raid_mutation', mutation: { kind: 'AddMonsterMutation', monsterId: 'arch_hound', count: 5 } },
     ],
   },
 };

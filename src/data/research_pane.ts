@@ -4,6 +4,9 @@ import type { Point2 } from '../logic/core/math';
 export const researchPane: ResearchPlacementInput[] = [
   { archetypeId: 'hub', cells: { x: 0, y: 0 }, initiallyOwned: true },
 
+  { archetypeId: 'disc_damage_breakdown', cells: { x: 2, y: -5 } },
+  { archetypeId: 'disc_time_breakdown', cells: { x: -2, y: 5 } },
+
 
   { archetypeId: 'stat_weight', cells: { x: 1, y: -3 } },
   { archetypeId: 'res_credits', cells: { x: 3, y: -2 } },
@@ -97,9 +100,9 @@ export const researchPane: ResearchPlacementInput[] = [
 ];
 
 export const researchPaneEmptyCells: Point2[] = [
-  { x: 0, y: -9 }, { x: -1, y: -8 }, { x: -3, y: -6 }, { x: -3, y: -5 }, { x: -4, y: -4 }, { x: -1, y: -4 },
-  { x: -9, y: -3 }, { x: 8, y: -3 }, { x: 10, y: -1 }, { x: 11, y: -1 }, { x: 4, y: 0 }, { x: 13, y: 1 },
-  { x: 14, y: 1 }, { x: -3, y: 8 },
+  { x: 0, y: -9 }, { x: -1, y: -8 }, { x: -3, y: -6 }, { x: -3, y: -5 }, { x: 3, y: -5 }, { x: -4, y: -4 },
+  { x: -1, y: -4 }, { x: -9, y: -3 }, { x: 8, y: -3 }, { x: 10, y: -1 }, { x: 11, y: -1 }, { x: 4, y: 0 },
+  { x: 13, y: 1 }, { x: 14, y: 1 }, { x: -3, y: 8 },
 ];
 
 export const researchPaneVoidCells: Point2[] = [

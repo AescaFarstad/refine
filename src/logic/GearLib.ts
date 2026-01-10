@@ -23,6 +23,7 @@ export interface GearDefinition {
   reflectOnHitPct: number;
   reflectOnBlockPct: number;
   biopsyChance: number;
+  reimbursed: number; // percentage of gear cost reimbursed on death in combat (not zone collapse)
   perk: string;
 
   prepTimeMin: number;
@@ -68,6 +69,7 @@ export function parseGearDefinitions(raw: Record<string, RawGearDefinition>): Ma
       reflectOnHitPct: d.reflectOnHitPct ?? 0,
       reflectOnBlockPct: d.reflectOnBlockPct ?? 0,
       biopsyChance: d.biopsyChance ?? 0,
+      reimbursed: d.reimbursed ?? 0,
       perk: d.perk ?? '',
       prepTimeMin: d.prepTimeMin ?? 0,
       bonusDamagePerCategory: d.bonusDamagePerCategory ?? {},

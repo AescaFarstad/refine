@@ -47,3 +47,24 @@ export class CheatLoadResearchState implements CheatInput {
     this.ownedCells = args.ownedCells ?? [];
   }
 }
+
+export class CheatUnlockAllQuests implements CheatInput {
+  readonly name = 'CheatUnlockAllQuests';
+  constructor() {}
+}
+
+export class CheatDisableQuestPrereqs implements CheatInput {
+  readonly name = 'CheatDisableQuestPrereqs';
+  readonly disabled: boolean;
+  constructor(args: { disabled: boolean }) {
+    this.disabled = args.disabled;
+  }
+}
+
+export class CheatGrantDiscoveries implements CheatInput {
+  readonly name = 'CheatGrantDiscoveries';
+  readonly discoveryIds: string[];
+  constructor(args: { discoveryIds?: string[] }) {
+    this.discoveryIds = args.discoveryIds ?? [];
+  }
+}

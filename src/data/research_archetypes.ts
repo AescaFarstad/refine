@@ -1,4 +1,5 @@
 import type { ResearchArchetypeDef } from '../logic/ResearchLib';
+import { DISCOVERY } from '../logic/DiscoveryLib';
 
 export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
   hub: { type: 'empty', rewards: [] },
@@ -19,6 +20,21 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
   stat_weight: { type: 'stat', rewards: [{ kind: 'stat', stat: 'baseMaxWeight', value: 1 }] },
   stat_vision: { type: 'stat', rewards: [{ kind: 'stat', stat: 'researchRevealRadius', value: 1 }] },
   stat_speed: { type: 'stat', rewards: [{ kind: 'stat', stat: 'speed', value: 1 }] },
+
+  disc_damage_breakdown: {
+    type: 'discovery',
+    title: 'Damage breakdown',
+    description: 'Shows the raid damage breakdown under the Survival panel.',
+    icon: { kind: 'glyph', glyph: 'ⓘ' },
+    rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.DAMAGE_BREAKDOWN }],
+  },
+  disc_time_breakdown: {
+    type: 'discovery',
+    title: 'Time breakdown',
+    description: 'Shows the raid time breakdown under the Time panel.',
+    icon: { kind: 'glyph', glyph: 'ⓘ' },
+    rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.TIME_BREAKDOWN }],
+  },
 
   // Gear archetypes are auto-generated from gear definitions in ResearchLib.load()
 };

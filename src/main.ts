@@ -8,7 +8,7 @@ import atlasStorage from './logic/AtlasStorage';
 import { getRepresentation } from './logic/LogNumbers';
 import { getHypRepresentation } from './logic/HypNumbers';
 import { initResearchCells } from './logic/Research';
-import { initDebug } from './logic/DebugInit';
+import { initDebug } from './logic/CheatInit';
 
 getRepresentation(2000);
 getHypRepresentation(2000);

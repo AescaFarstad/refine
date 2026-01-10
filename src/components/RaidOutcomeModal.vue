@@ -69,6 +69,9 @@
       </section>
       <section class="death-note" v-if="timelineComplete && !raidSuccess">
         <div class="zc">You died. The time loop resets.</div>
+        <div class="reimbursed" v-if="reimbursedCredits > 0">
+          Insurance Reimbursed: <strong>{{ reimbursedCredits }} CR</strong>
+        </div>
       </section>
 
       <footer class="modal-actions">
@@ -174,6 +177,10 @@ const finalBagsCapacity = computed(() => {
 
 const barelyInTime = computed(() => {
   return outcome.value.barelyInTime;
+});
+
+const reimbursedCredits = computed(() => {
+  return outcome.value.reimbursedCredits || 0;
 });
 
 type RewardChip = { text: string; class: string; style?: Record<string, string> };
@@ -322,6 +329,7 @@ function formatHMS(totalSec?: number): string { return formatDurationHM(totalSec
 .qr-text { font-weight: 700; font-size: 12px; color: var(--text-primary); }
 .chip { display: inline-flex; align-items: baseline; padding: 2px 6px; border-radius: 999px; background: rgba(255,255,255,0.06); }
 .death-note { margin-top: 10px; padding: 8px 10px; border: none; border-radius: 6px; background: rgba(255,255,255,0.03); }
+.reimbursed { margin-top: 6px; color: #86efac; font-size: 0.95em; }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; }
 .btn-wrap { display: inline-block; position: relative; }
 .btn-wrap .tooltip {

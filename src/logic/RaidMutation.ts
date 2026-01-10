@@ -1,6 +1,7 @@
 import type { EncounterDef, FightEncounterDef, LootEncounterDef, MonsterLootEncounterDef, PreparationEncounterDef, QuestEncounterDef, RaidDefinition, WalkEncounterDef } from './RaidLib';
 import type { GameState } from './GameState';
 import type { QuestDefinition } from './QuestLib';
+import { ENABLE_QUEST_PREREQS } from './Const';
 
 // Mutation types supported here. The sign of `count` controls add/remove.
 export interface LootMutation {
@@ -206,6 +207,9 @@ export function questIsActive(gs: GameState, q: QuestDefinition, raidId: string)
 }
 
 export function questMeetsRaidRequirements(gs: GameState, q: QuestDefinition, raidId: string): boolean {
+  // If quest prerequisites are disabled, skip all checks
+  if (!ENABLE_QUEST_PREREQS) return true;
+
   const restricted = q.raidRestriction.length > 0 ? new Set(q.raidRestriction) : null;
 
   let successesSum = 0;
@@ -423,12 +427,12 @@ export function describeMutation(gs: GameState, mutation: RaidMutation): string 
       const n = Math.trunc(mutation.count);
       const abs = Math.abs(n);
       const label = `Scavenge site${abs === 1 ? '' : 's'}`;
-      return `${sign(n)}${abs} ${label}`;
+      return `${label} ${sign(n)}${abs}`;
     }
     case 'WalkMutation': {
       const n = Math.trunc(mutation.count);
       const abs = Math.abs(n);
-      return `${sign(n)}${abs} km distance`;
+      return `Distance ${sign(n)}${abs} km`;
     }
     case 'AddMonsterMutation': {
       const n = Math.trunc(mutation.count);
@@ -452,7 +456,7 @@ export function describeMutation(gs: GameState, mutation: RaidMutation): string 
       const n = Math.trunc(mutation.count);
       const abs = Math.abs(n);
       const questName = mutation.questId;
-      return `${sign(n)}${abs} ${questName} quest${abs === 1 ? '' : 's'}`;
+      return `${questName} quest${abs === 1 ? '' : 's'} ${sign(n)}${abs}`;
     }
     case 'ZoneCollapseTimeMutation': {
       const amt = mutation.amount;

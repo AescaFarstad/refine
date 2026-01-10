@@ -16,10 +16,10 @@ export type Reward =
 
   // Raid Modifications (Context-sensitive or targeted)
   // If targetRaidId is undefined, it applies to the "current" raid context (e.g. for Quest completion rewards)
-  | { kind: 'raid_mutation'; mutation: RaidMutation; targetRaidId?: string }
-  | { kind: 'raid_loot_chance'; delta: number; targetRaidId?: string }
-  | { kind: 'raid_rarity_buff'; delta: number; targetRaidId?: string }
-  | { kind: 'raid_add_item'; itemId: string; targetRaidId?: string }
+  | { kind: 'raid_mutation'; mutation: RaidMutation; targetRaidId?: string; sentiment?: 'positive' | 'negative' }
+  | { kind: 'raid_loot_chance'; delta: number; targetRaidId?: string; sentiment?: 'positive' | 'negative' }
+  | { kind: 'raid_rarity_buff'; delta: number; targetRaidId?: string; sentiment?: 'positive' | 'negative' }
+  | { kind: 'raid_add_item'; itemId: string; targetRaidId?: string; sentiment?: 'positive' | 'negative' }
   ;
 
 export interface RewardContext {

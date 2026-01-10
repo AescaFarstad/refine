@@ -1,11 +1,19 @@
 import type { Point2 } from './core/math';
 import type { Reward } from './Reward';
 
-export type ResearchNodeType = 'obstacle' | 'empty' | 'stat' | 'gear' | 'resource' | 'void';
+export type ResearchNodeType = 'obstacle' | 'empty' | 'stat' | 'gear' | 'resource' | 'discovery' | 'void';
+
+export type ResearchArchetypeIcon =
+  | { kind: 'none' }
+  | { kind: 'glyph'; glyph: string }
+  | { kind: 'itemImage'; key: string };
 
 export interface ResearchArchetypeDef {
   type: ResearchNodeType;
   covert?: boolean;
+  title?: string;
+  description?: string;
+  icon?: ResearchArchetypeIcon;
   rewards: Reward[];
 }
 
@@ -26,6 +34,9 @@ export interface ResearchArchetype {
   id: string;
   type: ResearchNodeType;
   covert: boolean;
+  title: string;
+  description: string;
+  icon: ResearchArchetypeIcon;
   rewards: Reward[];
 }
 
@@ -97,6 +108,9 @@ export class ResearchLib {
         id,
         type: input.type,
         covert: input.covert ?? false,
+        title: input.title ?? '',
+        description: input.description ?? '',
+        icon: input.icon ?? { kind: 'none' },
         rewards: input.rewards,
       };
       this.archetypes.set(arch.id, arch);
@@ -112,6 +126,9 @@ export class ResearchLib {
             id: archetypeId,
             type: 'gear',
             covert: false,
+            title: '',
+            description: '',
+            icon: { kind: 'none' },
             rewards: [{ kind: 'unlock_gear', gearId: gearId }],
           };
           this.archetypes.set(arch.id, arch);

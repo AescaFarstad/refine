@@ -1,4 +1,4 @@
-import type { GameState, ActiveRaid } from './GameState';
+import { createRaidDamageBreakdown, createRaidTimeBreakdownSec, type GameState, type ActiveRaid, type RaidDamageBreakdown, type RaidTimeBreakdownSec } from './GameState';
 import type { RaidDefinition, EncounterDef, FightEncounterDef, QuestEncounterDef } from './RaidLib';
 import type { GearDefinition } from './GearLib';
 import { createLootEncounterLogEntry, createMonsterLootEncounterLogEntry, createQuestEncounterLogEntry, createZoneCollapseLogEntry, type LootEncounterLogEntry, type MonsterLootEncounterLogEntry, type RaidEventLog } from './RaidLog';
@@ -17,6 +17,7 @@ export interface RaidRunResult {
   bagItemCounts: Record<string, number>;
   discardedItemCounts: Record<string, number>;
   timeSpentSec: number;
+  timeBreakdownSec: RaidTimeBreakdownSec;
   plannedEncounters: number;
   barelyInTime: boolean;
   questsCompleted: string[];
@@ -25,6 +26,7 @@ export interface RaidRunResult {
   raidItemsAdded: string[];
   lootChanceDeltaApplied: number;
   lootingRarityBuffDeltaApplied: number;
+  reimbursedCredits?: number;
 }
 
 function loadoutGear(gs: GameState, raidId: string): GearDefinition[] {
@@ -138,7 +140,7 @@ function buildEncounterQueue(gs: GameState, raid: RaidDefinition): EncounterDef[
   }
 
   const bucketsCount = Math.max(1, walkCount + 1);
-  const buckets: Array<{ items: EncounterDef[]; fights: number } > = Array.from({ length: bucketsCount }, () => ({ items: [], fights: 0 }));
+  const buckets: Array<{ items: EncounterDef[]; fights: number }> = Array.from({ length: bucketsCount }, () => ({ items: [], fights: 0 }));
 
   // Spread LootEncounters as evenly as possible among buckets (round-robin)
   for (let i = 0; i < lootPool.length; i++) {
@@ -215,6 +217,7 @@ function cloneActiveRaidState(r: ActiveRaid): ActiveRaid {
     speedBonusPct: r.speedBonusPct,
     speedBonusFlat: r.speedBonusFlat,
     regenPerKm: r.regenPerKm,
+    regenAfterCombat: r.regenAfterCombat,
     weight: r.weight,
     maxWeight: r.maxWeight,
     bagsVolume: r.bagsVolume,
@@ -229,6 +232,7 @@ function cloneActiveRaidState(r: ActiveRaid): ActiveRaid {
     reflectOnHitPct: r.reflectOnHitPct,
     reflectOnBlockPct: r.reflectOnBlockPct,
     biopsyChance: r.biopsyChance,
+    reimbursedPct: r.reimbursedPct,
   } as ActiveRaid;
 }
 
@@ -246,6 +250,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
   const discardedItemCounts: Record<string, number> = {};
   // Elapsed time since the beginning of the raid
   let timeSpentSec = 0;
+  const timeBreakdownSec: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
   let barelyInTime = false;
   const questsCompleted: string[] = [];
   const rewardsApplied: Reward[] = [];
@@ -296,6 +301,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
           bagItemCounts,
           discardedItemCounts,
           timeSpentSec,
+          timeBreakdownSec,
           plannedEncounters,
           barelyInTime: false,
           questsCompleted,
@@ -338,6 +344,8 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
       case 'PreparationEncounter': {
         const entry = handlePreparationEncounter(raid, enc);
         timeSpentSec += entry.timeSpentSec;
+        timeBreakdownSec.totalSec += entry.timeSpentSec;
+        timeBreakdownSec.preparingSec += entry.timeSpentSec;
         entry.elapsedTotalSec = timeSpentSec;
         log.entries.push(entry);
         break;
@@ -345,6 +353,8 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
       case 'WalkEncounter': {
         const entry = handleWalkEncounter(raid);
         timeSpentSec += entry.timeSpentSec;
+        timeBreakdownSec.totalSec += entry.timeSpentSec;
+        timeBreakdownSec.walkingSec += entry.timeSpentSec;
         entry.elapsedTotalSec = timeSpentSec;
         log.entries.push(entry);
         break;
@@ -354,6 +364,8 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         const quest = gsForRun.lib.quests.get(qid)!;
         const entry = createQuestEncounterLogEntry({ questId: qid, success: true, timeSpentSec: Math.round(quest.encounterTimeMin * 60) });
         timeSpentSec += entry.timeSpentSec;
+        timeBreakdownSec.totalSec += entry.timeSpentSec;
+        timeBreakdownSec.investigatingSec += entry.timeSpentSec;
         entry.elapsedTotalSec = timeSpentSec;
         log.entries.push(entry);
         break;
@@ -365,6 +377,8 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
           poolsByRarity: raidDef.itemPoolsByRarity,
         }, bagItemCounts, discardedItemCounts);
         timeSpentSec += entry.timeSpentSec;
+        timeBreakdownSec.totalSec += entry.timeSpentSec;
+        timeBreakdownSec.scavengingSec += entry.timeSpentSec;
         entry.elapsedTotalSec = timeSpentSec;
         log.entries.push(entry);
         break;
@@ -379,6 +393,8 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
           ev.elapsedTotalSec = t;
         }
         timeSpentSec += fight.timeSpentSec;
+        timeBreakdownSec.totalSec += fight.timeSpentSec;
+        timeBreakdownSec.fightingSec += fight.timeSpentSec;
         fight.entry.elapsedTotalSec = timeSpentSec;
         log.entries.push(fight.entry);
         // biopsy
@@ -390,14 +406,15 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         if (fight.summonedMonsterId) {
           queue.unshift({ type: 'FightEncounter', monsterId: fight.summonedMonsterId, summoned: true });
         }
-        // we died
         if (raid.hp <= 0) {
+          const reimbursedCredits = Math.floor(gs.selectedGearPrice * raid.reimbursedPct / 100);
           return {
             success: false,
             log,
             bagItemCounts,
             discardedItemCounts,
             timeSpentSec,
+            timeBreakdownSec,
             plannedEncounters,
             barelyInTime: false,
             questsCompleted,
@@ -406,6 +423,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
             raidItemsAdded,
             lootChanceDeltaApplied,
             lootingRarityBuffDeltaApplied,
+            reimbursedCredits,
           };
         }
         if (raid.regenAfterCombat > 0) {
@@ -422,6 +440,8 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         const m = gsForRun.lib.monsters.get(mid)!;
         const entry = handleMonsterLootEncounter(gsForRun, raid, m.lootItemId, raid.biopsyChance, bagItemCounts, discardedItemCounts);
         timeSpentSec += entry.timeSpentSec;
+        timeBreakdownSec.totalSec += entry.timeSpentSec;
+        timeBreakdownSec.dissectingSec += entry.timeSpentSec;
         entry.elapsedTotalSec = timeSpentSec;
         log.entries.push(entry);
         break;
@@ -505,6 +525,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
     bagItemCounts,
     discardedItemCounts,
     timeSpentSec,
+    timeBreakdownSec,
     plannedEncounters,
     barelyInTime,
     questsCompleted,
@@ -552,24 +573,109 @@ export function recomputeActiveRaidEstimates(gs: GameState, simulations = 100): 
   const def = getEffectiveRaidDefinition(gs, gs.raid.id);
   let wins = 0;
   let zoneCollapseDeaths = 0;
-  // Sum time only for successful runs to estimate time conditioned on success
+  let monsterDeaths = 0;
   let successTimeSum = 0;
+  const overallSum: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
+  const successSum: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
+  const failureSum: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
+  const overallDamageSum: RaidDamageBreakdown = createRaidDamageBreakdown();
+  const successDamageSum: RaidDamageBreakdown = createRaidDamageBreakdown();
+  const failureDamageSum: RaidDamageBreakdown = createRaidDamageBreakdown();
+  const add = (dst: RaidTimeBreakdownSec, src: RaidTimeBreakdownSec): void => {
+    dst.totalSec += src.totalSec;
+    dst.fightingSec += src.fightingSec;
+    dst.walkingSec += src.walkingSec;
+    dst.preparingSec += src.preparingSec;
+    dst.scavengingSec += src.scavengingSec;
+    dst.dissectingSec += src.dissectingSec;
+    dst.investigatingSec += src.investigatingSec;
+  };
+  const addDamage = (dst: RaidDamageBreakdown, src: RaidDamageBreakdown): void => {
+    dst.totalDamageReceived += src.totalDamageReceived;
+    dst.hpGeneratedAfterCombat += src.hpGeneratedAfterCombat;
+    dst.hpGeneratedWalking += src.hpGeneratedWalking;
+    for (const [id, dmg] of Object.entries(src.damageReceivedByMonsterId)) {
+      dst.damageReceivedByMonsterId[id] = (dst.damageReceivedByMonsterId[id] || 0) + dmg;
+    }
+  };
+  const avg = (sum: RaidTimeBreakdownSec, n: number): RaidTimeBreakdownSec => {
+    if (n <= 0) return createRaidTimeBreakdownSec();
+    return {
+      totalSec: Math.round(sum.totalSec / n),
+      fightingSec: Math.round(sum.fightingSec / n),
+      walkingSec: Math.round(sum.walkingSec / n),
+      preparingSec: Math.round(sum.preparingSec / n),
+      scavengingSec: Math.round(sum.scavengingSec / n),
+      dissectingSec: Math.round(sum.dissectingSec / n),
+      investigatingSec: Math.round(sum.investigatingSec / n),
+    };
+  };
+  const avgDamage = (sum: RaidDamageBreakdown, n: number): RaidDamageBreakdown => {
+    if (n <= 0) return createRaidDamageBreakdown();
+    const byMonster: Record<string, number> = {};
+    for (const [id, dmg] of Object.entries(sum.damageReceivedByMonsterId)) {
+      byMonster[id] = Math.round(dmg / n);
+    }
+    return {
+      totalDamageReceived: Math.round(sum.totalDamageReceived / n),
+      damageReceivedByMonsterId: byMonster,
+      hpGeneratedAfterCombat: Math.round(sum.hpGeneratedAfterCombat / n),
+      hpGeneratedWalking: Math.round(sum.hpGeneratedWalking / n),
+    };
+  };
+  const computeDamageForRun = (log: RaidEventLog): RaidDamageBreakdown => {
+    const out: RaidDamageBreakdown = createRaidDamageBreakdown();
+    for (const e of log.entries) {
+      if (e.kind === 'WalkEncounter') {
+        out.hpGeneratedWalking += e.hpHealed;
+        continue;
+      }
+      if (e.kind !== 'FightEncounter') continue;
+      out.hpGeneratedAfterCombat += (e.hpAfterRegen - e.hpBeforeRegen);
+      let dmg = 0;
+      for (const ev of e.fightLog) dmg += ev.damageReceived;
+      out.totalDamageReceived += dmg;
+      if (dmg !== 0) out.damageReceivedByMonsterId[e.monsterId] = (out.damageReceivedByMonsterId[e.monsterId] || 0) + dmg;
+    }
+    return out;
+  };
   for (let i = 0; i < simulations; i++) {
     const res = runRaid(gs, def, true);
+    add(overallSum, res.timeBreakdownSec);
+    const dmg = computeDamageForRun(res.log);
+    addDamage(overallDamageSum, dmg);
     if (res.success) {
       wins++;
-      successTimeSum += Math.max(0, res.timeSpentSec || 0);
+      successTimeSum += res.timeBreakdownSec.totalSec;
+      add(successSum, res.timeBreakdownSec);
+      addDamage(successDamageSum, dmg);
     } else {
+      add(failureSum, res.timeBreakdownSec);
+      addDamage(failureDamageSum, dmg);
       const hasZoneCollapse = res.log.entries.some(entry => entry.kind === 'ZoneCollapse');
       if (hasZoneCollapse) {
         zoneCollapseDeaths++;
+      } else {
+        monsterDeaths++;
       }
     }
   }
+  const failures = simulations - wins;
   gs.raidSurvivalEstimatePct = Math.round((wins / simulations) * 100);
   // If no wins, use zone collapse time as estimate (if applicable), otherwise 0
   gs.raidTimeEstimateSec = wins > 0 ? Math.round(successTimeSum / wins) : (def.zoneCollapseSec || 0);
   gs.raidZoneCollapseDeathPct = Math.round((zoneCollapseDeaths / simulations) * 100);
+  gs.raidZoneCollapseDeaths = zoneCollapseDeaths;
+  gs.raidMonsterDeaths = monsterDeaths;
+  gs.raidTimeBreakdownSimulations = simulations;
+  gs.raidTimeBreakdownSuccesses = wins;
+  gs.raidTimeBreakdownFailures = failures;
+  gs.raidTimeBreakdownOverallSec = avg(overallSum, simulations);
+  gs.raidTimeBreakdownSuccessSec = avg(successSum, wins);
+  gs.raidTimeBreakdownFailureSec = avg(failureSum, failures);
+  gs.raidDamageBreakdownOverall = avgDamage(overallDamageSum, simulations);
+  gs.raidDamageBreakdownSuccess = avgDamage(successDamageSum, wins);
+  gs.raidDamageBreakdownFailure = avgDamage(failureDamageSum, failures);
 }
 
 export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
@@ -594,6 +700,7 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
   gs.raid.reflectOnHitPct = 0;
   gs.raid.reflectOnBlockPct = 0;
   gs.raid.biopsyChance = 0;
+  gs.raid.reimbursedPct = 0;
   gs.selectedGearPrice = 0;
 
   const raidEntry = gs.unlockedRaids.find(r => r.id === raidId)!;
@@ -620,6 +727,7 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
     gs.raid.reflectOnHitPct += g.reflectOnHitPct;
     gs.raid.reflectOnBlockPct += g.reflectOnBlockPct;
     gs.raid.biopsyChance += g.biopsyChance;
+    gs.raid.reimbursedPct += g.reimbursed;
     if (g.perk) gs.raid.perks.push(g.perk);
     gs.selectedGearPrice += g.price;
   };

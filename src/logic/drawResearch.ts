@@ -164,7 +164,7 @@ function getVisualStyle(archetype: ResearchArchetype | null, owned: boolean): {
   const isSpecialOvert =
     !!archetype &&
     !archetype.covert &&
-    (archetype.type === 'stat' || archetype.type === 'gear' || archetype.type === 'resource');
+    (archetype.type === 'stat' || archetype.type === 'gear' || archetype.type === 'resource' || archetype.type === 'discovery');
 
   return {
     fillColor: isSpecialOvert ? RESEARCH_COLOR_SPECIAL_OVERT_UNOWNED_BG : RESEARCH_COLOR_UNOWNED_BG,
@@ -251,6 +251,11 @@ function drawNodeOverlay(
     return;
   }
 
+  if (!covert && archetype.icon.kind !== 'none') {
+    drawArchetypeIconForNode(ctx, cells, archetype, owned, origin, hexSize);
+    return;
+  }
+
   // Overt stat nodes: draw the stat icon (e.g. damage ✴) instead of obstacle markers.
   if (type === 'stat' && !covert) {
     drawStatIconForNode(ctx, cells, archetype, owned, origin, hexSize);
@@ -278,6 +283,94 @@ function drawNodeOverlay(
     ctx.fill();
   }
 
+  ctx.restore();
+}
+
+function drawArchetypeIconForNode(
+  ctx: CanvasRenderingContext2D,
+  cells: ResearchCellInfo[],
+  archetype: ResearchArchetype,
+  owned: boolean,
+  origin: Point2,
+  hexSize: number
+): void {
+  if (!cells.length) return;
+
+  const icon = archetype.icon;
+  if (icon.kind === 'none') return;
+
+  const nodeId = cells[0].nodeId;
+  const axialCells: Point2[] = cells.map(info => info.axial);
+
+  let layout: MaxSquareResult | null | undefined = nodeId >= 0 ? nodeSquareCache.get(nodeId) : null;
+  if (!layout) {
+    layout = computeMaxSquareForHexNode(axialCells);
+    if (layout && nodeId >= 0) {
+      nodeSquareCache.set(nodeId, layout);
+    }
+  }
+
+  let centerX: number;
+  let centerY: number;
+  let maxIconSize: number | null = null;
+
+  if (layout) {
+    centerX = layout.center.x * hexSize + origin.x;
+    centerY = layout.center.y * hexSize + origin.y;
+    maxIconSize = layout.side * hexSize * 0.9;
+  } else {
+    let sumX = 0;
+    let sumY = 0;
+    for (const cellInfo of cells) {
+      const pixel = axialToPixel(cellInfo.axial, hexSize, origin);
+      sumX += pixel.x;
+      sumY += pixel.y;
+    }
+    centerX = sumX / cells.length;
+    centerY = sumY / cells.length;
+  }
+
+  let fontSize = hexSize * 1.05;
+  fontSize = Math.max(12, fontSize);
+  if (maxIconSize != null) {
+    fontSize = Math.min(fontSize, maxIconSize);
+  }
+
+  if (icon.kind === 'glyph') {
+    ctx.save();
+    ctx.globalAlpha = owned ? 1 : 0.95;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `bold ${fontSize}px sans-serif`;
+    ctx.fillStyle = 'rgba(248, 250, 252, 0.96)';
+    ctx.fillText(icon.glyph, centerX, centerY + 2);
+    ctx.restore();
+    return;
+  }
+
+  const source = atlasStorage.getItemsSource();
+  const frame = atlasStorage.getItemsFrame(icon.key);
+  if (!source || !frame) return;
+
+  const iconMaxSize = (maxIconSize != null ? maxIconSize : hexSize * 1.6) * 0.75;
+  const scale = Math.min(iconMaxSize / frame.w, iconMaxSize / frame.h);
+  const drawW = frame.w * scale;
+  const drawH = frame.h * scale;
+
+  ctx.save();
+  ctx.globalAlpha = owned ? 1 : 0.9;
+  ctx.translate(centerX, centerY);
+  ctx.drawImage(
+    source,
+    frame.x,
+    frame.y,
+    frame.w,
+    frame.h,
+    -drawW / 2,
+    -drawH / 2,
+    drawW,
+    drawH
+  );
   ctx.restore();
 }
 

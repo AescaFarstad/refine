@@ -11,9 +11,9 @@ import atlasStorage from './AtlasStorage';
 import { computeMaxSquareForHexNode, type MaxSquareResult } from './MaxSquareInHexNode';
 import { getResourceSpecByAnyKey } from './Resources';
 
-const RESEARCH_COLOR_OWNED_BG = 'rgba(74, 222, 128, 0.6)';
-const RESEARCH_COLOR_UNOWNED_BG = 'rgba(47, 60, 101, 0.45)';
-const RESEARCH_COLOR_SPECIAL_OVERT_UNOWNED_BG = 'rgba(234, 179, 8, 0.55)'; // yellowish for special nodes
+const RESEARCH_COLOR_OWNED_BG = 'rgb(50, 140, 80)';
+const RESEARCH_COLOR_UNOWNED_BG = 'rgb(35, 45, 70)';
+const RESEARCH_COLOR_SPECIAL_OVERT_UNOWNED_BG = 'rgb(140, 110, 25)'; // yellowish for special nodes
 const RESEARCH_COLOR_OBSTACLE_MARKER = 'rgba(131, 145, 164, 0.9)';
 
 interface StatIconSpec {

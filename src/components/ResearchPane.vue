@@ -572,7 +572,7 @@ function handleClick(event: MouseEvent): void {
   position: relative;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle at 50% 0%, rgba(15, 23, 42, 0.9), #020617);
+  background: transparent;
   overflow: hidden;
 }
 

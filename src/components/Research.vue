@@ -1,5 +1,6 @@
 <template>
   <div class="research-tab" ref="researchTab">
+    <ResearchParallax :offset="parallaxOffset" :zoom="parallaxZoom" />
     <ResearchPane ref="researchPane" @hover-cell="onHoverCell" />
     <EditResearchPane v-if="editResearchOpen" />
     <div
@@ -69,6 +70,7 @@
 import { ref, computed } from 'vue';
 import type { Point2 } from '../logic/ItemLib';
 import ResearchPane from './ResearchPane.vue';
+import ResearchParallax from './ResearchParallax.vue';
 import { uiState, getGameState, getGameLib } from '../logic/UIState';
 import { axialToIndex, calculateResearchNodePrice, findCheapestPath } from '../logic/Research';
 import EditResearchPane from './EditResearchPane.vue';
@@ -83,6 +85,22 @@ const hoverCell = ref<Point2 | null>(null);
 const researchPane = ref<InstanceType<typeof ResearchPane> | null>(null);
 
 const editResearchOpen = computed(() => uiState.editResearchOpen);
+
+const parallaxOffset = computed<Point2>(() => {
+  const pane = researchPane.value;
+  if (!pane) return { x: 0, y: 0 };
+  // offset is a Ref exposed from ResearchPane
+  const off = pane.offset;
+  if (!off) return { x: 0, y: 0 };
+  return { x: off.x, y: off.y };
+});
+
+const parallaxZoom = computed(() => {
+  const pane = researchPane.value;
+  if (!pane) return 1;
+  // zoom is a Ref exposed from ResearchPane
+  return pane.zoom ?? 1;
+});
 
 function onHoverCell(cell: Point2 | null): void {
   hoverCell.value = cell;
@@ -163,7 +181,7 @@ const showHintPanel = computed(() => {
   const hn = hoveredNode.value;
   if (!hn) return false;
   if (hn.cell.blocked) return false;
-  return hn.archetype?.type === 'gear' || hn.archetype?.type === 'resource' || hn.archetype?.type === 'stat';
+  return hn.archetype?.type === 'gear' || hn.archetype?.type === 'resource' || hn.archetype?.type === 'stat' || hn.archetype?.type === 'discovery';
 });
 
 const showHoverPreviewPanel = computed(() => {
@@ -209,6 +227,8 @@ const nextClearCost = computed(() => {
   position: relative;
   width: 100%;
   height: 100%;
+  background: radial-gradient(circle at 50% 0%, rgba(15, 23, 42, 0.9), #020617);
+  overflow: hidden;
 }
 
 .hover-top-panel {

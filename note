@@ -192,5 +192,3 @@ item for cashback in case of failure
 
 
 Extract properties related to raid simulation from GameState into a single RaidSimulation object. 
-
-ItemDisplay hint should show the item molecule

@@ -26,10 +26,7 @@ import CheatOverlay from './components/CheatOverlay.vue';
 import { uiState } from './logic/UIState';
 
 type TabKey = 'raid' | 'refine' | 'research' | 'maze';
-const activeTab = computed<TabKey>({
-  get: () => uiState.activeTab,
-  set: (v: TabKey) => { uiState.activeTab = v; },
-});
+const activeTab = computed<TabKey>(() => uiState.activeTab);
 
 const seq = ['q', 'w', 'e', 'd'];
 let seqIndex = 0;

@@ -1,7 +1,7 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAknowledgeOutcome, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdMarkEssencesSeen } from './InputCommands';
+import { CmdStartRaid, CmdAdvanceTime, CmdAknowledgeOutcome, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdMarkEssencesSeen, CmdSwitchTab } from './InputCommands';
 import { discover } from '../Discover';
 import { DISCOVERY } from '../DiscoveryLib';
 import { EvtRefineryDone } from '../evt/Evt';
@@ -328,6 +328,13 @@ handlersByName.set('CmdUpgradeGearCategory', (gs, cmd) => {
 
 handlersByName.set('CmdOpenGearUpgradeModal', (gs) => {
   discover(gs, DISCOVERY.GEAR_UPGRADE_MODAL_OPENED);
+});
+
+handlersByName.set('CmdSwitchTab', (gs, cmd) => {
+  const c = cmd as CmdSwitchTab;
+  if (!gs.timeActive) {
+    gs.activeTab = c.tab;
+  }
 });
 
 

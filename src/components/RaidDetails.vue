@@ -277,13 +277,13 @@ const lootChanceBuffPct = computed(() => {
 <style scoped>
 /* Stats row: 3 equal panels */
 .stat-line { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 12px; }
-.stat { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 8px 10px; display: flex; align-items: center; justify-content: center; gap: 8px; text-align: center; }
-.stat .label { color: var(--text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; margin-right: 0; }
-.stat .value { font-weight: 800; }
+.stat { background: var(--raid-item-bg, rgba(255,255,255,0.08)); border-radius: 6px; padding: 6px 10px; display: flex; align-items: center; justify-content: center; gap: 8px; text-align: center; }
+.stat .label { color: var(--text-secondary); font-size: 14px; text-transform: uppercase; letter-spacing: 0.06em; margin-right: 0; }
+.stat .value { font-weight: 800;  font-size: 18px;}
 .walk-line { display: flex; align-items: center; gap: 12px; flex-wrap: nowrap; margin-top: 24px; }
 .dist, .speed, .time { font-weight: 700; white-space: nowrap; }
 .weight-bar { display: flex; align-items: center; flex: 1 1 320px; }
-.weight-bar .bar { position: relative; width: 100%; height: 14px; border: 1px solid var(--panel-border); border-radius: 3px; background: rgba(255,255,255,0.04); overflow: hidden; }
+.weight-bar .bar { position: relative; width: 100%; height: 14px; border: 1px solid var(--panel-border); border-radius: 3px; background: var(--raid-item-bg, rgba(255,255,255,0.08)); overflow: hidden; }
 .weight-bar .fill { height: 100%; background: var(--accent-warm); }
 .weight-bar .fill.over { background: #ef4444; }
 .overweight-warning { position: relative; color: #ef4444; font-weight: 800; margin-top: 6px; }

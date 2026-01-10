@@ -160,7 +160,7 @@ function updateHintSide(): void {
   border: none;
   border-radius: 4px;
   padding: 10px 10px 10px 10px; /* equal padding - weight/price are absolutely positioned */
-  background: rgba(255,255,255,0.02);
+  background: var(--raid-item-bg, rgba(255,255,255,0.08));
   cursor: pointer;
   color: var(--text-primary);
   z-index: 0; /* establish baseline stacking */
@@ -173,7 +173,10 @@ function updateHintSide(): void {
   padding-left: 8px;
 }
 .gear-item:hover { z-index: 2000; } /* float hovered card above siblings */
-.gear-item.selected { background: rgba(74, 222, 128, 0.15); }
+.gear-item.selected {
+  background: rgba(74, 222, 128, 0.25);
+  box-shadow: inset 0 0 0 1px rgba(74, 222, 128, 0.5), 0 0 0 1px rgba(74, 222, 128, 0.2);
+}
 .gear-item.unaffordable { /* border removed; keep subtle deemphasis via opacity if needed elsewhere */ }
 .gear-item.blocked > *:not(.hint) { opacity: 0.6; }
 
@@ -277,7 +280,7 @@ function updateHintSide(): void {
   padding: 3px 6px;
   border-bottom-left-radius: 6px;
   border-top-right-radius: 4px;
-  background: rgba(255,255,255,0.08); /* dim badge */
+  background: var(--raid-item-bg, rgba(255,255,255,0.08)); /* dim badge */
   color: var(--text-primary);          /* bright price text */
   font-size: 14px;
   font-weight: 900;

@@ -29,7 +29,7 @@
           <span v-else class="letter">{{ essenceLetter(k) }}</span>
           <span class="name">{{ essenceDisplayName(k) }}</span>
           <span class="sep"></span>
-          <span class="desc">{{ essenceEffectText(k) }}</span>
+          <span class="desc" v-html="essenceEffectHtml(k)"></span>
         </div>
       </div>
     </div>
@@ -123,17 +123,19 @@ function essenceDisplayName(k: string): string {
   return name[k] || (k?.[0]?.toUpperCase?.() || '?') + (k?.slice?.(1) || '');
 }
 
-function essenceEffectText(k: string): string {
-  const credits = getResourceSpec('credits');
-  const chronotraces = getResourceSpec('chronotraces');
-  const timeFlux = getResourceSpec('timeFlux');
+function resourceHtml(amount: number, resourceKey: 'credits' | 'chronotraces' | 'timeFlux'): string {
+  const spec = getResourceSpec(resourceKey);
+  return `<span style="color:${spec.color}">${amount}${spec.glyph}</span> ${spec.name.toLowerCase()}`;
+}
+
+function essenceEffectHtml(k: string): string {
   switch (k) {
     case 'red':
-      return `gives ${ESSENCE_CREDITS}${credits.glyph} ${credits.name.toLowerCase()}`;
+      return `gives ${resourceHtml(ESSENCE_CREDITS, 'credits')}`;
     case 'blue':
-      return `gives ${ESSENCE_CHRONOTRACES}${chronotraces.glyph} ${chronotraces.name.toLowerCase()}`;
+      return `gives ${resourceHtml(ESSENCE_CHRONOTRACES, 'chronotraces')}`;
     case 'green':
-      return `gives ${ESSENCE_TEMPORAL_FLUX}${timeFlux.glyph} ${timeFlux.name.toLowerCase()}`;
+      return `gives ${resourceHtml(ESSENCE_TEMPORAL_FLUX, 'timeFlux')}`;
     case 'yellow':
       return '+1 effective count for adjacent';
     case 'orange':
@@ -258,7 +260,7 @@ onBeforeUnmount(() => close());
 .list { display: flex; flex-direction: column; gap: 8px; }
 .row {
   display: grid;
-  grid-template-columns: 18px max-content 10px max-content;
+  grid-template-columns: 18px 55px 0px max-content;
   column-gap: 6px;
   align-items: center;
   justify-items: start;

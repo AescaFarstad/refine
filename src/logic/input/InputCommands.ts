@@ -129,3 +129,11 @@ export class CmdMarkEssencesSeen implements CmdInput {
   readonly name = 'CmdMarkEssencesSeen';
   constructor() { }
 }
+
+export class CmdSwitchTab implements CmdInput {
+  readonly name = 'CmdSwitchTab';
+  readonly tab: 'raid' | 'refine' | 'research' | 'maze';
+  constructor(args: { tab: 'raid' | 'refine' | 'research' | 'maze' }) {
+    this.tab = args.tab;
+  }
+}

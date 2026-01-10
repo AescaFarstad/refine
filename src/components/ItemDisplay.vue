@@ -59,6 +59,7 @@
         <span class="tp-label">Volume</span>
         <span class="tp-value">{{ displayVolume }}</span>
       </div>
+      <div v-if="tooltipMoleculeUrl" class="tp-molecule" :style="{ backgroundImage: `url(${tooltipMoleculeUrl})` }" />
     </div>
   </Teleport>
 </template>
@@ -169,6 +170,30 @@ watch(
       console.error('Error updating molecule image:', e);
       if (cancelled) return;
       moleculeUrl.value = null;
+    }
+  },
+  { immediate: true }
+);
+
+const tooltipMoleculeUrl = ref<string | null>(null);
+watch(
+  () => [hovered.value, props.id] as const,
+  async ([isHovered, id], _prev, onCleanup) => {
+    let cancelled = false;
+    onCleanup(() => { cancelled = true; });
+
+    if (!isHovered) {
+      tooltipMoleculeUrl.value = null;
+      return;
+    }
+
+    try {
+      await ensureMoleculeAtlas();
+      if (cancelled) return;
+      tooltipMoleculeUrl.value = atlasStorage.getMoleculeImage(id);
+    } catch (e) {
+      if (cancelled) return;
+      tooltipMoleculeUrl.value = null;
     }
   },
   { immediate: true }
@@ -458,6 +483,14 @@ function essenceIconStyle(k: string): Record<string, string> {
   border-bottom: 7px solid rgba(20, 28, 40, 0.98);
 }
 .tp-title { font-weight: 800; margin-bottom: 4px; letter-spacing: 0.02em; }
+.tp-molecule {
+  width: 96px;
+  height: 96px;
+  margin: 8px auto 0;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
 .tp-row { display: flex; align-items: baseline; gap: 6px; font-size: 12px; }
 .tp-label { opacity: 0.8; text-transform: uppercase; letter-spacing: 0.06em; }
 .tp-value { font-weight: 800; }

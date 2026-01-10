@@ -145,13 +145,13 @@ const timeBreakdownTooltip = computed(() => {
 <style scoped>
 .deploy-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .stats { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-:deep(.cell) { 
-  background: rgba(255,255,255,0.04); 
-  border-radius: 6px; 
-  padding: 8px 10px; 
-  text-align: center; 
-  flex: 0 0 200px; 
-  width: 200px; 
+:deep(.cell) {
+  background: var(--raid-panel-bg, rgba(23, 33, 47, 0.92));
+  border-radius: 6px;
+  padding: 8px 10px;
+  text-align: center;
+  flex: 0 0 200px;
+  width: 200px;
   display: inline-flex;
   align-items: baseline;
   justify-content: center;
@@ -299,15 +299,15 @@ const timeBreakdownTooltip = computed(() => {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   border-radius: 4px;
-  border: 1px solid rgba(34,197,94,0.35);
-  background: rgba(34,197,94,0.18);
+  border: 1px solid rgba(34,197,94,0.5);
+  background: rgba(34,197,94,0.32);
   color: #86efac;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
 }
-.deploy-btn:hover { background: rgba(34,197,94,0.28); }
+.deploy-btn:hover { background: rgba(34,197,94,0.45); }
 .deploy-btn:disabled {
   cursor: not-allowed;
   opacity: 0.55;

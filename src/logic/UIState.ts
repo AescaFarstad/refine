@@ -189,21 +189,22 @@ export function SyncUIFromGameState(game: GameState): void {
 
   uiState.activeRaidId = game.raid.id;
   uiState.selectedGearPrice = game.selectedGearPrice ?? 0;
-  uiState.raidSurvivalPct = game.raidSurvivalEstimatePct;
-  uiState.raidTimeEstimateSec = game.raidTimeEstimateSec;
-  uiState.raidZoneCollapseDeathPct = game.raidZoneCollapseDeathPct;
-  uiState.raidZoneCollapseDeaths = game.raidZoneCollapseDeaths;
-  uiState.raidMonsterDeaths = game.raidMonsterDeaths;
-  uiState.raidTimeBreakdownSimulations = game.raidTimeBreakdownSimulations;
-  uiState.raidTimeBreakdownSuccesses = game.raidTimeBreakdownSuccesses;
-  uiState.raidTimeBreakdownFailures = game.raidTimeBreakdownFailures;
-  uiState.raidTimeBreakdownOverallSec = game.raidTimeBreakdownOverallSec;
-  uiState.raidTimeBreakdownSuccessSec = game.raidTimeBreakdownSuccessSec;
-  uiState.raidTimeBreakdownFailureSec = game.raidTimeBreakdownFailureSec;
-  uiState.raidTimeBreakdownZoneCollapseSec = game.raidTimeBreakdownZoneCollapseSec;
-  uiState.raidDamageBreakdownOverall = game.raidDamageBreakdownOverall;
-  uiState.raidDamageBreakdownSuccess = game.raidDamageBreakdownSuccess;
-  uiState.raidDamageBreakdownFailure = game.raidDamageBreakdownFailure;
+  const sim = game.raidSimulation;
+  uiState.raidSurvivalPct = sim.survivalEstimatePct;
+  uiState.raidTimeEstimateSec = sim.timeEstimateSec;
+  uiState.raidZoneCollapseDeathPct = sim.zoneCollapseDeathPct;
+  uiState.raidZoneCollapseDeaths = sim.zoneCollapseDeaths;
+  uiState.raidMonsterDeaths = sim.monsterDeaths;
+  uiState.raidTimeBreakdownSimulations = sim.simulations;
+  uiState.raidTimeBreakdownSuccesses = sim.successes;
+  uiState.raidTimeBreakdownFailures = sim.failures;
+  uiState.raidTimeBreakdownOverallSec = sim.timeBreakdownOverallSec;
+  uiState.raidTimeBreakdownSuccessSec = sim.timeBreakdownSuccessSec;
+  uiState.raidTimeBreakdownFailureSec = sim.timeBreakdownFailureSec;
+  uiState.raidTimeBreakdownZoneCollapseSec = sim.timeBreakdownZoneCollapseSec;
+  uiState.raidDamageBreakdownOverall = sim.damageBreakdownOverall;
+  uiState.raidDamageBreakdownSuccess = sim.damageBreakdownSuccess;
+  uiState.raidDamageBreakdownFailure = sim.damageBreakdownFailure;
 
   uiState.lastOutcome = game.lastRaidOutcome;
   uiState.lastRefineryOutcome = game.lastRefineryOutcome;
@@ -277,6 +278,8 @@ export function SyncUIFromGameState(game: GameState): void {
 
   const radius = game.researchRevealRadius;
   uiState.researchRevealRadius = typeof radius === 'number' ? radius : 0;
+
+  uiState.activeTab = game.activeTab;
 }
 
 // Expose current game lib for UI components that need live definitions

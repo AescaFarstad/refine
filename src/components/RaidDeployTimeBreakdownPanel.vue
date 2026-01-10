@@ -123,7 +123,7 @@ function encounterIconStyle(iconKey: string): Record<string, string> {
   max-width: 520px;
   padding: 10px 12px;
   border-radius: 6px;
-  background: rgba(255,255,255,0.03);
+  background: var(--raid-panel-bg, rgba(23, 33, 47, 0.92));
   overflow: visible;
 }
 
@@ -157,7 +157,7 @@ function encounterIconStyle(iconKey: string): Record<string, string> {
 }
 
 .time-breakdown-table tbody tr:nth-child(even) td {
-  background: rgba(255,255,255,0.04);
+  background: var(--raid-item-bg, rgba(255,255,255,0.08));
 }
 
 .time-breakdown-table tbody tr:nth-child(even) td:first-child {

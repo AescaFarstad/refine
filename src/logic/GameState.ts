@@ -72,7 +72,7 @@ export class GameState {
   public mazeLevelIndex: number = 0;
   public labirinthResetRequested: boolean = false;
 
-
+  public activeTab: 'raid' | 'refine' | 'research' | 'maze' = 'raid';
 
   public cheats: Array<CheatInput> = [];
 
@@ -90,21 +90,7 @@ export class GameState {
   };
   public selectedGearPrice: number = 0;
 
-  public raidSurvivalEstimatePct: number = 0;
-  public raidTimeEstimateSec: number = 0;
-  public raidZoneCollapseDeathPct: number = 0;
-  public raidZoneCollapseDeaths: number = 0;
-  public raidMonsterDeaths: number = 0;
-  public raidTimeBreakdownSimulations: number = 0;
-  public raidTimeBreakdownSuccesses: number = 0;
-  public raidTimeBreakdownFailures: number = 0;
-  public raidTimeBreakdownOverallSec: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
-  public raidTimeBreakdownSuccessSec: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
-  public raidTimeBreakdownFailureSec: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
-  public raidTimeBreakdownZoneCollapseSec: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
-  public raidDamageBreakdownOverall: RaidDamageBreakdown = createRaidDamageBreakdown();
-  public raidDamageBreakdownSuccess: RaidDamageBreakdown = createRaidDamageBreakdown();
-  public raidDamageBreakdownFailure: RaidDamageBreakdown = createRaidDamageBreakdown();
+  public raidSimulation: RaidSimulation = new RaidSimulation();
   public raidFoundItemsVersion: number = 0;
 
   constructor() {
@@ -265,4 +251,22 @@ export function createRaidDamageBreakdown(): RaidDamageBreakdown {
     hpGeneratedAfterCombat: 0,
     hpGeneratedWalking: 0,
   };
+}
+
+export class RaidSimulation {
+  public survivalEstimatePct: number = 0;
+  public timeEstimateSec: number = 0;
+  public zoneCollapseDeathPct: number = 0;
+  public zoneCollapseDeaths: number = 0;
+  public monsterDeaths: number = 0;
+  public simulations: number = 0;
+  public successes: number = 0;
+  public failures: number = 0;
+  public timeBreakdownOverallSec: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
+  public timeBreakdownSuccessSec: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
+  public timeBreakdownFailureSec: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
+  public timeBreakdownZoneCollapseSec: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
+  public damageBreakdownOverall: RaidDamageBreakdown = createRaidDamageBreakdown();
+  public damageBreakdownSuccess: RaidDamageBreakdown = createRaidDamageBreakdown();
+  public damageBreakdownFailure: RaidDamageBreakdown = createRaidDamageBreakdown();
 }

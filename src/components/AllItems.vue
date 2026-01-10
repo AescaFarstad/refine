@@ -257,7 +257,7 @@ const rarityLabelsMap = computed<Record<string, string>>(() => {
 .header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
 h3 { margin: 0; font-size: 16px; letter-spacing: 0.04em; }
 .count { font-size: 12px; opacity: 0.8; }
-.essence-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; min-height: 22px; flex-wrap: nowrap; overflow-x: auto; }
+.essence-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; min-height: 22px; flex-wrap: wrap; }
 .essence-header.reserved { visibility: hidden; }
 .essence-btn { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; padding: 2px 4px; border-radius: 4px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.03); color: inherit; font-size: 12px; font-weight: 800; cursor: pointer; white-space: nowrap; }
 .essence-btn:hover { background: rgba(255,255,255,0.06); }

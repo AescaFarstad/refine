@@ -30,7 +30,7 @@ const label = computed(() => {
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
-  background: rgba(255,255,255,0.04);
+  background: var(--raid-item-bg, rgba(255,255,255,0.08));
   border: 1px solid var(--panel-border);
   border-radius: 6px;
   color: var(--text-primary);
@@ -41,7 +41,7 @@ const label = computed(() => {
   transition: background 0.15s;
 }
 .raid-select-btn:hover {
-  background: rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.12);
 }
 .label {
   flex: 1;

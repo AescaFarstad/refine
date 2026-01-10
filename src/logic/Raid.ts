@@ -691,22 +691,23 @@ export function recomputeActiveRaidEstimates(gs: GameState, simulations = 100): 
   }
   const failures = simulations - wins;
   const completedRuns = wins + zoneCollapseDeaths;
-  gs.raidSurvivalEstimatePct = Math.round((wins / simulations) * 100);
+  const sim = gs.raidSimulation;
+  sim.survivalEstimatePct = Math.round((wins / simulations) * 100);
   // Time estimate is based on runs that completed (wins + zone collapse deaths), excluding monster deaths
-  gs.raidTimeEstimateSec = completedRuns > 0 ? Math.round(completionTimeSum / completedRuns) : (def.zoneCollapseSec || 0);
-  gs.raidZoneCollapseDeathPct = Math.round((zoneCollapseDeaths / simulations) * 100);
-  gs.raidZoneCollapseDeaths = zoneCollapseDeaths;
-  gs.raidMonsterDeaths = monsterDeaths;
-  gs.raidTimeBreakdownSimulations = simulations;
-  gs.raidTimeBreakdownSuccesses = wins;
-  gs.raidTimeBreakdownFailures = failures;
-  gs.raidTimeBreakdownOverallSec = avg(overallSum, simulations);
-  gs.raidTimeBreakdownSuccessSec = avg(successSum, wins);
-  gs.raidTimeBreakdownFailureSec = avg(failureSum, failures);
-  gs.raidTimeBreakdownZoneCollapseSec = avg(zoneCollapseSum, zoneCollapseDeaths);
-  gs.raidDamageBreakdownOverall = avgDamage(overallDamageSum, simulations);
-  gs.raidDamageBreakdownSuccess = avgDamage(successDamageSum, wins);
-  gs.raidDamageBreakdownFailure = avgDamage(monsterDeathDamageSum, monsterDeaths);
+  sim.timeEstimateSec = completedRuns > 0 ? Math.round(completionTimeSum / completedRuns) : (def.zoneCollapseSec || 0);
+  sim.zoneCollapseDeathPct = Math.round((zoneCollapseDeaths / simulations) * 100);
+  sim.zoneCollapseDeaths = zoneCollapseDeaths;
+  sim.monsterDeaths = monsterDeaths;
+  sim.simulations = simulations;
+  sim.successes = wins;
+  sim.failures = failures;
+  sim.timeBreakdownOverallSec = avg(overallSum, simulations);
+  sim.timeBreakdownSuccessSec = avg(successSum, wins);
+  sim.timeBreakdownFailureSec = avg(failureSum, failures);
+  sim.timeBreakdownZoneCollapseSec = avg(zoneCollapseSum, zoneCollapseDeaths);
+  sim.damageBreakdownOverall = avgDamage(overallDamageSum, simulations);
+  sim.damageBreakdownSuccess = avgDamage(successDamageSum, wins);
+  sim.damageBreakdownFailure = avgDamage(monsterDeathDamageSum, monsterDeaths);
 }
 
 export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {

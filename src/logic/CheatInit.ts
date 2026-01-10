@@ -2,7 +2,7 @@ import { Raid, type GameState } from './GameState';
 import { setIsDebug } from './Const';
 import { uiState } from './UIState';
 import { DISCOVERY } from './DiscoveryLib';
-import { CheatAddResources, CheatLoadResearchState, CheatUnlockAllRaids, CheatDisableQuestPrereqs, CheatGrantDiscoveries } from './cheat/CheatCommands';
+import { CheatAddResources, CheatLoadResearchState, CheatUnlockAllRaids, CheatDisableQuestPrereqs, CheatGrantDiscoveries, CheatAddRaidItems } from './cheat/CheatCommands';
 import { recomputeActiveRaidEstimates, recomputeActiveRaidParams } from './Raid';
 
 export function initDebug(gameState: GameState): void {
@@ -10,12 +10,16 @@ export function initDebug(gameState: GameState): void {
 
   uiState.editResearchOpen = true;
 
-  gameState.unlockedRaids = Array.from(gameState.lib.raids.keys()).map(id => new Raid(id));
-  if (!gameState.lib.raids.has('ozernoye')) {
-    throw new Error('[initDebug] expected raid id "ozernoye"');
-  }
-  recomputeActiveRaidParams(gameState, 'ozernoye');
-  recomputeActiveRaidEstimates(gameState, 100);
+  // gameState.unlockedRaids = Array.from(gameState.lib.raids.keys()).map(id => new Raid(id));
+  // if (!gameState.lib.raids.has('ozernoye')) {
+  //   throw new Error('[initDebug] expected raid id "ozernoye"');
+  // }
+  // recomputeActiveRaidParams(gameState, 'ozernoye');
+  // recomputeActiveRaidEstimates(gameState, 100);
+
+  const raidItemCheats = Array.from(gameState.lib.raids.keys()).map(
+    id => new CheatAddRaidItems({ id, count: 10 })
+  );
 
   gameState.cheats = [
     new CheatAddResources({ credits: 100000, chronotraces: 100000, timeFlux: 0, shardDust: 10000, skillPoints: 100 }),
@@ -23,6 +27,7 @@ export function initDebug(gameState: GameState): void {
     new CheatLoadResearchState({ ownedCells: [{ x: 0, y: 0 }] }),
     new CheatUnlockAllRaids(),
     new CheatDisableQuestPrereqs({ disabled: true }),
+    ...raidItemCheats,
     new CheatLoadResearchState({
       ownedCells: [
         { x: 0, y: -7 }, { x: 1, y: -7 }, { x: -3, y: -6 }, { x: -1, y: -6 }, { x: 0, y: -6 }, { x: 1, y: -6 },

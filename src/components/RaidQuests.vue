@@ -79,7 +79,7 @@ function onQuestClick(q: QuestDefinition): void {
   border: none; /* no border around quest */
   border-radius: 8px;
   padding: 10px 12px;
-  background: rgba(255,255,255,0.03);
+  background: var(--raid-item-bg, rgba(255,255,255,0.08));
   height: 64px; /* fixed size tiles */
   display: flex;
   align-items: center;
@@ -91,7 +91,7 @@ function onQuestClick(q: QuestDefinition): void {
 .tag.auto { color: var(--accent); background: rgba(79, 209, 197, 0.12); }
 .quest.accepted { background: rgba(74, 222, 128, 0.15); }
 .quest.clickable { cursor: pointer; }
-.quest.clickable:not(.accepted):hover { background: rgba(255,255,255,0.06); }
+.quest.clickable:not(.accepted):hover { background: rgba(255,255,255,0.12); }
 
 /* Styled tooltip shown instantly on hover */
 .hint {

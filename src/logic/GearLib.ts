@@ -38,6 +38,9 @@ export interface GearDefinition {
 
   // Visual - key into items.json sprite atlas
   image: string;
+
+  // Optional custom description
+  description: string;
 }
 
 // Raw data type for data files: allows omitting numbers which will default to 0 at load time
@@ -79,6 +82,7 @@ export function parseGearDefinitions(raw: Record<string, RawGearDefinition>): Ma
       walkDelta: d.walkDelta ?? 0,
       ignoreLootEncounters: d.ignoreLootEncounters ?? false,
       image: d.image ?? '',
+      description: d.description ?? '',
     };
     map.set(key, def);
   }

@@ -6,6 +6,7 @@ import { CheatAddResources, CheatLoadResearchState, CheatUnlockAllRaids, CheatDi
 import { recomputeActiveRaidEstimates, recomputeActiveRaidParams } from './Raid';
 
 export function initDebug(gameState: GameState): void {
+  return;
   setIsDebug(true);
 
   uiState.editResearchOpen = true;

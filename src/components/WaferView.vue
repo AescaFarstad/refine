@@ -329,11 +329,7 @@ function onMouseDown(event: MouseEvent) {
   const canvas = overlayCanvas.value;
   if (!canvas) return;
 
-  if (event.button === 2) {
-    console.log('[WaferView] mousedown right-click', { button: event.button });
-    return;
-  }
-
+  if (event.button === 2) return;
   if (event.button !== 0) return;
 
   if (props.connectMode) {
@@ -411,16 +407,12 @@ function onMouseUp(event: MouseEvent) {
 }
 
 function onPointerDown(event: PointerEvent) {
-  if (event.button === 2) {
-    console.log('[WaferView] pointerdown right-click', { button: event.button, buttons: event.buttons, pointerType: event.pointerType });
-    return;
-  }
+  if (event.button === 2) return;
 }
 
 function onKeyDown(event: KeyboardEvent) {
   if (event.key === ' ') {
     event.preventDefault();
-    console.log('[WaferView] keydown space');
     emit('rotate');
   }
 }
@@ -428,7 +420,6 @@ function onKeyDown(event: KeyboardEvent) {
 function onContextMenu(event: MouseEvent) {
   event.preventDefault();
   event.stopPropagation();
-  console.log('[WaferView] contextmenu -> rotate');
   emit('rotate');
 }
 

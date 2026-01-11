@@ -74,6 +74,7 @@ export const uiState = reactive({
 
   gearUpgradeModalOpen: false,
   gearUpgradeFocusCategory: '' as string,
+  hasDiscoveredGear: false,
   hasDiscoveredGearUpgradeModal: false,
   hasEverHadShards: false,
 
@@ -87,6 +88,15 @@ export const uiState = reactive({
   encounteredEssences: [] as string[],
   seenEssences: [] as string[],
   discoveryCounter: 0,
+  hasDiscoveredSignatures: false,
+  hasDiscoveredRefineTab: false,
+  hasDiscoveredResearchTab: false,
+  hasDiscoveredMazeTab: false,
+  hasVisitedRefineTab: false,
+  hasVisitedResearchTab: false,
+  hasVisitedMazeTab: false,
+  signatureLevel: 1,
+  completedSignatureIds: [] as string[],
   waferUpgradesPurchased: 0,
   wafer: createWafer(2) as Wafer,
   waferSize: { x: 0, y: 0 } as Point2,
@@ -237,7 +247,17 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.encounteredEssences = Object.keys(game.encounteredEssences);
   uiState.seenEssences = Object.keys(game.seenEssences);
   uiState.discoveryCounter = game.discoveryCounter;
+  uiState.hasDiscoveredGear = game.discoveries[DISCOVERY.GEAR] === true;
   uiState.hasDiscoveredGearUpgradeModal = game.discoveries[DISCOVERY.GEAR_UPGRADE_MODAL_OPENED] === true;
+  uiState.hasDiscoveredSignatures = game.discoveries[DISCOVERY.SIGNATURES] === true;
+  uiState.hasDiscoveredRefineTab = game.discoveries[DISCOVERY.TAB_REFINE] === true;
+  uiState.hasDiscoveredResearchTab = game.discoveries[DISCOVERY.TAB_RESEARCH] === true;
+  uiState.hasDiscoveredMazeTab = game.discoveries[DISCOVERY.TAB_MAZE] === true;
+  uiState.hasVisitedRefineTab = game.discoveries[DISCOVERY.TAB_REFINE_VISITED] === true;
+  uiState.hasVisitedResearchTab = game.discoveries[DISCOVERY.TAB_RESEARCH_VISITED] === true;
+  uiState.hasVisitedMazeTab = game.discoveries[DISCOVERY.TAB_MAZE_VISITED] === true;
+  uiState.signatureLevel = game.signatureLevel;
+  uiState.completedSignatureIds = [...game.completedSignatureIds];
   uiState.hasEverHadShards =
     (game.discoveries[DISCOVERY.SHARDS] === true) ||
     (game.shardDust > 0) ||

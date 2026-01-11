@@ -3,6 +3,7 @@ import { getCell } from './Wafer';
 import { axialNeighbors } from './HexMath';
 import {
     CYAN_SUCCESS_BONUS_PCT,
+    CYAN_YIELD_BONUS_PCT,
     ESSENCE_CREDITS,
     ESSENCE_CHRONOTRACES,
     ESSENCE_TEMPORAL_FLUX,
@@ -19,6 +20,7 @@ export interface RefinePreviewChem {
 
     signatureYieldBonus: number;
     signatureSpeedBonus: number;
+    cyanYieldBonus: number;
 
     totalYieldPct: number;
 
@@ -290,8 +292,9 @@ export function computeRefinePreviewChem(wafer: Wafer): RefinePreviewChem {
 
     const signatureYieldBonus = 0;
     const signatureSpeedBonus = 0;
+    const cyanYieldBonus = cyanCount * CYAN_YIELD_BONUS_PCT;
 
-    const totalYieldPct = baseYieldPct + signatureYieldBonus;
+    const totalYieldPct = baseYieldPct + signatureYieldBonus + cyanYieldBonus;
 
     const red = essenceTotals['red'] || 0;
     const green = essenceTotals['green'] || 0;
@@ -308,6 +311,7 @@ export function computeRefinePreviewChem(wafer: Wafer): RefinePreviewChem {
         baseYieldPct,
         signatureYieldBonus,
         signatureSpeedBonus,
+        cyanYieldBonus,
         totalYieldPct,
         expectedCredits,
         expectedChrono,

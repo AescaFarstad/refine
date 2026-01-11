@@ -296,7 +296,7 @@ function drawArchetypeIconForNode(
 ): void {
   if (!cells.length) return;
 
-  const icon = archetype.icon;
+  const icon = (owned && archetype.ownedIcon) ? archetype.ownedIcon : archetype.icon;
   if (icon.kind === 'none') return;
 
   const nodeId = cells[0].nodeId;
@@ -330,20 +330,19 @@ function drawArchetypeIconForNode(
     centerY = sumY / cells.length;
   }
 
-  let fontSize = hexSize * 1.05;
-  fontSize = Math.max(12, fontSize);
-  if (maxIconSize != null) {
-    fontSize = Math.min(fontSize, maxIconSize);
-  }
-
   if (icon.kind === 'glyph') {
+    const iconScale = icon.scale ?? 1;
+    const iconOffset = icon.offset ?? { x: 0, y: 0 };
+    const baseSize = hexSize * 1.05;
+    const glyphSize = baseSize * iconScale;
+    const fontSize = Math.max(12, glyphSize);
     ctx.save();
     ctx.globalAlpha = owned ? 1 : 0.95;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = `bold ${fontSize}px sans-serif`;
     ctx.fillStyle = 'rgba(248, 250, 252, 0.96)';
-    ctx.fillText(icon.glyph, centerX, centerY + 2);
+    ctx.fillText(icon.glyph, centerX + iconOffset.x, centerY + iconOffset.y + 2);
     ctx.restore();
     return;
   }
@@ -425,18 +424,12 @@ function drawStatIconForNode(
     centerY = sumY / cells.length;
   }
 
-  let fontSize = hexSize * 1.1;
-  fontSize = Math.max(12, fontSize);
-  if (layoutMaxIconSize != null) {
-    fontSize = Math.min(fontSize, layoutMaxIconSize);
-  }
-
-  fontSize *= spec.scale;
-
   centerX += spec.offsetX;
   centerY += spec.offsetY;
 
   if (spec.kind === 'glyph') {
+    const glyphSize = layoutMaxIconSize != null ? layoutMaxIconSize : hexSize * 1.1;
+    const fontSize = Math.max(12, glyphSize * spec.scale);
     ctx.save();
     ctx.globalAlpha = owned ? 1 : 0.95;
     ctx.textAlign = 'center';
@@ -522,14 +515,11 @@ function drawResourceIconForNode(
     centerY = sumY / cells.length;
   }
 
-  let fontSize = hexSize * 1.1;
-  fontSize = Math.max(12, fontSize);
-  if (maxIconSize != null) {
-    fontSize = Math.min(fontSize, maxIconSize);
-  }
-
   centerX += offsets.offsetX;
   centerY += offsets.offsetY;
+
+  const glyphSize = maxIconSize != null ? maxIconSize : hexSize * 1.1;
+  const fontSize = Math.max(12, glyphSize);
 
   ctx.save();
   ctx.globalAlpha = owned ? 1 : 0.95;

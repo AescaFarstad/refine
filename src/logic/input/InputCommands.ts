@@ -125,6 +125,10 @@ export class CmdOpenGearUpgradeModal implements CmdInput {
   readonly name = 'CmdOpenGearUpgradeModal';
 }
 
+export class CmdDiscoverGear implements CmdInput {
+  readonly name = 'CmdDiscoverGear';
+}
+
 export class CmdMarkEssencesSeen implements CmdInput {
   readonly name = 'CmdMarkEssencesSeen';
   constructor() { }

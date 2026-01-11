@@ -35,6 +35,16 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     icon: { kind: 'glyph', glyph: 'ⓘ' },
     rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.TIME_BREAKDOWN }],
   },
+  disc_essence_anomaly: {
+    type: 'discovery',
+    title: 'Essence anomaly',
+    description: 'A mysterious essence mutation of unclear nature.',
+    ownedTitle: 'Cyan anomaly',
+    ownedDescription: 'Cyan essence now gives 10% bonus yield.',
+    icon: { kind: 'glyph', glyph: '?', scale: 2.2, offset: { x: 0, y: 8 }},
+    ownedIcon: { kind: 'itemImage', key: 'cyan' },
+    rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.CYAN_YIELD }],
+  },
 
   // Gear archetypes are auto-generated from gear definitions in ResearchLib.load()
 };

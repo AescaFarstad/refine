@@ -1,14 +1,14 @@
 <template>
   <div class="deploy">
     <div class="deploy-row">
-      <button class="deploy-btn" type="button" :disabled="!canDeploy" @click="deploy">Deploy</button>
+      <button class="deploy-btn" type="button" :disabled="!canDeploy" @click="deploy" @mouseenter="isDeployHovered = true" @mouseleave="isDeployHovered = false">Deploy</button>
       <div class="stats">
         <div class="cell" :class="{ red: !canAfford }">
           <div class="cell-label tooltip-label" :data-tooltip="TOOLTIP_GEAR_COST">Gear cost</div>
           <span class="cell-value" :style="{ color: creditsSpec.color }">{{ selectedPrice }}{{ creditsSpec.glyph }}</span>
         </div>
         <div class="cell-stack">
-          <div class="cell" :class="{ reddish: survivalChance < 50 && survivalChance >= 25, red: survivalChance < 25 }">
+          <div class="cell" :class="{ reddish: survivalChance < 50 && survivalChance >= 25, red: survivalChance < 25, 'flash-red': shouldFlashSurvival }">
             <div class="cell-label tooltip-label" :data-tooltip="survivalBreakdownTooltip">Survival</div>
             <span class="cell-value">~{{ survivalChance }}%</span>
           </div>
@@ -19,7 +19,7 @@
         <div class="cell-stack">
           <div class="cell" :class="{ reddish: timeInHours > 4 && timeInHours <= 24, red: timeInHours > 24 }">
             <div class="cell-label tooltip-label" :data-tooltip="timeBreakdownTooltip">Time</div>
-            <span class="cell-value">~{{ estimatedTime }}</span>
+            <span class="cell-value">{{ hasTimeData ? '~' : '' }}{{ estimatedTime }}</span>
           </div>
           <div v-if="hasTimeBreakdown" class="cell-stack-panel cell-stack-panel--left">
             <RaidDeployTimeBreakdownPanel />
@@ -40,7 +40,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { getGameState, uiState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
 import { CmdStartRaid } from '../logic/input/InputCommands';
@@ -52,6 +52,9 @@ import RaidDeployDamageBreakdownPanel from './RaidDeployDamageBreakdownPanel.vue
 import RaidDeployTimeBreakdownPanel from './RaidDeployTimeBreakdownPanel.vue';
 
 const creditsSpec = getResourceSpec('credits');
+
+const isDeployHovered = ref(false);
+const shouldFlashSurvival = computed(() => isDeployHovered.value && survivalChance.value < 20);
 
 const TOOLTIP_GEAR_COST = 'All gear will be lost regardless of the raid outcome.\nTake only what you need.';
 const TOOLTIP_ZONE_COLLAPSE = 'You have limited time in the zone. Eventually it will collapse and disintegrate you.';
@@ -90,11 +93,19 @@ const zoneCollapseTime = computed(() => {
   return formatDurationHM(raid.zoneCollapseSec);
 });
 
+const hasTimeData = computed(() => {
+  const hasSuccesses = uiState.raidTimeBreakdownSuccesses > 0;
+  const hasZoneCollapseDeaths = uiState.raidZoneCollapseDeaths > 0;
+  return hasSuccesses || hasZoneCollapseDeaths;
+});
+
 const isCollapseWarning = computed(() => {
   const raid = selectedRaid.value;
   if (!raid || !raid.zoneCollapseSec || raid.zoneCollapseSec <= 0) return false;
   // If we have deaths to zone, don't show warning (show danger instead)
   if (zoneCollapseDeathPct.value > 0) return false;
+  // No warning if we don't have time data
+  if (!hasTimeData.value) return false;
   const estimateSec = uiState.raidTimeEstimateSec || 0;
   const collapseSec = raid.zoneCollapseSec;
   // Warning if estimated time is 80%+ of collapse time but no deaths yet
@@ -118,13 +129,17 @@ const survivalBreakdownTooltip = computed(() => {
   const monsterDeathPct = Math.round((monsterDeaths / count) * 100);
   const zoneCollapseDeathPct = Math.round((zoneCollapseDeaths / count) * 100);
 
-  let tooltip = `Estimated based on ${count} virtual attempts.`;
+  let tooltip = '';
   if (monsterDeathPct > 0) {
-    tooltip += `\nDeaths from monsters: ${monsterDeathPct}%`;
+    tooltip += `Deaths from monsters: ${monsterDeathPct}%\n`;
   }
   if (zoneCollapseDeathPct > 0) {
-    tooltip += `\nDeaths from zone collapse: ${zoneCollapseDeathPct}%`;
+    tooltip += `Deaths from zone collapse: ${zoneCollapseDeathPct}%\n`;
   }
+  if (tooltip) {
+    tooltip += '\n';
+  }
+  tooltip += `Estimated based on ${count} virtual attempts.`;
   tooltip += `\nResults may vary from simulation to simulation.`;
 
   return tooltip;
@@ -132,6 +147,7 @@ const survivalBreakdownTooltip = computed(() => {
 
 const estimatedTime = computed(() => {
   const sec = uiState.raidTimeEstimateSec;
+  if (!hasTimeData.value) return '—';
   if (sec === undefined || sec === null || sec <= 0) return '—';
   return formatDurationHM(sec);
 });
@@ -315,4 +331,20 @@ const timeBreakdownTooltip = computed(() => {
   border-color: rgba(34,197,94,0.22);
 }
 .deploy-btn:disabled:hover { background: rgba(34,197,94,0.10); }
+
+/* Flash red animation for low survival warning */
+@keyframes flash-red {
+  0%, 100% {
+    background: var(--raid-panel-bg, rgba(23, 33, 47, 0.92));
+    box-shadow: none;
+  }
+  50% {
+    background: rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+  }
+}
+
+:deep(.cell.flash-red) {
+  animation: flash-red 0.5s ease-in-out infinite;
+}
 </style>

@@ -298,7 +298,7 @@ function onSelect(id: string) {
 
 watch(() => props.visible, (v) => {
   if (v) {
-    previewRaidId.value = uiState.activeRaidId || firstUnlockedRaidId();
+    previewRaidId.value = uiState.activeRaidId || null;
   }
 });
 
@@ -328,6 +328,7 @@ function firstUnlockedRaidId(): string | null {
   border-radius: 8px;
   width: 97vw;
   max-width: 1380px;
+  min-height: 712px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -375,8 +376,11 @@ function firstUnlockedRaidId(): string | null {
   flex-direction: column;
   gap: 8px;
   overflow-y: auto;
+  overflow-x: visible;
   max-height: 60vh;
   scrollbar-gutter: stable;
+  padding-top: 4px;
+  margin-top: -4px;
 }
 .raid-card {
   position: relative;

@@ -9,6 +9,7 @@ export const ESSENCE_TEMPORAL_FLUX = 1;
 export const REFINE_TIME = 4 * 3600
 export const FAILURE_PER_EMPTY_CELL = 5
 export const CYAN_SUCCESS_BONUS_PCT = 10
+export const CYAN_YIELD_BONUS_PCT = 10
 export const MAGENTA_SUCCESS_PENALTY_PCT = 25
 export const REFINE_TIME_NAME = {
   terribly_slow: "Terribly Slow",

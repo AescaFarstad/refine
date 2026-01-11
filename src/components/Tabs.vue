@@ -11,8 +11,9 @@
       <span class="tab-sub" :class="{ 'resource-animate': animatingCredits }"><span class="tab-label">{{ creditsSpec.name }}</span><span class="tab-value" data-resource-display="credits" :style="{ color: creditsSpec.color }">{{ creditsDisplay }}</span></span>
     </button>
     <button
+      v-if="uiState.hasDiscoveredRefineTab"
       class="tab"
-      :class="{ active: activeTab === 'refine' }"
+      :class="{ active: activeTab === 'refine', 'tab-unvisited': !uiState.hasVisitedRefineTab }"
       @click="switchTab('refine')"
       :disabled="uiState.timeActive"
       type="button"
@@ -21,8 +22,9 @@
       <span class="tab-sub" :class="{ 'resource-animate': animatingShards }"><span class="tab-label">{{ shardSpec.name }}</span><span class="tab-value" data-resource-display="shards" :style="{ color: shardSpec.color }">{{ shardsDisplay }}</span></span>
     </button>
     <button
+      v-if="uiState.hasDiscoveredResearchTab"
       class="tab"
-      :class="{ active: activeTab === 'research' }"
+      :class="{ active: activeTab === 'research', 'tab-unvisited': !uiState.hasVisitedResearchTab }"
       @click="switchTab('research')"
       :disabled="uiState.timeActive"
       type="button"
@@ -31,8 +33,9 @@
       <span class="tab-sub" :class="{ 'resource-animate': animatingChronotraces }"><span class="tab-label">{{ chronotracesSpec.name }}</span><span class="tab-value" data-resource-display="chronotraces" :style="{ color: chronotracesSpec.color }">{{ chronoDisplay }}</span></span>
     </button>
     <button
+      v-if="uiState.hasDiscoveredMazeTab"
       class="tab"
-      :class="{ active: activeTab === 'maze' }"
+      :class="{ active: activeTab === 'maze', 'tab-unvisited': !uiState.hasVisitedMazeTab }"
       @click="switchTab('maze')"
       :disabled="uiState.timeActive"
       type="button"
@@ -232,6 +235,24 @@ watch(() => uiState.shardDust, (newVal, oldVal) => {
   color: #4fd1c5;
   border-bottom-color: #4fd1c5;
   background: linear-gradient(180deg, rgba(79, 209, 197, 0.12), rgba(79, 209, 197, 0.04));
+}
+
+/* Pulsating animation for discovered but unvisited tabs */
+.tab.tab-unvisited:not(.active):not(:disabled) {
+  animation: tab-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes tab-pulse {
+  0%, 100% {
+    background: rgba(79, 209, 197, 0.1);
+    box-shadow: 0 0 4px 0 rgba(79, 209, 197, 0.2);
+    color: #94a3b8;
+  }
+  50% {
+    background: rgba(79, 209, 197, 0.45);
+    box-shadow: 0 0 24px 6px rgba(79, 209, 197, 0.6), inset 0 0 16px rgba(79, 209, 197, 0.25);
+    color: #fff;
+  }
 }
 
 /* Resource increase animation */

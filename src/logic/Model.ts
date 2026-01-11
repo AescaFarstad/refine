@@ -10,7 +10,7 @@ import { ArtefactType, Chase } from "../maze/Chase";
 import generateIceMaze from "../maze/IceMazeGen";
 import { clearWafer } from "./Wafer";
 import { calculateVisibility } from "./Research";
-import { ensureShardDiscovery } from "./Discover";
+import { ensureShardDiscovery, ensureResearchTabDiscovery, ensureMazeTabDiscovery } from "./Discover";
 import { applyReward } from "./Reward";
 
 const TIME_SPEED_MAX = 3800;
@@ -125,8 +125,10 @@ function updateShards(gs: GameState, dt: number) {
           gs.credits += shard.amount;
         } else if (shard.resource === 'chronotraces') {
           gs.chronotraces += shard.amount;
+          ensureResearchTabDiscovery(gs);
         } else if (shard.resource === 'timeFlux') {
           gs.timeFlux += shard.amount;
+          ensureMazeTabDiscovery(gs);
         } else if (shard.resource === 'shards') {
           gs.shardDust += shard.amount;
         }

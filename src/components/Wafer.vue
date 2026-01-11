@@ -69,74 +69,103 @@
     </div>
 
     <div class="info-panel">
-      <div class="stats-table">
-        <div class="stat-row">
-          <span class="stat-label">Expected Credits:</span>
-          <span class="stat-value hl" :style="{ color: creditsSpec.color }">{{ preview.expectedCredits }}{{ creditsSpec.glyph }}</span>
-          <span class="stat-source" v-if="preview.creditsEssences > 0">
-            from {{ preview.creditsEssences }}
-            <template v-for="(key, idx) in creditsEssenceKeys" :key="key">
-              <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
-              <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
-            </template>
-          </span>
-        </div>
+      <div v-if="showSignatureTabs" class="info-tabs">
+        <button
+          type="button"
+          class="info-tab"
+          :class="{ active: infoTab === 'wafer' }"
+          @click="infoTab = 'wafer'"
+        >
+          Wafer Info
+        </button>
+        <button
+          type="button"
+          class="info-tab"
+          :class="{ active: infoTab === 'signatures' }"
+          @click="infoTab = 'signatures'"
+        >
+          Signatures
+        </button>
+      </div>
 
-        <div class="stat-row">
-          <span class="stat-label">Expected Chronotraces:</span>
-          <span class="stat-value hl" :style="{ color: chronotracesSpec.color }">{{ preview.expectedChrono }}{{ chronotracesSpec.glyph }}</span>
-          <span class="stat-source" v-if="preview.chronoEssences > 0">
-            from {{ preview.chronoEssences }}
-            <template v-for="(key, idx) in chronoEssenceKeys" :key="key">
-              <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
-              <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
-            </template>
-          </span>
-        </div>
-
-        <div class="stat-row">
-          <span class="stat-label">Expected Time Flux:</span>
-          <span class="stat-value hl" :style="{ color: timeFluxSpec.color }">{{ preview.expectedFlux }}{{ timeFluxSpec.glyph }}</span>
-          <span class="stat-source" v-if="preview.fluxEssences > 0">
-            from {{ preview.fluxEssences }}
-            <template v-for="(key, idx) in fluxEssenceKeys" :key="key">
-              <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
-              <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
-            </template>
-          </span>
-        </div>
-
-        <div class="stat-row">
-          <span class="stat-label">Failure Chance:</span>
-          <span class="stat-value" :class="failureClass">{{ preview.failureChancePct }}%</span>
-          <span class="stat-source" v-if="preview.emptyCells > 0 || cyanEssences > 0 || magentaEssences > 0">
-            <template v-if="preview.emptyCells > 0">
-              from {{ preview.emptyCells }} empty cells
-            </template>
-            <template v-if="cyanEssences > 0">
-              <template v-if="preview.emptyCells > 0">, </template>
-              -{{ cyanReduction }}% from {{ cyanEssences }}
+      <div class="info-body" :class="{ clickable: showSignatureTabs }" @click="cycleInfoTab">
+        <div v-if="!showSignatureTabs || infoTab === 'wafer'" class="stats-table">
+          <div v-if="showYield" class="stat-row">
+            <span class="stat-label">Yield:</span>
+            <span class="stat-value" :class="{ 'yield-bonus': preview.totalYieldPct > 100 }">{{ preview.totalYieldPct }}%</span>
+            <span class="stat-source" v-if="preview.cyanYieldBonus > 0">
+              +{{ preview.cyanYieldBonus }}% from {{ cyanEssences }}
               <template v-for="(key, idx) in cyanEssenceKeys" :key="key">
                 <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
                 <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
               </template>
-            </template>
-            <template v-if="magentaEssences > 0">
-              <template v-if="preview.emptyCells > 0 || cyanEssences > 0">, </template>
-              +{{ magentaPenalty }}% from {{ magentaEssences }}
-              <template v-for="(key, idx) in magentaEssenceKeys" :key="key">
+            </span>
+          </div>
+
+          <div class="stat-row">
+            <span class="stat-label">Expected Credits:</span>
+            <span class="stat-value hl" :style="{ color: creditsSpec.color }">{{ preview.expectedCredits }}{{ creditsSpec.glyph }}</span>
+            <span class="stat-source" v-if="preview.creditsEssences > 0">
+              from {{ preview.creditsEssences }}
+              <template v-for="(key, idx) in creditsEssenceKeys" :key="key">
                 <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
                 <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
               </template>
-            </template>
-          </span>
+            </span>
+          </div>
+
+          <div class="stat-row">
+            <span class="stat-label">Expected Chronotraces:</span>
+            <span class="stat-value hl" :style="{ color: chronotracesSpec.color }">{{ preview.expectedChrono }}{{ chronotracesSpec.glyph }}</span>
+            <span class="stat-source" v-if="preview.chronoEssences > 0">
+              from {{ preview.chronoEssences }}
+              <template v-for="(key, idx) in chronoEssenceKeys" :key="key">
+                <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
+                <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
+              </template>
+            </span>
+          </div>
+
+          <div class="stat-row">
+            <span class="stat-label">Expected Time Flux:</span>
+            <span class="stat-value hl" :style="{ color: timeFluxSpec.color }">{{ preview.expectedFlux }}{{ timeFluxSpec.glyph }}</span>
+            <span class="stat-source" v-if="preview.fluxEssences > 0">
+              from {{ preview.fluxEssences }}
+              <template v-for="(key, idx) in fluxEssenceKeys" :key="key">
+                <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
+                <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
+              </template>
+            </span>
+          </div>
+
+          <div class="stat-row" :class="{ 'flash-red': shouldFlashFailure }">
+            <span class="stat-label">Failure Chance:</span>
+            <span class="stat-value" :class="failureClass">{{ preview.failureChancePct }}%</span>
+            <span class="stat-source" v-if="preview.emptyCells > 0 || cyanEssences > 0 || magentaEssences > 0">
+              <template v-if="preview.emptyCells > 0">
+                from {{ preview.emptyCells }} empty cells
+              </template>
+              <template v-if="cyanEssences > 0">
+                <template v-if="preview.emptyCells > 0">, </template>
+                {{ cyanReduction }}% success from
+                <template v-for="(key, idx) in cyanEssenceKeys" :key="key">
+                  <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
+                  <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
+                </template>
+              </template>
+              <template v-if="magentaEssences > 0">
+                <template v-if="preview.emptyCells > 0 || cyanEssences > 0">, </template>
+                +{{ magentaPenalty }}% from {{ magentaEssences }}
+                <template v-for="(key, idx) in magentaEssenceKeys" :key="key">
+                  <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
+                  <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
+                </template>
+              </template>
+            </span>
+          </div>
         </div>
 
-        <div class="stat-row">
-          <span class="stat-label">Time:</span>
-          <span class="stat-value">4 hours</span>
-          <span class="stat-source"></span>
-        </div>
+        <Signatures v-else />
       </div>
     </div>
 
@@ -146,8 +175,10 @@
         class="start-btn"
         :disabled="!canRefine"
         @click="startRefining"
+        @mouseenter="isRefineHovered = true"
+        @mouseleave="isRefineHovered = false"
       >
-        Start Refining
+        Start Refining (4 hours)
       </button>
 
       <div v-if="isRefining" class="progress-status">
@@ -165,6 +196,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import WaferView from './WaferView.vue';
 import ItemDisplay from './ItemDisplay.vue';
 import RefineAnim from './RefineAnim.vue';
+import Signatures from './Signatures.vue';
 import type { Wafer } from '../logic/Wafer';
 import type { Molecule, Point2 } from '../logic/ItemLib';
 import { canPlaceMolecule, getCell, computeUpgradeableRegion, computeWaferUpgradePrice } from '../logic/Wafer';
@@ -205,6 +237,9 @@ const wafer = computed(() => uiState.wafer);
 // Touch waferVersion to ensure reactivity when wafer contents change
 const waferVersion = computed(() => uiState.waferVersion);
 
+const showSignatureTabs = computed(() => uiState.hasDiscoveredSignatures);
+const infoTab = ref<'wafer' | 'signatures'>('wafer');
+
 const ghostMolecule = ref<Molecule | null>(null);
 const ghostPosition = ref<Point2 | null>(null);
 const ghostValid = ref(false);
@@ -212,6 +247,8 @@ const highlightItemIdx = ref<number | null>(null);
 const lastHoverPos = ref<Point2 | null>(null);
 const rotation = ref(0);
 const upgradeHoverCells = ref<Point2[] | null>(null);
+const isRefineHovered = ref(false);
+const shouldFlashFailure = computed(() => isRefineHovered.value && canRefine.value && preview.value.failureChancePct > 20);
 
 
 const activeRefinery = computed(() => uiState.refinery);
@@ -270,6 +307,8 @@ onMounted(() => {
 const preview = computed(() => {
   // Touch waferVersion for reactivity
   waferVersion.value;
+  // Touch discoveryCounter to react to discovery changes
+  const _dep = uiState.discoveryCounter;
 
   if (!wafer.value) {
     return {
@@ -283,6 +322,8 @@ const preview = computed(() => {
       fluxEssences: 0,
       emptyCells: 0,
       cellEffectiveCounts: {} as Record<string, number>,
+      totalYieldPct: 100,
+      cyanYieldBonus: 0,
     };
   }
 
@@ -297,8 +338,33 @@ const preview = computed(() => {
   // Use the pre-calculated empty count from wafer
   const emptyCells = wafer.value.emptyCount || 0;
 
+  // Check if CYAN_YIELD is discovered - only then apply cyan yield bonus
+  const gs = getGameState();
+  const hasCyanYield = gs?.discoveries?.[DISCOVERY.CYAN_YIELD] === true;
+
+  // If CYAN_YIELD is not discovered, recalculate expected values without the cyan yield bonus
+  let { expectedCredits, expectedChrono, expectedFlux, totalYieldPct, cyanYieldBonus } = basePreview;
+
+  if (!hasCyanYield && cyanYieldBonus > 0) {
+    // Remove the cyan yield bonus from the calculation
+    const yieldWithoutCyan = (totalYieldPct - cyanYieldBonus) / 100;
+    const yieldWithCyan = totalYieldPct / 100;
+    const adjustmentFactor = yieldWithoutCyan / yieldWithCyan;
+
+    expectedCredits = Math.round(expectedCredits * adjustmentFactor);
+    expectedChrono = Math.round(expectedChrono * adjustmentFactor);
+    expectedFlux = Math.round(expectedFlux * adjustmentFactor);
+    totalYieldPct = totalYieldPct - cyanYieldBonus;
+    cyanYieldBonus = 0;
+  }
+
   return {
     ...basePreview,
+    expectedCredits,
+    expectedChrono,
+    expectedFlux,
+    totalYieldPct,
+    cyanYieldBonus,
     creditsEssences,
     chronoEssences,
     fluxEssences,
@@ -340,6 +406,13 @@ const magentaEssenceKeys = computed(() => {
 
 const magentaPenalty = computed(() => {
   return magentaEssences.value * MAGENTA_SUCCESS_PENALTY_PCT;
+});
+
+const showYield = computed(() => {
+  // Touch discoveryCounter to trigger recompute when discoveries change
+  const _dep = uiState.discoveryCounter;
+  const gs = getGameState();
+  return gs?.discoveries?.[DISCOVERY.REFINE_YIELD] === true;
 });
 
 const failureClass = computed(() => {
@@ -557,6 +630,11 @@ function clearHighlight() {
   highlightItemIdx.value = null;
 }
 
+function cycleInfoTab() {
+  if (!showSignatureTabs.value) return;
+  infoTab.value = infoTab.value === 'wafer' ? 'signatures' : 'wafer';
+}
+
 function startRefining() {
   if (!canRefine.value) return;
   emit('refine-start');
@@ -731,6 +809,50 @@ function onRotate() {
   border-radius: 6px;
   padding: 16px;
   width: 772px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.info-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--panel-border);
+  margin: -16px -16px 0 -16px;
+  padding: 0;
+}
+
+.info-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  font-size: 16px;
+  font-weight: 500;
+  padding: 12px 16px;
+  margin-bottom: -1px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+  text-align: center;
+}
+
+.info-tab:hover {
+  color: var(--text-primary);
+}
+
+.info-tab.active {
+  color: #4fd1c5;
+  border-bottom-color: #4fd1c5;
+}
+
+.info-body {
+  flex: 1;
+  overflow: auto;
+}
+
+.info-body.clickable {
+  cursor: pointer;
 }
 
 .stats-table {
@@ -808,6 +930,11 @@ function onRotate() {
   font-weight: 500;
 }
 
+.yield-bonus {
+  color: #22d3d1;
+  font-weight: 600;
+}
+
 .warning {
   color: #fbbf24;
   font-weight: 500;
@@ -882,5 +1009,12 @@ function onRotate() {
   font-size: 12px;
   color: var(--text-secondary);
   margin-left: 30px;
+}
+
+/* Red highlight for high failure warning on hover */
+.stat-row.flash-red {
+  background: rgba(239, 68, 68, 0.25);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+  border-radius: 4px;
 }
 </style>

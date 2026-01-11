@@ -45,6 +45,8 @@ const hintRows = computed((): Array<{ label: string; value: string }> => {
   if (g.volume) rows.push({ label: 'Volume', value: `${fmtSigned(g.volume)}` });
   // Perk
   if (g.perk) rows.push({ label: 'Perk', value: g.perk });
+  // Description
+  if (g.description) rows.push({ label: '', value: g.description });
   return rows;
 });
 </script>

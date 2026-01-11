@@ -27,6 +27,8 @@ let lastX = 0;
 let lastY = 0;
 let followerVisible = true;
 
+let rafPending = false;
+
 function onPointerMove(e: PointerEvent | MouseEvent) {
   if (!active || !follower) return;
   const x = (e as PointerEvent).clientX;
@@ -34,8 +36,15 @@ function onPointerMove(e: PointerEvent | MouseEvent) {
   lastX = x;
   lastY = y;
   follower.style.transform = `translate(${Math.round(x - anchorX)}px, ${Math.round(y - anchorY)}px)`;
-  // Fire move event for potential consumers (optional)
-  window.dispatchEvent(new CustomEvent(MOVE_EVENT, { detail: { clientX: x, clientY: y, payload: payloadRef } }));
+
+  // Throttle move events to animation frame
+  if (!rafPending) {
+    rafPending = true;
+    requestAnimationFrame(() => {
+      rafPending = false;
+      window.dispatchEvent(new CustomEvent(MOVE_EVENT, { detail: { clientX: lastX, clientY: lastY, payload: payloadRef } }));
+    });
+  }
 }
 
 function cleanupFollower() {

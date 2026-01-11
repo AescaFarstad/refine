@@ -1,16 +1,16 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAknowledgeOutcome, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdMarkEssencesSeen, CmdSwitchTab } from './InputCommands';
-import { discover } from '../Discover';
+import { CmdStartRaid, CmdAdvanceTime, CmdAknowledgeOutcome, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscoverGear, CmdMarkEssencesSeen, CmdSwitchTab } from './InputCommands';
+import { discover, discoverRefineTab } from '../Discover';
 import { DISCOVERY } from '../DiscoveryLib';
-import { EvtRefineryDone } from '../evt/Evt';
-import { computeRefinePreviewChem, computeEffectiveEssences } from '../RefinePreview';
+import { computeEffectiveEssences } from '../RefinePreview';
 import type { Point2 } from '../core/math';
 import { runRaid, recomputeActiveRaidParams, toggleGearForRaid, recomputeActiveRaidEstimates, getEffectiveRaidDefinition } from '../Raid';
 import { pickAndApplyRaidSuccessMutation, describeMutation, questIsAvailable } from '../RaidMutation';
 import { placeMolecule, removeMolecule, enableCellWithFloodfill, computeWaferUpgradePrice } from '../Wafer';
 import { applyResearchPurchase } from '../Research';
+import { startRefining } from '../Refine';
 
 type Handler = (gs: GameState, cmd: CmdInput) => void;
 const handlersByName = new Map<string, Handler>();
@@ -97,9 +97,11 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
   }
 
   if (result.success) {
+    let hasLootedItems = false;
     for (const [id, qty] of Object.entries(result.bagItemCounts)) {
       const q = qty | 0;
       if (q <= 0) continue;
+      hasLootedItems = true;
       const essence = gs.lib.getItem(id).essence;
       for (const [k, v] of Object.entries(essence)) {
         if (!v) continue;
@@ -108,6 +110,9 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
       const existing = gs.items.find(x => x.id === id);
       if (existing) existing.quantity += q;
       else gs.items.push({ id, quantity: q });
+    }
+    if (hasLootedItems) {
+      discoverRefineTab(gs);
     }
   }
 
@@ -158,21 +163,7 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
 });
 
 handlersByName.set('CmdStartRefining', (gs, cmd) => {
-  if (gs.nextEvt && gs.nextEvt.name === 'EvtRefineryDone') return;
-
-  // Items are removed from inventory as they are placed onto the wafer.
-  let hasAny = false;
-  for (const placed of gs.wafer.items) {
-    if (placed) { hasAny = true; break; }
-  }
-  if (!hasAny) return;
-
-  const preview = computeRefinePreviewChem(gs.wafer);
-  gs.refiningDuration = Math.max(0, Math.round(preview.timeSec));
-
-  const duration = gs.refiningDuration;
-  gs.nextEvt = new EvtRefineryDone({ at: gs.gameTime + duration });
-  gs.timeActive = true;
+  startRefining(gs);
 });
 
 handlersByName.set('CmdAknowledgeOutcome', (gs, cmd) => {
@@ -330,10 +321,22 @@ handlersByName.set('CmdOpenGearUpgradeModal', (gs) => {
   discover(gs, DISCOVERY.GEAR_UPGRADE_MODAL_OPENED);
 });
 
+handlersByName.set('CmdDiscoverGear', (gs) => {
+  discover(gs, DISCOVERY.GEAR);
+});
+
 handlersByName.set('CmdSwitchTab', (gs, cmd) => {
   const c = cmd as CmdSwitchTab;
   if (!gs.timeActive) {
     gs.activeTab = c.tab;
+    // Mark tab as visited
+    if (c.tab === 'refine') {
+      discover(gs, DISCOVERY.TAB_REFINE_VISITED);
+    } else if (c.tab === 'research') {
+      discover(gs, DISCOVERY.TAB_RESEARCH_VISITED);
+    } else if (c.tab === 'maze') {
+      discover(gs, DISCOVERY.TAB_MAZE_VISITED);
+    }
   }
 });
 

@@ -5,7 +5,7 @@ export type ResearchNodeType = 'obstacle' | 'empty' | 'stat' | 'gear' | 'resourc
 
 export type ResearchArchetypeIcon =
   | { kind: 'none' }
-  | { kind: 'glyph'; glyph: string }
+  | { kind: 'glyph'; glyph: string; scale?: number; offset?: Point2 }
   | { kind: 'itemImage'; key: string };
 
 export interface ResearchArchetypeDef {
@@ -13,7 +13,10 @@ export interface ResearchArchetypeDef {
   covert?: boolean;
   title?: string;
   description?: string;
+  ownedTitle?: string;
+  ownedDescription?: string;
   icon?: ResearchArchetypeIcon;
+  ownedIcon?: ResearchArchetypeIcon;
   rewards: Reward[];
 }
 
@@ -36,7 +39,10 @@ export interface ResearchArchetype {
   covert: boolean;
   title: string;
   description: string;
+  ownedTitle: string;
+  ownedDescription: string;
   icon: ResearchArchetypeIcon;
+  ownedIcon: ResearchArchetypeIcon | null;
   rewards: Reward[];
 }
 
@@ -110,7 +116,10 @@ export class ResearchLib {
         covert: input.covert ?? false,
         title: input.title ?? '',
         description: input.description ?? '',
+        ownedTitle: input.ownedTitle ?? '',
+        ownedDescription: input.ownedDescription ?? '',
         icon: input.icon ?? { kind: 'none' },
+        ownedIcon: input.ownedIcon ?? null,
         rewards: input.rewards,
       };
       this.archetypes.set(arch.id, arch);
@@ -128,7 +137,10 @@ export class ResearchLib {
             covert: false,
             title: '',
             description: '',
+            ownedTitle: '',
+            ownedDescription: '',
             icon: { kind: 'none' },
+            ownedIcon: null,
             rewards: [{ kind: 'unlock_gear', gearId: gearId }],
           };
           this.archetypes.set(arch.id, arch);

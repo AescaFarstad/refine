@@ -1,7 +1,7 @@
 import { Raid, type GameState } from './GameState';
 import type { RaidMutation } from './RaidMutation';
 import { applyPermanentRaidMutation } from './RaidMutation';
-import { discover } from './Discover';
+import { discover, ensureResearchTabDiscovery, ensureMazeTabDiscovery } from './Discover';
 
 export type Reward =
   | { kind: 'resource'; resource: 'credits' | 'chronotraces' | 'timeFlux' | 'shardDust' | 'skillPoints'; amount: number }
@@ -31,6 +31,11 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
   switch (reward.kind) {
     case 'resource':
       gs[reward.resource] += reward.amount;
+      if (reward.resource === 'chronotraces' && reward.amount > 0) {
+        ensureResearchTabDiscovery(gs);
+      } else if (reward.resource === 'timeFlux' && reward.amount > 0) {
+        ensureMazeTabDiscovery(gs);
+      }
       break;
 
     case 'stat': {

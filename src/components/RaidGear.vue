@@ -1,36 +1,41 @@
 <template>
   <div class="gear panel">
-    <div class="gear-grid">
-      <div v-for="(cat, colIndex) in categories" :key="cat" class="gear-col">
-        <div class="gear-cat">
-          <div class="name">{{ displayCategoryName(cat) }}</div>
-          <div class="cat-right">
-            <button
-              v-if="canShowUpgradeButton(cat)"
-              :class="['upgrade-btn', { 'pulse': shouldPulseUpgradeButton }]"
-              @click="openUpgradeModal(cat)"
-              title="Upgrade gear categories"
-            >+</button>
-            <div class="slots" :aria-label="usedCount(cat) + '/' + allowedSlots(cat)">{{ slotCircles(cat) }}</div>
+    <template v-if="!hasDiscoveredGear">
+      <div class="discover-gear-container">
+        <button class="discover-gear-btn" @click="discoverGear">Review available gear</button>
+      </div>
+    </template>
+    <template v-else>
+      <div class="gear-grid">
+        <div v-for="(cat, colIndex) in categories" :key="cat" class="gear-col">
+          <div class="gear-cat">
+            <div class="name">{{ displayCategoryName(cat) }}</div>
+            <div class="cat-right">
+              <button
+                v-if="canShowUpgradeButton(cat)"
+                :class="['upgrade-btn', { 'pulse': shouldPulseUpgradeButton }]"
+                @click="openUpgradeModal(cat)"
+                title="Upgrade gear categories"
+              >+</button>
+              <div class="slots" :aria-label="usedCount(cat) + '/' + allowedSlots(cat)">{{ slotCircles(cat) }}</div>
+            </div>
+          </div>
+          <div class="gear-items">
+            <GearItem
+              v-for="g in (gearByCategory[cat] || [])"
+              :key="g.id"
+              :gear="g"
+              :selected="isSelected(g.id)"
+              :unaffordable="!canAffordItem(g)"
+              :blocked="isSelectionBlocked(cat, g.id)"
+              :price="getPrice(g)"
+              :hintRight="colIndex === 0"
+              @toggle="toggleItemWithLimit(cat, g.id)"
+            />
           </div>
         </div>
-        <div class="gear-items">
-          <GearItem
-            v-for="g in (gearByCategory[cat] || [])"
-            :key="g.id"
-            :gear="g"
-            :selected="isSelected(g.id)"
-            :unaffordable="!canAffordItem(g)"
-            :blocked="isSelectionBlocked(cat, g.id)"
-            :price="getPrice(g)"
-            :hintRight="colIndex === 0"
-            @toggle="toggleItemWithLimit(cat, g.id)"
-          />
-        </div>
       </div>
-    </div>
-
-
+    </template>
   </div>
 </template>
 
@@ -39,13 +44,18 @@ import { computed } from 'vue';
 import GearItem from './GearItem.vue';
 import { uiState, getGameState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
-import { CmdToggleGear, CmdOpenGearUpgradeModal } from '../logic/input/InputCommands';
+import { CmdToggleGear, CmdOpenGearUpgradeModal, CmdDiscoverGear } from '../logic/input/InputCommands';
 import type { GearDefinition } from '../logic/GearLib';
 import type { RaidDefinition } from '../logic/RaidLib';
 import { DISCOVERY } from '../logic/DiscoveryLib';
 
 const activeRaidId = computed(() => uiState.activeRaidId || (uiState.raidOrder[0] || ''));
 const selectedRaid = computed<RaidDefinition | null>(() => uiState.raids.find(r => r.id === activeRaidId.value) || null);
+const hasDiscoveredGear = computed(() => uiState.hasDiscoveredGear);
+
+function discoverGear(): void {
+  globalInputQueue.push(new CmdDiscoverGear());
+}
 
 function loadout(): string[] {
   const gs = getGameState();
@@ -186,6 +196,30 @@ function openUpgradeModal(category: string): void {
 </script>
 
 <style scoped>
+.discover-gear-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80px;
+}
+.discover-gear-btn {
+  height: 32px;
+  padding: 0 14px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-radius: 4px;
+  border: 1px solid rgba(34,197,94,0.5);
+  background: rgba(34,197,94,0.32);
+  color: #86efac;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.discover-gear-btn:hover {
+  background: rgba(34,197,94,0.45);
+}
 .gear .section-title { font-weight: 800; text-transform: uppercase; font-size: 12px; letter-spacing: 0.08em; margin-bottom: 8px; }
 .gear-grid { display: flex; flex-wrap: wrap; gap: 12px; }
 .gear-col { flex: 1 1 160px; max-width: 280px; display: flex; flex-direction: column; gap: 6px; }

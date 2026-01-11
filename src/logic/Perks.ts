@@ -6,6 +6,7 @@ export class Perks {
   static readonly STUN = 'Stun';
   static readonly PAINKILLER = 'Painkiller';
   static readonly STABILIZER_BEACON = 'Stabilizer Beacon';
+  static readonly HACK_AND_SLASH = 'Hack and Slash';
 }
 
 export default Perks;

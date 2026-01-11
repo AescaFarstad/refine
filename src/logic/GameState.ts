@@ -68,6 +68,10 @@ export class GameState {
   public discoveries: Record<string, true> = {};
   public discoveryCounter: number = 0;
 
+  // Signature progress
+  public signatureLevel: number = 1;
+  public completedSignatureIds: string[] = [];
+
   public maze: IceMaze | null = null;
   public mazeLevelIndex: number = 0;
   public labirinthResetRequested: boolean = false;

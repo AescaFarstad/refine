@@ -87,7 +87,8 @@ export function handleLootLikeEncounter(
   }
 
   const thorough = (r.perks || []).includes(Perks.THOROUGH_SEARCH);
-  const timeSpentSec = 300 + (thorough ? 300 : 0);
+  const hackAndSlash = (r.perks || []).includes(Perks.HACK_AND_SLASH);
+  const timeSpentSec = 300 + (thorough ? 300 : 0) - (hackAndSlash ? 60 : 0);
 
   const checkValue = clamp(ctx.baseLootChance + r.lootChanceBonus + r.tmpLootBuffAppliedPct, 0, 100);
   const myRoll = Math.floor(gs.random.get() * 100);

@@ -168,11 +168,15 @@ function updateHintSide(): void {
   align-items: center;
   gap: 8px;
   min-height: 48px;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
 }
 .gear-item.has-image {
   padding-left: 8px;
 }
-.gear-item:hover { z-index: 2000; } /* float hovered card above siblings */
+.gear-item:hover {
+  z-index: 2000; /* float hovered card above siblings */
+  background: var(--raid-item-bg-hover, rgba(255,255,255,0.14));
+}
 .gear-item.selected {
   background: rgba(74, 222, 128, 0.25);
   box-shadow: inset 0 0 0 1px rgba(74, 222, 128, 0.5), 0 0 0 1px rgba(74, 222, 128, 0.2);

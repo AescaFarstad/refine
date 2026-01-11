@@ -300,6 +300,11 @@ function essenceIconStyle(k: string): Record<string, string> {
   border-radius: 6px;
   background: rgba(255,255,255,0.02);
   overflow: hidden;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.item-cell-wrap:hover .item-cell {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.15);
 }
 .item-cell.minor {
   width: 48px;

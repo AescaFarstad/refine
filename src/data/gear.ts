@@ -36,6 +36,7 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 1,
     perk: 'Painkiller',
     image: 'injector',
+    description: 'Prevents speed loss due to missing health.',
   },
   bandage: {
     name: 'Bandage',
@@ -126,7 +127,8 @@ const gear: Record<string, RawGearDefinition> = {
     price: 40,
     weight: 1,
     image: 'aspirator_probe',
-    biopsyChance: 20
+    biopsyChance: 20,
+    description: 'Allows to extract monster remains.',
   },
   bone_saw: {
     name: 'Bone Saw',
@@ -164,6 +166,7 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 2,
     image: 'machete',
     perk: 'Hack and slash',
+    description: 'Scavenging takes 1 minute less.',
   },
   spear: {
     name: 'Tactical Spear',
@@ -311,6 +314,7 @@ const gear: Record<string, RawGearDefinition> = {
     price: 0,
     weight: 0,
     image: 'no_scavenging',
+    description: 'Skip all scavenging sites, thus saving time.',
   },
   spiked_armor: {
     name: 'Spiked Armor',

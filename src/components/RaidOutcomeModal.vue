@@ -87,7 +87,7 @@
             <span class="tooltip" v-if="!canRaidAgain">{{ raidAgainDisabledReason }}</span>
           </span>
           <button class="btn primary" @click="changeSetup">{{ newQuests.length > 0 ? 'Review unlocked investigations' : 'Change Setup' }}</button>
-          <button class="btn primary" @click="goRefine">Refine</button>
+          <button v-if="gainedItems.length > 0 && uiState.hasDiscoveredRefineTab" class="btn primary" @click="goRefine">Refine</button>
         </template>
       </footer>
     </div>

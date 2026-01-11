@@ -1,7 +1,10 @@
 <template>
   <div class="hint-root">
     <div class="hint-body">
-      <div class="unlock-text">Unlock: <span class="disc-name">{{ title }}</span></div>
+      <div class="unlock-text">
+        <template v-if="!cell.owned">Unlock: </template>
+        <span class="disc-name">{{ title }}</span>
+      </div>
       <div v-if="description" class="disc-desc">{{ description }}</div>
     </div>
   </div>
@@ -18,8 +21,14 @@ const props = defineProps<{
   archetype: ResearchArchetype | null;
 }>();
 
-const title = computed(() => props.archetype!.title);
-const description = computed(() => props.archetype!.description);
+const title = computed(() => {
+  const arch = props.archetype!;
+  return (props.cell.owned && arch.ownedTitle) ? arch.ownedTitle : arch.title;
+});
+const description = computed(() => {
+  const arch = props.archetype!;
+  return (props.cell.owned && arch.ownedDescription) ? arch.ownedDescription : arch.description;
+});
 </script>
 
 <style scoped>

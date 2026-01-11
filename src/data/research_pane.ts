@@ -6,6 +6,7 @@ export const researchPane: ResearchPlacementInput[] = [
 
   { archetypeId: 'disc_damage_breakdown', cells: { x: 2, y: -5 } },
   { archetypeId: 'disc_time_breakdown', cells: { x: -2, y: 5 } },
+  { archetypeId: 'disc_essence_anomaly', cells: [{ x: 8, y: -4 }, { x: 9, y: -4 }, { x: 8, y: -3 }] },
 
 
   { archetypeId: 'stat_weight', cells: { x: 1, y: -3 } },
@@ -88,7 +89,6 @@ export const researchPane: ResearchPlacementInput[] = [
   { archetypeId: 'res_credits', cells: { x: 4, y: -7 } },
   { archetypeId: 'stat_vision', cells: { x: -10, y: 9 } },
   { archetypeId: 'stat_vision', cells: { x: -3, y: -4 } },
-  { archetypeId: 'stat_vision', cells: { x: 9, y: -4 } },
   { archetypeId: 'stat_hp', cells: { x: -8, y: -2 } },
   { archetypeId: 'res_credits', cells: { x: 19, y: -2 } },
   { archetypeId: 'res_shards', cells: { x: 12, y: -1 } },
@@ -122,8 +122,8 @@ export const researchPane: ResearchPlacementInput[] = [
 
 export const researchPaneEmptyCells: Point2[] = [
   { x: 0, y: -9 }, { x: -1, y: -8 }, { x: -3, y: -6 }, { x: -3, y: -5 }, { x: 3, y: -5 }, { x: -4, y: -4 },
-  { x: -1, y: -4 }, { x: -9, y: -3 }, { x: 8, y: -3 }, { x: 10, y: -1 }, { x: 11, y: -1 }, { x: 4, y: 0 },
-  { x: 13, y: 1 }, { x: 14, y: 1 }, { x: -3, y: 8 },
+  { x: -1, y: -4 }, { x: -9, y: -3 }, { x: 10, y: -1 }, { x: 11, y: -1 }, { x: 4, y: 0 }, { x: 13, y: 1 },
+  { x: 14, y: 1 }, { x: -3, y: 8 },
 ];
 
 export const researchPaneVoidCells: Point2[] = [

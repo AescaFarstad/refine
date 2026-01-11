@@ -74,6 +74,7 @@ export interface ResearchCellInfo {
   owned: boolean;
   archetypeId: string;
   nodeId: number;
+  centerCell: Point2 | null;
 }
 
 export function renderResearchBaseLayer(
@@ -101,12 +102,16 @@ export function renderResearchBaseLayer(
     if (archetype && archetype.type === 'void') continue;
 
     const axial = indexToAxial(idx);
+    const nodeInstance = cell.nodeId != null && cell.nodeId >= 0
+      ? lib.research.nodes.get(cell.nodeId)
+      : null;
     const info: ResearchCellInfo = {
       idx,
       axial: { x: axial.x, y: axial.y },
       owned: cell.owned,
       archetypeId: cell.archetypeId,
       nodeId: cell.nodeId,
+      centerCell: nodeInstance?.centerCell ?? null,
     };
 
     if (cell.nodeId != null && cell.nodeId >= 0) {
@@ -300,6 +305,7 @@ function drawArchetypeIconForNode(
   if (icon.kind === 'none') return;
 
   const nodeId = cells[0].nodeId;
+  const specifiedCenterCell = cells[0].centerCell;
   const axialCells: Point2[] = cells.map(info => info.axial);
 
   let layout: MaxSquareResult | null | undefined = nodeId >= 0 ? nodeSquareCache.get(nodeId) : null;
@@ -314,7 +320,13 @@ function drawArchetypeIconForNode(
   let centerY: number;
   let maxIconSize: number | null = null;
 
-  if (layout) {
+  if (specifiedCenterCell) {
+    // Use the explicitly specified center cell
+    const pixel = axialToPixel(specifiedCenterCell, hexSize, origin);
+    centerX = pixel.x;
+    centerY = pixel.y;
+    maxIconSize = layout ? layout.side * hexSize * 0.9 : null;
+  } else if (layout) {
     centerX = layout.center.x * hexSize + origin.x;
     centerY = layout.center.y * hexSize + origin.y;
     maxIconSize = layout.side * hexSize * 0.9;
@@ -351,14 +363,16 @@ function drawArchetypeIconForNode(
   const frame = atlasStorage.getItemsFrame(icon.key);
   if (!source || !frame) return;
 
+  const iconScale = icon.scale ?? 1;
+  const iconOffset = icon.offset ?? { x: 0, y: 0 };
   const iconMaxSize = (maxIconSize != null ? maxIconSize : hexSize * 1.6) * 0.75;
-  const scale = Math.min(iconMaxSize / frame.w, iconMaxSize / frame.h);
+  const scale = Math.min(iconMaxSize / frame.w, iconMaxSize / frame.h) * iconScale;
   const drawW = frame.w * scale;
   const drawH = frame.h * scale;
 
   ctx.save();
   ctx.globalAlpha = owned ? 1 : 0.9;
-  ctx.translate(centerX, centerY);
+  ctx.translate(centerX + iconOffset.x, centerY + iconOffset.y);
   ctx.drawImage(
     source,
     frame.x,
@@ -394,6 +408,7 @@ function drawStatIconForNode(
   if (!cells.length) return;
 
   const nodeId = cells.length > 0 ? cells[0].nodeId : -1;
+  const specifiedCenterCell = cells.length > 0 ? cells[0].centerCell : null;
   const axialCells: Point2[] = cells.map(info => info.axial);
 
   let layout: MaxSquareResult | null | undefined = nodeId >= 0 ? nodeSquareCache.get(nodeId) : null;
@@ -408,7 +423,12 @@ function drawStatIconForNode(
   let centerY: number;
   let layoutMaxIconSize: number | null = null;
 
-  if (layout) {
+  if (specifiedCenterCell) {
+    const pixel = axialToPixel(specifiedCenterCell, hexSize, origin);
+    centerX = pixel.x;
+    centerY = pixel.y;
+    layoutMaxIconSize = layout ? layout.side * hexSize * 0.9 : null;
+  } else if (layout) {
     centerX = layout.center.x * hexSize + origin.x;
     centerY = layout.center.y * hexSize + origin.y;
     layoutMaxIconSize = layout.side * hexSize * 0.9;
@@ -485,6 +505,7 @@ function drawResourceIconForNode(
   const glyph = getResourceSpecByAnyKey(resourceKey).glyph;
 
   const nodeId = cells.length > 0 ? cells[0].nodeId : -1;
+  const specifiedCenterCell = cells.length > 0 ? cells[0].centerCell : null;
   const axialCells: Point2[] = cells.map(info => info.axial);
 
   let layout: MaxSquareResult | null | undefined = nodeId >= 0 ? nodeSquareCache.get(nodeId) : null;
@@ -499,7 +520,12 @@ function drawResourceIconForNode(
   let centerY: number;
   let maxIconSize: number | null = null;
 
-  if (layout) {
+  if (specifiedCenterCell) {
+    const pixel = axialToPixel(specifiedCenterCell, hexSize, origin);
+    centerX = pixel.x;
+    centerY = pixel.y;
+    maxIconSize = layout ? layout.side * hexSize * 0.9 : null;
+  } else if (layout) {
     centerX = layout.center.x * hexSize + origin.x;
     centerY = layout.center.y * hexSize + origin.y;
     maxIconSize = layout.side * hexSize * 0.9;
@@ -548,6 +574,7 @@ function drawGearIconForNode(
 
   // Compute (and cache) the largest square that fits inside this node's hex blob.
   const nodeId = cells.length > 0 ? cells[0].nodeId : -1;
+  const specifiedCenterCell = cells.length > 0 ? cells[0].centerCell : null;
   const axialCells: Point2[] = cells.map(info => info.axial);
 
   let layout: MaxSquareResult | null | undefined = nodeId >= 0 ? nodeSquareCache.get(nodeId) : null;
@@ -562,7 +589,13 @@ function drawGearIconForNode(
   let cy: number;
   let maxIconSize: number;
 
-  if (layout) {
+  if (specifiedCenterCell) {
+    // Use the explicitly specified center cell
+    const pixel = axialToPixel(specifiedCenterCell, hexSize, origin);
+    cx = pixel.x;
+    cy = pixel.y;
+    maxIconSize = layout ? layout.side * hexSize * 0.9 : hexSize * 1.6;
+  } else if (layout) {
     // Map from normalized node space (hexSize=1, origin=0) into canvas space.
     cx = layout.center.x * hexSize + origin.x;
     cy = layout.center.y * hexSize + origin.y;

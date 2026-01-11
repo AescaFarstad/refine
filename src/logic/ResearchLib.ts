@@ -6,7 +6,7 @@ export type ResearchNodeType = 'obstacle' | 'empty' | 'stat' | 'gear' | 'resourc
 export type ResearchArchetypeIcon =
   | { kind: 'none' }
   | { kind: 'glyph'; glyph: string; scale?: number; offset?: Point2 }
-  | { kind: 'itemImage'; key: string };
+  | { kind: 'itemImage'; key: string; scale?: number; offset?: Point2 };
 
 export interface ResearchArchetypeDef {
   type: ResearchNodeType;
@@ -30,6 +30,11 @@ export interface ResearchPlacementInput {
    * If radius is 0 or negative, the placement falls back to the raw cells.
    */
   radius?: number;
+  /**
+   * Optional central cell for icon/glyph placement.
+   * If not specified, the center is computed automatically.
+   */
+  centerCell?: Point2;
   initiallyOwned?: boolean;
 }
 
@@ -51,6 +56,7 @@ export interface ResearchNodeInstance {
   nodeId: number;
   archetypeId: string;
   cells: Point2[];
+  centerCell: Point2 | null;
   initiallyOwned: boolean;
 }
 
@@ -160,6 +166,7 @@ export class ResearchLib {
         nodeId: nodeIndex++,
         archetypeId: input.archetypeId,
         cells: cells,
+        centerCell: input.centerCell ?? null,
         initiallyOwned: input.initiallyOwned ?? false,
       };
 
@@ -176,6 +183,7 @@ export class ResearchLib {
           nodeId: nodeIndex++,
           archetypeId,
           cells: [{ x: p.x, y: p.y }],
+          centerCell: null,
           initiallyOwned: false,
         };
 

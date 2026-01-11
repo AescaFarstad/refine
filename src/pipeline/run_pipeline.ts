@@ -1,11 +1,17 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { performance } from 'node:perf_hooks';
 import { parsePipeline, type PipelineJob } from './pipeline_parse.ts';
 import { runSplitTrimJob } from './split_trim_job.ts';
 import { runPackJob } from './pack_job.ts';
 import { runCopyJob } from './copy_job.ts';
 import { runMonowhiteJob } from './monowhite_job.ts';
 import { runResizeJob } from './resize_job.ts';
+
+function formatDuration(ms: number): string {
+  if (ms < 1000) return `${Math.round(ms)}ms`;
+  return `${(ms / 1000).toFixed(2)}s`;
+}
 
 async function listPipelineFiles(dir: string): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true });
@@ -51,8 +57,10 @@ async function main() {
     if (jobType === 'split_trim') {
       console.log(`Running split_trim on ${path.basename(file)}...`);
       try {
+        const startedAt = performance.now();
         await runSplitTrimJob(job, dataDir);
-        console.log(`Finished split_trim for ${path.basename(file)}`);
+        const elapsedMs = performance.now() - startedAt;
+        console.log(`Finished split_trim for ${path.basename(file)} (${formatDuration(elapsedMs)})`);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error(`split_trim failed for pipeline ${path.basename(file)}: ${msg}`);
@@ -61,8 +69,10 @@ async function main() {
     } else if (jobType === 'pack') {
       console.log(`Running pack on ${path.basename(file)}...`);
       try {
+        const startedAt = performance.now();
         await runPackJob(job, dataDir);
-        console.log(`Finished pack for ${path.basename(file)}`);
+        const elapsedMs = performance.now() - startedAt;
+        console.log(`Finished pack for ${path.basename(file)} (${formatDuration(elapsedMs)})`);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error(`pack failed for pipeline ${path.basename(file)}: ${msg}`);
@@ -70,8 +80,10 @@ async function main() {
     } else if (jobType === 'copy') {
       console.log(`Running copy on ${path.basename(file)}...`);
       try {
+        const startedAt = performance.now();
         await runCopyJob(job, dataDir);
-        console.log(`Finished copy for ${path.basename(file)}`);
+        const elapsedMs = performance.now() - startedAt;
+        console.log(`Finished copy for ${path.basename(file)} (${formatDuration(elapsedMs)})`);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error(`copy failed for pipeline ${path.basename(file)}: ${msg}`);
@@ -79,8 +91,10 @@ async function main() {
     } else if (jobType === 'monowhite') {
       console.log(`Running monowhite on ${path.basename(file)}...`);
       try {
+        const startedAt = performance.now();
         await runMonowhiteJob(job, dataDir);
-        console.log(`Finished monowhite for ${path.basename(file)}`);
+        const elapsedMs = performance.now() - startedAt;
+        console.log(`Finished monowhite for ${path.basename(file)} (${formatDuration(elapsedMs)})`);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error(`monowhite failed for pipeline ${path.basename(file)}: ${msg}`);
@@ -88,8 +102,10 @@ async function main() {
     } else if (jobType === 'resize') {
       console.log(`Running resize on ${path.basename(file)}...`);
       try {
+        const startedAt = performance.now();
         await runResizeJob(job, dataDir);
-        console.log(`Finished resize for ${path.basename(file)}`);
+        const elapsedMs = performance.now() - startedAt;
+        console.log(`Finished resize for ${path.basename(file)} (${formatDuration(elapsedMs)})`);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error(`resize failed for pipeline ${path.basename(file)}: ${msg}`);

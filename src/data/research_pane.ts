@@ -7,6 +7,8 @@ export const researchPane: ResearchPlacementInput[] = [
   { archetypeId: 'disc_damage_breakdown', cells: { x: 2, y: -5 } },
   { archetypeId: 'disc_time_breakdown', cells: { x: -2, y: 5 } },
   { archetypeId: 'disc_essence_anomaly', cells: [{ x: 8, y: -4 }, { x: 9, y: -4 }, { x: 8, y: -3 }] },
+  { archetypeId: 'disc_maze_navigation', cells: [{ x: -5, y: -1 }, { x: -4, y: -2 }, { x: -6, y: -1 }, { x: -5, y: 0 }],
+  centerCell: { x: -5, y: -1 } },
 
 
   { archetypeId: 'stat_weight', cells: { x: 1, y: -3 } },
@@ -18,7 +20,7 @@ export const researchPane: ResearchPlacementInput[] = [
 
 
   { archetypeId: 'gear_machete', cells: { x: 1, y: 5 }, radius: 1 },
-  { archetypeId: 'gear_backpack', cells: { x: -5, y: -1 }, radius: 1 },
+  // { archetypeId: 'gear_backpack', cells: { x: -5, y: -1 }, radius: 1 },
   { archetypeId: 'gear_kevlar_helmet', cells: { x: 6, y: 0 }, radius: 1 },
   { archetypeId: 'gear_aspirator_probe', cells: { x: -6, y: 5 }, radius: 1 },
   { archetypeId: 'gear_boots_basic', cells: { x: 0, y: -6 }, radius: 1 },

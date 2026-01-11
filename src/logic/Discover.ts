@@ -18,6 +18,11 @@ export function discover(gs: GameState, id: DiscoveryId): boolean {
     delete gs.seenEssences['cyan'];
   }
 
+  if (id === DISCOVERY.MAZE_NAVIGATION) {
+    delete gs.discoveries[DISCOVERY.TAB_MAZE_VISITED];
+    gs.discoveryCounter = 0;
+  }
+
   return true;
 }
 

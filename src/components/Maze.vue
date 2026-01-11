@@ -1,6 +1,11 @@
 <template>
   <div class="lab-root panel" ref="rootEl">
-    <div class="maze-layout">
+    <div v-if="!hasMazeNavigation" class="maze-locked">
+      <div class="locked-text">This is the Maze of Time.</div>
+      <div class="locked-text">You will have to navigate it to return home.</div>
+      <div class="locked-text">Yet there seem to be no entrance.</div>
+    </div>
+    <div v-else class="maze-layout">
       <div class="left-panel">
         <div class="left-section">
           <div class="reward-label">Completion grants:</div>
@@ -65,6 +70,7 @@ import { CmdMazeMove, CmdMazeReset, CmdMazeRestart } from '../logic/input/InputC
 import type { MazeDefinition } from '../logic/MazeLib';
 import type { Point2 } from '../logic/core/math';
 import { getResourceSpec } from '../logic/Resources';
+import { DISCOVERY } from '../logic/DiscoveryLib';
 
 const rootEl = ref<HTMLElement | null>(null);
 const staticCanvasEl = ref<HTMLCanvasElement | null>(null);
@@ -97,6 +103,11 @@ const solved = computed(() => uiState.mazeSolved);
 
 const timeFluxSpec = getResourceSpec('timeFlux');
 const moveError = ref('');
+
+const hasMazeNavigation = computed(() => {
+  const _dep = uiState.discoveryCounter;
+  return getGameState()?.discoveries?.[DISCOVERY.MAZE_NAVIGATION] === true;
+});
 
 const artefactsTaken = computed(() => {
   const game = getGameState()?.maze;
@@ -671,6 +682,20 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .lab-root { display: flex; flex-direction: column; height: 100%; max-height: 800px; }
+.maze-locked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 24px;
+}
+.locked-text {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-align: center;
+}
 .maze-layout { display: flex; gap: 16px; flex: 1; min-height: 0; }
 .left-panel {
   display: flex;

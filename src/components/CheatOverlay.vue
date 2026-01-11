@@ -19,15 +19,33 @@
         </div>
 
         <h4 class="section-title">Grant Resources</h4>
-        <div class="resource-grid">
-          <div v-for="res in resources" :key="res.key" class="resource-row">
-            <span class="resource-label" :style="{ color: res.color }">
-              <span class="resource-glyph">{{ res.glyph }}</span>
-              {{ res.name }}
-            </span>
-            <button class="btn" @click="grantResource(res.key, 10)">+10</button>
-            <button class="btn" @click="grantResource(res.key, 1000)">+1k</button>
-            <button class="btn" @click="grantResource(res.key, 100000)">+100k</button>
+        <div class="resource-and-discovery">
+          <div class="resource-grid">
+            <div v-for="res in resources" :key="res.key" class="resource-row">
+              <span class="resource-label" :style="{ color: res.color }">
+                <span class="resource-glyph">{{ res.glyph }}</span>
+                {{ res.name }}
+              </span>
+              <button class="btn" @click="grantResource(res.key, 10)">+10</button>
+              <button class="btn" @click="grantResource(res.key, 1000)">+1k</button>
+              <button class="btn" @click="grantResource(res.key, 100000)">+100k</button>
+            </div>
+          </div>
+
+          <div class="discovery-panel">
+            <h4 class="section-title discovery-title">Discoveries</h4>
+            <div class="discovery-grid">
+              <button
+                v-for="id in discoveryIds"
+                :key="id"
+                class="btn discovery-btn"
+                :class="{ primary: isDiscovered(id) }"
+                type="button"
+                @click="toggleDiscovery(id)"
+              >
+                {{ formatDiscoveryLabel(id) }}
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -54,14 +72,39 @@ import DevAtlasView from './DevAtlasView.vue';
 import DevMoleculeEditor from './DevMoleculeEditor.vue';
 import { listAtlasKeys, type AtlasKey } from '../logic/AtlasStorage';
 import { RESOURCE_SPECS, type ResourceKey } from '../logic/Resources';
+import { DISCOVERY, type DiscoveryId } from '../logic/DiscoveryLib';
+import { discover } from '../logic/Discover';
 
 const open = computed(() => uiState.cheatOpen);
 
 const resources = Object.values(RESOURCE_SPECS);
+const discoveryIds = computed<DiscoveryId[]>(() => Object.values(DISCOVERY));
 
 function grantResource(key: ResourceKey, amount: number) {
   getGameState()[key] += amount;
 }
+
+function isDiscovered(id: DiscoveryId): boolean {
+  // Touch discoveryCounter to react to discovery changes
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.discoveryCounter;
+  return getGameState().discoveries[id] === true;
+}
+
+function toggleDiscovery(id: DiscoveryId): void {
+  const gs = getGameState();
+  if (gs.discoveries[id] === true) {
+    delete gs.discoveries[id];
+    gs.discoveryCounter++;
+    return;
+  }
+  discover(gs, id);
+}
+
+function formatDiscoveryLabel(id: DiscoveryId): string {
+  return String(id).replaceAll('_', ' ');
+}
+
 const selectedAtlas = computed(() => uiState.devAtlasKey as AtlasKey | '');
 const devMoleculeEditorOpen = computed(() => uiState.devMoleculeEditorOpen);
 const hasFullscreen = computed(() => !!selectedAtlas.value || devMoleculeEditorOpen.value);
@@ -149,6 +192,13 @@ function closeAll() {
   color: var(--text-secondary);
   letter-spacing: 0.04em;
 }
+.resource-and-discovery {
+  display: grid;
+  grid-template-columns: max-content minmax(240px, 320px);
+  gap: 12px;
+  align-items: start;
+  justify-content: start;
+}
 .resource-grid {
   display: flex;
   flex-direction: column;
@@ -168,5 +218,24 @@ function closeAll() {
 }
 .resource-glyph {
   font-size: 14px;
+}
+.discovery-title {
+  margin: 0 0 8px;
+}
+.discovery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+.discovery-btn {
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+@media (max-width: 820px) {
+  .resource-and-discovery {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

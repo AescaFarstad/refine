@@ -45,6 +45,16 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     ownedIcon: { kind: 'itemImage', key: 'cyan' },
     rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.CYAN_YIELD }],
   },
+  disc_maze_navigation: {
+    type: 'discovery',
+    title: 'A crack in the fabric of continuity',
+    description: 'A mysterious opportunity of unclear nature.',
+    ownedTitle: 'Maze navigation',
+    ownedDescription: 'You are now able to enter the maze of time.',
+    icon: { kind: 'glyph', glyph: '?', scale: 1.2, offset: { x: 0, y: 0 }},
+    ownedIcon: { kind: 'itemImage', key: 'maze_out', scale: 1.5, offset: { x: 0, y: 0 } },
+    rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.MAZE_NAVIGATION }],
+  },
 
   // Gear archetypes are auto-generated from gear definitions in ResearchLib.load()
 };

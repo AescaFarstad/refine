@@ -71,7 +71,7 @@ const quests: Record<string, RawQuestDefinition> = {
   anywhere_summon_hounds: {
     name: 'Summon hounds',
     raidRestriction: [],
-    requiresRaidSuccesses: 2,
+    requiresRaidSuccesses: 5,
     encounters: [
     ],
     rewards: [

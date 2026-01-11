@@ -68,8 +68,8 @@
       </div>
     </div>
 
-    <div class="info-panel">
-      <div v-if="showSignatureTabs" class="info-tabs">
+    <div class="info-panel" :class="{ clickable: showSignatureTabs }" @click="cycleInfoTab">
+      <div v-if="showSignatureTabs" class="info-tabs" @click.stop>
         <button
           type="button"
           class="info-tab"
@@ -88,7 +88,7 @@
         </button>
       </div>
 
-      <div class="info-body" :class="{ clickable: showSignatureTabs }" @click="cycleInfoTab">
+      <div class="info-body">
         <div v-if="!showSignatureTabs || infoTab === 'wafer'" class="stats-table">
           <div v-if="showYield" class="stat-row">
             <span class="stat-label">Yield:</span>
@@ -851,7 +851,7 @@ function onRotate() {
   overflow: auto;
 }
 
-.info-body.clickable {
+.info-panel.clickable {
   cursor: pointer;
 }
 

@@ -7,6 +7,7 @@ export const DISCOVERY = {
   TIME_BREAKDOWN: 'time_breakdown',
   REFINE_YIELD: 'refine_yield',
   CYAN_YIELD: 'cyan_yield',
+  MAZE_NAVIGATION: 'maze_navigation',
   // Tab discoveries (unlocked)
   TAB_REFINE: 'tab_refine',
   TAB_RESEARCH: 'tab_research',

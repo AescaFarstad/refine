@@ -25,11 +25,24 @@ export function parsePipeline(text: string): PipelineJob {
   type Mode = "outside" | "settings" | "item";
   let mode: Mode = "outside";
   let currentItem: PipelineItem | null = null;
+  let startSeen = false;
 
   const lines = text.split(/\r?\n/);
   for (const rawLine of lines) {
     const line = rawLine.trim();
     if (!line) continue;
+
+    if (line === "#start") {
+      if (mode !== "outside" || currentItem) {
+        throw new Error("#start must appear outside of any block");
+      }
+      if (startSeen) {
+        throw new Error("#start specified multiple times");
+      }
+      startSeen = true;
+      items.length = 0;
+      continue;
+    }
 
     if (line === "[") {
       mode = "settings";
@@ -64,4 +77,3 @@ export function parsePipeline(text: string): PipelineJob {
 
   return { settings, items };
 }
-

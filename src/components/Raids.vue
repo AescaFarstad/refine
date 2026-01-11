@@ -37,12 +37,9 @@ const activeRaid = computed(() => {
 });
 
 const raidBackgroundStyle = computed(() => {
-  const raid = activeRaid.value;
-  const source = locationsAtlasSource.value;
-  if (!raid || !source) return {} as Record<string, string>;
-
-  const frame = locationsAtlasFrames[raid.locationImageId];
-  if (!frame) return {} as Record<string, string>;
+  const raid = activeRaid.value!;
+  const source = locationsAtlasSource.value!;
+  const frame = locationsAtlasFrames[raid.locationImageId]!;
 
   const atlasW = source.naturalWidth;
   const atlasH = source.naturalHeight;

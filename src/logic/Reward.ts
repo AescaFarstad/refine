@@ -2,6 +2,7 @@ import { Raid, type GameState } from './GameState';
 import type { RaidMutation } from './RaidMutation';
 import { applyPermanentRaidMutation } from './RaidMutation';
 import { discover, ensureResearchTabDiscovery, ensureMazeTabDiscovery } from './Discover';
+import { DISCOVERY } from './DiscoveryLib';
 
 export type Reward =
   | { kind: 'resource'; resource: 'credits' | 'chronotraces' | 'timeFlux' | 'shardDust' | 'skillPoints'; amount: number }
@@ -11,6 +12,7 @@ export type Reward =
   | { kind: 'unlock_raid'; raidId: string }
   | { kind: 'unlock_quest'; questId: string }
   | { kind: 'discovery'; discoveryId: string }
+  | { kind: 'learn_signatures'; signatureIds: string[] }
 
   | { kind: 'stat'; stat: string; value: number }
 
@@ -63,6 +65,14 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
 
     case 'discovery':
       discover(gs, reward.discoveryId);
+      break;
+
+    case 'learn_signatures':
+      discover(gs, DISCOVERY.SIGNATURES);
+      for (const id of reward.signatureIds) {
+        if (gs.learnedSignatureIds.includes(id)) continue;
+        gs.learnedSignatureIds.push(id);
+      }
       break;
 
     case 'raid_mutation': {

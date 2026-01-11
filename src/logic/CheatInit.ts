@@ -28,6 +28,7 @@ export function initDebug(gameState: GameState): void {
     new CheatLoadResearchState({ ownedCells: [{ x: 0, y: 0 }] }),
     new CheatUnlockAllRaids(),
     new CheatDisableQuestPrereqs({ disabled: true }),
+    // raidItemCheats[0],
     ...raidItemCheats,
     new CheatLoadResearchState({
       ownedCells: [

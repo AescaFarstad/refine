@@ -20,7 +20,7 @@ export interface AtlasData {
   meta?: AtlasMeta;
 }
 
-export type AtlasKey = 'items' | 'locations';
+export type AtlasKey = 'items' | 'locations' | 'molecules';
 
 /**
  * Simple storage for sprite atlases.
@@ -33,10 +33,12 @@ export class AtlasStorage {
   private locationsAtlas: AtlasData | null = null;
   private locationsAtlasLoaded = false;
   private locationsAtlasLoading: Promise<void> | null = null;
-  private moleculeAtlas: Map<string, string>;
+  private runtimeAtlases: Map<string, AtlasData>;
+  private signatureWaferAnchors: Map<string, { x: number; y: number }>;
 
   constructor() {
-    this.moleculeAtlas = new Map();
+    this.runtimeAtlases = new Map();
+    this.signatureWaferAnchors = new Map();
   }
 
   /** Load the items atlas if not already loaded. */
@@ -139,17 +141,32 @@ export class AtlasStorage {
     return this.locationsAtlas?.frames.get(name) || null;
   }
 
-  public clearMoleculeAtlas(): void {
-    this.moleculeAtlas.clear();
+  public setSignatureWaferAnchor(id: string, anchor: { x: number; y: number }): void {
+    this.signatureWaferAnchors.set(id, anchor);
   }
 
-  public setMoleculeImage(id: string, dataUrl: string): void {
-    this.moleculeAtlas.set(id, dataUrl);
+  public getSignatureWaferAnchor(id: string): { x: number; y: number } | null {
+    return this.signatureWaferAnchors.get(id) || null;
   }
 
-  public getMoleculeImage(id: string): string | null {
-    if (!this.moleculeAtlas) return null;
-    return this.moleculeAtlas.get(id) || null;
+  public setRuntimeAtlas(key: AtlasKey, data: AtlasData): void {
+    this.runtimeAtlases.set(key, data);
+  }
+
+  public getRuntimeAtlas(key: AtlasKey): AtlasData | null {
+    return this.runtimeAtlases.get(key) || null;
+  }
+
+  public getMoleculesSource(): AtlasSource | null {
+    return this.runtimeAtlases.get('molecules')?.source || null;
+  }
+
+  public getMoleculesMeta(): AtlasMeta | null {
+    return this.runtimeAtlases.get('molecules')?.meta || null;
+  }
+
+  public getMoleculesFrame(name: string): AtlasFrame | null {
+    return this.runtimeAtlases.get('molecules')?.frames.get(name) || null;
   }
 
   // Generic accessors for dev tooling
@@ -159,6 +176,8 @@ export class AtlasStorage {
         return this.itemsAtlas?.frames || null;
       case 'locations':
         return this.locationsAtlas?.frames || null;
+      case 'molecules':
+        return this.runtimeAtlases.get(key)?.frames || null;
     }
   }
 
@@ -168,6 +187,8 @@ export class AtlasStorage {
         return this.itemsAtlas?.source || null;
       case 'locations':
         return this.locationsAtlas?.source || null;
+      case 'molecules':
+        return this.runtimeAtlases.get(key)?.source || null;
     }
   }
 
@@ -177,6 +198,8 @@ export class AtlasStorage {
         return this.itemsAtlas?.meta || null;
       case 'locations':
         return this.locationsAtlas?.meta || null;
+      case 'molecules':
+        return this.runtimeAtlases.get(key)?.meta || null;
     }
   }
 
@@ -196,5 +219,5 @@ export default atlasStorage;
 
 // Helper to enumerate available atlases for tooling/dev UIs
 export function listAtlasKeys(): AtlasKey[] {
-  return ['items', 'locations'];
+  return ['items', 'locations', 'molecules'];
 }

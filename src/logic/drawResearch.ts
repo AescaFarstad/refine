@@ -35,7 +35,7 @@ const RESEARCH_STAT_ICON_SPECS: Record<string, ResearchStatIconSpec> = {
   volume: { kind: 'glyph', key: '⌞ ⌝', offsetX: 0, offsetY: 2, scale: 1.0 },
   baseMaxWeight: { kind: 'itemImage', key: 'weight', offsetX: 0.5, offsetY: 0, scale: 1.0 },
   researchRevealRadius: { kind: 'itemImage', key: 'eye', offsetX: 0, offsetY: 0, scale: 1.3 },
-  speed: { kind: 'itemImage', key: 'trainers', offsetX: 0, offsetY: 0, scale: 1.0 },
+  speed: { kind: 'itemImage', key: 'hermes_shoe', offsetX: 0, offsetY: 0, scale: 1.3 },
 };
 
 const RESOURCE_ICON_OFFSETS: Record<string, StatIconSpec> = {

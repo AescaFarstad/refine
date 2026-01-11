@@ -50,6 +50,7 @@ const props = defineProps<{
   highlightItemIdx?: number | null;
   hideMolecules?: boolean;
   upgradePreviewCells?: Point2[] | null;
+  newSignatureMatches?: Array<{ id: string; offset: Point2 }> | null;
   // Per-cell effective counts for buffed atoms; key = "x,y"
   cellEffectiveCounts?: Record<string, number> | null;
   useEffectiveEssence?: boolean;
@@ -101,7 +102,7 @@ watch(() => [props.wafer, props.version, props.hideMolecules, props.useEffective
   renderOverlay();
 }, { deep: true });
 
-watch(() => [props.ghostMolecule, props.ghostPosition, props.ghostValid, props.hideMolecules, props.upgradePreviewCells], () => {
+watch(() => [props.ghostMolecule, props.ghostPosition, props.ghostValid, props.hideMolecules, props.upgradePreviewCells, props.newSignatureMatches], () => {
   renderOverlay();
 }, { deep: true });
 
@@ -185,6 +186,31 @@ function renderOverlay() {
 
   const showBuffOverlays = props.showBuffOverlays !== false;
   const showUpgradeHints = props.showUpgradeHints !== false;
+
+  if (!props.hideMolecules && (props.newSignatureMatches?.length || 0) > 0) {
+    const sigSource = atlasStorage.getMoleculesSource()!;
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+
+    for (const match of props.newSignatureMatches!) {
+      const f = atlasStorage.getMoleculesFrame(`sig:wafer:${match.id}`)!;
+      const anchor = atlasStorage.getSignatureWaferAnchor(match.id)!;
+      const off = axialToPixel(match.offset, HEX_SIZE, { x: 0, y: 0 });
+      ctx.drawImage(
+        sigSource,
+        f.x,
+        f.y,
+        f.w,
+        f.h,
+        origin.x + off.x - anchor.x,
+        origin.y + off.y - anchor.y,
+        f.w,
+        f.h,
+      );
+    }
+
+    ctx.restore();
+  }
 
   if (!props.hideMolecules && props.wafer && props.cellEffectiveCounts && showBuffOverlays) {
     ctx.save();

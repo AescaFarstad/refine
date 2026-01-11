@@ -1,7 +1,10 @@
 <template>
   <div class="quest-hint" role="tooltip">
     <template v-for="(section, i) in hintSections" :key="i">
-      <div v-if="section.type === 'simple'" class="hint-row">
+      <div v-if="section.type === 'encounter-line'" class="encounter-line">
+        {{ section.text }}
+      </div>
+      <div v-else-if="section.type === 'simple'" class="hint-row">
         <span class="hint-label">{{ section.label }}</span>
         <span class="hint-value">{{ section.value }}</span>
       </div>
@@ -44,6 +47,7 @@ type ChipStyle = Record<string, string>;
 type HintChip = { text: string; class: string; style?: ChipStyle };
 type HintItem = { text: string; sentiment: 'positive' | 'negative' };
 type HintSection =
+  | { type: 'encounter-line'; text: string }
   | { type: 'simple'; label: string; value: string }
   | { type: 'heading'; heading: string; items: HintItem[]; spaceBefore?: boolean }
   | { type: 'chips'; label: string; chips: HintChip[] };
@@ -73,6 +77,8 @@ function determineSentiment(reward: Reward): 'positive' | 'negative' | undefined
     return 'positive'; // New items are generally positive
   } else if (reward.kind === 'unlock_raid') {
     return 'positive'; // Unlocking locations is positive
+  } else if (reward.kind === 'learn_signatures') {
+    return 'positive';
   }
   return undefined;
 }
@@ -101,13 +107,10 @@ function formatRewardsChips(q: QuestDefinition): HintChip[] {
   const chips: HintChip[] = [];
 
   const resourceTotals: Record<string, number> = {};
-  let raidUnlockCount = 0;
 
   for (const r of rewards) {
     if (r.kind === 'resource') {
       resourceTotals[r.resource] = (resourceTotals[r.resource] || 0) + r.amount;
-    } else if (r.kind === 'unlock_raid') {
-      raidUnlockCount++;
     }
   }
 
@@ -117,14 +120,16 @@ function formatRewardsChips(q: QuestDefinition): HintChip[] {
     if (v > 0) chips.push({ text: `+${v}${getResourceSpec(k).glyph}`, class: 'res', style: chipStyleForResource(k) });
   }
 
-  if (raidUnlockCount > 0) chips.push({ text: 'New raid location', class: 'unlocks' });
-
   return chips;
 }
 
 const hintSections = computed<HintSection[]>(() => {
   const q = props.quest;
   const out: HintSection[] = [];
+
+  if (q.encounterLine) {
+    out.push({ type: 'encounter-line', text: q.encounterLine });
+  }
 
   if (q.encounterTimeMin > 0) {
     out.push({ type: 'simple', label: 'Duration:', value: `${q.encounterTimeMin} min` });
@@ -153,6 +158,7 @@ const hintSections = computed<HintSection[]>(() => {
   const lib = getGameLib();
 
   const outcomeItems: HintItem[] = [];
+  let mayLearnSomething = false;
   for (const r of rewards) {
     const sentiment = determineSentiment(r);
     if (r.kind === 'raid_loot_chance' && sentiment) {
@@ -173,6 +179,9 @@ const hintSections = computed<HintSection[]>(() => {
       }
     } else if (r.kind === 'unlock_raid' && sentiment) {
       outcomeItems.push({ text: 'Discover a new raid location', sentiment });
+    } else if (r.kind === 'learn_signatures' && !mayLearnSomething) {
+      outcomeItems.push({ text: 'You may learn something', sentiment: 'positive' });
+      mayLearnSomething = true;
     }
   }
 
@@ -193,6 +202,9 @@ const hintSections = computed<HintSection[]>(() => {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  max-width: 400px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .hint-row {
@@ -286,5 +298,15 @@ const hintSections = computed<HintSection[]>(() => {
 .chip.unlocks {
   color: rgba(251, 146, 60, 0.95);
   background: rgba(251, 146, 60, 0.10);
+}
+
+.encounter-line {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin-bottom: 4px;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
 }
 </style>

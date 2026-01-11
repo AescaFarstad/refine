@@ -8,6 +8,8 @@ import { getHypRepresentation } from './HypNumbers';
 import { SHARD_LAUNCH_SPEED, SHARD_MAX_OMEGA, SHARD_MIN_OMEGA, SHARD_OMEGA_POWER } from './Model';
 import { calculateShardFontSize } from '../utils/ShardDisplay';
 import { EvtRefineryDone } from './evt/Evt';
+import { discover } from './Discover';
+import { DISCOVERY } from './DiscoveryLib';
 
 export function computeLoadedEssencesFromItems(lib: Lib, items: Array<{ id: string; quantity: number }>): Essence {
   const totals: Essence = {};
@@ -30,7 +32,11 @@ export function startRefining(gs: GameState): void {
   }
   if (!hasAny) return;
 
-  const preview = computeRefinePreviewChem(gs.wafer);
+  const preview = computeRefinePreviewChem(gs.wafer, {
+    signatures: gs.lib.signatures,
+    signatureLevel: gs.signatureLevel,
+    completedSignatureIds: gs.completedSignatureIds,
+  });
   gs.refiningDuration = Math.max(0, Math.round(preview.timeSec));
 
   const duration = gs.refiningDuration;
@@ -41,13 +47,30 @@ export function startRefining(gs: GameState): void {
 export function resolveRefineryDone(gs: GameState): void {
   const wafer = gs.wafer;
 
-  const preview = computeRefinePreviewChem(wafer);
+  const preview = computeRefinePreviewChem(wafer, {
+    signatures: gs.lib.signatures,
+    signatureLevel: gs.signatureLevel,
+    completedSignatureIds: gs.completedSignatureIds,
+  });
   const succeeded = rollSuccess(preview.failureChancePct);
 
   const outcome = new RefineryOutcome();
   outcome.success = succeeded;
 
   if (succeeded) {
+    if (preview.newlyCompletedSignatureIds.length > 0) {
+      discover(gs, DISCOVERY.SIGNATURES);
+      const completed = new Set(gs.completedSignatureIds);
+      for (const id of preview.newlyCompletedSignatureIds) {
+        if (completed.has(id)) continue;
+        gs.completedSignatureIds.push(id);
+        if (!gs.learnedSignatureIds.includes(id)) {
+          gs.learnedSignatureIds.push(id);
+        }
+        completed.add(id);
+      }
+    }
+
     const outputs = calculateOutputs(preview, succeeded);
     createShards(gs, 'credits', outputs.credits);
     createShards(gs, 'chronotraces', outputs.chrono);

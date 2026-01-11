@@ -55,6 +55,7 @@ export class GameState {
   public researchCells: ResearchCell[] = [];
   public researchOwnedCount: number = 0;
   public researchRevealRadius: number = 3;
+  public researchSignatureLearnIndex: number = 0;
 
   public unlockedRaids: Array<Raid> = [new Raid("shegolskoe")];
 
@@ -70,7 +71,9 @@ export class GameState {
 
   // Signature progress
   public signatureLevel: number = 1;
+  public learnedSignatureIds: string[] = [];
   public completedSignatureIds: string[] = [];
+  public signatureLearnQueue: string[] = [];
 
   public maze: IceMaze | null = null;
   public mazeLevelIndex: number = 0;

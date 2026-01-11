@@ -1,38 +1,42 @@
 <template>
-  <div class="item-grid" :class="{ minor, clickable }">
-    <div
-      v-for="it in items"
-      :key="it.id"
-      class="grid-item"
-      :class="{ clickable, dim: !!dimIds && !!dimIds[it.id] }"
-      :draggable="false"
-      @click="onItemClick(it.id)"
-      @pointerdown="onPointerDown(it.id, $event)"
-      @mouseenter="onItemHover(it.id)"
-      @dragstart.prevent
-    >
-      <ItemDisplay
-        :id="it.id"
-        :quantity="it.quantity"
-        :minor="minor"
-        :show-molecule="showMolecule"
-        :no-tooltip="noTooltip"
-        :show-score="showScores"
-        :show-volume="showVolumes"
-      />
+  <div class="item-grid-wrap" :class="{ 'molecules-visible': showMolecule }" :style="moleculeAtlasVars">
+    <div class="item-grid base-grid" :class="{ minor, clickable }">
+      <div
+        v-for="it in items"
+        :key="it.id"
+        class="grid-item"
+        :class="{ clickable, dim: !!dimIds && !!dimIds[it.id] }"
+        :draggable="false"
+        @click="onItemClick(it.id)"
+        @pointerdown="onPointerDown(it.id, $event)"
+        @mouseenter="onItemHover(it.id)"
+        @dragstart.prevent
+      >
+        <ItemDisplay
+          :id="it.id"
+          :quantity="it.quantity"
+          :minor="minor"
+          :no-tooltip="noTooltip"
+          :show-score="showScores"
+          :show-volume="showVolumes"
+        />
+      </div>
+    </div>
+    <div class="item-grid molecule-grid" :class="{ minor }">
+      <div v-for="it in items" :key="'mol-' + it.id" class="grid-item">
+        <div v-if="hasMolecule(it.id)" class="mol-sprite" :class="{ minor }" :style="moleculeSpriteStyle(it.id)" />
+      </div>
     </div>
   </div>
-
-
 </template>
 
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue';
 import ItemDisplay from './ItemDisplay.vue';
 import itemsData from '../data/items';
-import atlasStorage from '../logic/AtlasStorage';
 import { startManualDrag, ManualDragEvents } from '../logic/ManualDrag';
-import type { Molecule } from '../logic/ItemLib';
+import type { ItemDefinition } from '../logic/ItemLib';
+import atlasStorage from '../logic/AtlasStorage';
 
 const props = defineProps<{
   items: Array<{ id: string; quantity: number }>;
@@ -56,6 +60,23 @@ const emit = defineEmits<{
   (e: 'item-hover', id: string): void;
 }>();
 
+const moleculesSource = atlasStorage.getMoleculesSource()!;
+const moleculeAtlasVars = {
+  '--mol-atlas': `url(${moleculesSource.src})`,
+  '--mol-atlas-size': `${moleculesSource.naturalWidth}px ${moleculesSource.naturalHeight}px`,
+} as Record<string, string>;
+
+function hasMolecule(id: string): boolean {
+  return !!atlasStorage.getMoleculesFrame(`mol:${id}`);
+}
+
+function moleculeSpriteStyle(id: string): Record<string, string> {
+  const f = atlasStorage.getMoleculesFrame(`mol:${id}`)!;
+  return {
+    backgroundPosition: `-${f.x}px -${f.y}px`,
+  } as Record<string, string>;
+}
+
 // Drag image handled centrally via RefineUIBehaviour
 
 
@@ -78,11 +99,10 @@ function onPointerDown(id: string, event: PointerEvent) {
   if (!props.draggable) return;
   if (event.button !== 0) return; // primary button only
   // Prevent native drag/select behavior
-  try { event.preventDefault(); } catch (_e) {}
+  event.preventDefault();
 
-  const itemDef = (itemsData as any)[id];
-  const molecule = itemDef?.molecule as Molecule | undefined;
-  if (!molecule) return;
+  const itemDef = (itemsData as Record<string, ItemDefinition>)[id]!;
+  const molecule = itemDef.molecule;
 
   // Kick off manual drag follower
   startManualDrag({ id, molecule }, event);
@@ -94,8 +114,7 @@ function onManualDragEnd(_e: Event) {
   emit('item-drag-end', '');
 }
 
-onMounted(async () => {
-  await atlasStorage.loadItemsAtlas();
+onMounted(() => {
   window.addEventListener(ManualDragEvents.End, onManualDragEnd as any);
 });
 
@@ -105,6 +124,9 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.item-grid-wrap {
+  position: relative;
+}
 .item-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
@@ -120,4 +142,36 @@ onUnmounted(() => {
 .grid-item.dim { opacity: 0.38; }
 /* Prevent native drag and selection inside the grid */
 .item-grid, .item-grid * { user-select: none; -webkit-user-drag: none; }
+
+/* CSS overlay for molecule rendering */
+.molecule-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.05s ease;
+}
+.item-grid-wrap.molecules-visible .molecule-grid {
+  opacity: 1;
+}
+
+.item-grid-wrap.molecules-visible .base-grid {
+  opacity: 0.18;
+}
+
+.mol-sprite {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 96px;
+  height: 96px;
+  transform: translate(-50%, -50%);
+  background-image: var(--mol-atlas);
+  background-repeat: no-repeat;
+  background-size: var(--mol-atlas-size);
+}
+
+.mol-sprite.minor {
+  transform: translate(-50%, -50%) scale(0.5);
+}
 </style>

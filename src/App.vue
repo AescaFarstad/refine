@@ -10,6 +10,7 @@
   </main>
   <RaidOutcomeModal />
   <GearUpgradeModal />
+  <SignatureLearnModal />
   <CheatOverlay />
 </template>
 
@@ -22,6 +23,7 @@ import Research from './components/Research.vue';
 import Maze from './components/Maze.vue';
 import RaidOutcomeModal from './components/RaidOutcomeModal.vue';
 import GearUpgradeModal from './components/GearUpgradeModal.vue';
+import SignatureLearnModal from './components/SignatureLearnModal.vue';
 import CheatOverlay from './components/CheatOverlay.vue';
 import { uiState } from './logic/UIState';
 

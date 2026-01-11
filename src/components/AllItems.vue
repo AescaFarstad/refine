@@ -1,5 +1,5 @@
 <template>
-  <div class="panel all-items" @mouseenter="isHovering = true" @mouseleave="isHovering = false">
+  <div class="panel all-items" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
     <div class="header">
       <h3>All Items</h3>
       <span class="count" v-if="items?.length">{{ items.length }}</span>
@@ -72,7 +72,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import ItemGrid from './ItemGrid.vue';
 import EssenceCheatSheet from './EssenceCheatSheet.vue';
 import { uiState } from '../logic/UIState';
@@ -98,31 +98,30 @@ const emit = defineEmits<{
 
 const isHovering = ref(false);
 
-// Atlas state for essence icons
-const source = ref<HTMLImageElement | null>(atlasStorage.getItemsSource());
-const ready = ref<boolean>(atlasStorage.isItemsAtlasLoaded());
-onMounted(async () => {
-  if (!ready.value) {
-    try { await atlasStorage.loadItemsAtlas(); } catch (_e) { /* noop */ }
-    ready.value = atlasStorage.isItemsAtlasLoaded();
-    source.value = atlasStorage.getItemsSource();
-  }
-});
+function onMouseEnter() {
+  isHovering.value = true;
+}
+
+function onMouseLeave() {
+  isHovering.value = false;
+}
+
+// Atlas state for essence icons - pre-loaded at app start
+const source = atlasStorage.getItemsSource()!;
 
 function getEssenceFrame(k: string) {
   return atlasStorage.getItemsFrame(k);
 }
 
 function essenceIconStyle(size: number, k: string): Record<string, string> {
-  const f = atlasStorage.getItemsFrame(k);
-  if (!source.value || !f) return {} as Record<string, string>;
+  const f = atlasStorage.getItemsFrame(k)!;
   const scale = size / Math.max(f.w, f.h);
-  const atlasW = source.value.naturalWidth;
-  const atlasH = source.value.naturalHeight;
+  const atlasW = source.naturalWidth;
+  const atlasH = source.naturalHeight;
   return {
     width: size + 'px',
     height: size + 'px',
-    backgroundImage: `url(${source.value.src})`,
+    backgroundImage: `url(${source.src})`,
     backgroundRepeat: 'no-repeat',
     backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
     backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,

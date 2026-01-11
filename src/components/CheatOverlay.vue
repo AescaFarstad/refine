@@ -112,6 +112,7 @@ const atlasKeys = computed<AtlasKey[]>(() => listAtlasKeys());
 
 function openAtlas(key: AtlasKey) {
   uiState.devAtlasKey = key;
+  uiState.devMoleculeEditorOpen = false;
 }
 
 function openMoleculeEditor() {

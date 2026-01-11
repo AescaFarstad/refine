@@ -12,6 +12,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue';
 import atlasStorage, { type AtlasKey } from '../logic/AtlasStorage';
+import { ensureMoleculeAtlas } from '../logic/MoleculeAtlas';
 
 const props = defineProps<{ atlas: AtlasKey }>();
 
@@ -58,6 +59,9 @@ async function ensureLoaded() {
       break;
     case 'locations':
       await atlasStorage.loadLocationsAtlas();
+      break;
+    case 'molecules':
+      await ensureMoleculeAtlas();
       break;
   }
 }

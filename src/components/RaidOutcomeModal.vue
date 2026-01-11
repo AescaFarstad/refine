@@ -99,7 +99,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { uiState, getGameLib, getGameState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
-import { CmdAknowledgeOutcome } from '../logic/input/InputCommands';
+import { CmdAcknowledgeOutcome } from '../logic/input/InputCommands';
 import ItemDisplay from './ItemDisplay.vue';
 import QuestHint from './QuestHint.vue';
 import { formatDurationHM } from '../logic/StringUtils';
@@ -255,11 +255,11 @@ function fastForward() {
 const { raidAgain, canRaidAgain, raidAgainButtonLabel, raidAgainDisabledReason } = useRaidAgain();
 
 function changeSetup() {
-  globalInputQueue.push(new CmdAknowledgeOutcome());
+  globalInputQueue.push(new CmdAcknowledgeOutcome());
 }
 
 function goRefine() {
-  globalInputQueue.push(new CmdAknowledgeOutcome());
+  globalInputQueue.push(new CmdAcknowledgeOutcome());
   uiState.activeTab = 'refine';
 }
 

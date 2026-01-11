@@ -8,28 +8,60 @@ export interface SignatureDefinition {
   level: number;
   group: string;
   molecule: SignatureMolecule;
+  color: string;
 }
+
+export type RawSignatureLayoutDefinition = {
+  molecule: SignatureMolecule;
+};
 
 export type RawSignatureDefinition = {
   name: string;
+  layout: string;
+  colors: string[];
   level?: number;
   group?: string;
-  molecule?: SignatureMolecule;
 };
 
-export function parseSignatureDefinitions(raw: Record<string, RawSignatureDefinition>): Map<string, SignatureDefinition> {
-  const defaultMolecule: SignatureMolecule = {
-    atoms: [{ color: 'gray', x: 0, y: 0 }],
-  };
+function resolveLayoutColor(color: string, colors: string[]): string {
+  const m = /^color_(\d+)$/.exec(color);
+  if (!m) return color;
+  return colors[Number.parseInt(m[1]!, 10) - 1]!;
+}
+
+function computeSignatureColorFromColors(colors: string[]): string {
+  const uniqueColors = new Set(colors);
+  if (uniqueColors.size === 1) return Array.from(uniqueColors)[0]!;
+  return 'white';
+}
+
+export function parseSignatureDefinitions(
+  rawSignatures: Record<string, RawSignatureDefinition>,
+  rawLayouts: Record<string, RawSignatureLayoutDefinition>
+): Map<string, SignatureDefinition> {
+  function instantiateMolecule(layout: RawSignatureLayoutDefinition, colors: string[]): SignatureMolecule {
+    return {
+      atoms: layout.molecule.atoms.map(a => ({
+        ...a,
+        color: resolveLayoutColor(a.color, colors),
+      })),
+    };
+  }
 
   const map = new Map<string, SignatureDefinition>();
-  for (const [id, d] of Object.entries(raw)) {
+  for (const [id, d] of Object.entries(rawSignatures)) {
+    const layout = rawLayouts[d.layout];
+    if (!layout) {
+      throw new Error(`Signature '${id}': layout '${d.layout}' not found in rawLayouts`);
+    }
+    const molecule = instantiateMolecule(layout, d.colors);
     map.set(id, {
       id,
       name: d.name,
       level: d.level ?? 1,
       group: d.group ?? 'default',
-      molecule: d.molecule ?? defaultMolecule,
+      molecule,
+      color: computeSignatureColorFromColors(d.colors),
     });
   }
   return map;

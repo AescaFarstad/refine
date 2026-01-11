@@ -713,7 +713,6 @@ onBeforeUnmount(() => {
   color: #fbbf24;
 }
 .reward-value.dim { color: var(--text-secondary); font-size: 18px; }
-.info-section { }
 .info-text {
   font-size: 18px;
   color: var(--text-secondary);

@@ -1,6 +1,7 @@
 import type { GameState } from './GameState';
 import type { DiscoveryId } from './DiscoveryLib';
 import { DISCOVERY } from './DiscoveryLib';
+import { scanWaferForNewSignatures } from './Signatures';
 
 export function discover(gs: GameState, id: DiscoveryId): boolean {
   if (gs.discoveries[id]) return false;
@@ -67,4 +68,18 @@ export function ensureRefineTabDiscovery(gs: GameState): void {
 
 export function discoverRefineTab(gs: GameState): void {
   discover(gs, DISCOVERY.TAB_REFINE);
+}
+
+export function ensureSignatureDiscoveryFromWafer(gs: GameState): void {
+  const completed = new Set(gs.completedSignatureIds);
+  const signatureDefsForLevel = Array.from(gs.lib.signatures.values()).filter(s => s.level === gs.signatureLevel);
+  const { newlyCompletedSignatureIds } = scanWaferForNewSignatures(gs.wafer, signatureDefsForLevel, completed);
+  if (newlyCompletedSignatureIds.length === 0) return;
+
+  discover(gs, DISCOVERY.SIGNATURES);
+
+  for (const id of newlyCompletedSignatureIds) {
+    if (gs.learnedSignatureIds.includes(id)) continue;
+    gs.learnedSignatureIds.push(id);
+  }
 }

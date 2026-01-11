@@ -11,6 +11,7 @@
         :hide-molecules="showRefineAnim"
         :upgrade-preview-cells="upgradeHoverCells"
         :cell-effective-counts="preview.cellEffectiveCounts"
+        :new-signature-matches="preview.newSignatureMatches"
         :use-effective-essence="!draggingItem"
         :show-buff-overlays="true"
         :show-upgrade-hints="showWaferUpgrades"
@@ -69,23 +70,19 @@
     </div>
 
     <div class="info-panel" :class="{ clickable: showSignatureTabs }" @click="cycleInfoTab">
-      <div v-if="showSignatureTabs" class="info-tabs" @click.stop>
-        <button
-          type="button"
+      <div v-if="showSignatureTabs" class="info-tabs">
+        <div
           class="info-tab"
           :class="{ active: infoTab === 'wafer' }"
-          @click="infoTab = 'wafer'"
         >
           Wafer Info
-        </button>
-        <button
-          type="button"
+        </div>
+        <div
           class="info-tab"
           :class="{ active: infoTab === 'signatures' }"
-          @click="infoTab = 'signatures'"
         >
           Signatures
-        </button>
+        </div>
       </div>
 
       <div class="info-body">
@@ -93,6 +90,18 @@
           <div v-if="showYield" class="stat-row">
             <span class="stat-label">Yield:</span>
             <span class="stat-value" :class="{ 'yield-bonus': preview.totalYieldPct > 100 }">{{ preview.totalYieldPct }}%</span>
+            <span class="stat-source" v-if="preview.signatureYieldBonus > 0">
+              +{{ preview.signatureYieldBonus }}% from signatures
+            </span>
+            <span class="stat-source" v-if="preview.newSignatureYieldBonus > 0">
+              +{{ preview.newSignatureYieldBonus }}% from NEW signatures
+              <template v-for="sig in preview.newSignatureMatches" :key="sig.id">
+                <span
+                  class="sig-inline"
+                  :style="signatureInlineStyle(sig.id)"
+                />
+              </template>
+            </span>
             <span class="stat-source" v-if="preview.cyanYieldBonus > 0">
               +{{ preview.cyanYieldBonus }}% from {{ cyanEssences }}
               <template v-for="(key, idx) in cyanEssenceKeys" :key="key">
@@ -165,7 +174,7 @@
           </div>
         </div>
 
-        <Signatures v-else />
+        <Signatures v-else :wafer-signature-ids="waferSignatureIds" />
       </div>
     </div>
 
@@ -324,10 +333,17 @@ const preview = computed(() => {
       cellEffectiveCounts: {} as Record<string, number>,
       totalYieldPct: 100,
       cyanYieldBonus: 0,
+      signatureYieldBonus: 0,
+      newSignatureYieldBonus: 0,
+      newSignatureMatches: [] as Array<{ id: string; offset: { x: number; y: number } }>,
     };
   }
 
-  const basePreview = computeRefinePreviewChem(wafer.value);
+  const basePreview = computeRefinePreviewChem(wafer.value, {
+    signatures: uiState.lib!.signatures,
+    signatureLevel: uiState.signatureLevel,
+    completedSignatureIds: uiState.completedSignatureIds,
+  });
 
   // Calculate essence counts for each resource type
   const essenceTotals = basePreview.essenceTotals || {};
@@ -371,6 +387,29 @@ const preview = computed(() => {
     emptyCells,
   };
 });
+
+const moleculesSource = atlasStorage.getMoleculesSource()!;
+
+const waferSignatureIds = computed(() => {
+  return preview.value.newSignatureMatches.map(m => m.id);
+});
+
+function signatureInlineStyle(id: string): Record<string, string> {
+  const src = moleculesSource;
+  const f = atlasStorage.getMoleculesFrame(`sig:inline:${id}`)!;
+  const targetSize = 24;
+  const scale = targetSize / f.w;
+  const atlasW = src.naturalWidth;
+  const atlasH = src.naturalHeight;
+  return {
+    width: `${targetSize}px`,
+    height: `${targetSize}px`,
+    backgroundImage: `url(${src.src})`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
+    backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
+  } as Record<string, string>;
+}
 
 const creditsEssenceKeys = computed(() => {
   return preview.value.creditsEssences > 0 ? ['red'] : [];
@@ -467,15 +506,14 @@ function getEssenceFrame(k: string) {
 }
 
 function essenceIconStyle(k: string): Record<string, string> {
-  const f = atlasStorage.getItemsFrame(k);
-  if (!source.value || !f) return {} as Record<string, string>;
+  const f = atlasStorage.getItemsFrame(k)!;
   const scale = 16 / Math.max(f.w, f.h);
-  const atlasW = source.value.naturalWidth;
-  const atlasH = source.value.naturalHeight;
+  const atlasW = source.value!.naturalWidth;
+  const atlasH = source.value!.naturalHeight;
   return {
     width: '16px',
     height: '16px',
-    backgroundImage: `url(${source.value.src})`,
+    backgroundImage: `url(${source.value!.src})`,
     backgroundRepeat: 'no-repeat',
     backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
     backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
@@ -848,7 +886,7 @@ function onRotate() {
 
 .info-body {
   flex: 1;
-  overflow: auto;
+  overflow: visible;
 }
 
 .info-panel.clickable {
@@ -918,6 +956,15 @@ function onRotate() {
   opacity: 0.95;
   border-radius: 3px;
   background: rgba(255,255,255,0.08);
+}
+
+.sig-inline {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  vertical-align: middle;
+  margin: -4px 0;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
 }
 
 .hl {

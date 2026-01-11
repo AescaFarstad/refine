@@ -2,7 +2,7 @@ import type { Molecule } from './ItemLib';
 import atlasStorage from './AtlasStorage';
 import { axialToPixel } from './HexMath';
 import { getPivotHex } from './MoleculeUtils';
-import { DRAG_RADIUS_MULTIPLIER } from './RenderConstants';
+import { DRAG_RADIUS_MULTIPLIER, ESSENCE_COLORS } from './RenderConstants';
 
 export function drawMolecule(
   ctx: CanvasRenderingContext2D,
@@ -187,19 +187,5 @@ export function createMoleculeCanvas(
 }
 
 function getEssenceColorFallback(essence: string): string {
-  const colors: Record<string, string> = {
-    red: '#ff4444',
-    blue: '#4444ff',
-    green: '#44ff44',
-    yellow: '#ffdd44',
-    indigo: '#4b0082',
-    crimson: '#dc143c',
-    emerald: '#50c878',
-    gold: '#ffd700',
-    gray: '#9ca3af',
-    orange: '#fb923c',
-    cyan: '#00ffff',
-    magenta: '#ff00ff',
-  };
-  return colors[essence] || '#888888';
+  return ESSENCE_COLORS[essence] || '#888888';
 }

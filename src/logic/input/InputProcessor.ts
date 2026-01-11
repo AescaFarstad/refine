@@ -1,8 +1,8 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAknowledgeOutcome, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscoverGear, CmdMarkEssencesSeen, CmdSwitchTab } from './InputCommands';
-import { discover, discoverRefineTab } from '../Discover';
+import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdAcknowledgeSignatureLearn, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscoverGear, CmdMarkEssencesSeen, CmdSwitchTab } from './InputCommands';
+import { discover, discoverRefineTab, ensureSignatureDiscoveryFromWafer } from '../Discover';
 import { DISCOVERY } from '../DiscoveryLib';
 import { computeEffectiveEssences } from '../RefinePreview';
 import type { Point2 } from '../core/math';
@@ -166,8 +166,14 @@ handlersByName.set('CmdStartRefining', (gs, cmd) => {
   startRefining(gs);
 });
 
-handlersByName.set('CmdAknowledgeOutcome', (gs, cmd) => {
+handlersByName.set('CmdAcknowledgeOutcome', (gs, cmd) => {
   gs.lastRaidOutcome = null;
+});
+
+handlersByName.set('CmdAcknowledgeSignatureLearn', (gs, cmd) => {
+  if (gs.signatureLearnQueue.length > 0) {
+    gs.signatureLearnQueue.shift();
+  }
 });
 
 handlersByName.set('CmdAcknowledgeRefineryOutcome', (gs, cmd) => {
@@ -247,6 +253,7 @@ handlersByName.set('CmdPlaceMolecule', (gs, cmd) => {
   }
 
   computeEffectiveEssences(gs.wafer);
+  ensureSignatureDiscoveryFromWafer(gs);
 });
 
 handlersByName.set('CmdRemoveMolecule', (gs, cmd) => {
@@ -255,6 +262,7 @@ handlersByName.set('CmdRemoveMolecule', (gs, cmd) => {
   const existing = gs.wafer.items[c.itemIdx]!;
   removeMolecule(gs.wafer, c.itemIdx);
   computeEffectiveEssences(gs.wafer);
+  ensureSignatureDiscoveryFromWafer(gs);
 
   const itemId = existing.id;
 
@@ -282,6 +290,7 @@ handlersByName.set('CmdGrowWafer', (gs, cmd) => {
   gs.shardDust = currentShards - price;
   gs.waferUpgradesPurchased = upgradesPurchased + 1;
   computeEffectiveEssences(gs.wafer);
+  ensureSignatureDiscoveryFromWafer(gs);
 });
 
 handlersByName.set('CmdResearchNode', (gs, cmd) => {

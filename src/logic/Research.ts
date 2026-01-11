@@ -2,7 +2,7 @@ import type { GameState, ResearchCell } from './GameState';
 import type { ResearchLib, ResearchNodeInstance } from './ResearchLib';
 import { applyReward } from './Reward';
 import { calculateResearchDistances, calculateResearchPath, type ResearchPathResult } from './ResearchPath';
-import { RESEARCH_PANE_SIZE, RESEARCH_OBSTACLE_PRICE, RESEARCH_OBSTACLE_PRICE_GROWTH } from './Const';
+import { RESEARCH_OBSTACLES_REQUIRED_FOR_SIGNATURE_LEARN, RESEARCH_PANE_SIZE, RESEARCH_OBSTACLE_PRICE, RESEARCH_OBSTACLE_PRICE_GROWTH } from './Const';
 
 // Offset to convert axial coordinates to array indices
 // Center of the grid (0,0 in axial) maps to (OFFSET, OFFSET) in the array
@@ -170,6 +170,25 @@ export interface ResearchPurchaseResult {
   price: number;
 }
 
+function tryLearnSignatureFromResearch(gs: GameState): void {
+  for (; gs.researchSignatureLearnIndex < RESEARCH_OBSTACLES_REQUIRED_FOR_SIGNATURE_LEARN.length; gs.researchSignatureLearnIndex++) {
+    const required = RESEARCH_OBSTACLES_REQUIRED_FOR_SIGNATURE_LEARN[gs.researchSignatureLearnIndex]!;
+    if (gs.researchOwnedCount < required) break;
+
+    const learned = new Set(gs.learnedSignatureIds);
+    const unlearned = Array.from(gs.lib.signatures.values()).filter(s => !learned.has(s.id));
+    if (unlearned.length === 0) {
+      gs.researchSignatureLearnIndex = RESEARCH_OBSTACLES_REQUIRED_FOR_SIGNATURE_LEARN.length;
+      break;
+    }
+
+    const idx = Math.floor(gs.random.get() * unlearned.length);
+    const chosen = unlearned[idx]!;
+    gs.learnedSignatureIds.push(chosen.id);
+    gs.signatureLearnQueue.push(chosen.id);
+  }
+}
+
 export function applyResearchNodeEffect(gs: GameState, lib: ResearchLib, nodeId: number): void {
   const node = lib.nodes.get(nodeId);
   if (!node) return;
@@ -242,6 +261,7 @@ export function applyResearchPurchase(gs: GameState, lib: ResearchLib, targetX: 
   }
   if (newlyPaidCells > 0) {
     gs.researchOwnedCount += newlyPaidCells;
+    tryLearnSignatureFromResearch(gs);
   }
 
   convertedNodeIds.forEach((nodeId) => applyResearchNodeEffect(gs, lib, nodeId));

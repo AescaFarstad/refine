@@ -79,7 +79,7 @@ export const uiState = reactive({
   hasEverHadShards: false,
 
   cheatOpen: false,
-  devAtlasKey: '' as '' | 'items' | 'locations',
+  devAtlasKey: '' as '' | 'items' | 'locations' | 'molecules',
   devMoleculeEditorOpen: false,
   editResearchOpen: false,
 
@@ -96,7 +96,9 @@ export const uiState = reactive({
   hasVisitedResearchTab: false,
   hasVisitedMazeTab: false,
   signatureLevel: 1,
+  learnedSignatureIds: [] as string[],
   completedSignatureIds: [] as string[],
+  signatureLearnQueue: [] as string[],
   waferUpgradesPurchased: 0,
   wafer: createWafer(2) as Wafer,
   waferSize: { x: 0, y: 0 } as Point2,
@@ -222,7 +224,11 @@ export function SyncUIFromGameState(game: GameState): void {
   const hasWafer = !!game.wafer;
   const refinery: UIRefinery = {};
   if (hasWafer && game.nextEvt?.name === 'EvtRefineryDone') {
-    const preview = computeRefinePreviewChem(game.wafer!);
+    const preview = computeRefinePreviewChem(game.wafer!, {
+      signatures: game.lib.signatures,
+      signatureLevel: game.signatureLevel,
+      completedSignatureIds: game.completedSignatureIds,
+    });
     const duration = Math.max(0, game.refiningDuration || preview.timeSec || 0);
     const startedAt = (game.nextEvt.at || 0) - duration;
 
@@ -257,7 +263,9 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.hasVisitedResearchTab = game.discoveries[DISCOVERY.TAB_RESEARCH_VISITED] === true;
   uiState.hasVisitedMazeTab = game.discoveries[DISCOVERY.TAB_MAZE_VISITED] === true;
   uiState.signatureLevel = game.signatureLevel;
+  uiState.learnedSignatureIds = [...game.learnedSignatureIds];
   uiState.completedSignatureIds = [...game.completedSignatureIds];
+  uiState.signatureLearnQueue = [...game.signatureLearnQueue];
   uiState.hasEverHadShards =
     (game.discoveries[DISCOVERY.SHARDS] === true) ||
     (game.shardDust > 0) ||

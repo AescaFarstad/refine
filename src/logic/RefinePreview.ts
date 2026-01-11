@@ -12,6 +12,8 @@ import {
     REFINE_TIME,
 } from './Const';
 import { getWaferBuffAt } from './waferLayout';
+import { scanWaferForNewSignatures, SIGNATURE_YIELD_BONUS_PCT } from './Signatures';
+import type { SignatureDefinition } from './SignatureLib';
 
 export interface RefinePreviewChem {
     timeSec: number;
@@ -19,6 +21,7 @@ export interface RefinePreviewChem {
     baseYieldPct: number;
 
     signatureYieldBonus: number;
+    newSignatureYieldBonus: number;
     signatureSpeedBonus: number;
     cyanYieldBonus: number;
 
@@ -36,6 +39,15 @@ export interface RefinePreviewChem {
 
     emptyCount: number;
     enabledCount: number;
+
+    newlyCompletedSignatureIds: string[];
+    newSignatureMatches: Array<{ id: string; offset: { x: number; y: number } }>;
+}
+
+export interface SignatureContext {
+    signatures: Map<string, SignatureDefinition>;
+    signatureLevel: number;
+    completedSignatureIds: string[];
 }
 
 // Color-changing essences and their target colors.
@@ -276,7 +288,7 @@ function computeEffectiveEssenceTotals(wafer: Wafer): {
     };
 }
 
-export function computeRefinePreviewChem(wafer: Wafer): RefinePreviewChem {
+export function computeRefinePreviewChem(wafer: Wafer, sig: SignatureContext): RefinePreviewChem {
 
     const { essenceTotals, cellEffectiveCounts } = computeEffectiveEssenceTotals(wafer);
 
@@ -290,11 +302,16 @@ export function computeRefinePreviewChem(wafer: Wafer): RefinePreviewChem {
 
     const baseYieldPct = 100;
 
-    const signatureYieldBonus = 0;
+    const completedIdSet = new Set(sig.completedSignatureIds);
+    const signatureDefsForLevel = Array.from(sig.signatures.values()).filter(s => s.level === sig.signatureLevel);
+    const { newlyCompletedSignatureIds, newSignatureMatches } = scanWaferForNewSignatures(wafer, signatureDefsForLevel, completedIdSet);
+
+    const signatureYieldBonus = sig.completedSignatureIds.length * SIGNATURE_YIELD_BONUS_PCT;
+    const newSignatureYieldBonus = newlyCompletedSignatureIds.length * SIGNATURE_YIELD_BONUS_PCT;
     const signatureSpeedBonus = 0;
     const cyanYieldBonus = cyanCount * CYAN_YIELD_BONUS_PCT;
 
-    const totalYieldPct = baseYieldPct + signatureYieldBonus + cyanYieldBonus;
+    const totalYieldPct = baseYieldPct + signatureYieldBonus + newSignatureYieldBonus + cyanYieldBonus;
 
     const red = essenceTotals['red'] || 0;
     const green = essenceTotals['green'] || 0;
@@ -310,6 +327,7 @@ export function computeRefinePreviewChem(wafer: Wafer): RefinePreviewChem {
         failureChancePct,
         baseYieldPct,
         signatureYieldBonus,
+        newSignatureYieldBonus,
         signatureSpeedBonus,
         cyanYieldBonus,
         totalYieldPct,
@@ -320,6 +338,8 @@ export function computeRefinePreviewChem(wafer: Wafer): RefinePreviewChem {
         cellEffectiveCounts,
         emptyCount: wafer.emptyCount,
         enabledCount: wafer.enabledCount,
+        newlyCompletedSignatureIds,
+        newSignatureMatches,
     };
 }
 

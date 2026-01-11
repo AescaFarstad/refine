@@ -77,10 +77,9 @@ const gearFrame = computed(() => {
 const weightFrame = computed(() => (ready.value ? atlasStorage.getItemsFrame('weight') : null));
 
 const spriteStyle = computed(() => {
-  if (!source.value || !gearFrame.value) return {} as Record<string, string>;
-  const f = gearFrame.value;
-  const atlasW = source.value.naturalWidth;
-  const atlasH = source.value.naturalHeight;
+  const f = gearFrame.value!;
+  const atlasW = source.value!.naturalWidth;
+  const atlasH = source.value!.naturalHeight;
   // Scale to fit within 48x48 container while maintaining aspect ratio
   const containerSize = 48;
   const scale = Math.min(containerSize / f.w, containerSize / f.h, 1); // Don't upscale, only downscale
@@ -89,7 +88,7 @@ const spriteStyle = computed(() => {
   return {
     width: displayW + 'px',
     height: displayH + 'px',
-    backgroundImage: `url(${source.value.src})`,
+    backgroundImage: `url(${source.value!.src})`,
     backgroundRepeat: 'no-repeat',
     backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
     backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
@@ -97,10 +96,9 @@ const spriteStyle = computed(() => {
 });
 
 const weightIconStyle = computed(() => {
-  if (!source.value || !weightFrame.value) return {} as Record<string, string>;
-  const f = weightFrame.value;
-  const atlasW = source.value.naturalWidth;
-  const atlasH = source.value.naturalHeight;
+  const f = weightFrame.value!;
+  const atlasW = source.value!.naturalWidth;
+  const atlasH = source.value!.naturalHeight;
   const containerSize = 12;
   const scale = Math.min(containerSize / f.w, containerSize / f.h, 1);
   const displayW = f.w * scale;
@@ -108,7 +106,7 @@ const weightIconStyle = computed(() => {
   return {
     width: displayW + 'px',
     height: displayH + 'px',
-    backgroundImage: `url(${source.value.src})`,
+    backgroundImage: `url(${source.value!.src})`,
     backgroundRepeat: 'no-repeat',
     backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
     backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,

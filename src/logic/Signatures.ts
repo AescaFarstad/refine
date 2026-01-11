@@ -1,0 +1,52 @@
+import type { Wafer } from './Wafer';
+import { getCell } from './Wafer';
+import type { SignatureDefinition, SignatureMolecule } from './SignatureLib';
+import type { Point2 } from './ItemLib';
+
+export const SIGNATURE_YIELD_BONUS_PCT = 20;
+
+export interface WaferSignatureScanResult {
+  newlyCompletedSignatureIds: string[];
+  newSignatureMatches: Array<{ id: string; offset: Point2 }>;
+}
+
+function signatureMatchesAtOffset(wafer: Wafer, molecule: SignatureMolecule, offset: { x: number; y: number }): boolean {
+  for (const atom of molecule.atoms) {
+    const cell = getCell(wafer, { x: atom.x + offset.x, y: atom.y + offset.y });
+    if (!cell || !cell.enabled) return false;
+    const effEssence = cell.effectiveEssence ?? cell.essence;
+    if (effEssence !== atom.color) return false;
+  }
+  return true;
+}
+
+export function scanWaferForNewSignatures(
+  wafer: Wafer,
+  signatureDefs: SignatureDefinition[],
+  completedSignatureIds: Set<string>
+): WaferSignatureScanResult {
+  const newlyCompletedSignatureIds: string[] = [];
+  const newSignatureMatches: Array<{ id: string; offset: Point2 }> = [];
+
+  for (const sig of signatureDefs) {
+    if (completedSignatureIds.has(sig.id)) continue;
+
+    let foundOffset: Point2 | null = null;
+    for (const cell of wafer.cells.values()) {
+      if (signatureMatchesAtOffset(wafer, sig.molecule, { x: cell.x, y: cell.y })) {
+        foundOffset = { x: cell.x, y: cell.y };
+        break;
+      }
+    }
+
+    if (foundOffset) {
+      newlyCompletedSignatureIds.push(sig.id);
+      newSignatureMatches.push({
+        id: sig.id,
+        offset: foundOffset,
+      });
+    }
+  }
+
+  return { newlyCompletedSignatureIds, newSignatureMatches };
+}

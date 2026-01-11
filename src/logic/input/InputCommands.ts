@@ -15,8 +15,12 @@ export class CmdStartRaid implements CmdInput {
   constructor(args: { id: string }) { this.id = args.id; }
 }
 
-export class CmdAknowledgeOutcome implements CmdInput {
-  readonly name = 'CmdAknowledgeOutcome';
+export class CmdAcknowledgeOutcome implements CmdInput {
+  readonly name = 'CmdAcknowledgeOutcome';
+}
+
+export class CmdAcknowledgeSignatureLearn implements CmdInput {
+  readonly name = 'CmdAcknowledgeSignatureLearn';
 }
 
 export class CmdStartRefining implements CmdInput {

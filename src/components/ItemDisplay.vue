@@ -1,15 +1,14 @@
 <template>
   <div class="item-cell-wrap" v-bind="$attrs" ref="wrapRef" @mouseenter="onEnter" @mouseleave="onLeave">
     <div class="item-cell" :class="{ minor, 'has-vol': showVolume }">
-      <div class="sprite" v-if="source && frame" :class="{ 'sprite-dimmed': moleculeUrl }" :style="spriteStyle" />
-      <div class="molecule-view" v-if="moleculeUrl" :style="{ backgroundImage: `url(${moleculeUrl})` }" />
+      <div class="sprite" v-if="source && frame" :style="spriteStyle" />
       <div v-else-if="!source || !frame" class="placeholder">{{ id }}</div>
 
       <div v-if="showScore && hasFiniteScore" class="score">{{ displayScore }}</div>
       <div v-if="showVolume" class="vol">{{ displayVolume }}</div>
       <div v-if="quantity > 1" class="qty">x{{ quantity }}</div>
 
-      <div class="essences" v-if="!minor && essencesToShow.length && !moleculeUrl">
+      <div class="essences" v-if="!minor && essencesToShow.length">
         <div
           v-for="(row, rowIndex) in essenceRows"
           :key="rowIndex"
@@ -59,21 +58,20 @@
         <span class="tp-label">Volume</span>
         <span class="tp-value">{{ displayVolume }}</span>
       </div>
-      <div v-if="tooltipMoleculeUrl" class="tp-molecule" :style="{ backgroundImage: `url(${tooltipMoleculeUrl})` }" />
+      <div v-if="tooltipMoleculeStyle" class="tp-molecule" :style="tooltipMoleculeStyle" />
     </div>
   </Teleport>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
 import atlasStorage from '../logic/AtlasStorage';
-import { ensureMoleculeAtlas } from '../logic/MoleculeAtlas';
 import itemsData from '../data/items';
 import type { ItemDefinition } from '../logic/ItemLib';
 
 defineOptions({ inheritAttrs: false });
 
-const props = defineProps<{ id: string; quantity?: number; minor?: boolean; noTooltip?: boolean; showMolecule?: boolean; showScore?: boolean; showVolume?: boolean }>();
+const props = defineProps<{ id: string; quantity?: number; minor?: boolean; noTooltip?: boolean; showScore?: boolean; showVolume?: boolean }>();
 
 const quantity = computed(() => Math.max(1, props.quantity ?? 1));
 const minor = computed(() => !!props.minor);
@@ -137,69 +135,12 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', updateTooltipPosition, true);
 });
 
-// Atlas state
-const source = ref<HTMLImageElement | null>(atlasStorage.getItemsSource());
-const ready = ref<boolean>(atlasStorage.isItemsAtlasLoaded());
-onMounted(async () => {
-  if (!ready.value) {
-    try {
-      await atlasStorage.loadItemsAtlas();
-    } catch (_e) { /* noop */ }
-    ready.value = atlasStorage.isItemsAtlasLoaded();
-    source.value = atlasStorage.getItemsSource();
-  }
-});
-
-const moleculeUrl = ref<string | null>(null);
-watch(
-  () => [props.showMolecule, props.id] as const,
-  async ([showMolecule, id], _prev, onCleanup) => {
-    let cancelled = false;
-    onCleanup(() => { cancelled = true; });
-
-    if (!showMolecule) {
-      moleculeUrl.value = null;
-      return;
-    }
-
-    try {
-      await ensureMoleculeAtlas();
-      if (cancelled) return;
-      moleculeUrl.value = atlasStorage.getMoleculeImage(id);
-    } catch (e) {
-      console.error('Error updating molecule image:', e);
-      if (cancelled) return;
-      moleculeUrl.value = null;
-    }
-  },
-  { immediate: true }
-);
-
-const tooltipMoleculeUrl = ref<string | null>(null);
-watch(
-  () => [hovered.value, props.id] as const,
-  async ([isHovered, id], _prev, onCleanup) => {
-    let cancelled = false;
-    onCleanup(() => { cancelled = true; });
-
-    if (!isHovered) {
-      tooltipMoleculeUrl.value = null;
-      return;
-    }
-
-    try {
-      await ensureMoleculeAtlas();
-      if (cancelled) return;
-      tooltipMoleculeUrl.value = atlasStorage.getMoleculeImage(id);
-    } catch (e) {
-      if (cancelled) return;
-      tooltipMoleculeUrl.value = null;
-    }
-  },
-  { immediate: true }
-);
+// Atlas state - atlases are pre-loaded at app start
+const source = atlasStorage.getItemsSource()!;
+const moleculesSource = atlasStorage.getMoleculesSource();
 
 const frame = computed(() => atlasStorage.getItemsFrame(props.id));
+const moleculeFrame = computed(() => atlasStorage.getMoleculesFrame(`mol:${props.id}`));
 
 const itemDef = computed<ItemDefinition>(() => (itemsData as Record<string, ItemDefinition>)[props.id]!);
 const displayName = computed(() => itemDef.value.name);
@@ -222,18 +163,36 @@ const displayScore = computed(() => {
 const hasFiniteScore = computed(() => Number.isFinite(itemDef.value.score));
 
 const spriteStyle = computed(() => {
-  if (!source.value || !frame.value) return {} as Record<string, string>;
-  const f = frame.value;
-  const atlasW = source.value.naturalWidth;
-  const atlasH = source.value.naturalHeight;
+  const f = frame.value!;
+  const atlasW = source.naturalWidth;
+  const atlasH = source.naturalHeight;
   return {
     width: f.w + 'px',
     height: f.h + 'px',
-    backgroundImage: `url(${source.value.src})`,
+    backgroundImage: `url(${source.src})`,
     backgroundRepeat: 'no-repeat',
     backgroundPosition: `-${f.x}px -${f.y}px`,
     backgroundSize: `${atlasW}px ${atlasH}px`,
   } as Record<string, string>;
+});
+
+function makeMoleculeStyle(targetW: number, targetH: number): Record<string, string> | null {
+  const f = moleculeFrame.value;
+  if (!moleculesSource || !f) return null;
+  const scale = Math.min(targetW / f.w, targetH / f.h);
+  const atlasW = moleculesSource.naturalWidth;
+  const atlasH = moleculesSource.naturalHeight;
+  return {
+    backgroundImage: `url(${moleculesSource.src})`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
+    backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
+  } as Record<string, string>;
+}
+
+const tooltipMoleculeStyle = computed(() => {
+  if (!hovered.value) return null;
+  return makeMoleculeStyle(96, 96);
 });
 
 // Essences display
@@ -268,17 +227,16 @@ function getEssenceFrame(k: string) {
 }
 
 function essenceIconStyle(k: string): Record<string, string> {
-  const f = atlasStorage.getItemsFrame(k);
-  if (!source.value || !f) return {} as Record<string, string>;
+  const f = atlasStorage.getItemsFrame(k)!;
   // Scale the entire atlas proportionally so the essence icon fits in 14x14
   const size = 16;
   const scale = size / Math.max(f.w, f.h);
-  const atlasW = source.value.naturalWidth;
-  const atlasH = source.value.naturalHeight;
+  const atlasW = source.naturalWidth;
+  const atlasH = source.naturalHeight;
   return {
     width: size + 'px',
     height: size + 'px',
-    backgroundImage: `url(${source.value.src})`,
+    backgroundImage: `url(${source.src})`,
     backgroundRepeat: 'no-repeat',
     backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
     backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
@@ -317,20 +275,8 @@ function essenceIconStyle(k: string): Record<string, string> {
   transform: translate(-50%, -50%);
   image-rendering: auto;
 }
-.sprite.sprite-dimmed {
-  opacity: 0.5;
-  filter: brightness(0.5);
-}
 .item-cell.minor .sprite {
   transform: translate(-50%, -50%) scale(0.5);
-}
-.molecule-view {
-  position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 100% 100%;
-  image-rendering: auto;
 }
 .placeholder {
   position: absolute;

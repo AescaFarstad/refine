@@ -113,7 +113,12 @@ function initAtoms() {
   if (!props.wafer) return;
   const newAtoms: AnimAtom[] = [];
 
-  const preview = computeRefinePreviewChem(props.wafer);
+  const gs = getGameState()!;
+  const preview = computeRefinePreviewChem(props.wafer, {
+    signatures: gs.lib.signatures,
+    signatureLevel: gs.signatureLevel,
+    completedSignatureIds: gs.completedSignatureIds,
+  });
   const cellEffectiveCounts = preview.cellEffectiveCounts || {};
 
   for (const item of props.wafer.items) {

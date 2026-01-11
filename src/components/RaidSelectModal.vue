@@ -154,11 +154,8 @@ function encounterIconStyle(iconKey: string): Record<string, string> {
 }
 
 function raidBackgroundStyle(raid: RaidDefinition): Record<string, string> {
-  const source = locationsAtlasSource.value;
-  if (!source) return {};
-
-  const frame = locationsAtlasFrames[raid.locationImageId];
-  if (!frame) return {};
+  const source = locationsAtlasSource.value!;
+  const frame = locationsAtlasFrames[raid.locationImageId]!;
 
   const atlasW = source.naturalWidth;
   const atlasH = source.naturalHeight;
@@ -193,8 +190,7 @@ const previewLocationFrame = computed(() => {
 });
 
 const previewLocationAtlasStyle = computed<Record<string, string>>(() => {
-  if (!locationsAtlasReady.value || !previewLocationFrame.value || !locationsAtlasMeta) return {} as Record<string, string>;
-  const f = previewLocationFrame.value;
+  const f = previewLocationFrame.value!;
   return {
     width: `calc(100% * ${locationsAtlasMeta.w / f.w})`,
     height: `calc(100% * ${locationsAtlasMeta.h / f.h})`,

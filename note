@@ -49,6 +49,8 @@ january 7
   rewards, balancing
 january 10
   raid selection window redesign, raid images, style tweaks
+january 11
+  UI discoveries, fine tunning, signatures, alerts, images
 
 
 Images:
@@ -189,6 +191,13 @@ item for cashback in case of failure
 ?sometimes molecule refuses to rotate when picked up
 
 [ ] reimbursed
+[ ] accidentally discover signatures
+[ ] discover signatures through quest for the first time
+[ ] learn a signature in research before discovering signatures
+[ ] learn a signature in research after discovering signatures
 
 
-Extract properties related to raid simulation from GameState into a single RaidSimulation object. 
+
+[ ] Quest text in log vs quest description in hint.
+Raid outcode quest results - show in a table
+set signature colors

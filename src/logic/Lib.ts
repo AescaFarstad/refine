@@ -24,6 +24,7 @@ import gearData from '../data/gear';
 import gearCategoriesData from '../data/gear_categories';
 import itemsData from '../data/items';
 import signaturesData from '../data/signatures';
+import signatureLayoutsData from '../data/signature_layouts';
 import mazeData from '../data/maze';
 import { ResearchLib } from "./ResearchLib";
 import { researchArchetypes } from '../data/research_archetypes';
@@ -84,7 +85,7 @@ export class Lib {
       this.gearCategories = parseGearCategoryDefinitions(gearCategoriesData);
       this.gear = parseGearDefinitions(gearData);
       this.items = parseItemDefinitionsWithOrder(itemsData, this.raids.values());
-      this.signatures = parseSignatureDefinitions(signaturesData);
+      this.signatures = parseSignatureDefinitions(signaturesData, signatureLayoutsData);
 
       for (const raid of this.raidSources.values()) {
         raid.itemPoolsByRarity = this.buildItemPoolsByRarity(raid.items);

@@ -5,6 +5,7 @@ import { processInputs } from './logic/input/InputProcessor';
 import * as Model from './logic/Model';
 import { SyncUIFromGameState } from './logic/UIState';
 import atlasStorage from './logic/AtlasStorage';
+import { ensureMoleculeAtlas } from './logic/MoleculeAtlas';
 import { getRepresentation } from './logic/LogNumbers';
 import { getHypRepresentation } from './logic/HypNumbers';
 import { initResearchCells } from './logic/Research';
@@ -12,36 +13,39 @@ import { initDebug } from './logic/CheatInit';
 
 getRepresentation(2000);
 getHypRepresentation(2000);
-// Create GameState first so UI state can assume its presence
-const gameState = new GameState();
 
-initResearchCells(gameState, gameState.lib.research);
+(async () => {
+  // Create GameState first so UI state can assume its presence
+  const gameState = new GameState();
 
-initDebug(gameState);
+  initResearchCells(gameState, gameState.lib.research);
+  initDebug(gameState);
 
-void atlasStorage.loadItemsAtlas();
-void atlasStorage.loadLocationsAtlas();
+  await atlasStorage.loadItemsAtlas();
+  await atlasStorage.loadLocationsAtlas();
+  await ensureMoleculeAtlas();
 
-// Sync UI immediately so initial values render before mounting
-SyncUIFromGameState(gameState);
-
-const app = createApp(App);
-app.mount('#app');
-
-let lastTimestamp = 0;
-function gameLoop(timestamp: number) {
-  if (lastTimestamp === 0) {
-    lastTimestamp = timestamp;
-  }
-  const deltaTime = (timestamp - lastTimestamp) / 1000; // seconds
-  lastTimestamp = timestamp;
-
-  processInputs(gameState);
-  Model.update(gameState, Math.min(1, deltaTime));
-
+  // Sync UI immediately so initial values render before mounting
   SyncUIFromGameState(gameState);
 
-  requestAnimationFrame(gameLoop);
-}
+  const app = createApp(App);
+  app.mount('#app');
 
-requestAnimationFrame(gameLoop);
+  let lastTimestamp = 0;
+  function gameLoop(timestamp: number) {
+    if (lastTimestamp === 0) {
+      lastTimestamp = timestamp;
+    }
+    const deltaTime = (timestamp - lastTimestamp) / 1000; // seconds
+    lastTimestamp = timestamp;
+
+    processInputs(gameState);
+    Model.update(gameState, Math.min(1, deltaTime));
+
+    SyncUIFromGameState(gameState);
+
+    requestAnimationFrame(gameLoop);
+  }
+
+  requestAnimationFrame(gameLoop);
+})();

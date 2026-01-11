@@ -3,6 +3,7 @@ import type { RawQuestDefinition } from '../../logic/QuestLib';
 const quests: Record<string, RawQuestDefinition> = {
   shegolskoe_explore_loot_locations: {
     name: 'Explore new loot locations',
+    encounterLine: 'A number of buildings in Shegolskoe attract special attention from the zone inhabitants. Preliminary scouting will show what awaits inside and who might we ran into along the way.',
     raidRestriction: ['shegolskoe'],
     requiresRaidSuccesses: 1,
     encounters: [
@@ -10,7 +11,8 @@ const quests: Record<string, RawQuestDefinition> = {
     ],
   },
   shegolskoe_break_spikder: {
-    name: 'Break through a spikder',
+    name: 'Investigate the artist\'s dacha',
+    encounterLine: 'A powerful spikder is crawling around a spacious dacha of a famous artist. Weed them out and claim the territory.',
     requiresRaidQuestCompletions: 1,
     raidRestriction: ['shegolskoe'],
     encounters: [
@@ -22,7 +24,8 @@ const quests: Record<string, RawQuestDefinition> = {
     ],
   },
   shegolskoe_break_flower: {
-    name: 'Break through a flower human',
+    name: 'Clear the well',
+    encounterLine: 'There is a giant flower in the form of a human, growing around the village well. It blocks the way to a two-story dacha and a picknick spot. Weed them out and claim the territory.',
     requiresRaidQuestCompletions: 1,
     raidRestriction: ['shegolskoe'],
     encounters: [
@@ -33,7 +36,8 @@ const quests: Record<string, RawQuestDefinition> = {
     ],
   },
   shegolskoe_break_distorted_pack: {
-    name: 'Break through a pack of distorted',
+    name: 'Visit the shop',
+    encounterLine: 'A pack of distorted humanoids are sleeping next to the village shop entrance. Weed them out and gain access to the shop\'s contents.',
     requiresRaidQuestCompletions: 1,
     raidRestriction: ['shegolskoe'],
     encounters: [
@@ -46,6 +50,7 @@ const quests: Record<string, RawQuestDefinition> = {
   },
   shegolskoe_locate_next_zone: {
     name: 'Locate another zone',
+    encounterLine: 'The resources are deplete while monsters multiply. Climb the water tower and take a bearing on the nearby zones.',
     requiresRaidQuestCompletions: 3,
     raidRestriction: ['shegolskoe'],
     encounterTimeMin: 50,

@@ -1,7 +1,7 @@
 import { computed } from 'vue';
 import { uiState, getGameState } from './UIState';
 import { globalInputQueue } from './Model';
-import { CmdAknowledgeOutcome, CmdStartRaid } from './input/InputCommands';
+import { CmdAcknowledgeOutcome, CmdStartRaid } from './input/InputCommands';
 import { formatDurationHM } from './StringUtils';
 
 export function useRaidAgain() {
@@ -35,7 +35,7 @@ export function useRaidAgain() {
   });
 
   function raidAgain() {
-    globalInputQueue.push(new CmdAknowledgeOutcome());
+    globalInputQueue.push(new CmdAcknowledgeOutcome());
     globalInputQueue.push(new CmdStartRaid({ id: raidId.value }));
   }
 

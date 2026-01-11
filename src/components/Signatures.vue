@@ -1,147 +1,74 @@
 <template>
-  <div class="signatures">
+  <div class="signatures" :style="atlasVars">
     <div class="signatures-grid">
       <div
         v-for="sig in signaturesForLevel"
         :key="sig.id"
         class="sig-entry"
-        :class="{ incomplete: !isCompleted(sig.id) }"
+        :class="{ incomplete: !isCompleted(sig.id), unknown: !isLearned(sig.id), glowing: isInWafer(sig.id) }"
       >
-        <canvas
-          class="sig-canvas"
-          width="80"
-          height="65"
-          :ref="(el) => setCanvasRef(sig.id, el as HTMLCanvasElement | null)"
-        />
-        <div class="sig-name">{{ sig.name }}</div>
+        <div class="sig-sprite" :style="sigSpriteStyle(sig.id)" />
+        <div class="sig-name">{{ displayName(sig.id, sig.name) }}</div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, watch } from 'vue';
-import type { SignatureDefinition, SignatureMolecule } from '../logic/SignatureLib';
+import { computed } from 'vue';
+import type { SignatureDefinition } from '../logic/SignatureLib';
 import { uiState } from '../logic/UIState';
-import { axialToPixel } from '../logic/HexMath';
-import { clearCanvas, drawHexagon } from '../logic/DrawHex';
+import atlasStorage from '../logic/AtlasStorage';
 
-const canvases = new Map<string, HTMLCanvasElement>();
-
-function setCanvasRef(id: string, el: HTMLCanvasElement | null): void {
-  if (!el) {
-    canvases.delete(id);
-    return;
-  }
-  canvases.set(id, el);
-}
+const props = defineProps<{
+  waferSignatureIds?: string[];
+}>();
 
 const signaturesForLevel = computed<SignatureDefinition[]>(() => {
   const lib = uiState.lib!;
   const level = uiState.signatureLevel;
-  const arr = Array.from(lib.signatures.values()).filter(s => s.level === level);
-  arr.sort((a, b) => (a.group === b.group ? a.name.localeCompare(b.name) : a.group.localeCompare(b.group)));
-  return arr;
+  return Array.from(lib.signatures.values()).filter(s => s.level === level);
 });
 
+const moleculesSource = atlasStorage.getMoleculesSource()!;
+const atlasW = moleculesSource.naturalWidth;
+const atlasH = moleculesSource.naturalHeight;
+const atlasVars = {
+  '--sig-atlas': `url(${moleculesSource.src})`,
+  '--sig-atlas-size': `${atlasW}px ${atlasH}px`,
+} as Record<string, string>;
+
+const learnedIdSet = computed(() => new Set(uiState.learnedSignatureIds));
 const completedIdSet = computed(() => new Set(uiState.completedSignatureIds));
+const waferIdSet = computed(() => new Set(props.waferSignatureIds || []));
+
+function isLearned(id: string): boolean {
+  return learnedIdSet.value.has(id);
+}
 
 function isCompleted(id: string): boolean {
   return completedIdSet.value.has(id);
 }
 
-function getEssenceColor(essence: string): string {
-  const colors: Record<string, string> = {
-    red: '#ff4444',
-    blue: '#4444ff',
-    green: '#44ff44',
-    yellow: '#ffdd44',
-    indigo: '#4b0082',
-    crimson: '#dc143c',
-    emerald: '#50c878',
-    gold: '#ffd700',
-    gray: '#9ca3af',
-    orange: '#fb923c',
-    cyan: '#00ffff',
-    magenta: '#ff00ff',
-  };
-  return colors[essence] || '#888888';
+function isInWafer(id: string): boolean {
+  return waferIdSet.value.has(id) && !completedIdSet.value.has(id);
 }
 
-function drawSignatureMolecule(
-  ctx: CanvasRenderingContext2D,
-  molecule: SignatureMolecule,
-  canvasW: number,
-  canvasH: number,
-  completed: boolean,
-): void {
-  clearCanvas(ctx);
-
-  const baseHexSize = 11;
-  const margin = 10;
-
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  for (const atom of molecule.atoms) {
-    const p = axialToPixel({ x: atom.x, y: atom.y }, baseHexSize, { x: 0, y: 0 });
-    minX = Math.min(minX, p.x);
-    minY = Math.min(minY, p.y);
-    maxX = Math.max(maxX, p.x);
-    maxY = Math.max(maxY, p.y);
-  }
-
-  const spanX = Math.max(1, maxX - minX);
-  const spanY = Math.max(1, maxY - minY);
-  const scale = Math.min(
-    (canvasW - margin * 2) / (spanX + baseHexSize * 2),
-    (canvasH - margin * 2) / (spanY + baseHexSize * 2),
-  );
-
-  const hexSize = Math.max(8, baseHexSize * scale);
-  const origin = {
-    x: canvasW / 2 - (minX + maxX) / 2 * scale,
-    y: canvasH / 2 - (minY + maxY) / 2 * scale,
-  };
-
-  for (const atom of molecule.atoms) {
-    const center = axialToPixel({ x: atom.x, y: atom.y }, hexSize, origin);
-    const essenceColor = getEssenceColor(atom.color);
-    const radiusFactor = completed ? 0.82 : 0.58;
-    drawHexagon(ctx, center, hexSize * radiusFactor, {
-      fillColor: completed ? essenceColor : undefined,
-      strokeColor: completed ? 'rgba(15, 23, 42, 0.9)' : essenceColor,
-      lineWidth: 2,
-    });
-  }
+function displayName(id: string, name: string): string {
+  return isLearned(id) ? name : '?';
 }
 
-function renderAll(): void {
-  for (const sig of signaturesForLevel.value) {
-    const canvas = canvases.get(sig.id);
-    if (!canvas) continue;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) continue;
-    drawSignatureMolecule(ctx, sig.molecule, canvas.width, canvas.height, isCompleted(sig.id));
-  }
+function sigSpriteStyle(id: string): Record<string, string> {
+  const sig = uiState.lib!.signatures.get(id)!;
+  const key =
+    !isLearned(id) ? `sig:card:unknownColor:${sig.color}` :
+      isCompleted(id) ? `sig:card:done:${id}` :
+        `sig:card:open:${id}`;
+  const f = atlasStorage.getMoleculesFrame(key)!;
+  return {
+    backgroundPosition: `-${f.x}px -${f.y}px`,
+  } as Record<string, string>;
 }
-
-const stop = watch(
-  () => [uiState.signatureLevel, uiState.completedSignatureIds, signaturesForLevel.value.length],
-  async () => {
-    await nextTick();
-    renderAll();
-  },
-  { deep: true, immediate: true }
-);
-
-onMounted(async () => {
-  await nextTick();
-  renderAll();
-});
-
-onUnmounted(() => {
-  stop();
-  canvases.clear();
-});
 </script>
 
 <style scoped>
@@ -169,23 +96,25 @@ onUnmounted(() => {
 
 .signatures-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 80px);
+  grid-template-columns: repeat(8, 1fr);
   gap: 10px;
-  justify-content: start;
+  justify-items: center;
 }
 
 .sig-entry {
   display: grid;
   grid-template-rows: auto auto;
-  gap: 8px;
+  gap: 4px;
   justify-items: center;
-  width: 80px;
 }
 
-.sig-canvas {
+.sig-sprite {
   width: 80px;
-  height: 65px;
+  height: 90px;
   display: block;
+  background-image: var(--sig-atlas);
+  background-repeat: no-repeat;
+  background-size: var(--sig-atlas-size);
 }
 
 .sig-name {
@@ -193,5 +122,28 @@ onUnmounted(() => {
   font-size: 12px;
   color: var(--text-secondary);
   line-height: 1.1;
+}
+
+.sig-entry.incomplete {
+  opacity: 0.5;
+}
+
+.sig-entry.unknown .sig-name {
+  color: rgba(251, 146, 60, 0.85);
+  font-weight: 800;
+}
+
+.sig-entry.glowing {
+  opacity: 1;
+  animation: sig-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes sig-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px rgba(79, 209, 197, 0.6));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(79, 209, 197, 0.9));
+  }
 }
 </style>

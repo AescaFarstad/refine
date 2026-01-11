@@ -71,15 +71,14 @@ function getEssenceFrame(k: string) {
 }
 
 function essenceIconStyle(size: number, k: string): Record<string, string> {
-  const f = atlasStorage.getItemsFrame(k);
-  if (!source.value || !f) return {} as Record<string, string>;
+  const f = atlasStorage.getItemsFrame(k)!;
   const scale = size / Math.max(f.w, f.h);
-  const atlasW = source.value.naturalWidth;
-  const atlasH = source.value.naturalHeight;
+  const atlasW = source.value!.naturalWidth;
+  const atlasH = source.value!.naturalHeight;
   return {
     width: size + 'px',
     height: size + 'px',
-    backgroundImage: `url(${source.value.src})`,
+    backgroundImage: `url(${source.value!.src})`,
     backgroundRepeat: 'no-repeat',
     backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
     backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,

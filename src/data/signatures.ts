@@ -1,90 +1,103 @@
 import type { RawSignatureDefinition } from '../logic/SignatureLib';
 
 const signatures: Record<string, RawSignatureDefinition> = {
-  starter_mark: {
+  s1: {
     name: 'Objectify',
     group: 'starter',
-    level: 1,
-    molecule: {
-      atoms: [
-        { color: 'red', x: 1, y: -3 },
-        { color: 'red', x: 0, y: -2 },
-        { color: 'red', x: 1, y: -2 },
-        { color: 'red', x: -1, y: -1 },
-        { color: 'red', x: 1, y: -1 },
-        { color: 'red', x: -2, y: 0 },
-        { color: 'red', x: 1, y: 0 },
-        { color: 'red', x: -3, y: 1 },
-        { color: 'red', x: -2, y: 1 },
-        { color: 'red', x: -1, y: 1 },
-        { color: 'red', x: 0, y: 1 },
-        { color: 'red', x: 1, y: 1 },
-      ],
-    },
+    layout: 'up_trihex',
+    colors: ['red'],
   },
-  red_triad: {
+  s2: {
+    name: 'Delineate',
+    group: 'starter',
+    layout: 'up_triangle',
+    colors: ['red'],
+  },
+  s3: {
     name: 'Summarize',
     group: 'starter',
-    level: 1,
-    molecule: {
-      atoms: [
-        { color: 'blue', x: 0, y: -2 },
-        { color: 'blue', x: 1, y: -2 },
-        { color: 'blue', x: 2, y: -2 },
-        { color: 'blue', x: -1, y: -1 },
-        { color: 'blue', x: 2, y: -1 },
-        { color: 'blue', x: -2, y: 0 },
-        { color: 'blue', x: 2, y: 0 },
-        { color: 'blue', x: -2, y: 1 },
-        { color: 'blue', x: 1, y: 1 },
-        { color: 'blue', x: -2, y: 2 },
-        { color: 'blue', x: -1, y: 2 },
-        { color: 'blue', x: 0, y: 2 },
-      ],
-    },
+    layout: 'sun',
+    colors: ['blue'],
   },
-  trtrvvtrrt: {
+  s4: {
     name: 'Encapsulate',
     group: 'starter',
-    level: 1,
-    molecule: {
-      atoms: [
-        { color: 'blue', x: -1, y: -2 },
-        { color: 'blue', x: 0, y: -2 },
-        { color: 'blue', x: 1, y: -2 },
-        { color: 'blue', x: 2, y: -2 },
-        { color: 'blue', x: 3, y: -2 },
-        { color: 'blue', x: -1, y: -1 },
-        { color: 'blue', x: 2, y: -1 },
-        { color: 'blue', x: -1, y: 0 },
-        { color: 'blue', x: 1, y: 0 },
-        { color: 'blue', x: -1, y: 1 },
-        { color: 'blue', x: 0, y: 1 },
-        { color: 'blue', x: -1, y: 2 },
-      ],
-    },
+    layout: 'ex',
+    colors: ['blue'],
   },
-  mesmerize: {
+  s5: {
     name: 'Mesmerize',
     group: 'starter',
-    level: 1,
-    molecule: {
-      atoms: [
-        { color: 'red', x: 0, y: -2 },
-        { color: 'red', x: 2, y: -2 },
-        { color: 'red', x: 0, y: -1 },
-        { color: 'red', x: 1, y: -1 },
-        { color: 'red', x: -2, y: 0 },
-        { color: 'red', x: -1, y: 0 },
-        { color: 'red', x: 0, y: 0 },
-        { color: 'red', x: 1, y: 0 },
-        { color: 'red', x: 2, y: 0 },
-        { color: 'red', x: -1, y: 1 },
-        { color: 'red', x: 0, y: 1 },
-        { color: 'red', x: -2, y: 2 },
-        { color: 'red', x: 0, y: 2 },
-      ]
-    },
+    layout: 'up_serpinski',
+    colors: ['red'],
+  },
+  s6: {
+    name: 'Pulverize',
+    group: 'starter',
+    layout: 'up_blunt_triangle',
+    colors: ['red'],
+  },
+  s7: {
+    name: 'Harmonize',
+    group: 'starter',
+    layout: 'candy_left',
+    colors: ['red'],
+  },
+  s8: {
+    name: 'Patronize',
+    group: 'starter',
+    layout: 'shelf_left',
+    colors: ['red'],
+  },
+
+
+  s9: {
+    name: 'Galvanize',
+    group: 'starter',
+    layout: 'down_trihex',
+    colors: ['red'],
+  },
+  s10: {
+    name: 'Codify',
+    group: 'starter',
+    layout: 'down_triangle',
+    colors: ['red'],
+  },
+  s11: {
+    name: 'Simplify',
+    group: 'starter',
+    layout: 'hexagon',
+    colors: ['red'],
+  },
+  s12: {
+    name: 'Amplify',
+    group: 'starter',
+    layout: 'h',
+    colors: ['red'],
+  },
+  s13: {
+    name: 'Stipulate',
+    group: 'starter',
+    layout: 'down_serpinski',
+    colors: ['red'],
+  },
+  s14: {
+    name: 'Downgrade',
+    group: 'starter',
+    layout: 'down_blunt_triangle',
+    colors: ['red'],
+  },
+  s15: {
+    name: 'Uplift',
+    group: 'starter',
+    layout: 'candy_right',
+    colors: ['red'],
+  },
+  s16: {
+    name: 'Formulate',
+    group: 'starter',
+    layout: 'shelf_right',
+    colors: ['red'],
   },
 };
 

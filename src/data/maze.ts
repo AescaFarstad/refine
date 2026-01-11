@@ -69,8 +69,7 @@ export const mazeDefinitions: Record<string, Omit<MazeDefinition, 'id'>> = {
     artefacts: [],
     description: 'Adds an Eye artefact for visibility flair.',
     reward: [
-      { kind: 'resource', resource: 'credits', amount: 250 },
-      { kind: 'resource', resource: 'chronotraces', amount: 10 }
+      { kind: 'resource', resource: 'credits', amount: 1250 }
     ],
   },
   maze_5: {
@@ -84,8 +83,7 @@ export const mazeDefinitions: Record<string, Omit<MazeDefinition, 'id'>> = {
     artefacts: [],
     description: 'Collect a single key to finish.',
     reward: [
-      { kind: 'resource', resource: 'credits', amount: 300 },
-      { kind: 'resource', resource: 'chronotraces', amount: 15 }
+      { kind: 'resource', resource: 'chronotraces', amount: 250 }
     ],
   },
   maze_6: {

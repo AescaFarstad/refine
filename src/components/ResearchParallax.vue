@@ -46,6 +46,7 @@ let canvasHeight = 0;
 let lastActivityTime = 0;
 const ACTIVITY_FADE_DURATION = 900;
 const BASE_MOVEMENT_MULTIPLIER = 4;
+const HEX_SIZE_MULTIPLIER = 0.3;
 
 // Track pure panning (excluding zoom-induced offset changes)
 let purePanOffset: Point2 = { x: 0, y: 0 };
@@ -90,7 +91,8 @@ function generateLayers(width: number, height: number): void {
   const rand = seededRandom(42);
   const padding = 300;
 
-  for (const [depth, count, hexSize, alpha, floatMaxRadius] of configs) {
+  for (const [depth, count, baseHexSize, alpha, floatMaxRadius] of configs) {
+    const hexSize = baseHexSize * HEX_SIZE_MULTIPLIER;
     const hexes: ParallaxHex[] = [];
     const minDistance = hexSize * 2.5;
 

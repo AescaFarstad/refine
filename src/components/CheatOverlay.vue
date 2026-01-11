@@ -1,5 +1,5 @@
 <template>
-  <div v-if="open" class="modal-backdrop">
+  <div v-if="open" class="modal-backdrop" @click.self="closeAll">
     <div class="modal" :class="{ full: hasFullscreen }">
       <header class="modal-header" v-if="!hasFullscreen">
         <h3>Cheat Tools</h3>
@@ -16,6 +16,19 @@
           <button class="btn primary" type="button" @click="openEditResearchPane">
             Open Edit Research Pane
           </button>
+        </div>
+
+        <h4 class="section-title">Grant Resources</h4>
+        <div class="resource-grid">
+          <div v-for="res in resources" :key="res.key" class="resource-row">
+            <span class="resource-label" :style="{ color: res.color }">
+              <span class="resource-glyph">{{ res.glyph }}</span>
+              {{ res.name }}
+            </span>
+            <button class="btn" @click="grantResource(res.key, 10)">+10</button>
+            <button class="btn" @click="grantResource(res.key, 1000)">+1k</button>
+            <button class="btn" @click="grantResource(res.key, 100000)">+100k</button>
+          </div>
         </div>
       </section>
 
@@ -36,12 +49,19 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { uiState } from '../logic/UIState';
+import { uiState, getGameState } from '../logic/UIState';
 import DevAtlasView from './DevAtlasView.vue';
 import DevMoleculeEditor from './DevMoleculeEditor.vue';
 import { listAtlasKeys, type AtlasKey } from '../logic/AtlasStorage';
+import { RESOURCE_SPECS, type ResourceKey } from '../logic/Resources';
 
 const open = computed(() => uiState.cheatOpen);
+
+const resources = Object.values(RESOURCE_SPECS);
+
+function grantResource(key: ResourceKey, amount: number) {
+  getGameState()[key] += amount;
+}
 const selectedAtlas = computed(() => uiState.devAtlasKey as AtlasKey | '');
 const devMoleculeEditorOpen = computed(() => uiState.devMoleculeEditorOpen);
 const hasFullscreen = computed(() => !!selectedAtlas.value || devMoleculeEditorOpen.value);
@@ -122,4 +142,31 @@ function closeAll() {
 }
 .btn.primary { background: rgba(79, 209, 197, 0.14); color: var(--accent); }
 .btn.primary:hover { background: rgba(79, 209, 197, 0.22); }
+
+.section-title {
+  margin: 16px 0 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}
+.resource-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.resource-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.resource-label {
+  min-width: 120px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.resource-glyph {
+  font-size: 14px;
+}
 </style>

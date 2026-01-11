@@ -1,44 +1,58 @@
 <template>
   <div class="lab-root panel" ref="rootEl">
-    <div class="topbar">
-      <div class="title">Ice Maze — {{ levelTitle }}</div>
-      <div class="stats">
-        <span>{{ timeFluxSpec.name }} remains: {{ timeFluxRemaining }}{{ timeFluxSpec.glyph }}</span>
-        <span v-if="rewardsText" class="reward">Reward: {{ rewardsText }}</span>
-        <span v-if="totalKeys > 0" class="arrows-of-time">
-          <span class="arrows-label">Arrows of time:</span>
-          <span class="arrows">
-            <svg
-              v-for="(taken, i) in arrowSlots"
-              :key="i"
-              class="arrow-icon"
-              viewBox="0 0 20 20"
-              :width="arrowIconSize"
-              :height="arrowIconSize"
-              aria-hidden="true"
-            >
-              <path
-                :d="arrowPathD"
-                :fill="taken ? '#fcd34d' : 'transparent'"
-                :stroke="taken ? 'none' : '#fcd34d'"
-                :stroke-width="taken ? 0 : 2"
-              />
-            </svg>
-          </span>
-        </span>
-        <span v-if="failed" class="bad">Caught!</span>
-        <span v-else-if="solved" class="good">Transcended!</span>
+    <div class="maze-layout">
+      <div class="left-panel">
+        <div class="left-section">
+          <div class="reward-label">Completion grants:</div>
+          <div v-if="rewardsText" class="reward-value">{{ rewardsText }}</div>
+          <div v-else class="reward-value dim">No reward</div>
+        </div>
+        <div class="left-section">
+          <button class="btn btn-large" @click="restart()">Restart</button>
+          <button class="btn btn-large" @click="reset()">Reset</button>
+        </div>
+        <div class="left-section info-section">
+          <div class="info-text">Resetting and restarting returns the time flux spent.</div>
+          <div class="info-text">Beating the maze consumes ALL remaining time flux.</div>
+          <div class="info-text">Use WASD or click to move. R to reset.</div>
+          <div v-if="moveError" class="info-text error">{{ moveError }}</div>
+        </div>
       </div>
-      <div class="actions">
-        <button class="btn" @click="restart()">Restart</button>
-        <button class="btn" @click="reset()">Reset</button>
+      <div class="main-area">
+        <div class="canvas-container">
+          <div class="topbar" ref="topbarEl">
+            <div class="stats">
+              <span>{{ timeFluxSpec.name }} remains: {{ timeFluxRemaining }}{{ timeFluxSpec.glyph }}</span>
+              <span v-if="totalKeys > 0" class="arrows-of-time">
+                <span class="arrows-label">Arrows of time:</span>
+                <span class="arrows">
+                  <svg
+                    v-for="(taken, i) in arrowSlots"
+                    :key="i"
+                    class="arrow-icon"
+                    viewBox="0 0 20 20"
+                    :width="arrowIconSize"
+                    :height="arrowIconSize"
+                    aria-hidden="true"
+                  >
+                    <path
+                      :d="arrowPathD"
+                      :fill="taken ? '#fcd34d' : 'transparent'"
+                      :stroke="taken ? 'none' : '#fcd34d'"
+                      :stroke-width="taken ? 0 : 2"
+                    />
+                  </svg>
+                </span>
+              </span>
+              <span v-if="failed" class="bad">Caught!</span>
+            </div>
+          </div>
+          <canvas ref="staticCanvasEl" class="canvas canvas-static"></canvas>
+          <canvas ref="dynamicCanvasEl" class="canvas canvas-dynamic"></canvas>
+          <div v-if="solved" class="overlay-message solved-overlay">Transcended!</div>
+        </div>
       </div>
     </div>
-    <div class="canvas-container">
-      <canvas ref="staticCanvasEl" class="canvas canvas-static"></canvas>
-      <canvas ref="dynamicCanvasEl" class="canvas canvas-dynamic"></canvas>
-    </div>
-    <div class="hint" :class="{ bad: !!moveError }">{{ moveError || 'Use WASD to move. R to reset.' }}</div>
   </div>
 
 </template>
@@ -55,8 +69,12 @@ import { getResourceSpec } from '../logic/Resources';
 const rootEl = ref<HTMLElement | null>(null);
 const staticCanvasEl = ref<HTMLCanvasElement | null>(null);
 const dynamicCanvasEl = ref<HTMLCanvasElement | null>(null);
+const topbarEl = ref<HTMLElement | null>(null);
 
 const dpr = Math.max(1, window.devicePixelRatio || 1);
+
+// Mouse hover state for move preview
+let hoverCell: { x: number; y: number } | null = null;
 
 // Track when static canvas needs redraw
 let needsStaticRedraw = true;
@@ -88,11 +106,17 @@ const artefactsTaken = computed(() => {
 const rewardsText = computed(() => {
   const lv = getLevels()[levelIndex.value];
   if (!lv || !lv.reward || !Array.isArray(lv.reward)) return '';
+  const lib = getGameLib();
   return lv.reward
     .map(r => {
       if (r.kind === 'resource') {
         const spec = getResourceSpec(r.resource);
         return `${r.amount}${spec.glyph}`;
+      }
+      if (r.kind === 'unlock_raid') {
+        const raidDef = lib?.raids.get(r.raidId);
+        const raidName = raidDef?.name || r.raidId;
+        return `New raid location: ${raidName}`;
       }
       return '';
     })
@@ -166,6 +190,104 @@ function reset() {
   lastVisualKeyState = ''; // Force recheck of visual state
 }
 
+function screenToCell(clientX: number, clientY: number): { x: number; y: number } | null {
+  const canvas = dynamicCanvasEl.value;
+  const game = getGameState()?.maze;
+  if (!canvas || !game) return null;
+
+  const rect = canvas.getBoundingClientRect();
+  const x = clientX - rect.left;
+  const y = clientY - rect.top;
+
+  const w = Math.floor(canvas.width / dpr);
+  const h = Math.floor(canvas.height / dpr);
+  const { cols, rows, tile, ox, oy } = getBoardMetrics(game, w, h);
+
+  const cellX = Math.floor((x - ox) / tile);
+  const cellY = Math.floor((y - oy) / tile);
+
+  if (cellX < 0 || cellX >= cols || cellY < 0 || cellY >= rows) return null;
+  return { x: cellX, y: cellY };
+}
+
+function getHoverMovePreview(game: any, mouseCell: { x: number; y: number }): {
+  direction: Point2;
+  endCell: Point2;
+  isValid: boolean;
+} | null {
+  const playerCell = game.state.player.cell;
+
+  // Determine direction based on which axis aligns with player
+  let direction: Point2 | null = null;
+
+  if (mouseCell.x === playerCell.x && mouseCell.y !== playerCell.y) {
+    // Same column - vertical move
+    direction = { x: 0, y: mouseCell.y > playerCell.y ? 1 : -1 };
+  } else if (mouseCell.y === playerCell.y && mouseCell.x !== playerCell.x) {
+    // Same row - horizontal move
+    direction = { x: mouseCell.x > playerCell.x ? 1 : -1, y: 0 };
+  }
+
+  if (!direction) return null;
+
+  // Check if there's an obstacle immediately adjacent (invalid move)
+  const adjacentX = playerCell.x + direction.x;
+  const adjacentY = playerCell.y + direction.y;
+  const cells = game.state.cells;
+
+  if (adjacentX < 0 || adjacentX >= game.dimensions.x ||
+      adjacentY < 0 || adjacentY >= game.dimensions.y ||
+      cells[adjacentX][adjacentY]?.isObstacle) {
+    // Invalid move - obstacle right next to player
+    return { direction, endCell: playerCell, isValid: false };
+  }
+
+  // Compute slide destination (slide until hitting obstacle or edge)
+  let endX = playerCell.x;
+  let endY = playerCell.y;
+
+  while (true) {
+    const nextX = endX + direction.x;
+    const nextY = endY + direction.y;
+
+    if (nextX < 0 || nextX >= game.dimensions.x ||
+        nextY < 0 || nextY >= game.dimensions.y ||
+        cells[nextX][nextY]?.isObstacle) {
+      break;
+    }
+    endX = nextX;
+    endY = nextY;
+  }
+
+  return { direction, endCell: { x: endX, y: endY }, isValid: true };
+}
+
+function onCanvasMouseMove(ev: MouseEvent) {
+  hoverCell = screenToCell(ev.clientX, ev.clientY);
+}
+
+function onCanvasMouseLeave() {
+  hoverCell = null;
+}
+
+function onCanvasClick(ev: MouseEvent) {
+  const cell = screenToCell(ev.clientX, ev.clientY);
+  if (!cell) return;
+
+  const game = getGameState()?.maze;
+  if (!game) return;
+
+  const preview = getHoverMovePreview(game, cell);
+  if (!preview) return;
+
+  // Trigger move in that direction (just like WASD)
+  const dir = preview.direction;
+  if (dir.x === -1) globalInputQueue.push(new CmdMazeMove('left'));
+  else if (dir.x === 1) globalInputQueue.push(new CmdMazeMove('right'));
+  else if (dir.y === -1) globalInputQueue.push(new CmdMazeMove('up'));
+  else if (dir.y === 1) globalInputQueue.push(new CmdMazeMove('down'));
+}
+
 function restart() {
   globalInputQueue.push(new CmdMazeRestart());
   needsStaticRedraw = true;
@@ -194,15 +316,18 @@ function layoutCanvas() {
   needsStaticRedraw = true;
 }
 
+const TOPBAR_HEIGHT = 40;
+
 function getBoardMetrics(game: any, w: number, h: number) {
   const cols = game.dimensions.x;
   const rows = game.dimensions.y;
   const pad = 12;
-  const tile = Math.floor(Math.max(1, Math.min((w - pad * 2) / cols, (h - pad * 2) / rows)));
+  const availH = h - TOPBAR_HEIGHT; // Reserve space for topbar
+  const tile = Math.floor(Math.max(1, Math.min((w - pad * 2) / cols, (availH - pad * 2) / rows)));
   const boardW = tile * cols;
   const boardH = tile * rows;
   const ox = Math.floor((w - boardW) / 2);
-  const oy = Math.floor((h - boardH) / 2);
+  const oy = TOPBAR_HEIGHT + Math.floor((availH - boardH) / 2);
   return { cols, rows, tile, boardW, boardH, ox, oy };
 }
 
@@ -384,6 +509,50 @@ function drawDynamic() {
 
   const { tile, ox, oy } = getBoardMetrics(game, w, h);
 
+  // Draw move preview if hovering over a valid cell
+  if (hoverCell && !game.isAnimating()) {
+    const preview = getHoverMovePreview(game, hoverCell);
+    if (preview) {
+      const playerCell = game.state.player.cell;
+      const startX = ox + (playerCell.x + 0.5) * tile;
+      const startY = oy + (playerCell.y + 0.5) * tile;
+
+      // For invalid moves, draw line 1 cell in the blocked direction
+      let endX: number, endY: number;
+      if (preview.isValid) {
+        endX = ox + (preview.endCell.x + 0.5) * tile;
+        endY = oy + (preview.endCell.y + 0.5) * tile;
+      } else {
+        endX = ox + (playerCell.x + preview.direction.x + 0.5) * tile;
+        endY = oy + (playerCell.y + preview.direction.y + 0.5) * tile;
+      }
+
+      const color = preview.isValid ? '#34d399' : '#ef4444';
+      const lineWidth = Math.max(2, tile * 0.08);
+      const circleRadius = Math.max(4, tile * 0.15);
+
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lineWidth;
+
+      // Draw line from player to end cell
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+
+      // Draw circle at end if valid move
+      if (preview.isValid) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(endX, endY, circleRadius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+  }
+
   // Demons (use visual positions)
   for (const d of game.state.demons) {
     const pos = game.demonVisualPos.get(d) || d.cell;
@@ -439,6 +608,17 @@ function frameLoop(ts: number) {
   // Always draw dynamic canvas (player and demons)
   drawDynamic();
 
+  // Position topbar to align with board
+  const canvas = staticCanvasEl.value;
+  const topbar = topbarEl.value;
+  if (canvas && topbar) {
+    const w = Math.floor(canvas.width / dpr);
+    const h = Math.floor(canvas.height / dpr);
+    const { boardW, ox } = getBoardMetrics(game, w, h);
+    topbar.style.left = ox + 'px';
+    topbar.style.width = boardW + 'px';
+  }
+
   rafId = requestAnimationFrame(frameLoop);
 }
 
@@ -462,6 +642,15 @@ onMounted(() => {
   layoutCanvas();
   window.addEventListener('resize', layoutCanvas);
   window.addEventListener('keydown', onKeydown);
+
+  // Mouse controls for move preview and click-to-move
+  const dynCanvas = dynamicCanvasEl.value;
+  if (dynCanvas) {
+    dynCanvas.addEventListener('mousemove', onCanvasMouseMove);
+    dynCanvas.addEventListener('mouseleave', onCanvasMouseLeave);
+    dynCanvas.addEventListener('click', onCanvasClick);
+  }
+
   rafId = requestAnimationFrame(frameLoop);
 });
 
@@ -469,28 +658,88 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(rafId);
   window.removeEventListener('resize', layoutCanvas);
   window.removeEventListener('keydown', onKeydown);
+
+  const dynCanvas = dynamicCanvasEl.value;
+  if (dynCanvas) {
+    dynCanvas.removeEventListener('mousemove', onCanvasMouseMove);
+    dynCanvas.removeEventListener('mouseleave', onCanvasMouseLeave);
+    dynCanvas.removeEventListener('click', onCanvasClick);
+  }
 });
 
 </script>
 
 <style scoped>
-.lab-root { display: flex; flex-direction: column; gap: 8px; height: 100%; max-height: 800px; }
-.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.title { font-weight: 700; letter-spacing: 0.03em; color: var(--accent); }
-.stats { display: flex; gap: 12px; font-size: 13px; color: var(--text-secondary); }
-.stats .arrows-of-time { display: inline-flex; align-items: center; gap: 6px; }
-.stats .arrows { display: inline-flex; align-items: center; gap: 6px; }
+.lab-root { display: flex; flex-direction: column; height: 100%; max-height: 800px; }
+.maze-layout { display: flex; gap: 16px; flex: 1; min-height: 0; }
+.left-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 320px;
+  flex-shrink: 0;
+  padding: 8px 0;
+}
+.left-section { display: flex; flex-direction: column; gap: 10px; }
+.reward-label { font-size: 18px; color: var(--text-secondary); }
+.reward-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fbbf24;
+}
+.reward-value.dim { color: var(--text-secondary); font-size: 18px; }
+.info-section { }
+.info-text {
+  font-size: 18px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+.info-text.error { color: #ef4444; font-weight: 700; }
+.main-area { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.topbar { position: absolute; top: 0; z-index: 3; text-align: center; }
+.stats { display: inline-flex; align-items: center; gap: 16px; font-size: 28px; color: var(--text-secondary); }
+.stats .arrows-of-time { display: inline-flex; align-items: center; gap: 8px; }
+.stats .arrows { display: inline-flex; align-items: center; gap: 4px; }
 .stats .arrow-icon { display: inline-block; }
 .stats .good { color: #34d399; font-weight: 700; }
-.stats .reward { color: #fbbf24; font-weight: 700; }
 .stats .bad { color: #ef4444; font-weight: 700; }
-.actions { display: flex; gap: 8px; }
-.btn { background: rgba(80, 120, 160, 0.15); border: 1px solid var(--panel-border); color: var(--text-primary); border-radius: 4px; padding: 6px 10px; cursor: pointer; }
+.btn {
+  background: rgba(80, 120, 160, 0.15);
+  border: 1px solid var(--panel-border);
+  color: var(--text-primary);
+  border-radius: 4px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
 .btn:hover { background: rgba(80, 120, 160, 0.25); }
-.canvas-container { position: relative; flex: 1; min-height: 300px; max-height: 720px; }
+.btn-large {
+  padding: 12px 16px;
+  font-size: 16px;
+  font-weight: 600;
+  width: 100%;
+}
+.canvas-container { position: relative; flex: 1; min-height: 300px; max-height: 720px; width: 100%; }
 .canvas { width: 100%; height: 100%; display: block; position: absolute; top: 0; left: 0; }
 .canvas-static { z-index: 1; }
 .canvas-dynamic { z-index: 2; }
-.hint { font-size: 12px; color: var(--text-secondary); }
-.hint.bad { color: #ef4444; font-weight: 700; }
+.overlay-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  font-size: 48px;
+  font-weight: 700;
+  padding: 16px 32px;
+  border-radius: 8px;
+  text-align: center;
+  pointer-events: none;
+}
+.solved-overlay {
+  color: #34d399;
+  background: rgba(14, 20, 32, 0.9);
+  border: 2px solid #34d399;
+  text-shadow: 0 0 20px rgba(52, 211, 153, 0.5);
+}
 </style>

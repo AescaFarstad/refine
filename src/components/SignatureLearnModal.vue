@@ -40,7 +40,7 @@ const message = computed(() => {
   if (hasDiscoveredSignatures.value) {
     return '';
   }
-  return 'The image of a strange sign dawns on you.\nThe knowledge of what to do with it, however, was not part of the package.';
+  return 'An image of a strange sign dawns on you.\nThe knowledge of what to do with it, however, was not part of the package.';
 });
 
 const moleculesSource = atlasStorage.getMoleculesSource()!;

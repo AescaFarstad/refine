@@ -44,6 +44,7 @@ import { CmdMarkEssencesSeen } from '../logic/input/InputCommands';
 import atlasStorage from '../logic/AtlasStorage';
 import {
   CYAN_SUCCESS_BONUS_PCT,
+  CYAN_YIELD_BONUS_PCT,
   ESSENCE_CREDITS,
   ESSENCE_CHRONOTRACES,
   ESSENCE_TEMPORAL_FLUX,
@@ -140,7 +141,7 @@ function essenceEffectHtml(k: string): string {
     case 'orange':
       return 'Doubles adjacent';
     case 'cyan':
-      return `${CYAN_SUCCESS_BONUS_PCT}% refining success`;
+      return `${CYAN_SUCCESS_BONUS_PCT}% refining success` + (uiState.hasDiscoveredCyanYield ? `, +${CYAN_YIELD_BONUS_PCT}% bonus yield` : '');
     case 'magenta':
       return `-${MAGENTA_SUCCESS_PENALTY_PCT}% refining success`;
     case 'indigo':

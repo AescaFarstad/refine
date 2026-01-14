@@ -24,6 +24,7 @@ export interface RefinePreviewChem {
     newSignatureYieldBonus: number;
     signatureSpeedBonus: number;
     cyanYieldBonus: number;
+    uniqueItemsYieldBonus: number;
 
     totalYieldPct: number;
 
@@ -50,6 +51,10 @@ export interface SignatureContext {
     completedSignatureIds: string[];
 }
 
+export interface RefineContext extends SignatureContext {
+    uniqueItemsYieldBonus: number;
+}
+
 // Color-changing essences and their target colors.
 const COLOR_CHANGER_TARGET: Record<string, string> = {
     indigo: 'blue',
@@ -59,6 +64,25 @@ const COLOR_CHANGER_TARGET: Record<string, string> = {
 };
 
 const BUFFABLE_ESSENCES = new Set(['red', 'green', 'blue', 'cyan', 'magenta']);
+
+export function computeUniqueItemsYieldBonusPct(
+    refinedUniqueItemIds: Record<string, true>,
+    waferItems: Array<{ id: string } | null>
+): number {
+    const baseUniqueCount = Object.keys(refinedUniqueItemIds).length;
+    const newlyCounted = new Set<string>();
+    let uniqueCount = baseUniqueCount;
+
+    for (const it of waferItems) {
+        if (!it) continue;
+        if (refinedUniqueItemIds[it.id]) continue;
+        if (newlyCounted.has(it.id)) continue;
+        newlyCounted.add(it.id);
+        uniqueCount++;
+    }
+
+    return uniqueCount;
+}
 
 export function computeEffectiveEssences(wafer: Wafer): void {
     const baseEssenceByKey: Record<string, string> = {};
@@ -288,7 +312,7 @@ function computeEffectiveEssenceTotals(wafer: Wafer): {
     };
 }
 
-export function computeRefinePreviewChem(wafer: Wafer, sig: SignatureContext): RefinePreviewChem {
+export function computeRefinePreviewChem(wafer: Wafer, sig: RefineContext): RefinePreviewChem {
 
     const { essenceTotals, cellEffectiveCounts } = computeEffectiveEssenceTotals(wafer);
 
@@ -310,8 +334,9 @@ export function computeRefinePreviewChem(wafer: Wafer, sig: SignatureContext): R
     const newSignatureYieldBonus = newlyCompletedSignatureIds.length * SIGNATURE_YIELD_BONUS_PCT;
     const signatureSpeedBonus = 0;
     const cyanYieldBonus = cyanCount * CYAN_YIELD_BONUS_PCT;
+    const uniqueItemsYieldBonus = sig.uniqueItemsYieldBonus;
 
-    const totalYieldPct = baseYieldPct + signatureYieldBonus + newSignatureYieldBonus + cyanYieldBonus;
+    const totalYieldPct = baseYieldPct + signatureYieldBonus + newSignatureYieldBonus + cyanYieldBonus + uniqueItemsYieldBonus;
 
     const red = essenceTotals['red'] || 0;
     const green = essenceTotals['green'] || 0;
@@ -330,6 +355,7 @@ export function computeRefinePreviewChem(wafer: Wafer, sig: SignatureContext): R
         newSignatureYieldBonus,
         signatureSpeedBonus,
         cyanYieldBonus,
+        uniqueItemsYieldBonus,
         totalYieldPct,
         expectedCredits,
         expectedChrono,

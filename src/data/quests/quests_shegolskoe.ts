@@ -3,7 +3,7 @@ import type { RawQuestDefinition } from '../../logic/QuestLib';
 const quests: Record<string, RawQuestDefinition> = {
   shegolskoe_explore_loot_locations: {
     name: 'Explore new loot locations',
-    encounterLine: 'A number of buildings in Shegolskoe attract special attention from the zone inhabitants. Preliminary scouting will show what awaits inside and who might we ran into along the way.',
+    encounterLine: 'A number of buildings in Shegolskoe attract zone inhabitants. Preliminary scouting will show what awaits inside and who might we ran into along the way.',
     raidRestriction: ['shegolskoe'],
     requiresRaidSuccesses: 1,
     encounters: [
@@ -56,6 +56,8 @@ const quests: Record<string, RawQuestDefinition> = {
     encounterTimeMin: 50,
     encounters: [
       { kind: 'WalkMutation', count: 5 },
+      { kind: 'AddMonsterMutation', monsterId: 'spikder', count: 1 },
+      { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 1 },
     ],
     rewards: [
       { kind: 'unlock_raid', raidId: 'ozernoye' },

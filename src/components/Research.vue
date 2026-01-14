@@ -15,6 +15,9 @@
         <span class="resource-price" :style="{ color: chronoColor }">
           {{ hoverPreview.price }} {{ chronotracesSpec.glyph }}
         </span>
+        <span v-if="hoverPreview.missingCost > 0" :style="{ color: '#ef4444', marginLeft: '6px' }">
+          (missing {{ hoverPreview.missingCost }} {{ chronotracesSpec.glyph }})
+        </span>
       </div>
     </div>
     <div
@@ -141,6 +144,7 @@ const hoverPreview = computed(() => {
       price: 0,
       pathLength: 0,
       canAfford: true,
+      missingCost: 0,
     };
   }
 
@@ -148,6 +152,7 @@ const hoverPreview = computed(() => {
   const pathLength = path.pathLength;
   const price = calculateResearchNodePrice(gs, pathCost);
   const canAfford = gs.chronotraces >= price;
+  const missingCost = Math.max(0, price - gs.chronotraces);
 
   return {
     reachable: true,
@@ -156,6 +161,7 @@ const hoverPreview = computed(() => {
     pathLength,
     price,
     canAfford,
+    missingCost,
   };
 });
 

@@ -8,7 +8,7 @@ export function discover(gs: GameState, id: DiscoveryId): boolean {
   gs.discoveries[id] = true;
   gs.discoveryCounter++;
 
-  if (id === DISCOVERY.SIGNATURES || id === DISCOVERY.CYAN_YIELD) {
+  if (id === DISCOVERY.SIGNATURES || id === DISCOVERY.CYAN_YIELD || id === DISCOVERY.UNIQUE_ITEMS_YIELD) {
     if (!hasDiscovered(gs, DISCOVERY.REFINE_YIELD)) {
       gs.discoveries[DISCOVERY.REFINE_YIELD] = true;
       gs.discoveryCounter++;

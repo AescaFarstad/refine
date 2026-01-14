@@ -1,11 +1,13 @@
 <template>
   <div class="gear panel">
-    <template v-if="!hasDiscoveredGear">
+    <!-- Show button only when speed is discovered but gear is not -->
+    <template v-if="hasDiscoveredSpeed && !hasDiscoveredGear">
       <div class="discover-gear-container">
         <button class="discover-gear-btn" @click="discoverGear">Review available gear</button>
       </div>
     </template>
-    <template v-else>
+    <!-- Show gear grid only when gear is discovered -->
+    <template v-else-if="hasDiscoveredGear">
       <div class="gear-grid">
         <div v-for="(cat, colIndex) in categories" :key="cat" class="gear-col">
           <div class="gear-cat">
@@ -36,6 +38,7 @@
         </div>
       </div>
     </template>
+    <!-- Show nothing when speed is not yet discovered -->
   </div>
 </template>
 
@@ -44,17 +47,18 @@ import { computed } from 'vue';
 import GearItem from './GearItem.vue';
 import { uiState, getGameState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
-import { CmdToggleGear, CmdOpenGearUpgradeModal, CmdDiscoverGear } from '../logic/input/InputCommands';
+import { CmdToggleGear, CmdOpenGearUpgradeModal, CmdDiscover } from '../logic/input/InputCommands';
+import { DISCOVERY } from '../logic/DiscoveryLib';
 import type { GearDefinition } from '../logic/GearLib';
 import type { RaidDefinition } from '../logic/RaidLib';
-import { DISCOVERY } from '../logic/DiscoveryLib';
 
 const activeRaidId = computed(() => uiState.activeRaidId || (uiState.raidOrder[0] || ''));
 const selectedRaid = computed<RaidDefinition | null>(() => uiState.raids.find(r => r.id === activeRaidId.value) || null);
 const hasDiscoveredGear = computed(() => uiState.hasDiscoveredGear);
+const hasDiscoveredSpeed = computed(() => uiState.hasDiscoveredRaidSpeed);
 
 function discoverGear(): void {
-  globalInputQueue.push(new CmdDiscoverGear());
+  globalInputQueue.push(new CmdDiscover({ discoveryId: DISCOVERY.GEAR }));
 }
 
 function loadout(): string[] {

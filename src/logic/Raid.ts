@@ -597,6 +597,9 @@ export function recomputeActiveRaidEstimates(gs: GameState, simulations = 100): 
   let zoneCollapseDeaths = 0;
   let monsterDeaths = 0;
   let completionTimeSum = 0; // Sum of times for runs that completed (wins + zone collapse deaths)
+  let completionTimeSqSum = 0;
+  let minTime = Number.MAX_VALUE;
+  let maxTime = 0;
   const overallSum: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
   const successSum: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
   const failureSum: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
@@ -663,21 +666,31 @@ export function recomputeActiveRaidEstimates(gs: GameState, simulations = 100): 
     }
     return out;
   };
+
+
   for (let i = 0; i < simulations; i++) {
     const res = runRaid(gs, def, true);
     add(overallSum, res.timeBreakdownSec);
     const dmg = computeDamageForRun(res.log);
     addDamage(overallDamageSum, dmg);
+
+    // Check if run is valid for time stats (success or zone collapse)
+    if (res.success || res.diedToZoneCollapse) {
+      const t = res.timeBreakdownSec.totalSec;
+      completionTimeSum += t;
+      completionTimeSqSum += t * t;
+      if (t < minTime) minTime = t;
+      if (t > maxTime) maxTime = t;
+    }
+
     if (res.success) {
       wins++;
-      completionTimeSum += res.timeBreakdownSec.totalSec;
       add(successSum, res.timeBreakdownSec);
       addDamage(successDamageSum, dmg);
     } else if (res.diedToZoneCollapse) {
       // Zone collapse death: counts as failure but contributes to time estimate
       // Damage from zone collapse deaths is NOT included in failure damage breakdown
       zoneCollapseDeaths++;
-      completionTimeSum += res.timeBreakdownSec.totalSec;
       add(failureSum, res.timeBreakdownSec);
       add(zoneCollapseSum, res.timeBreakdownSec);
     } else {
@@ -693,8 +706,17 @@ export function recomputeActiveRaidEstimates(gs: GameState, simulations = 100): 
   const completedRuns = wins + zoneCollapseDeaths;
   const sim = gs.raidSimulation;
   sim.survivalEstimatePct = Math.round((wins / simulations) * 100);
-  // Time estimate is based on runs that completed (wins + zone collapse deaths), excluding monster deaths
   sim.timeEstimateSec = completedRuns > 0 ? Math.round(completionTimeSum / completedRuns) : (def.zoneCollapseSec || 0);
+  sim.timeEstimateMinSec = completedRuns > 0 ? minTime : 0;
+  sim.timeEstimateMaxSec = completedRuns > 0 ? maxTime : 0;
+
+  if (completedRuns > 1) {
+    const mean = completionTimeSum / completedRuns;
+    const variance = (completionTimeSqSum / completedRuns) - (mean * mean);
+    sim.timeEstimateStdDevSec = Math.sqrt(Math.max(0, variance));
+  } else {
+    sim.timeEstimateStdDevSec = 0;
+  }
   sim.zoneCollapseDeathPct = Math.round((zoneCollapseDeaths / simulations) * 100);
   sim.zoneCollapseDeaths = zoneCollapseDeaths;
   sim.monsterDeaths = monsterDeaths;

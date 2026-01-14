@@ -2,7 +2,7 @@ import type { Lib } from './Lib';
 import type { Essence } from './ItemLib';
 import type { GameState } from './GameState';
 import { RefineryOutcome } from './GameState';
-import { computeRefinePreviewChem, rollSuccess, calculateOutputs } from './RefinePreview';
+import { calculateOutputs, computeRefinePreviewChem, computeUniqueItemsYieldBonusPct, rollSuccess } from './RefinePreview';
 import { clearWafer } from './Wafer';
 import { getHypRepresentation } from './HypNumbers';
 import { SHARD_LAUNCH_SPEED, SHARD_MAX_OMEGA, SHARD_MIN_OMEGA, SHARD_OMEGA_POWER } from './Model';
@@ -36,6 +36,9 @@ export function startRefining(gs: GameState): void {
     signatures: gs.lib.signatures,
     signatureLevel: gs.signatureLevel,
     completedSignatureIds: gs.completedSignatureIds,
+    uniqueItemsYieldBonus: (gs.discoveries[DISCOVERY.UNIQUE_ITEMS_YIELD] === true)
+      ? computeUniqueItemsYieldBonusPct(gs.refinedUniqueItemIds, gs.wafer.items)
+      : 0,
   });
   gs.refiningDuration = Math.max(0, Math.round(preview.timeSec));
 
@@ -51,11 +54,19 @@ export function resolveRefineryDone(gs: GameState): void {
     signatures: gs.lib.signatures,
     signatureLevel: gs.signatureLevel,
     completedSignatureIds: gs.completedSignatureIds,
+    uniqueItemsYieldBonus: (gs.discoveries[DISCOVERY.UNIQUE_ITEMS_YIELD] === true)
+      ? computeUniqueItemsYieldBonusPct(gs.refinedUniqueItemIds, wafer.items)
+      : 0,
   });
   const succeeded = rollSuccess(preview.failureChancePct);
 
   const outcome = new RefineryOutcome();
   outcome.success = succeeded;
+
+  for (const item of wafer.items) {
+    if (!item) continue;
+    gs.refinedUniqueItemIds[item.id] = true;
+  }
 
   if (succeeded) {
     if (preview.newlyCompletedSignatureIds.length > 0) {

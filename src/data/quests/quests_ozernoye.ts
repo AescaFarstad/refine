@@ -21,23 +21,23 @@ const quests: Record<string, RawQuestDefinition> = {
     name: 'Explore the bus station',
     encounterLine: 'Disturb the carnivorous flora inhabiting the bus station. This will spread the pollen, but you can’t make a salad without cutting some veggies.',
     raidRestriction: ['ozernoye'],
-    requiresRaidSuccesses: 1,
+    requiresRaidSuccesses: 2,
     encounters: [
       { kind: 'WalkMutation', count: 1 },
-      { kind: 'AddMonsterMutation', monsterId: 'flower', count: 3 },
+      { kind: 'AddMonsterMutation', monsterId: 'flower', count: 4 },
     ],
     rewards: [
       { kind: 'raid_loot_chance', delta: 10 },
       { kind: 'raid_mutation', mutation: { kind: 'LootMutation', count: 3 } },
       { kind: 'raid_mutation', mutation: { kind: 'WalkMutation', count: 2 } },
-      { kind: 'raid_mutation', mutation: { kind: 'AddMonsterMutation', monsterId: 'flower', count: 1 } },
+      { kind: 'raid_mutation', mutation: { kind: 'AddMonsterMutation', monsterId: 'flower', count: 2 } },
     ],
   },
   ozernoye_study_church_signatures: {
     name: 'Study church inscriptions',
     encounterLine: 'The church walls are covered in glowing signs that do not match common orthodox inscriptions. These must be left with a purpose. Perhaps even by yourself in another life.',
     raidRestriction: ['ozernoye'],
-    requiresRaidSuccesses: 1,
+    requiresRaidSuccesses: 6,
     encounterTimeMin: 40,
     encounters: [
     ],
@@ -50,13 +50,13 @@ const quests: Record<string, RawQuestDefinition> = {
     name: 'Raise the zone\'s dome',
     encounterLine: 'Collect accumulators from the abandoned cars and focus their power to push away the zone boundary via magnetic induction.',
     raidRestriction: ['ozernoye'],
-    requiresRaidSuccesses: 1,
+    requiresRaidSuccesses: 4,
     encounterTimeMin: 80,
     encounters: [
+      { kind: 'AddMonsterMutation', monsterId: 'flower', count: 3 },
     ],
     rewards: [
       { kind: 'raid_mutation', mutation: { kind: 'ZoneCollapseTimeMutation', amount: 1200 } },
-      { kind: 'raid_mutation', mutation: { kind: 'AddMonsterMutation', monsterId: 'flower', count: 3 } },
     ],
   },
   ozernoye_study_the_dome: {
@@ -77,7 +77,8 @@ const quests: Record<string, RawQuestDefinition> = {
     name: 'Summon hounds',
     encounterLine: 'Attract these pesky monsters with bodily fluids. If you want more of them...\nYou can attract them to any raid location but only once.',
     raidRestriction: [],
-    requiresRaidSuccesses: 5,
+    requiresRaidSuccesses: 7,
+    requiresRaidQuestCompletions: 3,
     encounters: [
     ],
     rewards: [

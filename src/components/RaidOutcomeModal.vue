@@ -99,7 +99,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { uiState, getGameLib, getGameState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
-import { CmdAcknowledgeOutcome } from '../logic/input/InputCommands';
+import { CmdAcknowledgeOutcome, CmdSwitchTab } from '../logic/input/InputCommands';
 import ItemDisplay from './ItemDisplay.vue';
 import QuestHint from './QuestHint.vue';
 import { formatDurationHM } from '../logic/StringUtils';
@@ -260,7 +260,7 @@ function changeSetup() {
 
 function goRefine() {
   globalInputQueue.push(new CmdAcknowledgeOutcome());
-  uiState.activeTab = 'refine';
+  globalInputQueue.push(new CmdSwitchTab({ tab: 'refine' }));
 }
 
 function formatHMS(totalSec?: number): string { return formatDurationHM(totalSec); }

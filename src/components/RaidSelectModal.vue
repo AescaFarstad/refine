@@ -190,7 +190,8 @@ const previewLocationFrame = computed(() => {
 });
 
 const previewLocationAtlasStyle = computed<Record<string, string>>(() => {
-  const f = previewLocationFrame.value!;
+  const f = previewLocationFrame.value;
+  if (!f || !locationsAtlasMeta) return {} as Record<string, string>;
   return {
     width: `calc(100% * ${locationsAtlasMeta.w / f.w})`,
     height: `calc(100% * ${locationsAtlasMeta.h / f.h})`,

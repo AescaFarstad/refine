@@ -47,6 +47,7 @@ const props = defineProps<{
   ghostMolecule?: Molecule | null;
   ghostPosition?: Point2 | null;
   ghostValid?: boolean;
+  ghostShowOutline?: boolean;
   highlightItemIdx?: number | null;
   hideMolecules?: boolean;
   upgradePreviewCells?: Point2[] | null;
@@ -314,14 +315,16 @@ function renderOverlay() {
     const color = props.ghostValid ? 'rgba(79, 209, 197, 0.28)' : 'rgba(239, 68, 68, 0.28)';
     const strokeColor = props.ghostValid ? '#4fd1c5' : '#ef4444';
 
-    // Draw snapped hex highlights under atoms
-    for (const atom of props.ghostMolecule.atoms) {
-      const pos = { x: atom.x, y: atom.y };
-      drawHexAt(ctx, pos, HEX_SIZE, origin, {
-        fillColor: color,
-        strokeColor,
-        lineWidth: 2.5,
-      });
+    if (props.ghostShowOutline !== false) {
+      // Draw snapped hex highlights under atoms
+      for (const atom of props.ghostMolecule.atoms) {
+        const pos = { x: atom.x, y: atom.y };
+        drawHexAt(ctx, pos, HEX_SIZE, origin, {
+          fillColor: color,
+          strokeColor,
+          lineWidth: 2.5,
+        });
+      }
     }
 
     drawGhostMolecule(ctx, props.ghostMolecule, !!props.ghostValid, HEX_SIZE, origin, ESSENCE_SIZE);

@@ -4,6 +4,18 @@
     :style="panelStyle"
     @mousedown.stop
   >
+    <div
+      v-if="hoveredArchetype && hoverPosition"
+      class="hover-hint-container"
+      :style="{ top: hoverPosition.y + 'px', left: hoverPosition.x + 'px' }"
+    >
+      <ResearchNodeHint
+        :cell="mockHintCell"
+        :node="null"
+        :archetype="hoveredArchetype"
+      />
+    </div>
+
     <div class="panel-header" @mousedown.stop.prevent="onDragStart">
       <h3>Edit Research</h3>
       <button type="button" class="btn close" @click.stop="onCloseClick">✕</button>
@@ -79,6 +91,8 @@
               class="btn archetype-btn"
               :class="{ active: activeMode === arch.id }"
               @click="placeArchetype(arch.id)"
+              @mouseenter="onHoverStart(arch.archetype, $event)"
+              @mouseleave="onHoverEnd"
             >
               <div v-if="arch.icon.kind === 'itemImage'" class="gear-sprite-wrap">
                 <div class="gear-sprite" :style="getGearSpriteStyle(arch.icon.key)" />
@@ -99,6 +113,8 @@
               class="btn archetype-btn gear-btn"
               :class="{ active: activeMode === arch.id, 'already-unlocked': arch.isAlreadyUnlocked }"
               @click="placeArchetype(arch.id)"
+              @mouseenter="onHoverStart(arch.archetype, $event)"
+              @mouseleave="onHoverEnd"
             >
               <div v-if="arch.imageKey" class="gear-sprite-wrap">
                 <div class="gear-sprite" :style="getGearSpriteStyle(arch.imageKey)" />
@@ -168,6 +184,9 @@ import { getStatIcon, getResourceGlyph, type ResearchStatIcon } from '../logic/d
 import atlasStorage from '../logic/AtlasStorage';
 import { setResearchRevealRadius } from '../logic/Model';
 import { CheatLoadResearchState } from '../logic/cheat/CheatCommands';
+import type { ResearchArchetype } from '../logic/ResearchLib';
+import type { ResearchCell } from '../logic/GameState';
+import ResearchNodeHint from './researchHints/ResearchNodeHint.vue';
 
 type Point = { x: number; y: number };
 
@@ -231,8 +250,8 @@ const availableArchetypes = computed(() => {
     }
   }
 
-  const nonGear: Array<{ id: string; label: string; icon: ResearchStatIcon; type: string }> = [];
-  const gear: Array<{ id: string; label: string; gearId?: string; imageKey?: string; isAlreadyUnlocked: boolean }> = [];
+  const nonGear: Array<{ id: string; label: string; icon: ResearchStatIcon; type: string; archetype: ResearchArchetype }> = [];
+  const gear: Array<{ id: string; label: string; gearId?: string; imageKey?: string; isAlreadyUnlocked: boolean; archetype: ResearchArchetype }> = [];
 
   lib.research.archetypes.forEach((archetype, id) => {
     if (id === 'hub' || id === 'obs' || id === 'empty' || id === 'void') return;
@@ -248,24 +267,40 @@ const availableArchetypes = computed(() => {
       // Get gear definition for image key
       const gearDef = gearId ? lib.gear.get(gearId) : null;
       const imageKey = gearDef?.image;
-      gear.push({ id, label, gearId, imageKey, isAlreadyUnlocked: isAlreadyPlaced });
+      gear.push({ id, label, gearId, imageKey, isAlreadyUnlocked: isAlreadyPlaced, archetype });
     } else if (archetype.type === 'stat') {
       const reward = rewards.find(r => r.kind === 'stat');
       const stat = reward && reward.kind === 'stat' ? reward.stat : '';
       const label = stat || id;
       const icon = getStatIcon(stat);
-      nonGear.push({ id, label, icon, type: 'stat' });
+      nonGear.push({ id, label, icon, type: 'stat', archetype });
     } else if (archetype.type === 'resource') {
       const reward = rewards.find(r => r.kind === 'resource');
       const resource = reward && reward.kind === 'resource' ? reward.resource : '';
       const amount = reward && reward.kind === 'resource' ? reward.amount : 0;
       const label = `${resource} (${amount})`;
       const icon: ResearchStatIcon = { kind: 'glyph', key: getResourceGlyph(resource) };
-      nonGear.push({ id, label, icon, type: 'resource' });
+      nonGear.push({ id, label, icon, type: 'resource', archetype });
     } else {
+      // Discovery or other types
       const label = id;
-      const icon: ResearchStatIcon = { kind: 'glyph', key: '⚠' };
-      nonGear.push({ id, label, icon, type: archetype.type });
+
+      let icon: ResearchStatIcon = { kind: 'glyph', key: '⚠' };
+
+      const sourceIcon = (archetype.ownedIcon && archetype.ownedIcon.kind !== 'none')
+        ? archetype.ownedIcon
+        : archetype.icon;
+
+      if (sourceIcon && sourceIcon.kind !== 'none') {
+        if (sourceIcon.kind === 'itemImage') {
+          icon = { kind: 'itemImage', key: sourceIcon.key };
+        } else if (sourceIcon.kind === 'glyph') {
+          // ResearchArchetypeIcon uses 'glyph', ResearchStatIcon uses 'key'
+          icon = { kind: 'glyph', key: sourceIcon.glyph };
+        }
+      }
+
+      nonGear.push({ id, label, icon, type: archetype.type, archetype });
     }
   });
 
@@ -275,6 +310,35 @@ const availableArchetypes = computed(() => {
 
   return { nonGear, gear };
 });
+
+const hoveredArchetype = ref<ResearchArchetype | null>(null);
+const hoverPosition = ref<Point | null>(null);
+
+const mockHintCell = computed((): ResearchCell => {
+  return {
+    nodeId: -1,
+    archetypeId: hoveredArchetype.value?.id || '',
+    revealed: true,
+    owned: true, // Show owned state to reveal full info
+    cost: 0,
+    blocked: false,
+  };
+});
+
+function onHoverStart(archetype: ResearchArchetype, event: MouseEvent) {
+  const button = event.currentTarget as HTMLElement;
+  hoverPosition.value = {
+    x: button.offsetLeft + 20,
+    y: button.offsetTop + button.offsetHeight + 5,
+  };
+  
+  hoveredArchetype.value = archetype;
+}
+
+function onHoverEnd() {
+  hoveredArchetype.value = null;
+  hoverPosition.value = null;
+}
 
 function incrementRadius() {
   placementRadius.value = Math.max(0, Math.min(10, placementRadius.value + 1));
@@ -529,7 +593,7 @@ function getGearSpriteStyle(imageKey: string | undefined): Record<string, string
   position: absolute;
   top: 0;
   left: 0;
-  width: 600px;
+  width: 800px;
   max-height: 100%;
   display: flex;
   flex-direction: column;
@@ -773,5 +837,17 @@ function getGearSpriteStyle(imageKey: string | undefined): Record<string, string
 
 .btn:disabled:hover {
   background: rgba(15, 23, 42, 0.95);
+}
+
+.hover-hint-container {
+  position: absolute;
+  z-index: 100;
+  pointer-events: none;
+  background: rgba(15, 23, 42, 0.98);
+  border: 1px solid var(--panel-border);
+  padding: 8px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  max-width: 300px;
 }
 </style>

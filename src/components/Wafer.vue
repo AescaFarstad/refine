@@ -7,6 +7,7 @@
         :ghost-molecule="ghostMolecule"
         :ghost-position="ghostPosition"
         :ghost-valid="ghostValid"
+        :ghost-show-outline="ghostShowOutline"
         :highlight-item-idx="highlightItemIdx"
         :hide-molecules="showRefineAnim"
         :upgrade-preview-cells="upgradeHoverCells"
@@ -45,7 +46,7 @@
       </div>
     </div>
 
-    <div class="placed-items-row">
+	    <div class="placed-items-row">
       <div
         v-if="!failedRefineWithShards"
         v-for="(entry, idx) in placedItemEntries"
@@ -67,119 +68,12 @@
       >
         Refining <span class="refine-fail-word">FAILED</span>, but the resources can be reclaimed as shards.
       </div>
-    </div>
+	    </div>
 
-    <div class="info-panel" :class="{ clickable: showSignatureTabs }" @click="cycleInfoTab">
-      <div v-if="showSignatureTabs" class="info-tabs">
-        <div
-          class="info-tab"
-          :class="{ active: infoTab === 'wafer' }"
-        >
-          Wafer Info
-        </div>
-        <div
-          class="info-tab"
-          :class="{ active: infoTab === 'signatures' }"
-        >
-          Signatures
-        </div>
-      </div>
+	    <WaferInfo :preview="preview" :should-flash-failure="shouldFlashFailure" />
 
-      <div class="info-body">
-        <div v-if="!showSignatureTabs || infoTab === 'wafer'" class="stats-table">
-          <div v-if="showYield" class="stat-row">
-            <span class="stat-label">Yield:</span>
-            <span class="stat-value" :class="{ 'yield-bonus': preview.totalYieldPct > 100 }">{{ preview.totalYieldPct }}%</span>
-            <span class="stat-source" v-if="preview.signatureYieldBonus > 0">
-              +{{ preview.signatureYieldBonus }}% from signatures
-            </span>
-            <span class="stat-source" v-if="preview.newSignatureYieldBonus > 0">
-              +{{ preview.newSignatureYieldBonus }}% from NEW signatures
-              <template v-for="sig in preview.newSignatureMatches" :key="sig.id">
-                <span
-                  class="sig-inline"
-                  :style="signatureInlineStyle(sig.id)"
-                />
-              </template>
-            </span>
-            <span class="stat-source" v-if="preview.cyanYieldBonus > 0">
-              +{{ preview.cyanYieldBonus }}% from {{ cyanEssences }}
-              <template v-for="(key, idx) in cyanEssenceKeys" :key="key">
-                <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
-                <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
-              </template>
-            </span>
-          </div>
-
-          <div class="stat-row">
-            <span class="stat-label">Expected Credits:</span>
-            <span class="stat-value hl" :style="{ color: creditsSpec.color }">{{ preview.expectedCredits }}{{ creditsSpec.glyph }}</span>
-            <span class="stat-source" v-if="preview.creditsEssences > 0">
-              from {{ preview.creditsEssences }}
-              <template v-for="(key, idx) in creditsEssenceKeys" :key="key">
-                <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
-                <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
-              </template>
-            </span>
-          </div>
-
-          <div class="stat-row">
-            <span class="stat-label">Expected Chronotraces:</span>
-            <span class="stat-value hl" :style="{ color: chronotracesSpec.color }">{{ preview.expectedChrono }}{{ chronotracesSpec.glyph }}</span>
-            <span class="stat-source" v-if="preview.chronoEssences > 0">
-              from {{ preview.chronoEssences }}
-              <template v-for="(key, idx) in chronoEssenceKeys" :key="key">
-                <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
-                <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
-              </template>
-            </span>
-          </div>
-
-          <div class="stat-row">
-            <span class="stat-label">Expected Time Flux:</span>
-            <span class="stat-value hl" :style="{ color: timeFluxSpec.color }">{{ preview.expectedFlux }}{{ timeFluxSpec.glyph }}</span>
-            <span class="stat-source" v-if="preview.fluxEssences > 0">
-              from {{ preview.fluxEssences }}
-              <template v-for="(key, idx) in fluxEssenceKeys" :key="key">
-                <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
-                <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
-              </template>
-            </span>
-          </div>
-
-          <div class="stat-row" :class="{ 'flash-red': shouldFlashFailure }">
-            <span class="stat-label">Failure Chance:</span>
-            <span class="stat-value" :class="failureClass">{{ preview.failureChancePct }}%</span>
-            <span class="stat-source" v-if="preview.emptyCells > 0 || cyanEssences > 0 || magentaEssences > 0">
-              <template v-if="preview.emptyCells > 0">
-                from {{ preview.emptyCells }} empty cells
-              </template>
-              <template v-if="cyanEssences > 0">
-                <template v-if="preview.emptyCells > 0">, </template>
-                {{ cyanReduction }}% success from
-                <template v-for="(key, idx) in cyanEssenceKeys" :key="key">
-                  <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
-                  <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
-                </template>
-              </template>
-              <template v-if="magentaEssences > 0">
-                <template v-if="preview.emptyCells > 0 || cyanEssences > 0">, </template>
-                +{{ magentaPenalty }}% from {{ magentaEssences }}
-                <template v-for="(key, idx) in magentaEssenceKeys" :key="key">
-                  <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
-                  <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
-                </template>
-              </template>
-            </span>
-          </div>
-        </div>
-
-        <Signatures v-else :wafer-signature-ids="waferSignatureIds" />
-      </div>
-    </div>
-
-    <div class="action-section">
-      <button
+	    <div class="action-section">
+	      <button
         v-if="!isRefining"
         class="start-btn"
         :disabled="!canRefine"
@@ -201,27 +95,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
-import WaferView from './WaferView.vue';
-import ItemDisplay from './ItemDisplay.vue';
-import RefineAnim from './RefineAnim.vue';
-import Signatures from './Signatures.vue';
-import type { Wafer } from '../logic/Wafer';
-import type { Molecule, Point2 } from '../logic/ItemLib';
-import { canPlaceMolecule, getCell, computeUpgradeableRegion, computeWaferUpgradePrice } from '../logic/Wafer';
-import { computeRefinePreviewChem } from '../logic/RefinePreview';
-import { uiState, getGameState } from '../logic/UIState';
-import { formatDurationHM } from '../logic/StringUtils';
-import { globalInputQueue } from '../logic/Model';
-import { CmdPlaceMolecule, CmdRemoveMolecule, CmdGrowWafer } from '../logic/input/InputCommands';
-import atlasStorage from '../logic/AtlasStorage';
-import { DISCOVERY } from '../logic/DiscoveryLib';
-// All snapping handled via MoleculeUtils.translateForSnap
-import { translateForSnap, rotateMolecule } from '../logic/MoleculeUtils';
-import { HEX_SIZE, WAFER_CANVAS_WIDTH, WAFER_CANVAS_HEIGHT } from '../logic/RefineUIBehaviour';
-import { updateManualDragMolecule } from '../logic/ManualDrag';
-import { getResourceSpec } from '../logic/Resources';
-import { CYAN_SUCCESS_BONUS_PCT, MAGENTA_SUCCESS_PENALTY_PCT } from '../logic/Const';
+	import { ref, computed, watch, onMounted } from 'vue';
+	import WaferView from './WaferView.vue';
+	import ItemDisplay from './ItemDisplay.vue';
+	import RefineAnim from './RefineAnim.vue';
+	import WaferInfo from './WaferInfo.vue';
+	import type { Wafer } from '../logic/Wafer';
+	import type { Molecule, Point2 } from '../logic/ItemLib';
+	import { canPlaceMolecule, getCell, computeUpgradeableRegion, computeWaferUpgradePrice } from '../logic/Wafer';
+	import { computeRefinePreviewChem, computeUniqueItemsYieldBonusPct } from '../logic/RefinePreview';
+	import { uiState, getGameState } from '../logic/UIState';
+	import { formatDurationHM } from '../logic/StringUtils';
+	import { globalInputQueue } from '../logic/Model';
+	import { CmdPlaceMolecule, CmdRemoveMolecule, CmdGrowWafer } from '../logic/input/InputCommands';
+	import { DISCOVERY } from '../logic/DiscoveryLib';
+	// All snapping handled via MoleculeUtils.translateForSnap
+	import { translateForSnap, rotateMolecule } from '../logic/MoleculeUtils';
+	import { HEX_SIZE, WAFER_CANVAS_WIDTH, WAFER_CANVAS_HEIGHT } from '../logic/RefineUIBehaviour';
+	import { updateManualDragMolecule } from '../logic/ManualDrag';
+	import { getResourceSpec } from '../logic/Resources';
 
 
 const props = defineProps<{
@@ -234,11 +126,8 @@ const emit = defineEmits<{
   (e: 'pickup-item', item: { id: string; molecule: Molecule }): void;
 }>();
 
-const creditsSpec = getResourceSpec('credits');
-const chronotracesSpec = getResourceSpec('chronotraces');
-const timeFluxSpec = getResourceSpec('timeFlux');
-const shardSpec = getResourceSpec('shardDust');
-const shardColor = shardSpec.color;
+	const shardSpec = getResourceSpec('shardDust');
+	const shardColor = shardSpec.color;
 
 // Wafer comes from UIState (synced from GameState)
 const wafer = computed(() => uiState.wafer);
@@ -246,12 +135,10 @@ const wafer = computed(() => uiState.wafer);
 // Touch waferVersion to ensure reactivity when wafer contents change
 const waferVersion = computed(() => uiState.waferVersion);
 
-const showSignatureTabs = computed(() => uiState.hasDiscoveredSignatures);
-const infoTab = ref<'wafer' | 'signatures'>('wafer');
-
-const ghostMolecule = ref<Molecule | null>(null);
-const ghostPosition = ref<Point2 | null>(null);
+	const ghostMolecule = ref<Molecule | null>(null);
+	const ghostPosition = ref<Point2 | null>(null);
 const ghostValid = ref(false);
+const ghostShowOutline = ref(false);
 const highlightItemIdx = ref<number | null>(null);
 const lastHoverPos = ref<Point2 | null>(null);
 const rotation = ref(0);
@@ -333,16 +220,23 @@ const preview = computed(() => {
       cellEffectiveCounts: {} as Record<string, number>,
       totalYieldPct: 100,
       cyanYieldBonus: 0,
+      uniqueItemsYieldBonus: 0,
       signatureYieldBonus: 0,
       newSignatureYieldBonus: 0,
       newSignatureMatches: [] as Array<{ id: string; offset: { x: number; y: number } }>,
     };
   }
 
+  const gs = getGameState()!;
+  const uniqueItemsYieldBonus = (gs.discoveries[DISCOVERY.UNIQUE_ITEMS_YIELD] === true)
+    ? computeUniqueItemsYieldBonusPct(gs.refinedUniqueItemIds, wafer.value.items)
+    : 0;
+
   const basePreview = computeRefinePreviewChem(wafer.value, {
     signatures: uiState.lib!.signatures,
     signatureLevel: uiState.signatureLevel,
     completedSignatureIds: uiState.completedSignatureIds,
+    uniqueItemsYieldBonus,
   });
 
   // Calculate essence counts for each resource type
@@ -355,8 +249,7 @@ const preview = computed(() => {
   const emptyCells = wafer.value.emptyCount || 0;
 
   // Check if CYAN_YIELD is discovered - only then apply cyan yield bonus
-  const gs = getGameState();
-  const hasCyanYield = gs?.discoveries?.[DISCOVERY.CYAN_YIELD] === true;
+  const hasCyanYield = gs.discoveries[DISCOVERY.CYAN_YIELD] === true;
 
   // If CYAN_YIELD is not discovered, recalculate expected values without the cyan yield bonus
   let { expectedCredits, expectedChrono, expectedFlux, totalYieldPct, cyanYieldBonus } = basePreview;
@@ -388,81 +281,8 @@ const preview = computed(() => {
   };
 });
 
-const moleculesSource = atlasStorage.getMoleculesSource()!;
-
-const waferSignatureIds = computed(() => {
-  return preview.value.newSignatureMatches.map(m => m.id);
-});
-
-function signatureInlineStyle(id: string): Record<string, string> {
-  const src = moleculesSource;
-  const f = atlasStorage.getMoleculesFrame(`sig:inline:${id}`)!;
-  const targetSize = 24;
-  const scale = targetSize / f.w;
-  const atlasW = src.naturalWidth;
-  const atlasH = src.naturalHeight;
-  return {
-    width: `${targetSize}px`,
-    height: `${targetSize}px`,
-    backgroundImage: `url(${src.src})`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
-    backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
-  } as Record<string, string>;
-}
-
-const creditsEssenceKeys = computed(() => {
-  return preview.value.creditsEssences > 0 ? ['red'] : [];
-});
-
-const chronoEssenceKeys = computed(() => {
-  return preview.value.chronoEssences > 0 ? ['blue'] : [];
-});
-
-const fluxEssenceKeys = computed(() => {
-  return preview.value.fluxEssences > 0 ? ['green'] : [];
-});
-
-const cyanEssences = computed(() => {
-  return preview.value.essenceTotals?.cyan || 0;
-});
-
-const cyanEssenceKeys = computed(() => {
-  return cyanEssences.value > 0 ? ['cyan'] : [];
-});
-
-const cyanReduction = computed(() => {
-  return cyanEssences.value * CYAN_SUCCESS_BONUS_PCT;
-});
-
-const magentaEssences = computed(() => {
-  return preview.value.essenceTotals?.magenta || 0;
-});
-
-const magentaEssenceKeys = computed(() => {
-  return magentaEssences.value > 0 ? ['magenta'] : [];
-});
-
-const magentaPenalty = computed(() => {
-  return magentaEssences.value * MAGENTA_SUCCESS_PENALTY_PCT;
-});
-
-const showYield = computed(() => {
-  // Touch discoveryCounter to trigger recompute when discoveries change
-  const _dep = uiState.discoveryCounter;
-  const gs = getGameState();
-  return gs?.discoveries?.[DISCOVERY.REFINE_YIELD] === true;
-});
-
-const failureClass = computed(() => {
-  const pct = preview.value.failureChancePct;
-  if (pct === 0) return 'success';
-  if (pct <= 25) return 'warning';
-  return 'danger';
-});
-
-const placedItems = computed(() => {
-  // Touch waferVersion for reactivity
+	const placedItems = computed(() => {
+	  // Touch waferVersion for reactivity
   waferVersion.value;
   if (!wafer.value) return [];
   if (!wafer.value || !Array.isArray(wafer.value.items)) return [];
@@ -485,46 +305,17 @@ const failedRefineWithShards = computed(() => {
   return hasFailure && hasShards;
 });
 
-const canRefine = computed(() => {
-  return placedItems.value.length > 0 && !hasShards.value;
-});
+	const canRefine = computed(() => {
+	  return placedItems.value.length > 0 && !hasShards.value;
+	});
 
-// Atlas state for essence icons
-const source = ref<HTMLImageElement | null>(atlasStorage.getItemsSource());
-const ready = ref<boolean>(atlasStorage.isItemsAtlasLoaded());
-onMounted(async () => {
-  if (!ready.value) {
-    try { await atlasStorage.loadItemsAtlas(); } catch (_e) { /* noop */ }
-    ready.value = atlasStorage.isItemsAtlasLoaded();
-    source.value = atlasStorage.getItemsSource();
+function moleculeOverlapsEnabledCell(w: Wafer, mol: Molecule): boolean {
+  for (const atom of mol.atoms) {
+    const cell = getCell(w, { x: atom.x, y: atom.y });
+    if (cell && cell.enabled) return true;
   }
-});
-
-
-function getEssenceFrame(k: string) {
-  return atlasStorage.getItemsFrame(k);
+  return false;
 }
-
-function essenceIconStyle(k: string): Record<string, string> {
-  const f = atlasStorage.getItemsFrame(k)!;
-  const scale = 16 / Math.max(f.w, f.h);
-  const atlasW = source.value!.naturalWidth;
-  const atlasH = source.value!.naturalHeight;
-  return {
-    width: '16px',
-    height: '16px',
-    backgroundImage: `url(${source.value!.src})`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
-    backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
-  } as Record<string, string>;
-}
-
-function essenceLetter(k: string): string {
-  const m: Record<string, string> = { red: 'R', green: 'G', blue: 'B', yellow: 'Y', cyan: 'C', magenta: 'M' };
-  return m[k] || k?.[0]?.toUpperCase?.() || '?';
-}
-
 
 watch(() => props.draggingItem, (newVal) => {
   if (newVal) {
@@ -539,6 +330,7 @@ watch(() => props.draggingItem, (newVal) => {
     ghostMolecule.value = null;
     ghostPosition.value = null;
     rotation.value = 0;
+    ghostShowOutline.value = false;
     if (lastHoverPos.value) {
       onHover(lastHoverPos.value);
     } else {
@@ -588,6 +380,7 @@ function onHover(pos: Point2 | null) {
     ghostMolecule.value = null;
     ghostPosition.value = null;
     ghostValid.value = false;
+    ghostShowOutline.value = false;
     return;
   }
 
@@ -597,6 +390,7 @@ function onHover(pos: Point2 | null) {
   ghostMolecule.value = translated;
   ghostPosition.value = pos;
   ghostValid.value = canPlaceMolecule(wafer.value, translated);
+  ghostShowOutline.value = moleculeOverlapsEnabledCell(wafer.value, translated);
 }
 
 function onClick(pos: Point2) {
@@ -612,6 +406,7 @@ function onClick(pos: Point2) {
       ghostMolecule.value = translated;
       ghostPosition.value = pos;
       ghostValid.value = false;
+      ghostShowOutline.value = !!wafer.value && moleculeOverlapsEnabledCell(wafer.value, translated);
       return;
     }
 
@@ -668,14 +463,9 @@ function clearHighlight() {
   highlightItemIdx.value = null;
 }
 
-function cycleInfoTab() {
-  if (!showSignatureTabs.value) return;
-  infoTab.value = infoTab.value === 'wafer' ? 'signatures' : 'wafer';
-}
-
-function startRefining() {
-  if (!canRefine.value) return;
-  emit('refine-start');
+	function startRefining() {
+	  if (!canRefine.value) return;
+	  emit('refine-start');
 }
 
 function onRotate() {
@@ -842,163 +632,12 @@ function onRotate() {
   justify-content: center;
 }
 
-.info-panel {
-  background: var(--panel-bg);
-  border-radius: 6px;
-  padding: 16px;
-  width: 772px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.info-tabs {
-  display: flex;
-  gap: 0;
-  border-bottom: 1px solid var(--panel-border);
-  margin: -16px -16px 0 -16px;
-  padding: 0;
-}
-
-.info-tab {
-  flex: 1;
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--text-secondary);
-  font-size: 16px;
-  font-weight: 500;
-  padding: 12px 16px;
-  margin-bottom: -1px;
-  cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease;
-  text-align: center;
-}
-
-.info-tab:hover {
-  color: var(--text-primary);
-}
-
-.info-tab.active {
-  color: #4fd1c5;
-  border-bottom-color: #4fd1c5;
-}
-
-.info-body {
-  flex: 1;
-  overflow: visible;
-}
-
-.info-panel.clickable {
-  cursor: pointer;
-}
-
-.stats-table {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
 .action-section {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-
-.stat-row {
-  display: grid;
-  grid-template-columns: auto auto 1fr;
-  align-items: center;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--panel-border);
-  font-size: 14px;
-  gap: 24px;
-}
-
-.stat-row:last-of-type {
-  border-bottom: none;
-}
-
-.stat-label {
-  color: var(--text-secondary);
-  font-weight: 500;
-  min-width: 180px;
-}
-
-.stat-value {
-  min-width: 50px;
-}
-
-.stat-source {
-  color: var(--text-secondary);
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.ess-icon {
-  display: inline-block;
-  vertical-align: middle;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
-  width: 16px;
-  height: 16px;
-}
-
-.ess-letter {
-  display: inline-grid;
-  place-items: center;
-  width: 16px;
-  height: 16px;
-  font-weight: 900;
-  font-size: 12px;
-  opacity: 0.95;
-  border-radius: 3px;
-  background: rgba(255,255,255,0.08);
-}
-
-.sig-inline {
-  display: inline-block;
-  width: 24px;
-  height: 24px;
-  vertical-align: middle;
-  margin: -4px 0;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
-}
-
-.hl {
-  color: var(--accent);
-  font-weight: 600;
-}
-
-.success {
-  color: #4fd1c5;
-  font-weight: 500;
-}
-
-.yield-bonus {
-  color: #22d3d1;
-  font-weight: 600;
-}
-
-.warning {
-  color: #fbbf24;
-  font-weight: 500;
-}
-
-.danger {
-  color: #ef4444;
-  font-weight: 500;
-}
-
-.muted {
-  color: var(--text-secondary);
-}
-
-.small {
-  font-size: 12px;
-}
 
 .start-btn {
   margin-top: 8px;
@@ -1058,10 +697,4 @@ function onRotate() {
   margin-left: 30px;
 }
 
-/* Red highlight for high failure warning on hover */
-.stat-row.flash-red {
-  background: rgba(239, 68, 68, 0.25);
-  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
-  border-radius: 4px;
-}
 </style>

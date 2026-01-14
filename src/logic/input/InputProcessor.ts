@@ -1,7 +1,7 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdAcknowledgeSignatureLearn, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscoverGear, CmdMarkEssencesSeen, CmdSwitchTab } from './InputCommands';
+import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdAcknowledgeSignatureLearn, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab } from './InputCommands';
 import { discover, discoverRefineTab, ensureSignatureDiscoveryFromWafer } from '../Discover';
 import { DISCOVERY } from '../DiscoveryLib';
 import { computeEffectiveEssences } from '../RefinePreview';
@@ -330,8 +330,9 @@ handlersByName.set('CmdOpenGearUpgradeModal', (gs) => {
   discover(gs, DISCOVERY.GEAR_UPGRADE_MODAL_OPENED);
 });
 
-handlersByName.set('CmdDiscoverGear', (gs) => {
-  discover(gs, DISCOVERY.GEAR);
+handlersByName.set('CmdDiscover', (gs, cmd) => {
+  const c = cmd as CmdDiscover;
+  discover(gs, c.discoveryId);
 });
 
 handlersByName.set('CmdSwitchTab', (gs, cmd) => {

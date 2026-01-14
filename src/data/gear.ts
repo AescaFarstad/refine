@@ -161,11 +161,11 @@ const gear: Record<string, RawGearDefinition> = {
     name: 'Rusty Machete',
     category: 'melee_weapons',
     damage: 2,
-    chanceToHit: 10,
+    chanceToHit: 5,
     price: 50,
     weight: 2,
     image: 'machete',
-    perk: 'Hack and slash',
+    perk: 'Hack and Slash',
     description: 'Scavenging takes 1 minute less.',
   },
   spear: {

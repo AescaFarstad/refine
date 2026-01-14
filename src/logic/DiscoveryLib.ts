@@ -6,6 +6,7 @@ export const DISCOVERY = {
   DAMAGE_BREAKDOWN: 'damage_breakdown',
   TIME_BREAKDOWN: 'time_breakdown',
   REFINE_YIELD: 'refine_yield',
+  UNIQUE_ITEMS_YIELD: 'unique_items_yield',
   CYAN_YIELD: 'cyan_yield',
   MAZE_NAVIGATION: 'maze_navigation',
   // Tab discoveries (unlocked)
@@ -16,6 +17,10 @@ export const DISCOVERY = {
   TAB_REFINE_VISITED: 'tab_refine_visited',
   TAB_RESEARCH_VISITED: 'tab_research_visited',
   TAB_MAZE_VISITED: 'tab_maze_visited',
+  // Raid progressive reveals
+  RAID_MONSTERS: 'raid_monsters',
+  RAID_LOOT: 'raid_loot',
+  RAID_SPEED: 'raid_speed',
 } as const;
 
 // Prefer using `DISCOVERY.*` literals, but allow ad-hoc string ids too.

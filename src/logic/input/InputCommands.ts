@@ -129,8 +129,12 @@ export class CmdOpenGearUpgradeModal implements CmdInput {
   readonly name = 'CmdOpenGearUpgradeModal';
 }
 
-export class CmdDiscoverGear implements CmdInput {
-  readonly name = 'CmdDiscoverGear';
+export class CmdDiscover implements CmdInput {
+  readonly name = 'CmdDiscover';
+  readonly discoveryId: string;
+  constructor(args: { discoveryId: string }) {
+    this.discoveryId = args.discoveryId;
+  }
 }
 
 export class CmdMarkEssencesSeen implements CmdInput {

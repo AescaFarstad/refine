@@ -1,11 +1,11 @@
 <template>
-  <div class="deploy">
+  <div class="deploy" v-if="hasDiscoveredMonsters">
     <div class="deploy-row">
       <button class="deploy-btn" type="button" :disabled="!canDeploy" @click="deploy" @mouseenter="isDeployHovered = true" @mouseleave="isDeployHovered = false">Deploy</button>
       <div class="stats">
         <div class="cell" :class="{ red: !canAfford }">
           <div class="cell-label tooltip-label" :data-tooltip="TOOLTIP_GEAR_COST">Gear cost</div>
-          <span class="cell-value" :style="{ color: creditsSpec.color }">{{ selectedPrice }}{{ creditsSpec.glyph }}</span>
+          <span class="cell-value cost-value" :style="{ color: creditsSpec.color }">{{ selectedPrice.toLocaleString() }}{{ creditsSpec.glyph }}</span>
         </div>
         <div class="cell-stack">
           <div class="cell" :class="{ reddish: survivalChance < 50 && survivalChance >= 25, red: survivalChance < 25, 'flash-red': shouldFlashSurvival }">
@@ -18,7 +18,13 @@
         </div>
         <div class="cell-stack">
           <div class="cell" :class="{ reddish: timeInHours > 4 && timeInHours <= 24, red: timeInHours > 24 }">
-            <div class="cell-label tooltip-label" :data-tooltip="timeBreakdownTooltip">Time</div>
+            <div class="cell-label tooltip-label">
+              Time
+              <div class="tooltip-panel">
+                <div class="font-mono">{{ timeEstValues }}</div>
+                <div class="tooltip-desc">{{ timeEstDesc }}</div>
+              </div>
+            </div>
             <span class="cell-value">{{ hasTimeData ? '~' : '' }}{{ estimatedTime }}</span>
           </div>
           <div v-if="hasTimeBreakdown" class="cell-stack-panel cell-stack-panel--left">
@@ -52,6 +58,8 @@ import RaidDeployDamageBreakdownPanel from './RaidDeployDamageBreakdownPanel.vue
 import RaidDeployTimeBreakdownPanel from './RaidDeployTimeBreakdownPanel.vue';
 
 const creditsSpec = getResourceSpec('credits');
+
+const hasDiscoveredMonsters = computed(() => uiState.hasDiscoveredRaidMonsters);
 
 const isDeployHovered = ref(false);
 const shouldFlashSurvival = computed(() => isDeployHovered.value && survivalChance.value < 20);
@@ -152,7 +160,14 @@ const estimatedTime = computed(() => {
   return formatDurationHM(sec);
 });
 const timeInHours = computed(() => (uiState.raidTimeEstimateSec || 0) / 3600);
-const timeBreakdownTooltip = computed(() => {
+const timeEstValues = computed(() => {
+  const min = formatDurationHM(uiState.raidTimeEstimateMinSec || 0);
+  const max = formatDurationHM(uiState.raidTimeEstimateMaxSec || 0);
+  const stdDev = formatDurationHM(uiState.raidTimeEstimateStdDevSec || 0);
+  return `${min} - ${max}, σ:${stdDev}`;
+});
+
+const timeEstDesc = computed(() => {
   const count = uiState.raidTimeBreakdownSimulations;
   return `Estimated based on ${count} virtual attempts.\nResults may vary from simulation to simulation.`;
 });
@@ -280,6 +295,12 @@ const timeBreakdownTooltip = computed(() => {
   font-weight: 700; 
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
+:deep(.cost-value) {
+  font-weight: 800;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
 /* When in red/reddish state, allow inherited color for both parts */
 :deep(.cell.red .cell-label),
 :deep(.cell.red .cell-value),
@@ -346,5 +367,18 @@ const timeBreakdownTooltip = computed(() => {
 
 :deep(.cell.flash-red) {
   animation: flash-red 0.5s ease-in-out infinite;
+}
+
+
+.font-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.tooltip-desc {
+  white-space: pre-line;
+  font-weight: 400;
+  opacity: 0.9;
 }
 </style>

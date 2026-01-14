@@ -6,79 +6,105 @@
       <div class="stat"><span class="label">Bags</span> <span class="value">{{ bagsCapacity }} ⌞ ⌝</span></div>
     </div>
 
-  <!-- Caption before encounter tables -->
-  <div v-if="monsterRows.length || lootCount > 0" class="section-title enc-caption">In this raid you will encounter:</div>
+  <!-- Monsters reveal button -->
+  <template v-if="!hasDiscoveredMonsters && selectedRaid">
+    <div class="discover-container">
+      <button class="discover-btn" @click="discoverMonsters">Review raid monsters</button>
+    </div>
+  </template>
 
-  <div v-if="monsterRows.length" class="enc-table">
-    <table class="table">
-      <thead>
-        <tr>
-          <th></th>
-          <th>Count</th>
-          <th>Health</th>
-          <th>Damage</th>
-          <th>Chance to hit them</th>
-          <th>Chance to block them</th>
-          <th>Ability</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="row in monsterRows" :key="row.id">
-          <td>{{ row.name }}</td>
-          <td>{{ row.count }}</td>
-          <td>{{ row.hp }}</td>
-          <td>{{ row.damage }}</td>
-          <td>{{ row.hitPct }}%</td>
-          <td>{{ row.blockPct }}%</td>
-          <td>
-            <template v-for="(ability, idx) in getAbilities(row)" :key="ability.name">
-              <span v-if="idx > 0">, </span>
-              <span class="ability-label" :data-tooltip="ability.tooltip">{{ ability.name }}</span>
-            </template>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  <!-- Monsters section (revealed) -->
+  <template v-if="hasDiscoveredMonsters">
+    <!-- Caption before encounter tables -->
+    <div v-if="monsterRows.length || lootCount > 0" class="section-title enc-caption">In this raid you will encounter:</div>
 
-  <div v-if="lootCount > 0" class="enc-table">
-    <table class="table">
-      <thead>
-        <tr>
-          <th></th>
-          <th>Count</th>
-          <th>Find item chance</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Scavenge sites</td>
-          <td>{{ lootCount }}</td>
-          <td>{{ lootChanceBasePct }}%<template v-if="lootChanceBuffPct"> + {{ lootChanceBuffPct }}%</template></td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+    <div v-if="monsterRows.length" class="enc-table">
+      <table class="table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Count</th>
+            <th>Health</th>
+            <th>Damage</th>
+            <th>Chance to hit them</th>
+            <th>Chance to block them</th>
+            <th>Ability</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="row in monsterRows" :key="row.id">
+            <td>{{ row.name }}</td>
+            <td>{{ row.count }}</td>
+            <td>{{ row.hp }}</td>
+            <td>{{ row.damage }}</td>
+            <td>{{ row.hitPct }}%</td>
+            <td>{{ row.blockPct }}%</td>
+            <td>
+              <template v-for="(ability, idx) in getAbilities(row)" :key="ability.name">
+                <span v-if="idx > 0">, </span>
+                <span class="ability-label" :data-tooltip="ability.tooltip">{{ ability.name }}</span>
+              </template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-	  <template v-if="selectedRaid">
-	    <div class="walk-line">
-	        <div class="dist">Distance: {{ distanceKm }} km</div>
-	        <div class="weight-bar">
-	          <div class="bar">
-	            <div class="fill" :class="{ over: overweight }" :style="{ width: weightPct + '%' }" />
-	            <div class="wlabel">{{ weight }}/{{ maxWeight }} weight</div>
-	          </div>
-	        </div>
-	        <div class="speed">Speed: {{ speedKmH.toFixed(2) }} km/h</div>
-	        <div class="time">Walking time: {{ walkingTime }}</div>
-	      </div>
-	      <div v-if="overweight" class="overweight-warning">
-	        <span class="ow-label">Overweight</span>
-	        <div class="ow-hint" role="tooltip" aria-hidden="true">
-	          <GearStatsHint :gear="overweightGear" v-if="overweightGear" />
-	        </div>
-	      </div>
-	  </template>
+    <!-- Loot reveal button (requires monsters revealed) -->
+    <template v-if="!hasDiscoveredLoot && lootCount > 0">
+      <div class="discover-container">
+        <button class="discover-btn" @click="discoverLoot">Review raid looting opportunities</button>
+      </div>
+    </template>
+
+    <!-- Loot section (revealed) -->
+    <div v-if="hasDiscoveredLoot && lootCount > 0" class="enc-table">
+      <table class="table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Count</th>
+            <th>Find item chance</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Scavenge sites</td>
+            <td>{{ lootCount }}</td>
+            <td>{{ lootChanceBasePct }}%<template v-if="lootChanceBuffPct"> + {{ lootChanceBuffPct }}%</template></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Speed reveal button (requires monsters revealed) -->
+    <template v-if="!hasDiscoveredSpeed && selectedRaid">
+      <div class="discover-container">
+        <button class="discover-btn" @click="discoverSpeed">Review travel distance and speed</button>
+      </div>
+    </template>
+
+    <!-- Speed/distance section (revealed) -->
+    <template v-if="hasDiscoveredSpeed && selectedRaid">
+      <div class="walk-line">
+          <div class="dist">Distance: {{ distanceKm }} km</div>
+          <div class="weight-bar">
+            <div class="bar">
+              <div class="fill" :class="{ over: overweight }" :style="{ width: weightPct + '%' }" />
+              <div class="wlabel">{{ weight }}/{{ maxWeight }} weight</div>
+            </div>
+          </div>
+          <div class="speed">Speed: {{ speedKmH.toFixed(2) }} km/h</div>
+          <div class="time">Walking time: {{ walkingTime }}</div>
+        </div>
+        <div v-if="overweight" class="overweight-warning">
+          <span class="ow-label">Overweight</span>
+          <div class="ow-hint" role="tooltip" aria-hidden="true">
+            <GearStatsHint :gear="overweightGear" v-if="overweightGear" />
+          </div>
+        </div>
+    </template>
+  </template>
   </div>
 
 </template>
@@ -86,11 +112,31 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { uiState, getGameState, getGameLib } from '../logic/UIState';
+import { globalInputQueue } from '../logic/Model';
+import { CmdDiscover } from '../logic/input/InputCommands';
+import { DISCOVERY } from '../logic/DiscoveryLib';
 import { MIN_WALK_SPEED } from '../logic/GameState';
 import type { RaidDefinition } from '../logic/RaidLib';
 import GearStatsHint from './GearStatsHint.vue';
-import { FEATURE_SUMMON, FEATURE_SELF_DESTRUCT, FEATURE_RETALIATES, SUMMON_CHANCE_PER_ROUND } from '../logic/MonsterFeatures';
+import { FEATURE_SUMMON, FEATURE_SUMMON2, FEATURE_SELF_DESTRUCT, FEATURE_RETALIATES, SUMMON_CHANCE_PER_ROUND, SUMMON_CHANCE_PER_ROUND2 } from '../logic/MonsterFeatures';
 import { Perks } from '../logic/Perks';
+
+const hasDiscoveredMonsters = computed(() => uiState.hasDiscoveredRaidMonsters);
+const hasDiscoveredLoot = computed(() => uiState.hasDiscoveredRaidLoot);
+const hasDiscoveredSpeed = computed(() => uiState.hasDiscoveredRaidSpeed);
+
+function discoverMonsters(): void {
+  globalInputQueue.push(new CmdDiscover({ discoveryId: DISCOVERY.RAID_MONSTERS }));
+}
+
+function discoverLoot(): void {
+  globalInputQueue.push(new CmdDiscover({ discoveryId: DISCOVERY.RAID_LOOT }));
+}
+
+function discoverSpeed(): void {
+  globalInputQueue.push(new CmdDiscover({ discoveryId: DISCOVERY.RAID_SPEED }));
+}
+
 
 const selectedRaid = computed<RaidDefinition | null>(() => {
   // Touch reactive key for updates
@@ -199,7 +245,7 @@ const encCounts = computed(() => {
 });
 
 // Monster encounter table
-interface MonsterRow { id: string; name: string; hp: number; damage: number; hitPct: number; blockPct: number; count: number; canSummon: boolean; canSelfDestruct: boolean; canRetaliate: boolean; armor: number; damageCap: number }
+interface MonsterRow { id: string; name: string; hp: number; damage: number; hitPct: number; blockPct: number; count: number; canSummon: boolean; canSummon2: boolean; canSelfDestruct: boolean; canRetaliate: boolean; armor: number; damageCap: number }
 function clamp01(v: number): number { return Math.max(0, Math.min(100, Math.round(v))); }
 const monsterRows = computed<MonsterRow[]>(() => {
   const raid = selectedRaid.value;
@@ -222,11 +268,12 @@ const monsterRows = computed<MonsterRow[]>(() => {
     const hit = clamp01((hitBase) - Math.max(0, Math.min(100, m.dodge || 0)));
     const block = clamp01((blockBase) - Math.max(0, Math.min(100, m.accuracy || 0)));
     const canSummon = m.features.includes(FEATURE_SUMMON);
+    const canSummon2 = m.features.includes(FEATURE_SUMMON2);
     const canSelfDestruct = m.features.includes(FEATURE_SELF_DESTRUCT);
     const canRetaliate = m.features.includes(FEATURE_RETALIATES);
     const armor = m.armor || 0;
     const damageCap = m.damageCap || 0;
-    rows.push({ id, name: m.name, hp: Math.max(0, m.hp || 0), damage: Math.max(0, m.damage || 0), hitPct: hit, blockPct: block, count: counts[id] || 0, canSummon, canSelfDestruct, canRetaliate, armor, damageCap });
+    rows.push({ id, name: m.name, hp: Math.max(0, m.hp || 0), damage: Math.max(0, m.damage || 0), hitPct: hit, blockPct: block, count: counts[id] || 0, canSummon, canSummon2, canSelfDestruct, canRetaliate, armor, damageCap });
   }
   // Stable name sort
   rows.sort((a, b) => (a.name < b.name ? -1 : 1));
@@ -238,7 +285,10 @@ interface Ability { name: string; tooltip: string }
 function getAbilities(row: MonsterRow): Ability[] {
   const abilities: Ability[] = [];
   if (row.canSummon) {
-    abilities.push({ name: 'Summons\u00A0the\u00A0pack', tooltip: `Each round you fight this monster, there is a ${SUMMON_CHANCE_PER_ROUND}% chance that another one will appear` });
+    abilities.push({ name: 'Summons\u00A0friends', tooltip: `Each round you fight this monster, there is a ${SUMMON_CHANCE_PER_ROUND}% chance that another one will appear` });
+  }
+  if (row.canSummon2) {
+    abilities.push({ name: 'Summons\u00A0the\u00A0pack', tooltip: `Each round you fight this monster, there is a ${SUMMON_CHANCE_PER_ROUND2}% chance that another one will appear` });
   }
   if (row.canSelfDestruct) {
     abilities.push({ name: 'Explodes', tooltip: 'When this monster successfully attacks, it explodes' });
@@ -397,5 +447,31 @@ const lootChanceBuffPct = computed(() => {
 .ability-label:hover::after,
 .ability-label:hover::before {
   opacity: 1;
+}
+
+.discover-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 50px;
+  margin: 8px 0;
+}
+.discover-btn {
+  height: 32px;
+  padding: 0 14px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-radius: 4px;
+  border: 1px solid rgba(34,197,94,0.5);
+  background: rgba(34,197,94,0.32);
+  color: #86efac;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.discover-btn:hover {
+  background: rgba(34,197,94,0.45);
 }
 </style>

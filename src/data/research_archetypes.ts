@@ -35,6 +35,13 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     icon: { kind: 'glyph', glyph: 'ⓘ' },
     rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.TIME_BREAKDOWN }],
   },
+  disc_unique_items_yield: {
+    type: 'discovery',
+    title: 'Unique item recycling',
+    description: 'Gain +1% refining yield for each unique item you have ever successfully refined.',
+    icon: { kind: 'itemImage', key: 'recycle_3', scale: 1.3, offset: { x: 0, y: 3 } },
+    rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.UNIQUE_ITEMS_YIELD }],
+  },
   disc_essence_anomaly: {
     type: 'discovery',
     title: 'Essence anomaly',

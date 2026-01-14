@@ -1,7 +1,7 @@
 import type { ActiveRaid, GameState } from './GameState';
 import { createFightEncounterLogEntry, type FightEncounterLogEntry, type FightEvent, type LootEncounterLogEntry } from './RaidLog';
 import Perks from './Perks';
-import { FEATURE_SUMMON, FEATURE_SELF_DESTRUCT, FEATURE_RETALIATES, SUMMON_CHANCE_PER_ROUND } from './MonsterFeatures';
+import { FEATURE_SUMMON, FEATURE_SUMMON2, FEATURE_SELF_DESTRUCT, FEATURE_RETALIATES, SUMMON_CHANCE_PER_ROUND, SUMMON_CHANCE_PER_ROUND2 } from './MonsterFeatures';
 
 function clamp(v: number, lo: number, hi: number): number { return Math.max(lo, Math.min(hi, v)); }
 
@@ -34,6 +34,7 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
   const immovable = r.perks.includes(Perks.IMMOVABLE_WALL);
   const hasStun = r.perks.includes(Perks.STUN);
   const canSummon = m.features.includes(FEATURE_SUMMON);
+  const canSummon2 = m.features.includes(FEATURE_SUMMON2);
   const canSelfDestruct = m.features.includes(FEATURE_SELF_DESTRUCT);
   const canRetaliate = m.features.includes(FEATURE_RETALIATES);
   const armor = m.armor;
@@ -92,7 +93,8 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
 
       // Check for summon at end of round (only if both combatants survive and not already summoned)
       let summonJustTriggered = false;
-      if (canSummon && !summonedMonsterId && myHpAfter > 0 && theirHpAfter > 0 && Math.floor(gs.random.get() * 100) < SUMMON_CHANCE_PER_ROUND) {
+      const summonChance = canSummon2 ? SUMMON_CHANCE_PER_ROUND2 : SUMMON_CHANCE_PER_ROUND;
+      if ((canSummon || canSummon2) && !summonedMonsterId && myHpAfter > 0 && theirHpAfter > 0 && Math.floor(gs.random.get() * 100) < summonChance) {
         summonedMonsterId = monsterId;
         summonJustTriggered = true;
       }
@@ -170,7 +172,8 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
       const theirHpFinal = selfDestructTriggered ? 0 : theirHpAfterReflect;
       // Check for summon at end of round (only if both combatants survive and not already summoned)
       let summonJustTriggered = false;
-      if (canSummon && !summonedMonsterId && myHpAfter > 0 && theirHpFinal > 0 && Math.floor(gs.random.get() * 100) < SUMMON_CHANCE_PER_ROUND) {
+      const summonChance = canSummon2 ? SUMMON_CHANCE_PER_ROUND2 : SUMMON_CHANCE_PER_ROUND;
+      if ((canSummon || canSummon2) && !summonedMonsterId && myHpAfter > 0 && theirHpFinal > 0 && Math.floor(gs.random.get() * 100) < summonChance) {
         summonedMonsterId = monsterId;
         summonJustTriggered = true;
       }

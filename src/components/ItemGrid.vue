@@ -16,8 +16,6 @@
           :id="it.id"
           :quantity="it.quantity"
           :minor="minor"
-          :no-tooltip="noTooltip"
-          :show-score="showScores"
           :show-volume="showVolumes"
         />
       </div>
@@ -133,9 +131,11 @@ onUnmounted(() => {
   gap: 8px;
 }
 .item-grid.minor {
-  opacity: 0.85;
   grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
   gap: 6px;
+}
+.base-grid.minor {
+  opacity: 0.85;
 }
 .grid-item { position: relative; }
 .grid-item.clickable { cursor: pointer; }

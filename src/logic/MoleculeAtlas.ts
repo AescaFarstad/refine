@@ -318,7 +318,12 @@ export async function ensureMoleculeAtlas(): Promise<void> {
       if (ctx) {
         const frames = new Map<string, { x: number; y: number; w: number; h: number }>();
         for (const p of placed) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(p.x, p.y, p.w, p.h);
+          ctx.clip();
           p.draw(ctx, p.x, p.y);
+          ctx.restore();
           frames.set(p.key, { x: p.x, y: p.y, w: p.w, h: p.h });
         }
         const blob = await new Promise<Blob>((resolve, reject) => {

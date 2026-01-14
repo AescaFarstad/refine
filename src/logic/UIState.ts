@@ -3,7 +3,7 @@ import { formatDurationHM } from './StringUtils';
 import { createRaidDamageBreakdown, createRaidTimeBreakdownSec, type GameState, type RaidDamageBreakdown, type RaidOutcome, type RefineryOutcome, type Shard, type RaidTimeBreakdownSec } from './GameState';
 import type { RaidDefinition } from './RaidLib';
 import { getEffectiveRaidDefinition } from './Raid';
-import { computeRefinePreviewChem } from './RefinePreview';
+import { computeRefinePreviewChem, computeUniqueItemsYieldBonusPct } from './RefinePreview';
 import type { Lib } from './Lib';
 import { createWafer, type Wafer } from './Wafer';
 import type { Point2 } from './ItemLib';
@@ -53,6 +53,9 @@ export const uiState = reactive({
 
   raidSurvivalPct: 0,
   raidTimeEstimateSec: 0,
+  raidTimeEstimateMinSec: 0,
+  raidTimeEstimateMaxSec: 0,
+  raidTimeEstimateStdDevSec: 0,
   raidZoneCollapseDeathPct: 0,
   raidZoneCollapseDeaths: 0,
   raidMonsterDeaths: 0,
@@ -92,6 +95,10 @@ export const uiState = reactive({
   hasDiscoveredRefineTab: false,
   hasDiscoveredResearchTab: false,
   hasDiscoveredMazeTab: false,
+  hasDiscoveredRaidMonsters: false,
+  hasDiscoveredRaidLoot: false,
+  hasDiscoveredRaidSpeed: false,
+  hasDiscoveredCyanYield: false,
   hasVisitedRefineTab: false,
   hasVisitedResearchTab: false,
   hasVisitedMazeTab: false,
@@ -204,6 +211,9 @@ export function SyncUIFromGameState(game: GameState): void {
   const sim = game.raidSimulation;
   uiState.raidSurvivalPct = sim.survivalEstimatePct;
   uiState.raidTimeEstimateSec = sim.timeEstimateSec;
+  uiState.raidTimeEstimateMinSec = sim.timeEstimateMinSec;
+  uiState.raidTimeEstimateMaxSec = sim.timeEstimateMaxSec;
+  uiState.raidTimeEstimateStdDevSec = sim.timeEstimateStdDevSec;
   uiState.raidZoneCollapseDeathPct = sim.zoneCollapseDeathPct;
   uiState.raidZoneCollapseDeaths = sim.zoneCollapseDeaths;
   uiState.raidMonsterDeaths = sim.monsterDeaths;
@@ -228,6 +238,9 @@ export function SyncUIFromGameState(game: GameState): void {
       signatures: game.lib.signatures,
       signatureLevel: game.signatureLevel,
       completedSignatureIds: game.completedSignatureIds,
+      uniqueItemsYieldBonus: (game.discoveries[DISCOVERY.UNIQUE_ITEMS_YIELD] === true)
+        ? computeUniqueItemsYieldBonusPct(game.refinedUniqueItemIds, game.wafer!.items)
+        : 0,
     });
     const duration = Math.max(0, game.refiningDuration || preview.timeSec || 0);
     const startedAt = (game.nextEvt.at || 0) - duration;
@@ -259,6 +272,10 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.hasDiscoveredRefineTab = game.discoveries[DISCOVERY.TAB_REFINE] === true;
   uiState.hasDiscoveredResearchTab = game.discoveries[DISCOVERY.TAB_RESEARCH] === true;
   uiState.hasDiscoveredMazeTab = game.discoveries[DISCOVERY.TAB_MAZE] === true;
+  uiState.hasDiscoveredRaidMonsters = game.discoveries[DISCOVERY.RAID_MONSTERS] === true;
+  uiState.hasDiscoveredRaidLoot = game.discoveries[DISCOVERY.RAID_LOOT] === true;
+  uiState.hasDiscoveredRaidSpeed = game.discoveries[DISCOVERY.RAID_SPEED] === true;
+  uiState.hasDiscoveredCyanYield = game.discoveries[DISCOVERY.CYAN_YIELD] === true;
   uiState.hasVisitedRefineTab = game.discoveries[DISCOVERY.TAB_REFINE_VISITED] === true;
   uiState.hasVisitedResearchTab = game.discoveries[DISCOVERY.TAB_RESEARCH_VISITED] === true;
   uiState.hasVisitedMazeTab = game.discoveries[DISCOVERY.TAB_MAZE_VISITED] === true;

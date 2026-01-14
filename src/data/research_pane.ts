@@ -6,9 +6,11 @@ export const researchPane: ResearchPlacementInput[] = [
 
   { archetypeId: 'disc_damage_breakdown', cells: { x: 2, y: -5 } },
   { archetypeId: 'disc_time_breakdown', cells: { x: -2, y: 5 } },
+  { archetypeId: 'disc_unique_items_yield', cells: { x: -1, y: -3 } },
   { archetypeId: 'disc_essence_anomaly', cells: [{ x: 8, y: -4 }, { x: 9, y: -4 }, { x: 8, y: -3 }] },
   { archetypeId: 'disc_maze_navigation', cells: [{ x: -5, y: -1 }, { x: -4, y: -2 }, { x: -6, y: -1 }, { x: -5, y: 0 }],
   centerCell: { x: -5, y: -1 } },
+  { archetypeId: 'disc_unique_items_yield', cells: [{ x: -5, y: -5 }, { x: -4, y: -5 }, { x: -5, y: -4 }] },
 
 
   { archetypeId: 'stat_weight', cells: { x: 1, y: -3 } },
@@ -90,7 +92,6 @@ export const researchPane: ResearchPlacementInput[] = [
   { archetypeId: 'res_credits', cells: { x: 15, y: -8 } },
   { archetypeId: 'res_credits', cells: { x: 4, y: -7 } },
   { archetypeId: 'stat_vision', cells: { x: -10, y: 9 } },
-  { archetypeId: 'stat_vision', cells: { x: -3, y: -4 } },
   { archetypeId: 'stat_hp', cells: { x: -8, y: -2 } },
   { archetypeId: 'res_credits', cells: { x: 19, y: -2 } },
   { archetypeId: 'res_shards', cells: { x: 12, y: -1 } },
@@ -120,12 +121,14 @@ export const researchPane: ResearchPlacementInput[] = [
   { archetypeId: 'stat_volume', cells: { x: 5, y: -2 } },
   { archetypeId: 'stat_volume', cells: { x: -16, y: 7 } },
   { archetypeId: 'stat_volume', cells: { x: 17, y: -1 } },
+  { archetypeId: 'stat_vision', cells: { x: -3, y: -4 } },
 ];
 
 export const researchPaneEmptyCells: Point2[] = [
   { x: 0, y: -9 }, { x: -1, y: -8 }, { x: -3, y: -6 }, { x: -3, y: -5 }, { x: 3, y: -5 }, { x: -4, y: -4 },
-  { x: -1, y: -4 }, { x: -9, y: -3 }, { x: 10, y: -1 }, { x: 11, y: -1 }, { x: 4, y: 0 }, { x: 13, y: 1 },
-  { x: 14, y: 1 }, { x: -3, y: 8 },
+  { x: -1, y: -4 }, { x: 1, y: -4 }, { x: -9, y: -3 }, { x: 10, y: -1 }, { x: 11, y: -1 }, { x: 4, y: 0 },
+  { x: 13, y: 1 }, { x: 14, y: 1 }, { x: -3, y: 8 }, { x: 9, y: 9 }, { x: 8, y: 10 }, { x: 7, y: 11 },
+  { x: 6, y: 12 }, { x: 5, y: 13 }, { x: 4, y: 14 }, { x: 3, y: 15 }, { x: 2, y: 16 }, { x: 1, y: 17 },
 ];
 
 export const researchPaneVoidCells: Point2[] = [

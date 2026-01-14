@@ -68,6 +68,7 @@ export class GameState {
   public seenEssences: Record<string, true> = {};
   public discoveries: Record<string, true> = {};
   public discoveryCounter: number = 0;
+  public refinedUniqueItemIds: Record<string, true> = {};
 
   // Signature progress
   public signatureLevel: number = 1;
@@ -263,6 +264,9 @@ export function createRaidDamageBreakdown(): RaidDamageBreakdown {
 export class RaidSimulation {
   public survivalEstimatePct: number = 0;
   public timeEstimateSec: number = 0;
+  public timeEstimateMinSec: number = 0;
+  public timeEstimateMaxSec: number = 0;
+  public timeEstimateStdDevSec: number = 0;
   public zoneCollapseDeathPct: number = 0;
   public zoneCollapseDeaths: number = 0;
   public monsterDeaths: number = 0;

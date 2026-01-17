@@ -31,6 +31,29 @@ function parseFuzz(tolerance: string | undefined): string | null {
   return raw;
 }
 
+function parseBoolSetting(name: string, raw: string | undefined, fallback: boolean): boolean {
+  const trimmed = (raw || '').trim().toLowerCase();
+  if (!trimmed) return fallback;
+  if (trimmed === 'true' || trimmed === '1') return true;
+  if (trimmed === 'false' || trimmed === '0') return false;
+  throw new Error(`${name} must be true/false (got: ${raw})`);
+}
+
+function isErrnoException(err: unknown): err is NodeJS.ErrnoException {
+  return typeof err === 'object' && err !== null && 'code' in err;
+}
+
+async function shouldSkipOutput(outPath: string, skipExisting: boolean): Promise<boolean> {
+  if (!skipExisting) return false;
+  try {
+    const st = await stat(outPath);
+    return st.isFile();
+  } catch (err) {
+    if (isErrnoException(err) && err.code === 'ENOENT') return false;
+    throw err;
+  }
+}
+
 async function listImages(dir: string): Promise<string[]> {
   const entries = await readdir(dir);
   const out: string[] = [];
@@ -106,6 +129,7 @@ export async function runMonowhiteJob(job: PipelineJob, baseDir: string): Promis
   const inputFolder = job.settings.input_folder || 'source';
   const outputFolder = job.settings.output_folder || 'monowhites';
   const fuzz = parseFuzz(job.settings.tolerance);
+  const skipExisting = parseBoolSetting('skip_existing', job.settings.skip_existing, false);
 
   const outDir = path.join(baseDir, outputFolder);
   await mkdir(outDir, { recursive: true });
@@ -117,6 +141,7 @@ export async function runMonowhiteJob(job: PipelineJob, baseDir: string): Promis
       const inPath = await resolveInputPath(baseDir, inputFolder, imageName);
       const outName = `${path.parse(path.basename(imageName)).name}.png`;
       const outPath = path.join(outDir, outName);
+      if (await shouldSkipOutput(outPath, skipExisting)) continue;
       await convertMonowhiteToTransparent(inPath, outPath, fuzz);
     }
     return;
@@ -129,6 +154,7 @@ export async function runMonowhiteJob(job: PipelineJob, baseDir: string): Promis
     const inPath = await resolveInputPath(baseDir, inputFolder, imageName);
     const outName = outputFilename(item, imageName);
     const outPath = path.join(outDir, outName);
+    if (await shouldSkipOutput(outPath, skipExisting)) continue;
     await convertMonowhiteToTransparent(inPath, outPath, fuzz);
   }
 }

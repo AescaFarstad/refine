@@ -23,6 +23,7 @@ const raids: Record<string, Omit<RaidDefinition, 'id' | 'order' | 'itemPoolsByRa
       'document_holder',
       'soviet_watch',
       'light_bulb',
+      'olympic_badge',
     ],
     encounters: [
       { count: 2, encounter: { type: 'WalkEncounter' } },

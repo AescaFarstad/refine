@@ -2,6 +2,7 @@
   priority:5
   input_folder:source/gear
   job:monowhite
+  skip_existing:true
   tolerance:5%
   output_folder:monowhites
 ]

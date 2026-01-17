@@ -8,7 +8,7 @@
 
 {
   image:ChatGPT Image Nov 30, 2025, 03_38_22 PM.png
-  content:ak_rifle vest reckon_drone frag_grenade
+  content:ak_rifle vest2 reckon_drone2 frag_grenade
 }
 
 {
@@ -33,7 +33,7 @@
 
 {
   image:ChatGPT Image Nov 30, 2025, 03_51_34 PM.png
-  content:helmet armor_plates cargo_harness _
+  content:helmet2 armor_plates2 cargo_harness _
 }
 
 {
@@ -150,8 +150,19 @@
   image:ChatGPT Image Jan 11, 2026, 07_34_30 PM.png
   content: maze_out2 lighbuld_off crates_3d recycle_3
 }
-#start
+
 {
   image:ChatGPT Image Jan 11, 2026, 07_50_56 PM.png
   content: maze_out _ crates_trivial _
+}
+
+{
+  image:ChatGPT Image Jan 17, 2026, 04_44_09 AM.png
+  content: knuckles helmet armor_plates vest
+}
+
+#start
+{
+  image:ChatGPT Image Jan 17, 2026, 04_55_54 AM.png
+  content: reinforced_case _ reckon_drone police_shield
 }

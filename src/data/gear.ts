@@ -124,20 +124,19 @@ const gear: Record<string, RawGearDefinition> = {
   aspirator_probe: {
     name: 'Aspirator Probe',
     category: 'devices',
-    price: 40,
+    price: 120,
     weight: 1,
     image: 'aspirator_probe',
-    biopsyChance: 20,
-    description: 'Allows to extract monster remains.',
+    biopsyChance: 20
   },
   bone_saw: {
     name: 'Bone Saw',
     category: 'devices',
-    damage: 1,
-    price: 120,
+    price: 40,
     weight: 1,
     image: 'bone_saw',
-    biopsyChance: 30
+    biopsyChance: 30,
+    description: 'Allows to extract monster remains.',
   },
   metal_detector: {
     name: 'Metal Detector',
@@ -355,7 +354,7 @@ const gear: Record<string, RawGearDefinition> = {
   },
   scout_binoculars: {
     name: 'Binoculars',
-    category: 'devices',
+    category: 'accessories',
     lootChance: 10,
     chanceToHit: 10,
     price: 100,
@@ -439,7 +438,7 @@ const gear: Record<string, RawGearDefinition> = {
     chanceToHit: -10,
     price: 300,
     weight: 8,
-    image: 'shield',
+    image: 'police_shield',
   },
   pouches: {
     name: 'Tactical Pouches',
@@ -475,7 +474,7 @@ const gear: Record<string, RawGearDefinition> = {
     chanceToBlock: 15,
     price: 180,
     weight: 4,
-    image: 'case',
+    image: 'reinforced_case',
   },
   brass_knuckles: {
     name: 'Brass Knuckles',
@@ -484,7 +483,7 @@ const gear: Record<string, RawGearDefinition> = {
     chanceToHit: 20,
     price: 20,
     weight: 1,
-    image: 'fist',
+    image: 'knuckles',
   },
   smoke_grenade: {
     name: 'Smoke Grenade',

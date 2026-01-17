@@ -2,7 +2,7 @@ import { Raid, type GameState } from './GameState';
 import { setIsDebug } from './Const';
 import { uiState } from './UIState';
 import { DISCOVERY } from './DiscoveryLib';
-import { CheatAddResources, CheatLoadResearchState, CheatUnlockAllRaids, CheatDisableQuestPrereqs, CheatGrantDiscoveries, CheatAddRaidItems } from './cheat/CheatCommands';
+import { CheatAddResources, CheatLoadResearchState, CheatUnlockAllRaids, CheatDisableQuestPrereqs, CheatGrantDiscoveries, CheatAddRaidItems, CheatUnlockAllGear } from './cheat/CheatCommands';
 import { recomputeActiveRaidEstimates, recomputeActiveRaidParams } from './Raid';
 
 export function initDebug(gameState: GameState): void {
@@ -27,6 +27,7 @@ export function initDebug(gameState: GameState): void {
     new CheatGrantDiscoveries({ discoveryIds: Object.values(DISCOVERY) }),
     new CheatLoadResearchState({ ownedCells: [{ x: 0, y: 0 }] }),
     new CheatUnlockAllRaids(),
+    new CheatUnlockAllGear(),
     new CheatDisableQuestPrereqs({ disabled: true }),
     // raidItemCheats[0],
     ...raidItemCheats,

@@ -70,7 +70,7 @@ export function resolveRefineryDone(gs: GameState): void {
 
   if (succeeded) {
     if (preview.newlyCompletedSignatureIds.length > 0) {
-      discover(gs, DISCOVERY.SIGNATURES);
+      discover(gs, DISCOVERY.UI_SIGNATURES);
       const completed = new Set(gs.completedSignatureIds);
       for (const id of preview.newlyCompletedSignatureIds) {
         if (completed.has(id)) continue;

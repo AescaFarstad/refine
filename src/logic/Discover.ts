@@ -8,9 +8,9 @@ export function discover(gs: GameState, id: DiscoveryId): boolean {
   gs.discoveries[id] = true;
   gs.discoveryCounter++;
 
-  if (id === DISCOVERY.SIGNATURES || id === DISCOVERY.CYAN_YIELD || id === DISCOVERY.UNIQUE_ITEMS_YIELD) {
-    if (!hasDiscovered(gs, DISCOVERY.REFINE_YIELD)) {
-      gs.discoveries[DISCOVERY.REFINE_YIELD] = true;
+  if (id === DISCOVERY.UI_SIGNATURES || id === DISCOVERY.CYAN_YIELD || id === DISCOVERY.UNIQUE_ITEMS_YIELD) {
+    if (!hasDiscovered(gs, DISCOVERY.UI_REFINE_YIELD)) {
+      gs.discoveries[DISCOVERY.UI_REFINE_YIELD] = true;
       gs.discoveryCounter++;
     }
   }
@@ -32,16 +32,16 @@ export function hasDiscovered(gs: GameState, id: DiscoveryId): boolean {
 }
 
 export function ensureShardDiscovery(gs: GameState): void {
-  if (hasDiscovered(gs, DISCOVERY.SHARDS)) return;
+  if (hasDiscovered(gs, DISCOVERY.UI_SHARDS)) return;
 
   if (gs.shardDust > 0 || gs.waferUpgradesPurchased > 0) {
-    discover(gs, DISCOVERY.SHARDS);
+    discover(gs, DISCOVERY.UI_SHARDS);
     return;
   }
 
   for (const shard of gs.shards) {
     if (shard && shard.resource === 'shards') {
-      discover(gs, DISCOVERY.SHARDS);
+      discover(gs, DISCOVERY.UI_SHARDS);
       return;
     }
   }
@@ -76,7 +76,7 @@ export function ensureSignatureDiscoveryFromWafer(gs: GameState): void {
   const { newlyCompletedSignatureIds } = scanWaferForNewSignatures(gs.wafer, signatureDefsForLevel, completed);
   if (newlyCompletedSignatureIds.length === 0) return;
 
-  discover(gs, DISCOVERY.SIGNATURES);
+  discover(gs, DISCOVERY.UI_SIGNATURES);
 
   for (const id of newlyCompletedSignatureIds) {
     if (gs.learnedSignatureIds.includes(id)) continue;

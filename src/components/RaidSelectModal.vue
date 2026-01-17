@@ -81,9 +81,6 @@
               </div>
               <div class="preview-description">
                 {{ previewRaid.description || 'A challenging expedition into dangerous territory.' }}
-                <template v-if="previewRaid.zoneCollapseSec && previewRaid.zoneCollapseSec > 0">
-                  <br>Extract before zone collapse in {{ formatDurationHM(previewRaid.zoneCollapseSec) }} or perish.
-                </template>
               </div>
             </template>
             <div v-else class="no-preview">

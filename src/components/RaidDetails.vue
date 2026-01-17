@@ -126,15 +126,15 @@ const hasDiscoveredLoot = computed(() => uiState.hasDiscoveredRaidLoot);
 const hasDiscoveredSpeed = computed(() => uiState.hasDiscoveredRaidSpeed);
 
 function discoverMonsters(): void {
-  globalInputQueue.push(new CmdDiscover({ discoveryId: DISCOVERY.RAID_MONSTERS }));
+  globalInputQueue.push(new CmdDiscover({ discoveryId: DISCOVERY.UI_RAID_MONSTERS }));
 }
 
 function discoverLoot(): void {
-  globalInputQueue.push(new CmdDiscover({ discoveryId: DISCOVERY.RAID_LOOT }));
+  globalInputQueue.push(new CmdDiscover({ discoveryId: DISCOVERY.UI_RAID_LOOT }));
 }
 
 function discoverSpeed(): void {
-  globalInputQueue.push(new CmdDiscover({ discoveryId: DISCOVERY.RAID_SPEED }));
+  globalInputQueue.push(new CmdDiscover({ discoveryId: DISCOVERY.UI_RAID_SPEED }));
 }
 
 

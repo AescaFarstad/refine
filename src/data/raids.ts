@@ -4,7 +4,7 @@ const raids: Record<string, Omit<RaidDefinition, 'id' | 'order' | 'itemPoolsByRa
   shegolskoe: {
     name: 'Shegolskoe',
     locationImageId: 'shegolskoe',
-    description: 'A small abandoned village, scattered with relics of everyday life. Hostile creatures roam its ruins.',
+    description: 'A \'cozy\' village where soviet cultural elite used to grow vegetables for dinner.',
     baseLootChance: 45,
     zoneCollapseSec: 10200,
     zoneCollapseStepPerMutation: 300,

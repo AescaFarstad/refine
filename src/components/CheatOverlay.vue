@@ -33,10 +33,35 @@
           </div>
 
           <div class="discovery-panel">
-            <h4 class="section-title discovery-title">Discoveries</h4>
             <div class="discovery-grid">
               <button
-                v-for="id in discoveryIds"
+                v-for="id in tabDiscoveryIds"
+                :key="id"
+                class="btn discovery-btn"
+                :class="{ primary: isDiscovered(id) }"
+                type="button"
+                @click="toggleDiscovery(id)"
+              >
+                {{ formatDiscoveryLabel(id) }}
+              </button>
+            </div>
+            <hr class="discovery-separator" />
+            <div class="discovery-grid">
+              <button
+                v-for="id in uiDiscoveryIds"
+                :key="id"
+                class="btn discovery-btn"
+                :class="{ primary: isDiscovered(id) }"
+                type="button"
+                @click="toggleDiscovery(id)"
+              >
+                {{ formatDiscoveryLabel(id) }}
+              </button>
+            </div>
+            <hr class="discovery-separator" />
+            <div class="discovery-grid">
+              <button
+                v-for="id in otherDiscoveryIds"
                 :key="id"
                 class="btn discovery-btn"
                 :class="{ primary: isDiscovered(id) }"
@@ -78,7 +103,15 @@ import { discover } from '../logic/Discover';
 const open = computed(() => uiState.cheatOpen);
 
 const resources = Object.values(RESOURCE_SPECS);
-const discoveryIds = computed<DiscoveryId[]>(() => Object.values(DISCOVERY));
+const tabDiscoveryIds = computed<DiscoveryId[]>(() =>
+  Object.values(DISCOVERY).filter(id => String(id).startsWith('TAB_'))
+);
+const uiDiscoveryIds = computed<DiscoveryId[]>(() =>
+  Object.values(DISCOVERY).filter(id => String(id).startsWith('UI_'))
+);
+const otherDiscoveryIds = computed<DiscoveryId[]>(() =>
+  Object.values(DISCOVERY).filter(id => !String(id).startsWith('TAB_') && !String(id).startsWith('UI_'))
+);
 
 function grantResource(key: ResourceKey, amount: number) {
   getGameState()[key] += amount;
@@ -232,6 +265,11 @@ function closeAll() {
   text-transform: uppercase;
   font-size: 11px;
   letter-spacing: 0.06em;
+}
+.discovery-separator {
+  border: none;
+  border-top: 1px solid var(--panel-border);
+  margin: 10px 0;
 }
 
 @media (max-width: 820px) {

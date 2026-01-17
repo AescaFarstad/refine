@@ -1,27 +1,32 @@
-export const DISCOVERY = {
-  GEAR: 'gear',
-  GEAR_UPGRADE_MODAL_OPENED: 'gear_upgrade_modal_opened',
-  SHARDS: 'shards',
-  SIGNATURES: 'signatures',
-  DAMAGE_BREAKDOWN: 'damage_breakdown',
-  TIME_BREAKDOWN: 'time_breakdown',
-  REFINE_YIELD: 'refine_yield',
-  UNIQUE_ITEMS_YIELD: 'unique_items_yield',
-  CYAN_YIELD: 'cyan_yield',
-  MAZE_NAVIGATION: 'maze_navigation',
-  // Tab discoveries (unlocked)
-  TAB_REFINE: 'tab_refine',
-  TAB_RESEARCH: 'tab_research',
-  TAB_MAZE: 'tab_maze',
-  // Tab visited discoveries
-  TAB_REFINE_VISITED: 'tab_refine_visited',
-  TAB_RESEARCH_VISITED: 'tab_research_visited',
-  TAB_MAZE_VISITED: 'tab_maze_visited',
-  // Raid progressive reveals
-  RAID_MONSTERS: 'raid_monsters',
-  RAID_LOOT: 'raid_loot',
-  RAID_SPEED: 'raid_speed',
-} as const;
+const ids = [
+  'UI_GEAR',
+  'UI_GEAR_UPGRADE_MODAL_OPENED',
+  'UI_SHARDS',
+  'UI_SIGNATURES',
+  'UI_DAMAGE_BREAKDOWN',
+  'UI_TIME_BREAKDOWN',
+  'UI_REFINE_YIELD',
+  'UNIQUE_ITEMS_YIELD',
+  'CYAN_YIELD',
+  'MAZE_NAVIGATION',
+  'TAB_REFINE',
+  'TAB_RESEARCH',
+  'TAB_MAZE',
+  'TAB_REFINE_VISITED',
+  'TAB_RESEARCH_VISITED',
+  'TAB_MAZE_VISITED',
+  'UI_RAID_MONSTERS',
+  'UI_RAID_LOOT',
+  'UI_RAID_SPEED',
+  'UI_RAID_SELECTION',
+] as const;
+
+type DiscoveryKey = (typeof ids)[number];
+
+export const DISCOVERY = ids.reduce((acc, id) => {
+  acc[id] = id;
+  return acc;
+}, {} as any) as { [K in DiscoveryKey]: K };
 
 // Prefer using `DISCOVERY.*` literals, but allow ad-hoc string ids too.
 export type DiscoveryId = (typeof DISCOVERY)[keyof typeof DISCOVERY] | string;

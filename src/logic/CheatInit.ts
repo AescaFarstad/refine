@@ -6,7 +6,7 @@ import { CheatAddResources, CheatLoadResearchState, CheatUnlockAllRaids, CheatDi
 import { recomputeActiveRaidEstimates, recomputeActiveRaidParams } from './Raid';
 
 export function initDebug(gameState: GameState): void {
-  // return;
+  return;
   // setIsDebug(true);
 
   uiState.editResearchOpen = true;
@@ -24,7 +24,7 @@ export function initDebug(gameState: GameState): void {
 
   gameState.cheats = [
     new CheatAddResources({ credits: 100000, chronotraces: 100000, timeFlux: 0, shardDust: 10000, skillPoints: 100 }),
-    new CheatGrantDiscoveries({ discoveryIds: Object.values(DISCOVERY) }),
+    // new CheatGrantDiscoveries({ discoveryIds: Object.values(DISCOVERY) }),
     new CheatLoadResearchState({ ownedCells: [{ x: 0, y: 0 }] }),
     new CheatUnlockAllRaids(),
     new CheatUnlockAllGear(),

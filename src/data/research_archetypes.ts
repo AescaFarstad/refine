@@ -26,14 +26,14 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     title: 'Damage breakdown',
     description: 'Shows per monster damage received in the raid simulation.',
     icon: { kind: 'glyph', glyph: 'ⓘ' },
-    rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.DAMAGE_BREAKDOWN }],
+    rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.UI_DAMAGE_BREAKDOWN }],
   },
   disc_time_breakdown: {
     type: 'discovery',
     title: 'Time breakdown',
     description: 'Shows per activity time taken in the raid simulation.',
     icon: { kind: 'glyph', glyph: 'ⓘ' },
-    rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.TIME_BREAKDOWN }],
+    rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.UI_TIME_BREAKDOWN }],
   },
   disc_unique_items_yield: {
     type: 'discovery',

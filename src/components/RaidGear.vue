@@ -59,7 +59,7 @@ const hasDiscoveredGear = computed(() => uiState.hasDiscoveredGear);
 const hasDiscoveredSpeed = computed(() => uiState.hasDiscoveredRaidSpeed);
 
 function discoverGear(): void {
-  globalInputQueue.push(new CmdDiscover({ discoveryId: DISCOVERY.GEAR }));
+  globalInputQueue.push(new CmdDiscover({ discoveryId: DISCOVERY.UI_GEAR }));
 }
 
 function loadout(): string[] {
@@ -190,7 +190,7 @@ function canShowUpgradeButton(cat: string): boolean {
 const shouldPulseUpgradeButton = computed(() => {
   const _dep = uiState.discoveryCounter;
   const gs = getGameState();
-  return gs?.discoveries?.[DISCOVERY.GEAR_UPGRADE_MODAL_OPENED] !== true;
+  return gs?.discoveries?.[DISCOVERY.UI_GEAR_UPGRADE_MODAL_OPENED] !== true;
 });
 
 function openUpgradeModal(category: string): void {

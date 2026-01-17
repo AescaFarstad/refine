@@ -234,6 +234,7 @@ handlersByName.set('CmdSelectRaid', (gs, cmd) => {
   const c = cmd as CmdSelectRaid;
   if (!gs.lib.raids.has(c.id)) throw new Error(`CmdSelectRaid: unknown raid id "${c.id}"`);
   if (!gs.unlockedRaids.some(r => r.id === c.id)) return;
+  discover(gs, DISCOVERY.UI_RAID_SELECTION);
   recomputeActiveRaidParams(gs, c.id);
   recomputeActiveRaidEstimates(gs, 100);
 });
@@ -351,7 +352,7 @@ handlersByName.set('CmdUpgradeGearCategory', (gs, cmd) => {
 });
 
 handlersByName.set('CmdOpenGearUpgradeModal', (gs) => {
-  discover(gs, DISCOVERY.GEAR_UPGRADE_MODAL_OPENED);
+  discover(gs, DISCOVERY.UI_GEAR_UPGRADE_MODAL_OPENED);
 });
 
 handlersByName.set('CmdDiscover', (gs, cmd) => {

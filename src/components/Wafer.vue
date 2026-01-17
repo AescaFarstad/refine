@@ -177,7 +177,7 @@ const showWaferUpgrades = computed(() => {
   // Touch discoveryCounter to trigger recompute when discoveries change
   const _dep = uiState.discoveryCounter;
   const gs = getGameState();
-  const hasDiscoveredShards = gs?.discoveries?.[DISCOVERY.SHARDS] === true;
+  const hasDiscoveredShards = gs?.discoveries?.[DISCOVERY.UI_SHARDS] === true;
   return hasDiscoveredShards || uiState.shardDust > 0 || uiState.waferUpgradesPurchased > 0;
 });
 const upgradeCost = computed(() => {

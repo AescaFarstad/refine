@@ -60,6 +60,9 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
 
     case 'unlock_raid':
       gs.unlockedRaids.push(new Raid(reward.raidId));
+      // Reset raid selection discovery so the user is prompted to select the new raid
+      delete gs.discoveries[DISCOVERY.UI_RAID_SELECTION];
+      gs.discoveryCounter = 0;
       break;
 
     case 'unlock_quest':
@@ -70,7 +73,7 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
       break;
 
     case 'learn_signatures':
-      discover(gs, DISCOVERY.SIGNATURES);
+      discover(gs, DISCOVERY.UI_SIGNATURES);
       for (const id of reward.signatureIds) {
         if (gs.learnedSignatureIds.includes(id)) continue;
         gs.learnedSignatureIds.push(id);
@@ -78,7 +81,7 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
       break;
 
     case 'learn_n_signatures': {
-      discover(gs, DISCOVERY.SIGNATURES);
+      discover(gs, DISCOVERY.UI_SIGNATURES);
       const learned = new Set(gs.learnedSignatureIds);
       const unlearned = Array.from(gs.lib.signatures.values())
         .map(s => s.id)

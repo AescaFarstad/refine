@@ -99,6 +99,7 @@ export const uiState = reactive({
   hasDiscoveredRaidMonsters: false,
   hasDiscoveredRaidLoot: false,
   hasDiscoveredRaidSpeed: false,
+  hasDiscoveredRaidSelection: false,
   hasDiscoveredCyanYield: false,
   hasVisitedRefineTab: false,
   hasVisitedResearchTab: false,
@@ -268,15 +269,16 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.encounteredEssences = Object.keys(game.encounteredEssences);
   uiState.seenEssences = Object.keys(game.seenEssences);
   uiState.discoveryCounter = game.discoveryCounter;
-  uiState.hasDiscoveredGear = game.discoveries[DISCOVERY.GEAR] === true;
-  uiState.hasDiscoveredGearUpgradeModal = game.discoveries[DISCOVERY.GEAR_UPGRADE_MODAL_OPENED] === true;
-  uiState.hasDiscoveredSignatures = game.discoveries[DISCOVERY.SIGNATURES] === true;
+  uiState.hasDiscoveredGear = game.discoveries[DISCOVERY.UI_GEAR] === true;
+  uiState.hasDiscoveredGearUpgradeModal = game.discoveries[DISCOVERY.UI_GEAR_UPGRADE_MODAL_OPENED] === true;
+  uiState.hasDiscoveredSignatures = game.discoveries[DISCOVERY.UI_SIGNATURES] === true;
   uiState.hasDiscoveredRefineTab = game.discoveries[DISCOVERY.TAB_REFINE] === true;
   uiState.hasDiscoveredResearchTab = game.discoveries[DISCOVERY.TAB_RESEARCH] === true;
   uiState.hasDiscoveredMazeTab = game.discoveries[DISCOVERY.TAB_MAZE] === true;
-  uiState.hasDiscoveredRaidMonsters = game.discoveries[DISCOVERY.RAID_MONSTERS] === true;
-  uiState.hasDiscoveredRaidLoot = game.discoveries[DISCOVERY.RAID_LOOT] === true;
-  uiState.hasDiscoveredRaidSpeed = game.discoveries[DISCOVERY.RAID_SPEED] === true;
+  uiState.hasDiscoveredRaidMonsters = game.discoveries[DISCOVERY.UI_RAID_MONSTERS] === true;
+  uiState.hasDiscoveredRaidLoot = game.discoveries[DISCOVERY.UI_RAID_LOOT] === true;
+  uiState.hasDiscoveredRaidSpeed = game.discoveries[DISCOVERY.UI_RAID_SPEED] === true;
+  uiState.hasDiscoveredRaidSelection = game.discoveries[DISCOVERY.UI_RAID_SELECTION] === true;
   uiState.hasDiscoveredCyanYield = game.discoveries[DISCOVERY.CYAN_YIELD] === true;
   uiState.hasVisitedRefineTab = game.discoveries[DISCOVERY.TAB_REFINE_VISITED] === true;
   uiState.hasVisitedResearchTab = game.discoveries[DISCOVERY.TAB_RESEARCH_VISITED] === true;
@@ -286,7 +288,7 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.completedSignatureIds = [...game.completedSignatureIds];
   uiState.signatureLearnQueue = [...game.signatureLearnQueue];
   uiState.hasEverHadShards =
-    (game.discoveries[DISCOVERY.SHARDS] === true) ||
+    (game.discoveries[DISCOVERY.UI_SHARDS] === true) ||
     (game.shardDust > 0) ||
     (game.waferUpgradesPurchased > 0);
 

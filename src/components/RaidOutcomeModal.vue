@@ -55,11 +55,8 @@
           </div>
         </div>
         <section class="quest-rewards" v-if="raidSuccess && rewardChips.length">
-          <div class="qr-row">
-            <div class="qr-cap">Quest rewards</div>
-            <div class="qr-chips">
-              <span v-for="(chip, i) in rewardChips" :key="i" class="chip" :class="chip.class" :style="chip.style">{{ chip.text }}</span>
-            </div>
+          <div class="qr-chips">
+            <span v-for="(chip, i) in rewardChips" :key="i" class="chip" :class="chip.class" :style="chip.style">{{ chip.text }}</span>
           </div>
         </section>
         <section class="raid-changes" v-if="raidChangesPills.length || zoneChangeText">
@@ -250,11 +247,14 @@ const rewardChips = computed<RewardChip[]>(() => {
 
   const resourceTotals: Record<string, number> = {};
   const gearTotals: Record<string, number> = {};
+  const unlockedRaidIds: string[] = [];
   for (const r of rewards) {
     if (r.kind === 'resource') {
       resourceTotals[r.resource] = (resourceTotals[r.resource] || 0) + r.amount;
     } else if (r.kind === 'countable_gear') {
       gearTotals[r.gearId] = (gearTotals[r.gearId] || 0) + r.amount;
+    } else if (r.kind === 'unlock_raid') {
+      unlockedRaidIds.push(r.raidId);
     }
   }
 
@@ -267,6 +267,11 @@ const rewardChips = computed<RewardChip[]>(() => {
   for (const [gearId, amount] of Object.entries(gearTotals)) {
     const gearName = lib.gear.get(gearId)?.name ?? gearId;
     out.push({ text: `+${amount} ${gearName}`, class: 'gear' });
+  }
+
+  for (const raidId of unlockedRaidIds) {
+    const raidName = lib.raids.get(raidId)?.name ?? raidId;
+    out.push({ text: `Unlocked: ${raidName}`, class: 'raid-unlock' });
   }
 
   return out;
@@ -440,12 +445,11 @@ function formatHMS(totalSec?: number): string { return formatDurationHM(totalSec
 .nq:hover .nq-hint { display: block; }
 .barely-in-time { margin-top: 10px; padding: 8px 10px; border: none; border-radius: 6px; background: rgba(251, 146, 60, 0.10); border: 1px solid rgba(251, 146, 60, 0.3); }
 .barely-in-time .bt { font-weight: 500; color: #fb923c; font-style: italic; }
-.quest-rewards { margin-top: 10px; padding: 10px 12px; border-radius: 6px; background: rgba(255,255,255,0.03); border: 1px solid rgba(148, 163, 184, 0.20); display: grid; gap: 8px; }
-.qr-row { display: grid; gap: 6px; }
-.qr-cap { font-weight: 900; letter-spacing: 0.04em; opacity: 0.95; font-size: 11px; text-transform: uppercase; color: var(--text-secondary); }
-.qr-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.quest-rewards { margin-top: 10px; }
+.qr-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip { display: inline-flex; align-items: baseline; padding: 4px 10px; border-radius: 4px; background: rgba(255,255,255,0.06); font-size: 13px; font-weight: 600; }
 .chip.gear { color: #c4b5fd; background: rgba(139, 92, 246, 0.18); }
+.chip.raid-unlock { color: #fcd34d; background: rgba(251, 191, 36, 0.18); }
 
 /* Raid changes section */
 .raid-changes { margin-top: 10px; display: grid; gap: 8px; }

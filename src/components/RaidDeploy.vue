@@ -87,12 +87,12 @@ function deploy() {
 
 const hasDamageBreakdown = computed(() => {
   const _dep = uiState.discoveryCounter;
-  return getGameState().discoveries[DISCOVERY.DAMAGE_BREAKDOWN] === true;
+  return getGameState().discoveries[DISCOVERY.UI_DAMAGE_BREAKDOWN] === true;
 });
 
 const hasTimeBreakdown = computed(() => {
   const _dep = uiState.discoveryCounter;
-  return getGameState().discoveries[DISCOVERY.TIME_BREAKDOWN] === true;
+  return getGameState().discoveries[DISCOVERY.UI_TIME_BREAKDOWN] === true;
 });
 
 const zoneCollapseTime = computed(() => {

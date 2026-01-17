@@ -158,7 +158,7 @@ const infoTab = ref<'wafer' | 'signatures'>('wafer');
 const showYield = computed(() => {
   uiState.discoveryCounter;
   const gs = getGameState();
-  return gs?.discoveries?.[DISCOVERY.REFINE_YIELD] === true;
+  return gs?.discoveries?.[DISCOVERY.UI_REFINE_YIELD] === true;
 });
 
 const moleculesSource = atlasStorage.getMoleculesSource()!;
@@ -416,4 +416,3 @@ function cycleInfoTab() {
   border-radius: 4px;
 }
 </style>
-

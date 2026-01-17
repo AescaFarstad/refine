@@ -1,6 +1,11 @@
 <template>
   <div ref="wrapRef" class="raid-select-wrap">
-    <button class="raid-select-btn" type="button" @click="$emit('open')">
+    <button
+      class="raid-select-btn"
+      :class="{ 'needs-attention': needsAttention }"
+      type="button"
+      @click="handleClick"
+    >
       <span class="label">{{ label }}</span>
       <span class="chevron">▼</span>
     </button>
@@ -41,11 +46,26 @@ import { getGameLib, getGameState, type UIRaidDef, uiState } from '../logic/UISt
 import type { RaidDefinition } from '../logic/RaidLib';
 import { questIsAvailable } from '../logic/RaidMutation';
 import { globalInputQueue } from '../logic/Model';
-import { CmdSelectRaid } from '../logic/input/InputCommands';
+import { CmdSelectRaid, CmdDiscover } from '../logic/input/InputCommands';
 import atlasStorage from '../logic/AtlasStorage';
 import { locationsAtlasFrames } from '../data/locationsAtlas';
+import { DISCOVERY } from '../logic/DiscoveryLib';
 
-defineEmits<{ open: [] }>();
+const emit = defineEmits<{ open: [] }>();
+
+const needsAttention = computed(() => {
+  // Trigger reactivity on discoveryCounter changes
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.discoveryCounter;
+  return !uiState.hasDiscoveredRaidSelection;
+});
+
+function handleClick(): void {
+  if (!uiState.hasDiscoveredRaidSelection) {
+    globalInputQueue.push(new CmdDiscover({ discoveryId: DISCOVERY.UI_RAID_SELECTION }));
+  }
+  emit('open');
+}
 
 const selectedRaid = computed(() => {
   if (!uiState.activeRaidId) return null;
@@ -206,6 +226,19 @@ function formatNumber(value: number): string {
 }
 .raid-select-btn:hover {
   background: rgba(255,255,255,0.12);
+}
+.raid-select-btn.needs-attention {
+  animation: attention-pulse 1.5s ease-in-out infinite;
+}
+@keyframes attention-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(74, 222, 128, 0);
+    border-color: var(--panel-border);
+  }
+  50% {
+    box-shadow: 0 0 12px 4px rgba(74, 222, 128, 0.4);
+    border-color: rgba(74, 222, 128, 0.7);
+  }
 }
 .label {
   flex: 1;

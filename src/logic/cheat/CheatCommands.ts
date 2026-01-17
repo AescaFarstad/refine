@@ -1,4 +1,5 @@
 import type { Point2 } from '../core/math';
+import type { Reward } from '../Reward';
 
 export interface CheatInput {
   name: string;
@@ -66,5 +67,13 @@ export class CheatGrantDiscoveries implements CheatInput {
   readonly discoveryIds: string[];
   constructor(args: { discoveryIds?: string[] }) {
     this.discoveryIds = args.discoveryIds ?? [];
+  }
+}
+
+export class CheatGrantRewards implements CheatInput {
+  readonly name = 'CheatGrantRewards';
+  readonly rewards: Reward[];
+  constructor(args: { rewards: Reward[] }) {
+    this.rewards = args.rewards;
   }
 }

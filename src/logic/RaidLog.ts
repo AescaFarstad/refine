@@ -1,8 +1,18 @@
 /* Properties here should be non-optional. Include all necessary info as an immutable copy, so that it'd store the accurate values as of at the time of creation.*/
-export interface PreparationEncounterLogEntry {
-  kind: 'PreparationEncounter';
+
+/** Common fields present on all log entries for consistent status bar display */
+export interface RaidLogEntryBase {
   timeSpentSec: number;
   elapsedTotalSec: number;
+  // Snapshot of player state after this encounter
+  currentHp: number;
+  currentMaxHp: number;
+  bagsUsed: number;
+  bagsCapacity: number;
+}
+
+export interface PreparationEncounterLogEntry extends RaidLogEntryBase {
+  kind: 'PreparationEncounter';
   tacticNames: string[];
   damageBefore: number;
   damageAfter: number;
@@ -12,14 +22,14 @@ export interface PreparationEncounterLogEntry {
   maxHpAfter: number;
   blockChanceBefore: number;
   blockChanceAfter: number;
+  gearId: string;
+  gearImage: string;
 }
 
-export interface WalkEncounterLogEntry {
+export interface WalkEncounterLogEntry extends RaidLogEntryBase {
   kind: 'WalkEncounter';
   hpBefore: number;
   hpAfter: number;
-  timeSpentSec: number;
-  elapsedTotalSec: number;
   speedKmH: number;
   maxSpeedKmH: number;  // speed at full health (for comparison)
   maxHp: number;
@@ -27,12 +37,10 @@ export interface WalkEncounterLogEntry {
   hpHealed: number;
 }
 
-export interface QuestEncounterLogEntry {
+export interface QuestEncounterLogEntry extends RaidLogEntryBase {
   kind: 'QuestEncounter';
   questId: string;
   success: boolean;
-  timeSpentSec: number;
-  elapsedTotalSec: number;
 }
 
 export interface FightEvent {
@@ -61,27 +69,24 @@ export interface FightEvent {
   selfDestructed: boolean;  // true when monster self-destructs on successful attack
 }
 
-export interface FightEncounterLogEntry {
+export interface FightEncounterLogEntry extends RaidLogEntryBase {
   kind: 'FightEncounter';
   dieFromOvertime: boolean;
   fightLog: FightEvent[];
   monsterId: string;
   monsterName: string;
-  timeSpentSec: number;
-  elapsedTotalSec: number;
   hpBeforeRegen: number;
   hpAfterRegen: number;
   selfDestructed: boolean; // true if the monster self-destructed (no corpse left)
   summoned: boolean; // true if this fight was summoned by another monster (doesn't count toward progress)
+  skipped: boolean; // true if the fight was avoided (e.g., via Safer Routes perk)
 }
 
-export interface LootEncounterLogEntry {
+export interface LootEncounterLogEntry extends RaidLogEntryBase {
   kind: 'LootEncounter';
   source: 'raid';
   skipped: boolean;
   skipReason: '' | 'bags_full' | 'zone_collapsing';
-  timeSpentSec: number;
-  elapsedTotalSec: number;
   myRoll: number;
   checkValue: number;
   itemId: string;
@@ -97,13 +102,11 @@ export interface LootEncounterLogEntry {
   biopsySuccess: boolean;
 }
 
-export interface MonsterLootEncounterLogEntry {
+export interface MonsterLootEncounterLogEntry extends RaidLogEntryBase {
   kind: 'MonsterLootEncounter';
   source: 'monster';
   skipped: boolean;
   skipReason: '' | 'bags_full' | 'zone_collapsing';
-  timeSpentSec: number;
-  elapsedTotalSec: number;
   myRoll: number;
   checkValue: number;
   itemId: string;
@@ -119,10 +122,8 @@ export interface MonsterLootEncounterLogEntry {
   biopsySuccess: boolean;
 }
 
-export interface ZoneCollapseLogEntry {
+export interface ZoneCollapseLogEntry extends RaidLogEntryBase {
   kind: 'ZoneCollapse';
-  timeSpentSec: number;
-  elapsedTotalSec: number;
   timeLimit: number;
   elapsedTime: number;
 }
@@ -146,6 +147,10 @@ export function createPreparationEncounterLogEntry(init: Partial<PreparationEnco
     kind: 'PreparationEncounter',
     timeSpentSec: 0,
     elapsedTotalSec: 0,
+    currentHp: 0,
+    currentMaxHp: 0,
+    bagsUsed: 0,
+    bagsCapacity: 0,
     tacticNames: [],
     damageBefore: 0,
     damageAfter: 0,
@@ -155,6 +160,8 @@ export function createPreparationEncounterLogEntry(init: Partial<PreparationEnco
     maxHpAfter: 0,
     blockChanceBefore: 0,
     blockChanceAfter: 0,
+    gearId: '',
+    gearImage: '',
     ...rest,
   };
 }
@@ -163,10 +170,14 @@ export function createWalkEncounterLogEntry(init: Partial<WalkEncounterLogEntry>
   const { kind: _kind, ...rest } = init;
   return {
     kind: 'WalkEncounter',
-    hpBefore: 0,
-    hpAfter: 0,
     timeSpentSec: 0,
     elapsedTotalSec: 0,
+    currentHp: 0,
+    currentMaxHp: 0,
+    bagsUsed: 0,
+    bagsCapacity: 0,
+    hpBefore: 0,
+    hpAfter: 0,
     speedKmH: 0,
     maxSpeedKmH: 0,
     maxHp: 0,
@@ -180,10 +191,14 @@ export function createQuestEncounterLogEntry(init: Partial<QuestEncounterLogEntr
   const { kind: _kind, ...rest } = init;
   return {
     kind: 'QuestEncounter',
-    questId: '',
-    success: false,
     timeSpentSec: 0,
     elapsedTotalSec: 0,
+    currentHp: 0,
+    currentMaxHp: 0,
+    bagsUsed: 0,
+    bagsCapacity: 0,
+    questId: '',
+    success: false,
     ...rest,
   };
 }
@@ -219,16 +234,21 @@ export function createFightEncounterLogEntry(init: Partial<FightEncounterLogEntr
   const { kind: _kind, ...rest } = init;
   return {
     kind: 'FightEncounter',
+    timeSpentSec: 0,
+    elapsedTotalSec: 0,
+    currentHp: 0,
+    currentMaxHp: 0,
+    bagsUsed: 0,
+    bagsCapacity: 0,
     dieFromOvertime: false,
     fightLog: [],
     monsterId: '',
     monsterName: '',
-    timeSpentSec: 0,
-    elapsedTotalSec: 0,
     hpBeforeRegen: 0,
     hpAfterRegen: 0,
     selfDestructed: false,
     summoned: false,
+    skipped: false,
     ...rest,
   };
 }
@@ -238,10 +258,14 @@ export function createLootEncounterLogEntry(init: Partial<LootEncounterLogEntry>
   return {
     kind: 'LootEncounter',
     source: 'raid',
-    skipped: false,
-    skipReason: '',
     timeSpentSec: 0,
     elapsedTotalSec: 0,
+    currentHp: 0,
+    currentMaxHp: 0,
+    bagsUsed: 0,
+    bagsCapacity: 0,
+    skipped: false,
+    skipReason: '',
     myRoll: 0,
     checkValue: 0,
     itemId: '',
@@ -264,10 +288,14 @@ export function createMonsterLootEncounterLogEntry(init: Partial<MonsterLootEnco
   return {
     kind: 'MonsterLootEncounter',
     source: 'monster',
-    skipped: false,
-    skipReason: '',
     timeSpentSec: 0,
     elapsedTotalSec: 0,
+    currentHp: 0,
+    currentMaxHp: 0,
+    bagsUsed: 0,
+    bagsCapacity: 0,
+    skipped: false,
+    skipReason: '',
     myRoll: 0,
     checkValue: 0,
     itemId: '',
@@ -291,6 +319,10 @@ export function createZoneCollapseLogEntry(init: Partial<ZoneCollapseLogEntry> =
     kind: 'ZoneCollapse',
     timeSpentSec: 0,
     elapsedTotalSec: 0,
+    currentHp: 0,
+    currentMaxHp: 0,
+    bagsUsed: 0,
+    bagsCapacity: 0,
     timeLimit: 0,
     elapsedTime: 0,
     ...rest,

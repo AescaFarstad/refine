@@ -55,7 +55,7 @@ function isInWafer(id: string): boolean {
 }
 
 function displayName(id: string, name: string): string {
-  return isLearned(id) ? name : '?';
+  return isCompleted(id) ? name : '???';
 }
 
 function sigSpriteStyle(id: string): Record<string, string> {

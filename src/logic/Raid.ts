@@ -1,15 +1,16 @@
 import { createRaidDamageBreakdown, createRaidTimeBreakdownSec, type GameState, type ActiveRaid, type RaidDamageBreakdown, type RaidTimeBreakdownSec } from './GameState';
 import type { RaidDefinition, EncounterDef, FightEncounterDef, QuestEncounterDef } from './RaidLib';
 import type { GearDefinition } from './GearLib';
-import { createLootEncounterLogEntry, createMonsterLootEncounterLogEntry, createQuestEncounterLogEntry, createZoneCollapseLogEntry, type LootEncounterLogEntry, type MonsterLootEncounterLogEntry, type RaidEventLog } from './RaidLog';
+import { createFightEncounterLogEntry, createLootEncounterLogEntry, createMonsterLootEncounterLogEntry, createQuestEncounterLogEntry, createZoneCollapseLogEntry, type LootEncounterLogEntry, type MonsterLootEncounterLogEntry, type RaidEventLog, type RaidEventLogEntry } from './RaidLog';
 import { handleWalkEncounter } from './WalkEncounter';
 import { handleLootLikeEncounter, handleMonsterLootEncounter } from './LootEncounter';
 import { handleFightEncounter } from './FightEncounter';
-import { handlePreparationEncounter, createPreparationEncounter } from './PreparationEncounter';
+import { handlePreparationEncounter, createPreparationEncounter, type GearPreparationPlan } from './PreparationEncounter';
 import SeededRandom from './core/SeededRandom';
 import { cloneRaid, applyRaidMutation, questIsActive, type RaidMutation } from './RaidMutation';
 import { applyReward, type Reward } from './Reward';
 import { Perks } from './Perks';
+import { STABALIZER_BEACON_BONUS } from './Const';
 
 export interface RaidRunResult {
   success: boolean;
@@ -29,6 +30,15 @@ export interface RaidRunResult {
   reimbursedCredits: number;
   diedToMonster: boolean;
   diedToZoneCollapse: boolean;
+}
+
+/** Stamps a log entry with current player state for status bar display */
+function stampEntry<T extends RaidEventLogEntry>(entry: T, raid: ActiveRaid): T {
+  entry.currentHp = raid.hp;
+  entry.currentMaxHp = raid.maxHp;
+  entry.bagsUsed = raid.usedVolume;
+  entry.bagsCapacity = raid.bagsVolume;
+  return entry;
 }
 
 function loadoutGear(gs: GameState, raidId: string): GearDefinition[] {
@@ -54,30 +64,32 @@ function sumBonus(map: Record<string, number> | undefined, counts: Record<string
   return total;
 }
 
-function computePreparationBonuses(gear: GearDefinition[], counts: Record<string, number>) {
-  let prepTimeMin = 0;
-  const prepTacticNames: string[] = [];
-  let damageBonus = 0;
-  let hpBonus = 0;
-  let blockChanceBonus = 0;
+function computePreparationBonuses(gear: GearDefinition[], counts: Record<string, number>): GearPreparationPlan[] {
+  const result: GearPreparationPlan[] = [];
 
   for (const g of gear) {
     const pt = Math.max(0, Math.trunc(g.prepTimeMin ?? 0));
-    if (pt > 0) prepTacticNames.push(g.name || g.id);
-    prepTimeMin += pt;
+    const prepTimeSec = Math.max(0, Math.trunc(pt * 60));
 
-    damageBonus += sumBonus(g.bonusDamagePerCategory, counts);
-    hpBonus += sumBonus(g.bonusHpPerCategory, counts);
-    blockChanceBonus += sumBonus(g.bonusBlockChancePerCategory, counts);
+    const damageBonus = Math.trunc(sumBonus(g.bonusDamagePerCategory, counts));
+    const hpBonus = Math.trunc(sumBonus(g.bonusHpPerCategory, counts));
+    const blockChanceBonus = Math.trunc(sumBonus(g.bonusBlockChancePerCategory, counts));
+
+    const hasAnything = prepTimeSec > 0 || damageBonus !== 0 || hpBonus !== 0 || blockChanceBonus !== 0;
+    if (hasAnything) {
+      result.push({
+        gearId: g.id,
+        gearName: g.name || g.id,
+        gearImage: g.image || '',
+        prepTimeSec,
+        damageBonus,
+        hpBonus,
+        blockChanceBonus,
+      });
+    }
   }
 
-  return {
-    prepTimeSec: Math.max(0, Math.trunc(prepTimeMin * 60)),
-    prepTacticNames,
-    damageBonus: Math.trunc(damageBonus),
-    hpBonus: Math.trunc(hpBonus),
-    blockChanceBonus: Math.trunc(blockChanceBonus),
-  };
+  return result;
 }
 
 function applyGearToRaidDefinition(def: RaidDefinition, gear: GearDefinition[]): void {
@@ -141,7 +153,10 @@ function buildEncounterQueue(gs: GameState, raid: RaidDefinition): EncounterDef[
     }
   }
 
-  const bucketsCount = Math.max(1, walkCount + 1);
+  // Safer Routes perk: walks come in pairs, so buckets = walkCount/2 + 1
+  const hasSaferRoutes = gs.raid.perks.includes(Perks.SAFER_ROUTES);
+  const walkPairs = hasSaferRoutes ? Math.floor(walkCount / 2) : walkCount;
+  const bucketsCount = Math.max(1, walkPairs + 1);
   const buckets: Array<{ items: EncounterDef[]; fights: number }> = Array.from({ length: bucketsCount }, () => ({ items: [], fights: 0 }));
 
   // Spread LootEncounters as evenly as possible among buckets (round-robin)
@@ -175,12 +190,16 @@ function buildEncounterQueue(gs: GameState, raid: RaidDefinition): EncounterDef[
   }
 
   // Build final queue: bucket0, Walk, bucket1, Walk, ..., last bucket
+  // With Safer Routes, insert two WalkEncounters between buckets
   const queue: EncounterDef[] = [];
   for (let i = 0; i < bucketsCount; i++) {
     // Non-walk encounters for this segment
     for (const e of buckets[i].items) queue.push(e);
-    // Insert a single WalkEncounter between buckets (there are walkCount walks total)
-    if (i < walkCount) queue.push({ type: 'WalkEncounter' } as EncounterDef);
+    // Insert WalkEncounter(s) between buckets
+    if (i < walkPairs) {
+      queue.push({ type: 'WalkEncounter' } as EncounterDef);
+      if (hasSaferRoutes) queue.push({ type: 'WalkEncounter' } as EncounterDef);
+    }
   }
   return queue;
 }
@@ -275,10 +294,30 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
   const gear = loadoutGear(gsForRun, raidDef.id);
   const counts = countByCategory(gear);
   const prepBonuses = computePreparationBonuses(gear, counts);
-  const prep = createPreparationEncounter(prepBonuses);
-  if (prep) queue.unshift(prep);
+
+  // Compute hpMult from gear to apply to HP bonuses for display
+  let hpMult = 1;
+  for (const g of gear) {
+    if (g.hpMult !== 1) hpMult *= g.hpMult;
+  }
+
+  // Create individual preparation encounters for each gear item (in reverse order so first gear is first)
+  // HP bonuses are multiplied by hpMult to show final impact
+  for (let i = prepBonuses.length - 1; i >= 0; i--) {
+    const bonus = prepBonuses[i];
+    const adjustedBonus: GearPreparationPlan = {
+      ...bonus,
+      hpBonus: hpMult !== 1 ? Math.round(bonus.hpBonus * hpMult) : bonus.hpBonus,
+    };
+    const prep = createPreparationEncounter(adjustedBonus);
+    if (prep) queue.unshift(prep);
+  }
   // Store the planned encounter count before we start processing (for UI progress indicator)
   const plannedEncounters = queue.length;
+
+  // Track if we just completed a walk encounter (for Safer Routes perk)
+  let justWalked = false;
+  const hasSaferRoutes = raid.perks.includes(Perks.SAFER_ROUTES);
 
   while (queue.length > 0) {
     const enc = queue.shift()!;
@@ -296,7 +335,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
           timeLimit: zoneCollapseLimit,
           elapsedTime: timeSpentSec,
         });
-        log.entries.push(collapseEntry);
+        log.entries.push(stampEntry(collapseEntry, raid));
 
         if (dryRun) {
           // In dry runs, mark as zone collapse death but continue processing to get full time estimate
@@ -346,7 +385,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
                   volumeBefore: raid.usedVolume,
                   volumeAfter: raid.usedVolume,
                 });
-            log.entries.push(skippedEntry);
+            log.entries.push(stampEntry(skippedEntry, raid));
           }
         }
         queue.length = 0;
@@ -360,7 +399,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         timeBreakdownSec.totalSec += entry.timeSpentSec;
         timeBreakdownSec.preparingSec += entry.timeSpentSec;
         entry.elapsedTotalSec = timeSpentSec;
-        log.entries.push(entry);
+        log.entries.push(stampEntry(entry, raid));
         break;
       }
       case 'WalkEncounter': {
@@ -369,7 +408,8 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         timeBreakdownSec.totalSec += entry.timeSpentSec;
         timeBreakdownSec.walkingSec += entry.timeSpentSec;
         entry.elapsedTotalSec = timeSpentSec;
-        log.entries.push(entry);
+        log.entries.push(stampEntry(entry, raid));
+        if (hasSaferRoutes) justWalked = true;
         break;
       }
       case 'QuestEncounter': {
@@ -380,7 +420,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         timeBreakdownSec.totalSec += entry.timeSpentSec;
         timeBreakdownSec.investigatingSec += entry.timeSpentSec;
         entry.elapsedTotalSec = timeSpentSec;
-        log.entries.push(entry);
+        log.entries.push(stampEntry(entry, raid));
         break;
       }
       case 'LootEncounter': {
@@ -393,12 +433,26 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         timeBreakdownSec.totalSec += entry.timeSpentSec;
         timeBreakdownSec.scavengingSec += entry.timeSpentSec;
         entry.elapsedTotalSec = timeSpentSec;
-        log.entries.push(entry);
+        log.entries.push(stampEntry(entry, raid));
         break;
       }
       case 'FightEncounter': {
         const monsterId = enc.monsterId;
         const summoned = (enc as FightEncounterDef).summoned || false;
+        // Safer Routes: skip first fight after a walk
+        if (justWalked) {
+          justWalked = false;
+          const monster = gsForRun.lib.monsters.get(monsterId)!;
+          const skippedEntry = createFightEncounterLogEntry({
+            monsterId,
+            monsterName: monster.name,
+            skipped: true,
+            summoned,
+            elapsedTotalSec: timeSpentSec,
+          });
+          log.entries.push(stampEntry(skippedEntry, raid));
+          break;
+        }
         const fight = handleFightEncounter(gsForRun, raid, { monsterId, summoned });
         let t = timeSpentSec;
         for (const ev of fight.entry.fightLog) {
@@ -409,7 +463,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         timeBreakdownSec.totalSec += fight.timeSpentSec;
         timeBreakdownSec.fightingSec += fight.timeSpentSec;
         fight.entry.elapsedTotalSec = timeSpentSec;
-        log.entries.push(fight.entry);
+        log.entries.push(stampEntry(fight.entry, raid));
         // biopsy
         const lastEv = fight.entry.fightLog[fight.entry.fightLog.length - 1];
         if (lastEv?.biopsyTriggered) {
@@ -458,7 +512,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         timeBreakdownSec.totalSec += entry.timeSpentSec;
         timeBreakdownSec.dissectingSec += entry.timeSpentSec;
         entry.elapsedTotalSec = timeSpentSec;
-        log.entries.push(entry);
+        log.entries.push(stampEntry(entry, raid));
         break;
       }
     }
@@ -524,12 +578,18 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
     raidEntry.questCompletions += questsCompleted.length;
 
     // Apply permanent Stabilizer Beacon mutation on successful completion
-    if (gsForRun.raid.perks.includes(Perks.STABILIZER_BEACON) && !raidEntry.stabilizerBeaconApplied) {
-      const stabilizerTimeSec = 25 * 60; // 25 minutes in seconds
+    if (gsForRun.raid.perks.includes(Perks.STABILIZER_BEACON)) {
+      const stabilizerTimeSec = STABALIZER_BEACON_BONUS;
       const mutation: RaidMutation = { kind: 'ZoneCollapseTimeMutation', amount: stabilizerTimeSec };
       const raidDefToChange = gsForRun.lib.raids.get(raidId)!;
       applyRaidMutation(raidDefToChange, mutation);
-      raidEntry.stabilizerBeaconApplied = true;
+      raidMutationsApplied.push(mutation);
+    }
+
+    if (gsForRun.raid.perks.includes(Perks.XENO_HOUND_BAIT)) {
+      const mutation: RaidMutation = { kind: 'AddMonsterMutation', monsterId: 'hound', count: 1 };
+      const raidDefToChange = gsForRun.lib.raids.get(raidId)!;
+      applyRaidMutation(raidDefToChange, mutation);
       raidMutationsApplied.push(mutation);
     }
   }
@@ -576,6 +636,12 @@ export function getEffectiveRaidDefinition(gs: GameState, raidId: string): RaidD
   });
   const gear = loadoutGear(gs, raidId);
   applyGearToRaidDefinition(def, gear);
+
+  // Apply Xeno hound Bait encounter to current raid when equipped
+  const hasXenoHoundBait = gear.some(g => g.perk === Perks.XENO_HOUND_BAIT);
+  if (hasXenoHoundBait) {
+    applyRaidMutation(def, { kind: 'AddMonsterMutation', monsterId: 'hound', count: 1 });
+  }
 
   // Apply Stabilizer Beacon temporary zone collapse time bonus
   const hasStabilizerBeacon = gear.some(g => g.perk === Perks.STABILIZER_BEACON);
@@ -763,6 +829,7 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
 
   const gearIds: string[] = gs.loadouts[raidId] ?? [];
   const appliedGearIds = new Set<string>();
+  let hpMult = 1;
   const applyGearById = (gid: string): void => {
     if (!gid || appliedGearIds.has(gid)) return;
     appliedGearIds.add(gid);
@@ -785,6 +852,7 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
     gs.raid.reimbursedPct += g.reimbursed;
     if (g.perk) gs.raid.perks.push(g.perk);
     gs.selectedGearPrice += g.price;
+    if (g.hpMult !== 1) hpMult *= g.hpMult;
   };
 
   for (const gid of gearIds) applyGearById(gid);
@@ -793,14 +861,27 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
 
   gs.raid.maxHp = gs.raid.hp;
 
+  // Preparation bonuses are applied during runRaid via handlePreparationEncounter.
+  // Here we compute final values for UI display, but store hpMult for raid to apply after preps.
   const gear = loadoutGear(gs, raidId);
   const counts = countByCategory(gear);
   const prepBonuses = computePreparationBonuses(gear, counts);
 
-  gs.raid.damage += prepBonuses.damageBonus;
-  gs.raid.hp += prepBonuses.hpBonus;
-  gs.raid.maxHp += prepBonuses.hpBonus;
-  gs.raid.blockChance += prepBonuses.blockChanceBonus;
+  // For UI display, show final stats (after all prep and hpMult)
+  let totalPrepHpBonus = 0;
+  for (const prep of prepBonuses) {
+    gs.raid.damage += prep.damageBonus;
+    totalPrepHpBonus += prep.hpBonus;
+    gs.raid.blockChance += prep.blockChanceBonus;
+  }
+  gs.raid.hp += totalPrepHpBonus;
+  gs.raid.maxHp += totalPrepHpBonus;
+
+  // Apply HP multiplier after all flat bonuses (including preparation)
+  if (hpMult !== 1) {
+    gs.raid.hp = Math.round(gs.raid.hp * hpMult);
+    gs.raid.maxHp = Math.round(gs.raid.maxHp * hpMult);
+  }
 }
 
 export function toggleGearForRaid(gs: GameState, raidId: string, gearId: string, selected: boolean): void {

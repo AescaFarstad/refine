@@ -1,5 +1,5 @@
 <template>
-  <div class="fight-rows">
+  <div class="fight-rows" v-if="!entry.skipped">
     <template v-for="(ev, j) in (entry.fightLog || [])" :key="'fe-'+j">
       <template v-if="shownStep >= (Number(j) + 1)">
         <div class="fr-grid">
@@ -39,6 +39,7 @@
   </div>
   <div class="note-row" v-show="entry.dieFromOvertime && shownStep >= overtimeStep">You die of overexertion.</div>
   <div class="note-row biopsy-note" v-show="useBiopsy && shownStep >= biopsyStep">You examine their body...</div>
+  <div class="note-row skipped-note dimmed" v-if="entry.skipped">You managed to walk around the {{ entry.monsterName }}.</div>
 </template>
 
 <script setup lang="ts">

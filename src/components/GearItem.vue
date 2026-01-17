@@ -26,7 +26,8 @@
       <span v-else class="g-weight-fallback" aria-hidden="true">w</span>
     </div>
 
-    <div class="g-price" v-if="price > 0">{{ price.toLocaleString() }}{{ creditsSpec.glyph }}</div>
+    <div class="g-price" v-if="count !== undefined">x{{ count }}</div>
+    <div class="g-price" v-else-if="price > 0">{{ price.toLocaleString() }}{{ creditsSpec.glyph }}</div>
   </button>
 
 </template>
@@ -44,6 +45,7 @@ const props = defineProps<{
   unaffordable: boolean;
   blocked: boolean;
   price: number;
+  count?: number;
   hintRight?: boolean;
 }>();
 
@@ -52,7 +54,7 @@ defineEmits<{ (e: 'toggle'): void }>();
 const creditsSpec = getResourceSpec('credits');
 
 // expose individual props to template for convenience
-const { gear, selected, unaffordable, blocked, price, hintRight } = toRefs(props);
+const { gear, selected, unaffordable, blocked, price, count, hintRight } = toRefs(props);
 
 // Atlas state for gear images
 const source = ref<HTMLImageElement | null>(atlasStorage.getItemsSource());

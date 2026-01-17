@@ -6,15 +6,15 @@
     </div>
     <div class="row" v-if="damageDelta !== 0">
       <span class="label">Damage</span>
-      <span class="value">{{ signed(damageDelta) }} ({{ entry.damageAfter }})</span>
+      <span class="value">{{ signed(damageDelta) }}</span>
     </div>
     <div class="row" v-if="hpDelta !== 0">
       <span class="label">HP</span>
-      <span class="value">{{ signed(hpDelta) }} ({{ entry.hpAfter }}/{{ entry.maxHpAfter }})</span>
+      <span class="value">{{ signed(hpDelta) }}</span>
     </div>
     <div class="row" v-if="blockDelta !== 0">
       <span class="label">Block</span>
-      <span class="value">{{ signed(blockDelta, '%') }} ({{ entry.blockChanceAfter }}%)</span>
+      <span class="value">{{ signed(blockDelta, '%') }}</span>
     </div>
   </div>
 </template>

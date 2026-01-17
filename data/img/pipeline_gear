@@ -161,8 +161,28 @@
   content: knuckles helmet armor_plates vest
 }
 
-#start
 {
   image:ChatGPT Image Jan 17, 2026, 04_55_54 AM.png
   content: reinforced_case _ reckon_drone police_shield
+}
+
+{
+  image:ChatGPT Image Jan 17, 2026, 03_45_45 PM.png
+  content: syringe quad_bike _ _
+}
+
+{
+  image:ChatGPT Image Jan 17, 2026, 03_59_55 PM.png
+  content: pack_of_syringes bait trophy puzzle2
+}
+
+{
+  image:ChatGPT Image Jan 17, 2026, 04_12_40 PM.png
+  content: puzzle syringes carcass gear
+}
+
+#start
+{
+  image:ChatGPT Image Jan 17, 2026, 04_55_28 PM.png
+  content: quartz vein bismuth salt
 }

@@ -96,6 +96,7 @@ export class GameState {
     shegolskoe: [],
     ozernoye: [],
   };
+  public countableGear: Record<string, number> = {};
   public selectedGearPrice: number = 0;
 
   public raidSimulation: RaidSimulation = new RaidSimulation();
@@ -148,7 +149,7 @@ export class Raid {
   public questProgress: number = 0;
   public lootingRarityBuff: number = 0;
   public tmpLootBuff: number = 0;
-  public stabilizerBeaconApplied: boolean = false;
+
   public foundItemIds: string[] = [];
 
 }
@@ -179,6 +180,7 @@ export class RaidOutcome {
   public finalBagsUsed: number = 0;
   public finalBagsCapacity: number = 0;
   public reimbursedCredits: number = 0;
+  public zoneCollapseSec: number = 0;
 }
 
 export class Item {

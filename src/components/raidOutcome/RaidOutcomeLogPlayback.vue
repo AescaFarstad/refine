@@ -5,6 +5,7 @@
         v-for="(entry, idx) in visibleEntries"
         :key="idx"
         class="log-item appear"
+        :class="{ dimmed: isSkipped(entry) }"
       >
         <div class="col-left enc-col">
           <div class="enc-header">
@@ -46,7 +47,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import type { RaidEventLogEntry, WalkEncounterLogEntry } from '../../logic/RaidLog';
+import type { RaidEventLogEntry, WalkEncounterLogEntry, PreparationEncounterLogEntry } from '../../logic/RaidLog';
 import { DEFAULT_SPEED } from '../../logic/GameState';
 import { formatDurationHM } from '../../logic/StringUtils';
 import atlasStorage from '../../logic/AtlasStorage';
@@ -64,6 +65,10 @@ const emit = defineEmits<{
   (e: 'update:shownCount', value: number): void;
   (e: 'update:timelineComplete', value: boolean): void;
   (e: 'update:displayedTimeSec', value: number): void;
+  (e: 'update:currentHp', value: number): void;
+  (e: 'update:currentMaxHp', value: number): void;
+  (e: 'update:bagsUsed', value: number): void;
+  (e: 'update:bagsCapacity', value: number): void;
 }>();
 
 const shownCount = ref(0);
@@ -115,9 +120,40 @@ const displayedTimeSec = computed(() => {
   return 0;
 });
 
+/** Get the last shown entry to extract current state */
+function getLastShownEntry(): RaidEventLogEntry | null {
+  const count = shownCount.value;
+  if (count <= 0) return null;
+  return props.entries[count - 1] || null;
+}
+
+const currentHp = computed(() => {
+  const e = getLastShownEntry();
+  return e?.currentHp ?? 0;
+});
+
+const currentMaxHp = computed(() => {
+  const e = getLastShownEntry();
+  return e?.currentMaxHp ?? 0;
+});
+
+const bagsUsed = computed(() => {
+  const e = getLastShownEntry();
+  return e?.bagsUsed ?? 0;
+});
+
+const bagsCapacity = computed(() => {
+  const e = getLastShownEntry();
+  return e?.bagsCapacity ?? 0;
+});
+
 watch(shownCount, (v) => emit('update:shownCount', v), { immediate: true });
 watch(timelineComplete, (v) => emit('update:timelineComplete', v), { immediate: true });
 watch(displayedTimeSec, (v) => emit('update:displayedTimeSec', v), { immediate: true });
+watch(currentHp, (v) => emit('update:currentHp', v), { immediate: true });
+watch(currentMaxHp, (v) => emit('update:currentMaxHp', v), { immediate: true });
+watch(bagsUsed, (v) => emit('update:bagsUsed', v), { immediate: true });
+watch(bagsCapacity, (v) => emit('update:bagsCapacity', v), { immediate: true });
 
 function clearMainTimer() {
   if (timerId.value !== null) {
@@ -252,7 +288,13 @@ function formatHMS(totalSec?: number): string { return formatDurationHM(totalSec
 
 function isSkipped(entry: RaidEventLogEntry): boolean {
   if (entry.kind === 'LootEncounter' || entry.kind === 'MonsterLootEncounter') {
-    return entry.skipped && entry.skipReason !== 'zone_collapsing';
+    // Dim if skipped (bags full) or if looting didn't yield anything
+    if (entry.skipped && entry.skipReason !== 'zone_collapsing') return true;
+    if (!entry.skipped && !entry.itemId) return true;
+  }
+  if (entry.kind === 'FightEncounter') {
+    // Dim if fight was avoided/skipped
+    return entry.skipped;
   }
   return false;
 }
@@ -269,7 +311,13 @@ const ENCOUNTER_ICON_KEYS: Record<RaidEventLogEntry['kind'], string> = {
 
 function encounterIconStyle(entry: RaidEventLogEntry): Record<string, string> {
   const source = itemsAtlasSource.value!;
-  const f = atlasStorage.getItemsFrame(ENCOUNTER_ICON_KEYS[entry.kind])!;
+  // For PreparationEncounter, use the gear image if available
+  let iconKey = ENCOUNTER_ICON_KEYS[entry.kind];
+  if (entry.kind === 'PreparationEncounter' && entry.gearImage) {
+    iconKey = entry.gearImage;
+  }
+  const f = atlasStorage.getItemsFrame(iconKey);
+  if (!f) return {};
   const atlasW = source.naturalWidth;
   const atlasH = source.naturalHeight;
   const containerSize = 60;
@@ -313,6 +361,9 @@ function encounterIconStyle(entry: RaidEventLogEntry): Record<string, string> {
 
 .raid-outcome-playback .enc-title-time.dimmed { opacity: 0.5; }
 .raid-outcome-playback .enc-icon.dimmed { opacity: 0.4; filter: grayscale(1) brightness(0.7); }
+
+.raid-outcome-playback .log-item.dimmed .enc-col,
+.raid-outcome-playback .log-item.dimmed .details-col { background: transparent; }
 
 .raid-outcome-playback .log-item.no-details { grid-template-columns: 1fr; }
 .raid-outcome-playback .log-item.no-details .enc-col { border-radius: 6px; }

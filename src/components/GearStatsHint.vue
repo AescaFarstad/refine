@@ -29,10 +29,15 @@ const hintRows = computed((): Array<{ label: string; value: string }> => {
 
   if (g.speedPercent) rows.push({ label: 'Walking speed', value: `${fmtSigned(g.speedPercent, '%')}` });
   if (g.speedFlat) rows.push({ label: 'Flat speed bonus', value: `${fmtSigned(g.speedFlat, ' km/h')}` });
+  if (g.walkMultiplier !== 1) rows.push({ label: 'Walk distance', value: `×${g.walkMultiplier}` });
+  if (g.walkDelta !== 0) rows.push({ label: 'Walk distance', value: `${fmtSigned(g.walkDelta)} km` });
   if (g.regenPerKm) rows.push({ label: 'Regen', value: `${fmtSigned(g.regenPerKm)} hp/km` });
   if (g.regenAfterCombat) rows.push({ label: 'Regen after combat', value: `${fmtSigned(g.regenAfterCombat)} hp` });
 
+  if (g.prepTimeMin) rows.push({ label: 'Prep time', value: `${g.prepTimeMin} min` });
+
   if (g.hp) rows.push({ label: 'HP', value: `${fmtSigned(g.hp)}` });
+  if (g.hpMult !== 1) rows.push({ label: 'HP multiplier', value: `×${g.hpMult}` });
   if (g.damage) rows.push({ label: 'Damage', value: `${fmtSigned(g.damage)}` });
   if (g.chanceToHit) rows.push({ label: 'Hit chance', value: `${fmtSigned(g.chanceToHit, '%')}` });
   if (g.chanceToBlock) rows.push({ label: 'Block chance', value: `${fmtSigned(g.chanceToBlock, '%')}` });

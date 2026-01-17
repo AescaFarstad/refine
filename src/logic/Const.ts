@@ -11,13 +11,7 @@ export const FAILURE_PER_EMPTY_CELL = 5
 export const CYAN_SUCCESS_BONUS_PCT = 10
 export const CYAN_YIELD_BONUS_PCT = 10
 export const MAGENTA_SUCCESS_PENALTY_PCT = 25
-export const REFINE_TIME_NAME = {
-  terribly_slow: "Terribly Slow",
-  slow: "Slow",
-  normal: "Normal",
-  fast: "Fast",
-  ultra_fast: "Ultra Fast",
-}
+export const STABALIZER_BEACON_BONUS = 25 * 60
 export const WAFER_HEIGHT = 12;
 export const WAFER_WIDTH = 20;
 export const WAFER_UPGRADE_BASE_COST = 100;

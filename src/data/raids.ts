@@ -53,6 +53,7 @@ const raids: Record<string, Omit<RaidDefinition, 'id' | 'order' | 'itemPoolsByRa
       'canned_sprats',
       'fuse_box',
       'rotary_phone',
+      'christmas_ball',
     ],
     encounters: [
       { count: 4, encounter: { type: 'WalkEncounter' } },

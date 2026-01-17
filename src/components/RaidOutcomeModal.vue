@@ -2,14 +2,27 @@
   <div v-if="visible" class="modal-backdrop">
     <div class="modal">
       <header class="modal-header">
-        <h3 class="modal-title"><span class="raiding">Raiding</span> {{ raidTitle }} <span class="time">  {{ formatHMS(displayedTimeSec) }}</span></h3>
-        <div class="progress" v-if="totalEncounters > 0">
-          <span
-            v-for="(_, i) in totalEncounters"
-            :key="i"
-            class="dot"
-            :class="{ done: i < shownNonSummonedCount }"
-          >{{ i < shownNonSummonedCount ? '◉' : '◌' }}</span>
+        <div class="header-top">
+          <h3 class="modal-title"><span class="raiding">Raiding</span> {{ raidTitle }}</h3>
+          <div class="progress" v-if="totalEncounters > 0">
+            <span
+              v-for="(_, i) in totalEncounters"
+              :key="i"
+              class="dot"
+              :class="{ done: i < shownNonSummonedCount }"
+            >{{ i < shownNonSummonedCount ? '◉' : '◌' }}</span>
+          </div>
+        </div>
+        <div class="header-bars">
+          <div class="bar-panel time-bar" :style="{ '--bar-pct': timeBarPct + '%', '--danger': timeDangerLevel }">
+            <div class="bar-label">{{ formatHMS(displayedTimeSec) }}<span class="bar-max" v-if="zoneCollapseSec > 0"> / {{ formatHMS(zoneCollapseSec) }}</span></div>
+          </div>
+          <div class="bar-panel health-bar" :style="{ '--bar-pct': healthBarPct + '%', '--danger': healthDangerLevel }">
+            <div class="bar-label">{{ currentHp }} / {{ currentMaxHp }} HP</div>
+          </div>
+          <div class="bar-panel bags-bar" :style="{ '--bar-pct': bagsBarPct + '%' }">
+            <div class="bar-label">{{ currentBagsUsed }} / {{ currentBagsCapacity }} Bags</div>
+          </div>
         </div>
       </header>
 
@@ -19,6 +32,10 @@
         @update:shownCount="onShownCount"
         @update:timelineComplete="onTimelineComplete"
         @update:displayedTimeSec="onDisplayedTimeSec"
+        @update:currentHp="onCurrentHp"
+        @update:currentMaxHp="onCurrentMaxHp"
+        @update:bagsUsed="onBagsUsed"
+        @update:bagsCapacity="onBagsCapacity"
       />
       <!-- Footer-like info: only revealed after full log playback -->
       <section class="modal-footer-info" v-if="timelineComplete">
@@ -36,10 +53,6 @@
             </div>
           </div>
         </div>
-        <section class="final-state" v-if="raidSuccess">
-          <div class="fs-item">Bags: <b>{{ finalBagsUsed }} / {{ finalBagsCapacity }}</b></div>
-          <div class="fs-item">Health: <b>{{ finalHp }} / {{ finalMaxHp }}</b></div>
-        </section>
         <section class="quest-rewards" v-if="raidSuccess && (rewardChips.length || raidChangesText)">
           <div class="qr-row" v-if="rewardChips.length">
             <div class="qr-cap">Quest rewards</div>
@@ -116,11 +129,19 @@ const logEntries = computed<RaidEventLogEntry[]>(() => outcome.value.log.entries
 const shownCount = ref(0);
 const timelineComplete = ref(false);
 const displayedTimeSec = ref(0);
+const currentHp = ref(0);
+const currentMaxHp = ref(0);
+const currentBagsUsed = ref(0);
+const currentBagsCapacity = ref(0);
 const playbackRef = ref<{ fastForward?: () => void } | null>(null);
 
 function onShownCount(v: number) { shownCount.value = v; }
 function onTimelineComplete(v: boolean) { timelineComplete.value = v; }
 function onDisplayedTimeSec(v: number) { displayedTimeSec.value = v; }
+function onCurrentHp(v: number) { currentHp.value = v; }
+function onCurrentMaxHp(v: number) { currentMaxHp.value = v; }
+function onBagsUsed(v: number) { currentBagsUsed.value = v; }
+function onBagsCapacity(v: number) { currentBagsCapacity.value = v; }
 
 const totalEncounters = computed(() => {
   return outcome.value.plannedEncounters;
@@ -144,6 +165,43 @@ const raidTitle = computed(() => {
   return lib.raids.get(id)!.name;
 });
 
+const zoneCollapseSec = computed(() => outcome.value.zoneCollapseSec || 0);
+
+// Progress bar percentages
+// Bars decrease: show remaining time/hp/bags as percentage
+const timeBarPct = computed(() => {
+  const max = zoneCollapseSec.value;
+  if (max <= 0) return 100; // No collapse limit = full bar
+  const remaining = Math.max(0, max - displayedTimeSec.value);
+  return Math.min(100, (remaining / max) * 100);
+});
+
+const healthBarPct = computed(() => {
+  const max = currentMaxHp.value;
+  if (max <= 0) return 0;
+  return Math.min(100, (currentHp.value / max) * 100);
+});
+
+const bagsBarPct = computed(() => {
+  const max = currentBagsCapacity.value;
+  if (max <= 0) return 100; // No capacity = full bar
+  const remaining = Math.max(0, max - currentBagsUsed.value);
+  return Math.min(100, (remaining / max) * 100);
+});
+
+// Color intensity for danger states (0 = safe, 1 = critical)
+const timeDangerLevel = computed(() => {
+  const max = zoneCollapseSec.value;
+  if (max <= 0) return 0;
+  return Math.min(1, displayedTimeSec.value / max);
+});
+
+const healthDangerLevel = computed(() => {
+  const max = currentMaxHp.value;
+  if (max <= 0) return 1;
+  return 1 - Math.min(1, currentHp.value / max);
+});
+
 const raidSuccess = computed(() => outcome.value.success);
 
 const gainedItems = computed(() => (outcome.value.looted || []).filter(it => (it.quantity || 0) > 0));
@@ -157,22 +215,6 @@ const newQuests = computed(() => {
   const ids = outcome.value.newQuestsAvailable;
   const lib = getGameLib()!;
   return ids.map(id => lib.quests.get(id)!);
-});
-
-const finalHp = computed(() => {
-  return outcome.value.finalHp;
-});
-
-const finalMaxHp = computed(() => {
-  return outcome.value.finalMaxHp;
-});
-
-const finalBagsUsed = computed(() => {
-  return outcome.value.finalBagsUsed;
-});
-
-const finalBagsCapacity = computed(() => {
-  return outcome.value.finalBagsCapacity;
 });
 
 const barelyInTime = computed(() => {
@@ -236,10 +278,18 @@ watch(() => uiState.lastOutcome, (newOutcome, oldOutcome) => {
     shownCount.value = 0;
     displayedTimeSec.value = 0;
     timelineComplete.value = false;
+    currentHp.value = 0;
+    currentMaxHp.value = 0;
+    currentBagsUsed.value = 0;
+    currentBagsCapacity.value = 0;
   } else {
     shownCount.value = 0;
     displayedTimeSec.value = 0;
     timelineComplete.value = false;
+    currentHp.value = 0;
+    currentMaxHp.value = 0;
+    currentBagsUsed.value = 0;
+    currentBagsCapacity.value = 0;
     document.body.style.overflow = '';
   }
 });
@@ -270,12 +320,38 @@ function formatHMS(totalSec?: number): string { return formatDurationHM(totalSec
 .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: grid; place-items: center; z-index: 10000; }
 .modal { width: 880px; max-width: 96vw; background: linear-gradient(180deg, rgba(20,28,40,0.98), rgba(10,15,26,0.94)); border: 1px solid var(--panel-border); border-radius: 6px; box-shadow: 0 24px 64px rgba(0,0,0,0.7), inset 0 1px 0 var(--panel-shine); padding: 16px; height: min(1000px, 95vh); display: grid; grid-template-rows: auto 1fr auto; }
 .modal-header { display: grid; grid-template-rows: auto auto; align-items: start; gap: 8px; }
+.header-top { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .modal-title { margin: 0; font-size: 18px; letter-spacing: 0.02em; display: flex; align-items: baseline; gap: 10px; }
 .modal-title .raiding { font-weight: 400; }
-.modal-title .time { opacity: 0.8; font-size: 0.95em; }
 .progress { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; }
 .dot { color: var(--text-secondary); }
 .dot.done { color: var(--accent-hover); }
+
+/* Header progress bars */
+.header-bars { display: flex; gap: 12px; flex-wrap: wrap; }
+.bar-panel {
+  position: relative;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.08);
+  min-width: 140px;
+  flex: 1;
+  overflow: hidden;
+}
+.bar-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: var(--bar-pct, 0%);
+  transition: width 0.15s ease-out;
+  border-radius: 5px;
+}
+.bar-panel.time-bar::before { background: color-mix(in srgb, rgba(239, 68, 68, 0.4) calc(var(--danger, 0) * 100%), rgba(79, 209, 197, 0.3)); }
+.bar-panel.health-bar::before { background: color-mix(in srgb, rgba(239, 68, 68, 0.4) calc(var(--danger, 0) * 100%), rgba(104, 211, 145, 0.3)); }
+.bar-panel.bags-bar::before { background: rgba(246, 173, 85, 0.3); }
+.bar-label { position: relative; z-index: 1; font-size: 12px; font-weight: 600; opacity: 0.9; }
+.bar-label .bar-max { opacity: 0.6; }
 .modal-footer-info { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--panel-border); }
 .summary { margin-top: 16px; margin-bottom: 12px; display: grid; gap: 8px; }
 .summary-row { display: grid; gap: 6px; }
@@ -320,8 +396,6 @@ function formatHMS(totalSec?: number): string { return formatDurationHM(totalSec
 .nq:hover .nq-hint { display: block; }
 .barely-in-time { margin-top: 10px; padding: 8px 10px; border: none; border-radius: 6px; background: rgba(251, 146, 60, 0.10); border: 1px solid rgba(251, 146, 60, 0.3); }
 .barely-in-time .bt { font-weight: 500; color: #fb923c; font-style: italic; }
-.final-state { margin-top: 10px; display: flex; gap: 10px; }
-.final-state .fs-item { padding: 8px 10px; border: none; border-radius: 6px; background: rgba(255,255,255,0.03); font-weight: 400; opacity: 0.9; }
 .quest-rewards { margin-top: 10px; padding: 8px 10px; border: none; border-radius: 6px; background: rgba(255,255,255,0.03); border: 1px solid rgba(148, 163, 184, 0.20); display: grid; gap: 8px; }
 .qr-row { display: grid; gap: 6px; }
 .qr-cap { font-weight: 900; letter-spacing: 0.04em; opacity: 0.95; font-size: 12px; text-transform: uppercase; }

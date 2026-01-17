@@ -47,6 +47,8 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
   let stunTriggered = false;
   let summonedMonsterId: string | null = null;
   let monsterSelfDestructed = false;
+  const hasDecoy = r.perks.includes(Perks.DECOY);
+  let decoyUsed = false;
 
   // Up to 100 rounds
   for (let round = 0; round < 100; round++) {
@@ -87,6 +89,11 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         theirHit = Math.floor(gs.random.get() * 100);
         blocked = (theirHit <= blockCheck);
         received = blocked ? 0 : theirDamage;
+        // Decoy: first successful enemy hit deals no damage
+        if (received > 0 && hasDecoy && !decoyUsed) {
+          received = 0;
+          decoyUsed = true;
+        }
       }
       const myHpAfter = myHpBefore - received;
       r.hp = myHpAfter;
@@ -144,7 +151,12 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
       const blockCheck = clamp(baseBlock - theirAccuracy, 0, 100);
       const theirHit = Math.floor(gs.random.get() * 100);
       const blocked = (theirHit <= blockCheck);
-      const received = blocked ? 0 : theirDamage;
+      let received = blocked ? 0 : theirDamage;
+      // Decoy: first successful enemy hit deals no damage
+      if (received > 0 && hasDecoy && !decoyUsed) {
+        received = 0;
+        decoyUsed = true;
+      }
       const myHpAfter = myHpBefore - received;
       // Reflective damage (from gear) is based on monster base damage in both cases
       let reflect = 0;

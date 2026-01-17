@@ -3,7 +3,7 @@ import type { RawQuestDefinition } from '../../logic/QuestLib';
 const quests: Record<string, RawQuestDefinition> = {
   ozernoye_explore_fire_station: {
     name: 'Explore the fire station',
-    encounterLine: 'There is a fire station which could use some actual fire to get rid of its cornivorous inhabitants. Opening it might cause long-term trouble, but there must be some useful equipment in there.',
+    encounterLine: 'There is a fire station which could use some actual fire to get rid of its cornivorous inhabitants. Opening it might cause long-term flower trouble, but there must be some useful equipment in there.',
     raidRestriction: ['ozernoye'],
     requiresRaidSuccesses: 1,
     encounters: [
@@ -43,7 +43,7 @@ const quests: Record<string, RawQuestDefinition> = {
     ],
     rewards: [
       { kind: 'discovery', discoveryId: 'signatures' },
-      { kind: 'learn_signatures', signatureIds: ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10', 's11', 's12', 's13', 's14', 's15', 's16'] },
+      { kind: 'learn_n_signatures', count: 6 },
     ],
   },
   ozernoye_raise_the_dome: {
@@ -73,17 +73,18 @@ const quests: Record<string, RawQuestDefinition> = {
       { kind: 'raid_mutation', mutation: { kind: 'AddMonsterMutation', monsterId: 'flower', count: 3 } },
     ],
   },
-  anywhere_summon_hounds: {
-    name: 'Summon hounds',
-    encounterLine: 'Attract these pesky monsters with bodily fluids. If you want more of them...\nYou can attract them to any raid location but only once.',
-    raidRestriction: [],
+  asummon_hounds: {
+    name: 'Gather hounds bait',
+    encounterLine: 'Collect the spoilage which attracts these pesky beasts.',
+    raidRestriction: ['ozernoye'],
     requiresRaidSuccesses: 7,
     requiresRaidQuestCompletions: 3,
+    encounterTimeMin: 30,
     encounters: [
+      { kind: 'AddMonsterMutation', monsterId: 'hound', count: 10 },
     ],
     rewards: [
-      { kind: 'raid_mutation', mutation: { kind: 'AddMonsterMutation', monsterId: 'hound', count: 5 } },
-      { kind: 'raid_mutation', mutation: { kind: 'AddMonsterMutation', monsterId: 'arch_hound', count: 5 } },
+      { kind: 'countable_gear', gearId: 'xeno_bait', amount: 10 },
     ],
   },
 };

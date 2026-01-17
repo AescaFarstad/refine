@@ -14,6 +14,7 @@ export interface GearDefinition {
   lootChance: number;
   damage: number;
   price: number;
+  countable: boolean;      // if true, player has a count of these; consumed on use
   // Combat support
   chanceToHit: number;
   chanceToBlock: number;
@@ -34,6 +35,7 @@ export interface GearDefinition {
   bonusBlockChancePerCategory: Record<string, number>; // additive percent
   walkMultiplier: number; // e.g. 2 => doubles WalkEncounter count
   walkDelta: number;      // additive count change after multipliers
+  hpMult: number;         // multiplier applied to HP after all flat bonuses (including preparation)
   ignoreLootEncounters: boolean;
 
   // Visual - key into items.json sprite atlas
@@ -67,6 +69,7 @@ export function parseGearDefinitions(raw: Record<string, RawGearDefinition>): Ma
       lootChance: d.lootChance ?? 0,
       damage: d.damage ?? 0,
       price: d.price ?? 0,
+      countable: d.countable ?? false,
       chanceToHit: d.chanceToHit ?? 0,
       chanceToBlock: d.chanceToBlock ?? 0,
       reflectOnHitPct: d.reflectOnHitPct ?? 0,
@@ -80,6 +83,7 @@ export function parseGearDefinitions(raw: Record<string, RawGearDefinition>): Ma
       bonusBlockChancePerCategory: d.bonusBlockChancePerCategory ?? {},
       walkMultiplier: d.walkMultiplier ?? 1,
       walkDelta: d.walkDelta ?? 0,
+      hpMult: d.hpMult ?? 1,
       ignoreLootEncounters: d.ignoreLootEncounters ?? false,
       image: d.image ?? '',
       description: d.description ?? '',

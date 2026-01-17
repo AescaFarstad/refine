@@ -15,6 +15,8 @@ export interface PreparationEncounterDef {
   hpBonus: number;
   blockChanceBonus: number;
   tacticNames: string[];  // (display only)
+  gearId: string;         // gear item that added this preparation
+  gearImage: string;      // image key for display
 }
 
 export interface WalkEncounterDef {

@@ -13,6 +13,8 @@ export type Reward =
   | { kind: 'unlock_quest'; questId: string }
   | { kind: 'discovery'; discoveryId: string }
   | { kind: 'learn_signatures'; signatureIds: string[] }
+  | { kind: 'learn_n_signatures'; count: number }
+  | { kind: 'countable_gear'; gearId: string; amount: number }
 
   | { kind: 'stat'; stat: string; value: number }
 
@@ -72,6 +74,29 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
       for (const id of reward.signatureIds) {
         if (gs.learnedSignatureIds.includes(id)) continue;
         gs.learnedSignatureIds.push(id);
+      }
+      break;
+
+    case 'learn_n_signatures': {
+      discover(gs, DISCOVERY.SIGNATURES);
+      const learned = new Set(gs.learnedSignatureIds);
+      const unlearned = Array.from(gs.lib.signatures.values())
+        .map(s => s.id)
+        .filter(id => !learned.has(id));
+      const count = Math.min(reward.count, unlearned.length);
+      for (let i = 0; i < count; i++) {
+        const idx = Math.floor(gs.random.get() * unlearned.length);
+        gs.learnedSignatureIds.push(unlearned[idx]);
+        unlearned.splice(idx, 1);
+      }
+      break;
+    }
+
+    case 'countable_gear':
+      gs.countableGear[reward.gearId] = (gs.countableGear[reward.gearId] || 0) + reward.amount;
+      // Auto-unlock the gear if not already unlocked
+      if (!gs.unlockedGear.includes(reward.gearId)) {
+        gs.unlockedGear.push(reward.gearId);
       }
       break;
 

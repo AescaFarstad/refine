@@ -1,10 +1,11 @@
 import { type GameState, Raid } from '../GameState';
 import type { CheatInput } from './CheatCommands';
-import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources, CheatUnlockAllRaids, CheatLoadResearchState, CheatUnlockAllQuests, CheatDisableQuestPrereqs, CheatGrantDiscoveries } from './CheatCommands';
+import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources, CheatUnlockAllRaids, CheatLoadResearchState, CheatUnlockAllQuests, CheatDisableQuestPrereqs, CheatGrantDiscoveries, CheatGrantRewards } from './CheatCommands';
 import type { EncounterDef } from '../RaidLib';
 import { applyResearchNodeEffect, axialToIndex, calculateVisibility } from '../Research';
 import { setEnableQuestPrereqs } from '../Const';
 import { discover } from '../Discover';
+import { applyReward } from '../Reward';
 
 type Handler = (gs: GameState, cheat: CheatInput) => void;
 const handlersByName = new Map<string, Handler>();
@@ -137,6 +138,13 @@ handlersByName.set('CheatGrantDiscoveries', (gs, cheat) => {
   const c = cheat as CheatGrantDiscoveries;
   for (const id of c.discoveryIds) {
     discover(gs, id);
+  }
+});
+
+handlersByName.set('CheatGrantRewards', (gs, cheat) => {
+  const c = cheat as CheatGrantRewards;
+  for (const reward of c.rewards) {
+    applyReward(gs, reward);
   }
 });
 

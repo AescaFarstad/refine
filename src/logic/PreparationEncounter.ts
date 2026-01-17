@@ -7,13 +7,17 @@ function truncFinite(v: unknown): number {
   return Number.isFinite(n) ? Math.trunc(n) : 0;
 }
 
-export function createPreparationEncounter(plan: {
+export interface GearPreparationPlan {
+  gearId: string;
+  gearName: string;
+  gearImage: string;
   prepTimeSec: number;
-  prepTacticNames?: string[];
   damageBonus: number;
   hpBonus: number;
   blockChanceBonus: number;
-}): PreparationEncounterDef | null {
+}
+
+export function createPreparationEncounter(plan: GearPreparationPlan): PreparationEncounterDef | null {
   const timeSpentSec = Math.max(0, truncFinite(plan.prepTimeSec));
   const damageBonus = truncFinite(plan.damageBonus);
   const hpBonus = truncFinite(plan.hpBonus);
@@ -26,41 +30,38 @@ export function createPreparationEncounter(plan: {
     damageBonus,
     hpBonus,
     blockChanceBonus,
-    tacticNames: Array.isArray(plan.prepTacticNames) ? [...plan.prepTacticNames] : [],
+    tacticNames: [plan.gearName],
+    gearId: plan.gearId,
+    gearImage: plan.gearImage,
   };
 }
 
-export function handlePreparationEncounter(r: ActiveRaid, enc: PreparationEncounterDef): PreparationEncounterLogEntry {
+export function handlePreparationEncounter(_r: ActiveRaid, enc: PreparationEncounterDef): PreparationEncounterLogEntry {
   const timeSpentSec = Math.max(0, truncFinite(enc.timeSpentSec));
-
-  const damageBefore = Math.max(0, truncFinite(r.damage));
-  const hpBefore = Math.max(0, truncFinite(r.hp));
-  const maxHpBefore = Math.max(1, truncFinite(r.maxHp));
-  const blockChanceBefore = truncFinite(r.blockChance);
-
   const damageBonus = truncFinite(enc.damageBonus);
   const hpBonus = truncFinite(enc.hpBonus);
   const blockChanceBonus = truncFinite(enc.blockChanceBonus);
 
-  r.damage = Math.max(0, damageBefore + damageBonus);
-
-  r.maxHp = Math.max(1, maxHpBefore + hpBonus);
-  r.hp = Math.max(0, Math.min(r.maxHp, hpBefore + hpBonus));
-
-  r.blockChance = blockChanceBefore + blockChanceBonus;
-
+  // Note: We don't modify raid state here - stats are pre-computed in recomputeActiveRaidParams.
+  // The log entry just records the bonus values for display.
   return {
     kind: 'PreparationEncounter',
     timeSpentSec,
     elapsedTotalSec: 0,
+    currentHp: 0,
+    currentMaxHp: 0,
+    bagsUsed: 0,
+    bagsCapacity: 0,
     tacticNames: Array.isArray(enc.tacticNames) ? [...enc.tacticNames] : [],
-    damageBefore,
-    damageAfter: truncFinite(r.damage),
-    hpBefore,
-    hpAfter: truncFinite(r.hp),
-    maxHpBefore,
-    maxHpAfter: truncFinite(r.maxHp),
-    blockChanceBefore,
-    blockChanceAfter: truncFinite(r.blockChance),
+    damageBefore: 0,
+    damageAfter: damageBonus,
+    hpBefore: 0,
+    hpAfter: hpBonus,
+    maxHpBefore: 0,
+    maxHpAfter: hpBonus,
+    blockChanceBefore: 0,
+    blockChanceAfter: blockChanceBonus,
+    gearId: enc.gearId || '',
+    gearImage: enc.gearImage || '',
   };
 }

@@ -57,36 +57,6 @@ january 17
   fixing bugs, implementing feedback
 
 
-Images:
-lock symbol
-damage symbol
-speed symbol
-
-flawed 50% // 35% chance to yield nothing, positive effects don't apply
-improvised 60% // 25% chance to yield nothing, positive effects don't apply
-crude 70% // 15% chance to yield nothing, only speed positive effects may apply
-patched 85% //only speed positive effects may apply
-standard 100%
-enhanced 120%
-refined 150%
-special 200% //negative effects don't apply
-exceptional 300% //negative effects don't apply
-
-military
-scientific
-anomalous
-prototype
-salvaged
-worn
-industrial
-professional
-modified
-experimental
-classified
-purified
-reinforced
-masterwork
-
 npx vue-tsc --noEmit 2>&1
 npx tsc --noEmit --skipLibCheck src/logic/Research.ts 2>&1
 
@@ -99,10 +69,6 @@ It is now a struggle to scavenge for the resources needed to rejoin humanity.
 To come back to the universe where your life has meaning.
 Where your loved ones wait.
 Escape the loop through the maze of time!
-
-
-summons
-remains
 
 
 hands opening a rib cage
@@ -124,22 +90,10 @@ No scavaging
   -1 walking encounter
   ignore looting encounters (except for harvesting remains)
 
-
-device to stabilize the zone
-quest to stabilize the zone
-
-known items in this raid
-
 descriptions for perks
 
 
 better prediction of the collapsing zone
-
-quest rewards description impr
-
-
-maze rewards
-
 
 
 Burdock Seeds
@@ -160,33 +114,10 @@ Devil\'s Finger Scale
 Hedgehog Shell
 
 
-
-break down:
-preparing
-walking
-looting
-fighting
-investigating
-
 medical - +hp when you find an item
 
 quest descriptions
 perk descriptions
-
-
-!weird quest hint (Unlocks)
-
-!track updates to essence cheet sheet
-
-!bug: removed items are still refined
-!swap carry weight and credits
-!health under health (or something)
-!skill window should tell that it increases slots
-!No info about unlocking another raid
-!change setup -> take new quests
-!rucksask should have additional buff
-!rename regenAfterCombat
-!no valuables here should display the roll
 
 
 item for cashback in case of failure
@@ -206,16 +137,6 @@ item for cashback in case of failure
 Raid outcode quest results - show in a table
 set signature colors
 
-!summon_chance_per_encounter2
-!clicking refine doesn't actually switch tabs
-!scavenging takes 1 minute less - does it work?
-!when molecules don't overlap enabled wafer tiles - don't draw outline
-!bonus for the total number of unique items processed (researched)
-!cheat sheet should react to cyan upgrade
-!show time spread range
-!items in raid selection should not display molecules
-!research - show how much are we missing for purchase
-!raids drop down list
 
 burdok invasion in teh first raid - gates scavenging for later game
 store learned signatures in the corner until signaturs are discovered
@@ -237,12 +158,7 @@ death from zone/monsters - highlight more
 
 a way to re-invigurate old zones
 
-1 -4 - empty
-
-
 raid again was available when I didn't have the resources
-
-aspirator probe needs to become something else, something visual
 
 signature name is hidden untill its unlocked
 
@@ -256,3 +172,14 @@ loot 30 distinct items
 quad bike - +10 flat speed
 refining certain items together creates a combo
 glyphs - drag pattern onto research pane. if it matches, you get new cells for free
+
+
+quad bike
+xeno bait
+
+medkit doubles hp
+
+
+add countable gear, 
+raid playback shows global progress bars for time, health and volume, 
+Safer Routes/Decoy perk

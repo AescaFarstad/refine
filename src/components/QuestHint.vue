@@ -77,7 +77,7 @@ function determineSentiment(reward: Reward): 'positive' | 'negative' | undefined
     return 'positive'; // New items are generally positive
   } else if (reward.kind === 'unlock_raid') {
     return 'positive'; // Unlocking locations is positive
-  } else if (reward.kind === 'learn_signatures') {
+  } else if (reward.kind === 'learn_signatures' || reward.kind === 'learn_n_signatures') {
     return 'positive';
   }
   return undefined;
@@ -179,7 +179,10 @@ const hintSections = computed<HintSection[]>(() => {
       }
     } else if (r.kind === 'unlock_raid' && sentiment) {
       outcomeItems.push({ text: 'Discover a new raid location', sentiment });
-    } else if (r.kind === 'learn_signatures' && !mayLearnSomething) {
+    } else if (r.kind === 'countable_gear' && lib) {
+      const gearName = lib.gear.get(r.gearId)?.name ?? r.gearId;
+      outcomeItems.push({ text: `+${r.amount} ${gearName}`, sentiment: 'positive' });
+    } else if ((r.kind === 'learn_signatures' || r.kind === 'learn_n_signatures') && !mayLearnSomething) {
       outcomeItems.push({ text: 'You may learn something', sentiment: 'positive' });
       mayLearnSomething = true;
     }

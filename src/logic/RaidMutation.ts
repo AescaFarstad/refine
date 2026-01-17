@@ -167,6 +167,8 @@ export function cloneEncounter(enc: EncounterDef): EncounterDef {
         hpBonus: p.hpBonus,
         blockChanceBonus: p.blockChanceBonus,
         tacticNames: [...p.tacticNames],
+        gearId: p.gearId,
+        gearImage: p.gearImage,
       };
     }
     case 'WalkEncounter':

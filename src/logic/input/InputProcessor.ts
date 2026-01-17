@@ -57,7 +57,30 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
     gs.credits -= gearCost;
   }
 
+  // Consume countable gear items
+  const loadout = gs.loadouts[c.id] || [];
+  const gearToRemove: string[] = [];
+  for (const gearId of [...loadout]) {
+    const gearDef = gs.lib.gear.get(gearId);
+    if (gearDef?.countable) {
+      const currentCount = gs.countableGear[gearId] || 0;
+      if (currentCount > 0) {
+        gs.countableGear[gearId] = currentCount - 1;
+        // Mark for removal if depleted, but don't remove yet
+        if (gs.countableGear[gearId] <= 0) {
+          gearToRemove.push(gearId);
+        }
+      }
+    }
+  }
+
   const result = runRaid(gs, def);
+
+  // cleanup empty countable gear from loadout
+  for (const gid of gearToRemove) {
+    const idx = loadout.indexOf(gid);
+    if (idx !== -1) loadout.splice(idx, 1);
+  }
 
   if (result.reimbursedCredits) {
     gs.credits += result.reimbursedCredits;
@@ -156,6 +179,7 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
     finalBagsCapacity: gs.raid.bagsVolume,
     barelyInTime: result.barelyInTime,
     reimbursedCredits: result.reimbursedCredits || 0,
+    zoneCollapseSec: def.zoneCollapseSec,
   };
 
   recomputeActiveRaidParams(gs, c.id);

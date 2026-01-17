@@ -11,7 +11,7 @@ const blankMolecule: Molecule = {
 const rawDefinitions: Record<string, { name: string; volume: number; essence?: Essence; rarity?: number; molecule?: Molecule; devOnly?: boolean }> = {
   enamel_mug: {
     name: 'Mug',
-    volume: 4,
+    volume: 3,
     rarity: 1,
     molecule: {
       atoms: [
@@ -1013,9 +1013,26 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
   },
   christmas_ball: {
     name: 'Christmas Ball',
-    volume: 1,
-    rarity: 1,
-    molecule: blankMolecule,
+    volume: 2,
+    rarity: 3,
+    molecule: {
+      atoms: [
+        { color: 'gray', x: 0, y: -2 },
+        { color: 'magenta', x: 0, y: -1 },
+        { color: 'magenta', x: 1, y: 0 },
+        { color: 'gray', x: 2, y: 0 },
+        { color: 'magenta', x: -1, y: 1 },
+        { color: 'gray', x: -2, y: 2 },
+      ],
+      connections: [
+        { from: { x: 0, y: -1 }, to: { x: 1, y: 0 } },
+        { from: { x: 0, y: -1 }, to: { x: -1, y: 1 } },
+        { from: { x: 0, y: -1 }, to: { x: 0, y: -2 } },
+        { from: { x: -1, y: 1 }, to: { x: 1, y: 0 } },
+        { from: { x: -1, y: 1 }, to: { x: -2, y: 2 } },
+        { from: { x: 1, y: 0 }, to: { x: 2, y: 0 } },
+      ],
+    },
   },
   frying_pan: {
     name: 'Frying Pan',

@@ -24,5 +24,5 @@ export function handleWalkEncounter(r: ActiveRaid): WalkEncounterLogEntry {
   const regen = Math.max(0, r.regenPerKm);
   const healed = Math.min(regen, missing);
   r.hp = r.hp + healed;
-  return { kind: 'WalkEncounter', hpBefore, hpAfter: r.hp, timeSpentSec: sec, elapsedTotalSec: 0, speedKmH: kmh, maxSpeedKmH: maxKmh, maxHp: r.maxHp, hasPainkiller, hpHealed: healed };
+  return { kind: 'WalkEncounter', hpBefore, hpAfter: r.hp, timeSpentSec: sec, elapsedTotalSec: 0, currentHp: 0, currentMaxHp: 0, bagsUsed: 0, bagsCapacity: 0, speedKmH: kmh, maxSpeedKmH: maxKmh, maxHp: r.maxHp, hasPainkiller, hpHealed: healed };
 }

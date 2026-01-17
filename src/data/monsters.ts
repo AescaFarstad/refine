@@ -32,7 +32,7 @@ const monsters: Record<string, Omit<MonsterDefinition, 'id' | 'features' | 'armo
     upgrade: "distorted"
   },
   distorted: {
-    name: 'The Distorted',
+    name: 'Distorted Human',
     hp: 8,
     dodge: 15,
     accuracy: 40,

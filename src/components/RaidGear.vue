@@ -31,6 +31,7 @@
               :unaffordable="!canAffordItem(g)"
               :blocked="isSelectionBlocked(cat, g.id)"
               :price="getPrice(g)"
+              :count="g.countable ? (uiState.countableGear[g.id] || 0) : undefined"
               :hintRight="colIndex === 0"
               @toggle="toggleItemWithLimit(cat, g.id)"
             />
@@ -103,6 +104,8 @@ const gearByCategory = computed<Record<string, GearDefinition[]>>(() => {
   const unlocked = new Set<string>(list);
   gs.lib.gear.forEach((g) => {
     if (!unlocked.has(g.id)) return;
+    // Hide countable gear with 0 count
+    if (g.countable && (uiState.countableGear[g.id] || 0) <= 0) return;
     if (!map[g.category]) map[g.category] = [];
     map[g.category].push(g);
   });

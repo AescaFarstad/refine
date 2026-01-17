@@ -1,0 +1,25 @@
+
+flawed 50% // 35% chance to yield nothing, positive effects don't apply
+improvised 60% // 25% chance to yield nothing, positive effects don't apply
+crude 70% // 15% chance to yield nothing, only speed positive effects may apply
+patched 85% //only speed positive effects may apply
+standard 100%
+enhanced 120%
+refined 150%
+special 200% //negative effects don't apply
+exceptional 300% //negative effects don't apply
+
+military
+scientific
+anomalous
+prototype
+salvaged
+worn
+industrial
+professional
+modified
+experimental
+classified
+purified
+reinforced
+masterwork

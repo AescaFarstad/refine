@@ -3,6 +3,7 @@ import type { ResearchLib, ResearchNodeInstance } from './ResearchLib';
 import { applyReward } from './Reward';
 import { calculateResearchDistances, calculateResearchPath, type ResearchPathResult } from './ResearchPath';
 import { RESEARCH_OBSTACLES_REQUIRED_FOR_SIGNATURE_LEARN, RESEARCH_PANE_SIZE, RESEARCH_OBSTACLE_PRICE, RESEARCH_OBSTACLE_PRICE_GROWTH } from './Const';
+import { axialNeighbors } from './HexMath';
 
 // Offset to convert axial coordinates to array indices
 // Center of the grid (0,0 in axial) maps to (OFFSET, OFFSET) in the array
@@ -117,8 +118,10 @@ export function hexDistance(x1: number, y1: number, x2: number, y2: number): num
 
 export function calculateVisibility(gs: GameState, lib: ResearchLib): void {
   const distances = calculateResearchDistances(gs);
+  const totalCells = gs.researchCells.length;
 
-  for (let idx = 0; idx < distances.length; idx++) {
+  // Phase 1: Mark cells as revealed based on distance from owned cells
+  for (let idx = 0; idx < totalCells; idx++) {
     const cell = gs.researchCells[idx];
     // Void/blocked cells are never revealed or drawn.
     if (cell.blocked) {
@@ -126,6 +129,67 @@ export function calculateVisibility(gs: GameState, lib: ResearchLib): void {
       continue;
     }
     cell.revealed = distances[idx] !== 2147483647;
+  }
+
+  // Phase 2: Propagate visibility to adjacent empty and reward nodes.
+  // An empty node or a node with rewards should be revealed if any of its cells
+  // neighbors an already revealed cell.
+  // We iterate until no new nodes are revealed.
+  let changed = true;
+  while (changed) {
+    changed = false;
+
+    for (const node of lib.nodes.values()) {
+      const archetype = lib.archetypes.get(node.archetypeId);
+      if (!archetype) continue;
+
+      // Skip blocked/void nodes
+      if (archetype.type === 'void') continue;
+
+      // Check if this node qualifies for adjacency-based reveal:
+      // - empty nodes
+      // - nodes with rewards (stat, gear, resource, discovery, or any with rewards array)
+      const hasRewards = archetype.rewards && archetype.rewards.length > 0;
+      const isEmptyType = archetype.type === 'empty';
+      if (!isEmptyType && !hasRewards) continue;
+
+      // Check if any cell of this node is already revealed
+      let nodeAlreadyRevealed = false;
+      for (const cellPos of node.cells) {
+        const idx = axialToIndex(cellPos.x, cellPos.y);
+        if (idx !== -1 && gs.researchCells[idx]?.revealed) {
+          nodeAlreadyRevealed = true;
+          break;
+        }
+      }
+      if (nodeAlreadyRevealed) continue;
+
+      // Check if any cell of this node neighbors a revealed cell
+      let hasRevealedNeighbor = false;
+      outer: for (const cellPos of node.cells) {
+        for (const neighbor of axialNeighbors(cellPos)) {
+          const nIdx = axialToIndex(neighbor.x, neighbor.y);
+          if (nIdx !== -1 && gs.researchCells[nIdx]?.revealed) {
+            hasRevealedNeighbor = true;
+            break outer;
+          }
+        }
+      }
+
+      if (hasRevealedNeighbor) {
+        // Reveal all cells of this node
+        for (const cellPos of node.cells) {
+          const idx = axialToIndex(cellPos.x, cellPos.y);
+          if (idx !== -1) {
+            const cell = gs.researchCells[idx];
+            if (cell && !cell.blocked && !cell.revealed) {
+              cell.revealed = true;
+              changed = true;
+            }
+          }
+        }
+      }
+    }
   }
 }
 

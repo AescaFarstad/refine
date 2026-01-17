@@ -13,7 +13,7 @@
             >{{ i < shownNonSummonedCount ? '◉' : '◌' }}</span>
           </div>
         </div>
-        <div class="header-bars">
+        <div class="header-bars" :class="{ 'no-transition': suppressBarTransition }">
           <div class="bar-panel time-bar" :style="{ '--bar-pct': timeBarPct + '%', '--danger': timeDangerLevel }">
             <div class="bar-label">{{ formatHMS(displayedTimeSec) }}<span class="bar-max" v-if="zoneCollapseSec > 0"> / {{ formatHMS(zoneCollapseSec) }}</span></div>
           </div>
@@ -36,6 +36,7 @@
         @update:currentMaxHp="onCurrentMaxHp"
         @update:bagsUsed="onBagsUsed"
         @update:bagsCapacity="onBagsCapacity"
+        @initialValuesReady="onInitialValuesReady"
       />
       <!-- Footer-like info: only revealed after full log playback -->
       <section class="modal-footer-info" v-if="timelineComplete">
@@ -53,23 +54,27 @@
             </div>
           </div>
         </div>
-        <section class="quest-rewards" v-if="raidSuccess && (rewardChips.length || raidChangesText)">
-          <div class="qr-row" v-if="rewardChips.length">
+        <section class="quest-rewards" v-if="raidSuccess && rewardChips.length">
+          <div class="qr-row">
             <div class="qr-cap">Quest rewards</div>
             <div class="qr-chips">
               <span v-for="(chip, i) in rewardChips" :key="i" class="chip" :class="chip.class" :style="chip.style">{{ chip.text }}</span>
             </div>
           </div>
-          <div class="qr-row" v-if="raidChangesText">
-            <div class="qr-cap">Raid changes</div>
-            <div class="qr-text">{{ raidChangesText }}</div>
+        </section>
+        <section class="raid-changes" v-if="raidChangesPills.length || zoneChangeText">
+          <div class="rc-row" v-if="raidChangesPills.length">
+            <div class="rc-pills">
+              <span v-for="(pill, i) in raidChangesPills" :key="i" class="rc-pill" :class="pill.positive ? 'positive' : 'negative'">{{ pill.text }}</span>
+            </div>
+          </div>
+          <div class="rc-row inline" v-if="zoneChangeText">
+            <div class="rc-cap">Zone deterioration: </div>
+            <span class="rc-pill negative">{{ zoneChangeText }}</span>
           </div>
         </section>
         <section class="barely-in-time" v-if="raidSuccess && barelyInTime">
           <div class="bt">You have barely escaped the collapsing zone.</div>
-        </section>
-        <section class="zone-change" v-if="zoneChangeText">
-          <div class="zc">Your activity has changed the zone: <strong>{{ zoneChangeText }}</strong>.</div>
         </section>
         <section class="new-quests" v-if="raidSuccess && newQuests.length">
           <div class="nq" v-for="(quest, i) in newQuests" :key="i">
@@ -119,7 +124,7 @@ import { formatDurationHM } from '../logic/StringUtils';
 import { useRaidAgain } from '../logic/useRaidAgain';
 import type { RaidEventLogEntry } from '../logic/RaidLog';
 import RaidOutcomeLogPlayback from './raidOutcome/RaidOutcomeLogPlayback.vue';
-import { describeMutation } from '../logic/RaidMutation';
+import { describeMutation, type RaidMutation } from '../logic/RaidMutation';
 import { getResourceSpec, type ResourceKey } from '../logic/Resources';
 
 const visible = computed(() => uiState.lastOutcome !== null);
@@ -134,6 +139,7 @@ const currentMaxHp = ref(0);
 const currentBagsUsed = ref(0);
 const currentBagsCapacity = ref(0);
 const playbackRef = ref<{ fastForward?: () => void } | null>(null);
+const suppressBarTransition = ref(false);
 
 function onShownCount(v: number) { shownCount.value = v; }
 function onTimelineComplete(v: boolean) { timelineComplete.value = v; }
@@ -142,6 +148,16 @@ function onCurrentHp(v: number) { currentHp.value = v; }
 function onCurrentMaxHp(v: number) { currentMaxHp.value = v; }
 function onBagsUsed(v: number) { currentBagsUsed.value = v; }
 function onBagsCapacity(v: number) { currentBagsCapacity.value = v; }
+function onInitialValuesReady() {
+  // Re-enable transitions after initial values have been painted.
+  // Use double requestAnimationFrame: first one schedules after layout,
+  // second one ensures the paint has occurred before re-enabling transitions.
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      suppressBarTransition.value = false;
+    });
+  });
+}
 
 const totalEncounters = computed(() => {
   return outcome.value.plannedEncounters;
@@ -230,11 +246,15 @@ type RewardChip = { text: string; class: string; style?: Record<string, string> 
 const rewardChips = computed<RewardChip[]>(() => {
   const out: RewardChip[] = [];
   const rewards = outcome.value.rewardsApplied || [];
+  const lib = getGameLib()!;
 
   const resourceTotals: Record<string, number> = {};
+  const gearTotals: Record<string, number> = {};
   for (const r of rewards) {
     if (r.kind === 'resource') {
       resourceTotals[r.resource] = (resourceTotals[r.resource] || 0) + r.amount;
+    } else if (r.kind === 'countable_gear') {
+      gearTotals[r.gearId] = (gearTotals[r.gearId] || 0) + r.amount;
     }
   }
 
@@ -242,6 +262,11 @@ const rewardChips = computed<RewardChip[]>(() => {
   for (const k of resourceKeys) {
     const v = resourceTotals[k] || 0;
     if (v > 0) out.push({ text: `+${v}${getResourceSpec(k).glyph}`, class: 'res', style: resourceChipStyle(k) });
+  }
+
+  for (const [gearId, amount] of Object.entries(gearTotals)) {
+    const gearName = lib.gear.get(gearId)?.name ?? gearId;
+    out.push({ text: `+${amount} ${gearName}`, class: 'gear' });
   }
 
   return out;
@@ -252,29 +277,49 @@ function resourceChipStyle(key: ResourceKey): Record<string, string> {
   return { color: spec.color, background: spec.bgColor };
 }
 
-const raidChangesText = computed(() => {
-  const out: string[] = [];
+type RaidChangePill = { text: string; positive: boolean };
+
+function isMutationPositive(m: RaidMutation): boolean {
+  switch (m.kind) {
+    case 'LootMutation': return m.count > 0; // more loot sites = good
+    case 'WalkMutation': return m.count < 0; // less walking = good
+    case 'AddMonsterMutation': return m.count < 0; // fewer monsters = good
+    case 'LootDifficultyMutation': return m.amount > 0; // higher loot chance = good
+    case 'UpgradeMonsterMutation': return false; // stronger monsters = bad
+    case 'QuestMutation': return m.count > 0; // more quests = good
+    case 'ZoneCollapseTimeMutation': return m.amount > 0; // more time = good
+  }
+}
+
+const raidChangesPills = computed<RaidChangePill[]>(() => {
+  const out: RaidChangePill[] = [];
   const lc = outcome.value.lootChanceDeltaApplied || 0;
-  if (lc) out.push(`Loot chance ${lc >= 0 ? '+' : ''}${lc}%`);
+  if (lc) out.push({ text: `Loot chance ${lc >= 0 ? '+' : ''}${lc}%`, positive: lc > 0 });
   const rb = outcome.value.lootingRarityBuffDeltaApplied || 0;
-  if (rb) out.push(`Loot rarity ${rb >= 0 ? '+' : ''}${rb}`);
+  if (rb) out.push({ text: `Loot rarity ${rb >= 0 ? '+' : ''}${rb}`, positive: rb > 0 });
   if (outcome.value.raidMutationsApplied.length) {
     const gs = getGameState()!;
-    const desc = outcome.value.raidMutationsApplied.map(m => describeMutation(gs, m)).join('; ');
-    if (desc) out.push(desc);
+    for (const m of outcome.value.raidMutationsApplied) {
+      const desc = describeMutation(gs, m);
+      if (desc) out.push({ text: desc, positive: isMutationPositive(m) });
+    }
   }
   if (outcome.value.raidItemsAdded.length) {
     const lib = getGameLib()!;
-    const names = outcome.value.raidItemsAdded.map(id => lib.getItem(id).name).join(', ');
-    out.push(`Drops: ${names}`);
+    for (const id of outcome.value.raidItemsAdded) {
+      out.push({ text: `New drop: ${lib.getItem(id).name}`, positive: true });
+    }
   }
-  return out.join('; ');
+  return out;
 });
 
 // Watch the outcome object itself to catch new raids starting
-watch(() => uiState.lastOutcome, (newOutcome, oldOutcome) => {
+watch(() => uiState.lastOutcome, (newOutcome) => {
   if (newOutcome) {
     document.body.style.overflow = 'hidden';
+    // Suppress bar transitions so initial values appear instantly
+    // (will be re-enabled by onInitialValuesReady event from child)
+    suppressBarTransition.value = true;
     shownCount.value = 0;
     displayedTimeSec.value = 0;
     timelineComplete.value = false;
@@ -350,6 +395,7 @@ function formatHMS(totalSec?: number): string { return formatDurationHM(totalSec
 .bar-panel.time-bar::before { background: color-mix(in srgb, rgba(239, 68, 68, 0.4) calc(var(--danger, 0) * 100%), rgba(79, 209, 197, 0.3)); }
 .bar-panel.health-bar::before { background: color-mix(in srgb, rgba(239, 68, 68, 0.4) calc(var(--danger, 0) * 100%), rgba(104, 211, 145, 0.3)); }
 .bar-panel.bags-bar::before { background: rgba(246, 173, 85, 0.3); }
+.header-bars.no-transition .bar-panel::before { transition: none; }
 .bar-label { position: relative; z-index: 1; font-size: 12px; font-weight: 600; opacity: 0.9; }
 .bar-label .bar-max { opacity: 0.6; }
 .modal-footer-info { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--panel-border); }
@@ -360,8 +406,6 @@ function formatHMS(totalSec?: number): string { return formatDurationHM(totalSec
 .summary-items.dim { filter: grayscale(0.9); }
 .summary-items.dim :deep(.item-cell) { opacity: 0.55; }
 
-.zone-change { margin-top: 10px; padding: 8px 10px; border: none; border-radius: 6px; background: rgba(255,255,255,0.03); }
-.zone-change .zc { font-weight: 400; }
 .new-quests { margin-top: 10px; display: grid; gap: 6px; }
 .new-quests .nq { padding: 8px 10px; border-radius: 6px; background: rgba(250, 204, 21, 0.08); border: 1px solid rgba(250, 204, 21, 0.25); font-weight: 500; color: rgba(250, 204, 21, 0.95); position: relative; }
 .nq-text { display: block; }
@@ -396,12 +440,36 @@ function formatHMS(totalSec?: number): string { return formatDurationHM(totalSec
 .nq:hover .nq-hint { display: block; }
 .barely-in-time { margin-top: 10px; padding: 8px 10px; border: none; border-radius: 6px; background: rgba(251, 146, 60, 0.10); border: 1px solid rgba(251, 146, 60, 0.3); }
 .barely-in-time .bt { font-weight: 500; color: #fb923c; font-style: italic; }
-.quest-rewards { margin-top: 10px; padding: 8px 10px; border: none; border-radius: 6px; background: rgba(255,255,255,0.03); border: 1px solid rgba(148, 163, 184, 0.20); display: grid; gap: 8px; }
+.quest-rewards { margin-top: 10px; padding: 10px 12px; border-radius: 6px; background: rgba(255,255,255,0.03); border: 1px solid rgba(148, 163, 184, 0.20); display: grid; gap: 8px; }
 .qr-row { display: grid; gap: 6px; }
-.qr-cap { font-weight: 900; letter-spacing: 0.04em; opacity: 0.95; font-size: 12px; text-transform: uppercase; }
+.qr-cap { font-weight: 900; letter-spacing: 0.04em; opacity: 0.95; font-size: 11px; text-transform: uppercase; color: var(--text-secondary); }
 .qr-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.qr-text { font-weight: 700; font-size: 12px; color: var(--text-primary); }
-.chip { display: inline-flex; align-items: baseline; padding: 2px 6px; border-radius: 999px; background: rgba(255,255,255,0.06); }
+.chip { display: inline-flex; align-items: baseline; padding: 4px 10px; border-radius: 4px; background: rgba(255,255,255,0.06); font-size: 13px; font-weight: 600; }
+.chip.gear { color: #c4b5fd; background: rgba(139, 92, 246, 0.18); }
+
+/* Raid changes section */
+.raid-changes { margin-top: 10px; display: grid; gap: 8px; }
+.rc-row { display: grid; gap: 8px; }
+.rc-row.inline { display: flex; align-items: center; gap: 10px; }
+.rc-cap { font-weight: 900; letter-spacing: 0.04em; font-size: 11px; text-transform: uppercase; color: rgba(79, 209, 197, 0.8); }
+.rc-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.rc-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.rc-pill.positive {
+  background: rgba(79, 209, 197, 0.12);
+  color: #5eead4;
+}
+.rc-pill.negative {
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+}
 .death-note { margin-top: 10px; padding: 8px 10px; border: none; border-radius: 6px; background: rgba(255,255,255,0.03); }
 .reimbursed { margin-top: 6px; color: #86efac; font-size: 0.95em; }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; }

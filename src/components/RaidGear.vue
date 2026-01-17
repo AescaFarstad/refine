@@ -227,7 +227,7 @@ function openUpgradeModal(category: string): void {
 .discover-gear-btn:hover {
   background: rgba(34,197,94,0.45);
 }
-.gear .section-title { font-weight: 800; text-transform: uppercase; font-size: 12px; letter-spacing: 0.08em; margin-bottom: 8px; }
+.gear .section-title { font-weight: 800; text-transform: uppercase; font-size: 12px; letter-spacing: 0.08em; margin-bottom: 8px;}
 .gear-grid { display: flex; flex-wrap: wrap; gap: 12px; }
 .gear-col { flex: 1 1 160px; max-width: 280px; display: flex; flex-direction: column; gap: 6px; }
 /* Column headers: single-line, no background, with divider */

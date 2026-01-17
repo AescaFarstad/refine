@@ -1011,8 +1011,8 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
       ],
     },
   },
-  christmas_ball: {
-    name: 'Christmas Ball',
+  wall_piece: {
+    name: 'Wall Piece',
     volume: 2,
     rarity: 3,
     molecule: {
@@ -1033,6 +1033,12 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
         { from: { x: 1, y: 0 }, to: { x: 2, y: 0 } },
       ],
     },
+  },
+  christmas_ball: {
+    name: 'Christmas Ball',
+    volume: 2,
+    rarity: 3,
+    molecule: blankMolecule,
   },
   frying_pan: {
     name: 'Frying Pan',

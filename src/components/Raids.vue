@@ -136,7 +136,6 @@ watch(() => uiState.raidOrder.join('|'), () => {
   padding: 0px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
   z-index: 1;
 }
 .raids-view > :not(.raid-bg-image) {

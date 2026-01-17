@@ -19,7 +19,7 @@
                   <div class="enc-type">Fighting</div>
                   <div class="enc-monster">{{ entry.monsterName }}</div>
                 </template>
-                <template v-else-if="entry.kind === 'QuestEncounter'">Quest</template>
+                <template v-else-if="entry.kind === 'QuestEncounter'">Investigation</template>
                 <template v-else-if="entry.kind === 'ZoneCollapse'">Zone collapsing</template>
                 <template v-else>Encounter</template>
               </div>
@@ -69,6 +69,7 @@ const emit = defineEmits<{
   (e: 'update:currentMaxHp', value: number): void;
   (e: 'update:bagsUsed', value: number): void;
   (e: 'update:bagsCapacity', value: number): void;
+  (e: 'initialValuesReady'): void;
 }>();
 
 const shownCount = ref(0);
@@ -127,24 +128,33 @@ function getLastShownEntry(): RaidEventLogEntry | null {
   return props.entries[count - 1] || null;
 }
 
+/** Get the initial state from the first entry (before any entries are shown) */
+function getInitialEntry(): RaidEventLogEntry | null {
+  return props.entries?.[0] || null;
+}
+
 const currentHp = computed(() => {
   const e = getLastShownEntry();
-  return e?.currentHp ?? 0;
+  if (e) return e.currentHp ?? 0;
+  return getInitialEntry()?.currentHp ?? 0;
 });
 
 const currentMaxHp = computed(() => {
   const e = getLastShownEntry();
-  return e?.currentMaxHp ?? 0;
+  if (e) return e.currentMaxHp ?? 0;
+  return getInitialEntry()?.currentMaxHp ?? 0;
 });
 
 const bagsUsed = computed(() => {
   const e = getLastShownEntry();
-  return e?.bagsUsed ?? 0;
+  if (e) return e.bagsUsed ?? 0;
+  return getInitialEntry()?.bagsUsed ?? 0;
 });
 
 const bagsCapacity = computed(() => {
   const e = getLastShownEntry();
-  return e?.bagsCapacity ?? 0;
+  if (e) return e.bagsCapacity ?? 0;
+  return getInitialEntry()?.bagsCapacity ?? 0;
 });
 
 watch(shownCount, (v) => emit('update:shownCount', v), { immediate: true });
@@ -235,8 +245,21 @@ function resetAndStartAnimation() {
   subShownSteps.value = {};
   timelineReady.value = false;
   buildTimeline();
+  emitInitialValuesReady();
   timelineReady.value = true;
   scheduleNextTick();
+}
+
+/** Explicitly emit current values and signal ready (watchers may not fire if values unchanged) */
+function emitInitialValuesReady() {
+  // Watchers only fire on change - if values are same as previous raid's end state,
+  // they won't emit. So we must explicitly emit current values here.
+  emit('update:currentHp', currentHp.value);
+  emit('update:currentMaxHp', currentMaxHp.value);
+  emit('update:bagsUsed', bagsUsed.value);
+  emit('update:bagsCapacity', bagsCapacity.value);
+  emit('update:displayedTimeSec', displayedTimeSec.value);
+  emit('initialValuesReady');
 }
 
 function getScrollState() {

@@ -127,8 +127,8 @@ const hintSections = computed<HintSection[]>(() => {
   const q = props.quest;
   const out: HintSection[] = [];
 
-  if (q.encounterLine) {
-    out.push({ type: 'encounter-line', text: q.encounterLine });
+  if (q.description) {
+    out.push({ type: 'encounter-line', text: q.description });
   }
 
   if (q.encounterTimeMin > 0) {

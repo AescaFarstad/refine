@@ -3,7 +3,7 @@ import type { RawQuestDefinition } from '../../logic/QuestLib';
 const quests: Record<string, RawQuestDefinition> = {
   ozernoye_explore_fire_station: {
     name: 'Explore the fire station',
-    encounterLine: 'There is a fire station which could use some actual fire to get rid of its cornivorous inhabitants. Opening it might cause long-term flower trouble, but there must be some useful equipment in there.',
+    description: 'There is a fire station which could use some actual fire to get rid of its cornivorous inhabitants. Opening it might cause long-term flower trouble, but there must be some useful equipment in there.',
     raidRestriction: ['ozernoye'],
     requiresRaidSuccesses: 1,
     encounters: [
@@ -48,7 +48,8 @@ const quests: Record<string, RawQuestDefinition> = {
   },
   ozernoye_raise_the_dome: {
     name: 'Raise the zone\'s dome',
-    encounterLine: 'Collect accumulators from the abandoned cars and focus their power to push away the zone boundary via magnetic induction.',
+    encounterLine: 'Hooking up the batteries...',
+    description: 'Collect accumulators from the abandoned cars and focus their power to push away the zone boundary via magnetic induction.',
     raidRestriction: ['ozernoye'],
     requiresRaidSuccesses: 4,
     encounterTimeMin: 80,
@@ -61,9 +62,9 @@ const quests: Record<string, RawQuestDefinition> = {
   },
   ozernoye_study_the_dome: {
     name: 'Study the zone\'s dome',
-    encounterLine: 'Experiment with electricity and design a device that would prolong the zone\'s stability.',
+    encounterLine: 'Sketching out the stabilizer circuit...',
+    description: 'Experiment with electricity and design a device that would prolong the zone\'s stability.',
     raidRestriction: ['ozernoye'],
-    requiresRaidSuccesses: 1,
     requiresQuestIds: ['ozernoye_raise_the_dome'],
     encounterTimeMin: 80,
     encounters: [
@@ -75,7 +76,8 @@ const quests: Record<string, RawQuestDefinition> = {
   },
   asummon_hounds: {
     name: 'Gather hounds bait',
-    encounterLine: 'Collect the spoilage which attracts these pesky beasts.',
+    encounterLine: 'Picking up the meat...',
+    description: 'Collect the spoilage which attracts these pesky beasts.',
     raidRestriction: ['ozernoye'],
     requiresRaidSuccesses: 7,
     requiresRaidQuestCompletions: 3,

@@ -7,7 +7,7 @@ import { recomputeActiveRaidEstimates, recomputeActiveRaidParams } from './Raid'
 
 export function initDebug(gameState: GameState): void {
   // return;
-  setIsDebug(true);
+  // setIsDebug(true);
 
   uiState.editResearchOpen = true;
 

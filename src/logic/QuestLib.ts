@@ -11,6 +11,7 @@ export interface QuestDefinition {
   requiresQuestIds: string[];
   rewards: Reward[];
   encounterLine: string;
+  description: string;
   encounterTimeMin: number;
   encounters: RaidMutation[];
   showAddedItems: boolean;
@@ -25,6 +26,7 @@ export interface RawQuestDefinition {
   requiresQuestIds?: string[];
   rewards?: Reward[];
   encounterLine?: string;
+  description?: string;
   encounterTimeMin?: number;
   encounters?: RaidMutation[];
   showAddedItems?: boolean;
@@ -41,6 +43,7 @@ export function normalizeQuestDefinition(id: string, raw: RawQuestDefinition): Q
     requiresQuestIds: raw.requiresQuestIds ?? [],
     rewards: raw.rewards ?? [],
     encounterLine: raw.encounterLine ?? '',
+    description: raw.description ?? '',
     encounterTimeMin: raw.encounterTimeMin ?? 0,
     encounters: raw.encounters ?? [],
     showAddedItems: raw.showAddedItems ?? false,

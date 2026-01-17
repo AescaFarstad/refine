@@ -159,7 +159,7 @@ function updateHintSide(): void {
   text-align: left;
   border: none;
   border-radius: 4px;
-  padding: 10px 10px 10px 10px; /* equal padding - weight/price are absolutely positioned */
+  padding: 5px 6px 5px 6px;
   background: var(--raid-item-bg, rgba(255,255,255,0.08));
   cursor: pointer;
   color: var(--text-primary);
@@ -181,7 +181,6 @@ function updateHintSide(): void {
   background: rgba(74, 222, 128, 0.25);
   box-shadow: inset 0 0 0 1px rgba(74, 222, 128, 0.5), 0 0 0 1px rgba(74, 222, 128, 0.2);
 }
-.gear-item.unaffordable { /* border removed; keep subtle deemphasis via opacity if needed elsewhere */ }
 .gear-item.blocked > *:not(.hint) { opacity: 0.6; }
 
 .g-sprite-wrap {

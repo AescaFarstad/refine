@@ -5,6 +5,7 @@ import {
     CYAN_SUCCESS_BONUS_PCT,
     CYAN_YIELD_BONUS_PCT,
     MAGENTA_YIELD_BONUS_PCT,
+    MAGENTA_CRYSTAL_YIELD_PER_ESSENCE,
     ESSENCE_CREDITS,
     ESSENCE_CHRONOTRACES,
     ESSENCE_TEMPORAL_FLUX,
@@ -16,6 +17,12 @@ import { getWaferBuffAt } from './waferLayout';
 import { scanWaferForNewSignatures, SIGNATURE_YIELD_BONUS_PCT } from './Signatures';
 import type { SignatureDefinition } from './SignatureLib';
 import { DISCOVERY } from './DiscoveryLib';
+
+export interface GearOutput {
+    gearId: string;
+    count: number;
+    fromEssence: string;
+}
 
 export interface RefinePreviewChem {
     timeSec: number;
@@ -46,6 +53,8 @@ export interface RefinePreviewChem {
 
     newlyCompletedSignatureIds: string[];
     newSignatureMatches: Array<{ id: string; offset: { x: number; y: number } }>;
+
+    gearOutputs: GearOutput[];
 }
 
 export interface SignatureContext {
@@ -362,6 +371,19 @@ export function computeRefinePreviewChem(wafer: Wafer, ctx: RefineContext): Refi
     const expectedChrono = Math.round(blue * yieldMultiplier * ESSENCE_CHRONOTRACES);
     const expectedFlux = Math.round(green * yieldMultiplier * ESSENCE_TEMPORAL_FLUX);
 
+    const gearOutputs: GearOutput[] = [];
+
+    if (ctx.discoveries[DISCOVERY.MAGENTA_CRYSTALS] && magentaCount > 0) {
+        const crystalCount = Math.floor(magentaCount * MAGENTA_CRYSTAL_YIELD_PER_ESSENCE * yieldMultiplier);
+        if (crystalCount > 0) {
+            gearOutputs.push({
+                gearId: 'zone_crystal',
+                count: crystalCount,
+                fromEssence: 'magenta',
+            });
+        }
+    }
+
     return {
         timeSec: REFINE_TIME,
         failureChancePct,
@@ -382,6 +404,7 @@ export function computeRefinePreviewChem(wafer: Wafer, ctx: RefineContext): Refi
         enabledCount: wafer.enabledCount,
         newlyCompletedSignatureIds,
         newSignatureMatches,
+        gearOutputs,
     };
 }
 

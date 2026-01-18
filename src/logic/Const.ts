@@ -12,6 +12,7 @@ export const CYAN_SUCCESS_BONUS_PCT = 10
 export const CYAN_YIELD_BONUS_PCT = 10
 export const MAGENTA_SUCCESS_PENALTY_PCT = 25
 export const MAGENTA_YIELD_BONUS_PCT = 10
+export const MAGENTA_CRYSTAL_YIELD_PER_ESSENCE = 1
 export const WAFER_HEIGHT = 12;
 export const WAFER_WIDTH = 20;
 export const WAFER_UPGRADE_BASE_COST = 100;

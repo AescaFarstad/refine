@@ -93,6 +93,19 @@
           </span>
         </div>
 
+        <div v-for="go in preview.gearOutputs" :key="go.gearId" class="stat-row">
+          <span class="stat-label">Gear Output:</span>
+          <span class="stat-value gear-output">
+            <span v-if="getGearFrame(go.gearId) && source" class="gear-icon" :style="gearIconStyle(go.gearId)" />
+            <span class="gear-count">×{{ go.count }}</span>
+          </span>
+          <span class="stat-source">
+            from {{ preview.essenceTotals[go.fromEssence] || 0 }}
+            <span v-if="getEssenceFrame(go.fromEssence) && source" class="ess-icon" :style="essenceIconStyle(go.fromEssence)" />
+            <span v-else class="ess-letter">{{ essenceLetter(go.fromEssence) }}</span>
+          </span>
+        </div>
+
         <div class="stat-row" :class="{ 'flash-red': shouldFlashFailure }">
           <span class="stat-label">Failure Chance:</span>
           <span class="stat-value" :class="failureClass">{{ preview.failureChancePct }}%</span>
@@ -137,6 +150,12 @@ import { getResourceSpec } from '../logic/Resources';
 import { uiState, getGameState } from '../logic/UIState';
 import { CYAN_SUCCESS_BONUS_PCT, MAGENTA_SUCCESS_PENALTY_PCT } from '../logic/Const';
 
+export interface GearOutputPreview {
+  gearId: string;
+  count: number;
+  fromEssence: string;
+}
+
 export interface WaferInfoPreview {
   totalYieldPct: number;
   signatureYieldBonus: number;
@@ -157,6 +176,8 @@ export interface WaferInfoPreview {
   failureChancePct: number;
   emptyCells: number;
   essenceTotals: Record<string, number>;
+
+  gearOutputs: GearOutputPreview[];
 }
 
 const props = defineProps<{
@@ -275,6 +296,34 @@ function essenceLetter(k: string): string {
   return m[k] || k[0]?.toUpperCase() || '?';
 }
 
+function getGearFrame(gearId: string) {
+  const gs = getGameState();
+  if (!gs) return null;
+  const gearDef = gs.lib.gear.get(gearId);
+  if (!gearDef?.image) return null;
+  return atlasStorage.getItemsFrame(gearDef.image);
+}
+
+function gearIconStyle(gearId: string): Record<string, string> {
+  const gs = getGameState();
+  if (!gs) return {};
+  const gearDef = gs.lib.gear.get(gearId);
+  if (!gearDef?.image) return {};
+  const f = atlasStorage.getItemsFrame(gearDef.image);
+  if (!f) return {};
+  const scale = 20 / Math.max(f.w, f.h);
+  const atlasW = source.value!.naturalWidth;
+  const atlasH = source.value!.naturalHeight;
+  return {
+    width: '20px',
+    height: '20px',
+    backgroundImage: `url(${source.value!.src})`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
+    backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
+  } as Record<string, string>;
+}
+
 const shouldFlashSignaturesTab = computed(() => {
   return uiState.hasDiscoveredSignatures && !uiState.hasDiscoveredSignatureInfo;
 });
@@ -344,7 +393,7 @@ function cycleInfoTab() {
 .stats-table {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 4px;
 }
 
 .stat-row {
@@ -406,6 +455,25 @@ function cycleInfoTab() {
   vertical-align: middle;
   margin: -4px 0;
   filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+}
+
+.gear-output {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.gear-icon {
+  display: inline-block;
+  vertical-align: middle;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+  width: 20px;
+  height: 20px;
+}
+
+.gear-count {
+  font-weight: 700;
+  color: #c084fc;
 }
 
 .hl {

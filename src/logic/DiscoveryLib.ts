@@ -25,6 +25,7 @@ const ids = [
   'UI_RAID_SELECTION',
   'UI_WAFER_INFO',
   'UI_SIGNATURE_INFO',
+  'MAGENTA_CRYSTALS',
 ] as const;
 
 type DiscoveryKey = (typeof ids)[number];

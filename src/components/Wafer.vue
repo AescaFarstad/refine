@@ -233,6 +233,7 @@ const preview = computed(() => {
       signatureYieldBonus: 0,
       newSignatureYieldBonus: 0,
       newSignatureMatches: [] as Array<{ id: string; offset: { x: number; y: number } }>,
+      gearOutputs: [],
     };
   }
 

@@ -8,9 +8,12 @@ export function useRaidAgain() {
   const raidId = computed(() => uiState.lastOutcome!.id.trim());
 
   const raidGearPrice = computed(() => {
+    // to trigger re-calc even if raidId is same as before
+    const _tracker = uiState.lastOutcome;
+
     const id = raidId.value;
     const gs = getGameState();
-    const gearIds = gs.loadouts[id];
+    const gearIds = gs.loadouts[id] ?? [];
     let total = 0;
     for (const gearId of gearIds) {
       total += gs.lib.gear.get(gearId)!.price;

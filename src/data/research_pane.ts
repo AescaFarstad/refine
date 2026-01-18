@@ -122,6 +122,7 @@ export const researchPane: ResearchPlacementInput[] = [
   { archetypeId: 'stat_volume', cells: { x: -16, y: 7 } },
   { archetypeId: 'stat_volume', cells: { x: 17, y: -1 } },
   { archetypeId: 'stat_vision', cells: { x: -3, y: -4 } },
+  { archetypeId: 'stat_hp', cells: { x: 3, y: -9 } },
 ];
 
 export const researchPaneEmptyCells: Point2[] = [

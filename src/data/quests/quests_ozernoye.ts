@@ -71,7 +71,7 @@ const quests: Record<string, RawQuestDefinition> = {
     ],
     rewards: [
       { kind: 'unlock_gear', gearId: 'stabilizer_beacon' },
-      { kind: 'raid_mutation', mutation: { kind: 'AddMonsterMutation', monsterId: 'flower', count: 3 } },
+      { kind: 'raid_mutation', mutation: { kind: 'AddMonsterMutation', monsterId: 'flower', count: 1 } },
     ],
   },
   asummon_hounds: {

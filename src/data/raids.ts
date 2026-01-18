@@ -5,7 +5,7 @@ const raids: Record<string, Omit<RaidDefinition, 'id' | 'order' | 'itemPoolsByRa
     name: 'Shegolskoe',
     locationImageId: 'shegolskoe',
     description: 'A \'cozy\' village where soviet cultural elite used to grow vegetables for dinner.',
-    baseLootChance: 45,
+    baseLootChance: 50,
     zoneCollapseSec: 10200,
     zoneCollapseStepPerMutation: 300,
     items: [
@@ -53,12 +53,11 @@ const raids: Record<string, Omit<RaidDefinition, 'id' | 'order' | 'itemPoolsByRa
       'canned_sprats',
       'fuse_box',
       'rotary_phone',
-      'christmas_ball',
     ],
     encounters: [
       { count: 4, encounter: { type: 'WalkEncounter' } },
-      { count: 6, encounter: { type: 'FightEncounter', monsterId: 'hound' } },
-      { count: 3, encounter: { type: 'FightEncounter', monsterId: 'spikder' } },
+      { count: 5, encounter: { type: 'FightEncounter', monsterId: 'hound' } },
+      { count: 2, encounter: { type: 'FightEncounter', monsterId: 'spikder' } },
       { count: 15, encounter: { type: 'LootEncounter' } }
     ],
   },

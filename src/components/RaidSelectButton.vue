@@ -153,9 +153,7 @@ function computeMonsterStrength(lib: ReturnType<typeof getGameLib>, raid: RaidDe
   for (const step of raid.encounters) {
     if (step.encounter.type !== 'FightEncounter') continue;
     const m = lib.monsters.get(step.encounter.monsterId)!;
-    const cap = m.damageCap > 0 ? m.damageCap : Number.POSITIVE_INFINITY;
-    const strength = (m.hp + (m.hp / cap)) * (m.damage + m.armor) * m.accuracy * (1 + m.dodge);
-    total += strength * Math.max(0, step.count | 0);
+    total += m.strength * Math.max(0, step.count | 0);
   }
   return total;
 }

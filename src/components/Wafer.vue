@@ -70,7 +70,7 @@
       </div>
 	    </div>
 
-	    <WaferInfo :preview="preview" :should-flash-failure="shouldFlashFailure" />
+	    <WaferInfo v-if="showWaferInfo" :preview="preview" :should-flash-failure="shouldFlashFailure" />
 
 	    <div class="action-section">
 	      <button
@@ -167,6 +167,12 @@ const showRefineAnim = computed(() => {
 
 const hasGrownWafer = computed(() => {
   return uiState.waferUpgradesPurchased > 0;
+});
+
+const showWaferInfo = computed(() => {
+  const _dep = uiState.discoveryCounter;
+  const gs = getGameState();
+  return gs?.discoveries?.[DISCOVERY.UI_WAFER_INFO] === true;
 });
 
 const refineProgress = computed(() => activeRefinery.value?.progressPct || 0);

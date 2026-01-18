@@ -279,6 +279,7 @@ handlersByName.set('CmdPlaceMolecule', (gs, cmd) => {
 
   computeEffectiveEssences(gs.wafer);
   ensureSignatureDiscoveryFromWafer(gs);
+  discover(gs, DISCOVERY.UI_WAFER_INFO);
 });
 
 handlersByName.set('CmdRemoveMolecule', (gs, cmd) => {

@@ -276,7 +276,7 @@ function listFightMonsters(raid: RaidDefinition): Array<{ id: string; count: num
 function monsterStrength(lib: GameState['lib'], monsterId: string): number {
   const m = lib.monsters.get(monsterId);
   if (!m) return 0;
-  return Math.max(0, (m.hp || 0)) * Math.max(0, (m.dodge || 0)) * Math.max(0, (m.accuracy || 0)) * Math.max(0, (m.damage || 0));
+  return m.strength;
 }
 
 function sortedMonsterIdsByStrength(lib: GameState['lib']): string[] {
@@ -371,16 +371,7 @@ export function buildSuccessMutationCandidates(gs: GameState, raidId: string): W
       const pick = upgradable.length ? upgradable[Math.floor(gs.random.get() * upgradable.length)] : monsters[0];
 
       const monsterDef = lib.monsters.get(pick.id);
-      let toId: string | undefined;
-
-      if (monsterDef?.upgrade && monsterDef.upgrade.trim() !== '') {
-        toId = monsterDef.upgrade;
-      } else {
-        // Fall back to the strength-based upgrade system
-        const fromI = idx.get(pick.id) ?? 0;
-        const toI = Math.min(idsSorted.length - 1, fromI + 1);
-        toId = idsSorted[toI];
-      }
+      const toId = monsterDef?.inferredUpgrade ?? undefined;
 
       // Weight based on strength sum rule
       const origSum = strengthSum(lib, original);

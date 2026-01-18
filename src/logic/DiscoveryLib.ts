@@ -19,6 +19,7 @@ const ids = [
   'UI_RAID_LOOT',
   'UI_RAID_SPEED',
   'UI_RAID_SELECTION',
+  'UI_WAFER_INFO',
 ] as const;
 
 type DiscoveryKey = (typeof ids)[number];

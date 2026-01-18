@@ -1,9 +1,5 @@
 <template>
   <div class="panel all-items" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
-    <div class="header">
-      <h3>All Items</h3>
-      <span class="count" v-if="items?.length">{{ items.length }}</span>
-    </div>
     <div class="essence-header" :class="{ reserved: essenceKeys.length === 0 }" :aria-hidden="essenceKeys.length === 0">
       <button
         class="essence-btn raid-sort-btn"

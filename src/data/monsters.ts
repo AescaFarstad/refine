@@ -1,6 +1,6 @@
-import type { MonsterDefinition } from '../logic/MonsterLib';
+import type { RawMonsterDefinition } from '../logic/MonsterLib';
 
-const monsters: Record<string, Omit<MonsterDefinition, 'id' | 'features' | 'armor' | 'damageCap'> & { features?: string[]; armor?: number; damageCap?: number }> = {
+const monsters: Record<string, RawMonsterDefinition> = {
   burdock: {
     name: 'Burdock',
     hp: 1,
@@ -9,7 +9,8 @@ const monsters: Record<string, Omit<MonsterDefinition, 'id' | 'features' | 'armo
     damage: 5,
     lootItemId: 'burdock_remains',
     features:['self_destruct_on_attack'],
-    upgrade: "spikder"
+    upgrade: "spikder",
+    strengthMult: 0.5,
   },
   hound: {
     name: 'Xeno Hound',
@@ -29,7 +30,8 @@ const monsters: Record<string, Omit<MonsterDefinition, 'id' | 'features' | 'armo
     damage: 1,
     lootItemId: 'hound_remains',
     features:['summon_chance_per_encounter2'],
-    upgrade: "distorted"
+    upgrade: "distorted",
+    strengthMult: 0.7,
   },
   distorted: {
     name: 'Distorted Human',
@@ -39,7 +41,8 @@ const monsters: Record<string, Omit<MonsterDefinition, 'id' | 'features' | 'armo
     damage: 1,
     lootItemId: 'distorted_remains',
     features:['retaliates'],
-    upgrade: "flower"
+    upgrade: "flower",
+    strengthMult: 1.2,
   },
   flower: {
     name: 'Flower Human',

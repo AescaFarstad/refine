@@ -35,15 +35,15 @@ const quests: Record<string, RawQuestDefinition> = {
   },
   ozernoye_study_church_signatures: {
     name: 'Study church inscriptions',
-    encounterLine: 'The church walls are covered in glowing signs that do not match common orthodox inscriptions. These must be left with a purpose. Perhaps even by yourself in another life.',
+    description: 'The church walls are covered in glowing signs that do not match common orthodox inscriptions. These must be left with a purpose. Perhaps even by yourself in another life.',
+    encounterLine: 'Studying the inscriptions...',
     raidRestriction: ['ozernoye'],
     requiresRaidSuccesses: 6,
     encounterTimeMin: 40,
     encounters: [
     ],
     rewards: [
-      { kind: 'discovery', discoveryId: 'signatures' },
-      { kind: 'learn_n_signatures', count: 6 },
+      { kind: 'show_ui', ui: 'church_symbols' }
     ],
   },
   ozernoye_raise_the_dome: {

@@ -3,17 +3,17 @@
     <div class="modal" :class="{ maximized: isMaximized, 'has-signatures': newSignatures.length > 0 }">
       <div class="modal-body">
         <img
-          src="/images/scribbles.webp"
-          alt="Poet's scribbles"
-          class="scribbles-image"
+          src="/images/church_symbols.webp"
+          alt="Church symbols"
+          class="symbols-image"
           :class="{ clickable: !isMaximized }"
           @click="isMaximized = !isMaximized"
         />
-        <p class="scribbles-text">The poet made some scribbles that were clearly ahead of his time.</p>
+        <p class="symbols-text">The walls are strewn with refinement symbols.</p>
 
         <div v-if="newSignatures.length > 0" class="signatures-section">
           <p class="signatures-label">
-            {{ showSignatures ? 'You learned new signatures:' : 'You copied some of the scribbles:' }}
+            {{ showSignatures ? `You learned ${newSignatures.length} new signature${newSignatures.length > 1 ? 's' : ''}:` : 'Arranging items on the wafer in these patterns should improve yields from refining.' }}
           </p>
           <div class="signatures-grid">
             <div
@@ -22,7 +22,7 @@
               class="sig-column"
             >
               <div class="sig-wafer" :style="sigWaferStyle(sig.id)" />
-              <div v-if="showSignatures" class="sig-sprite" :style="sigSpriteStyle(sig.id)" />
+              <div class="sig-sprite" :style="sigSpriteStyle(sig.id)" />
             </div>
           </div>
         </div>
@@ -39,6 +39,7 @@ import { computed, ref } from 'vue';
 import { uiState } from '../../logic/UIState';
 import atlasStorage from '../../logic/AtlasStorage';
 import type { Reward } from '../../logic/Reward';
+import { DISCOVERY } from '../../logic/DiscoveryLib';
 
 const isMaximized = ref(false);
 
@@ -46,7 +47,7 @@ const emit = defineEmits<{
   close: [rewards?: Reward[]]
 }>();
 
-const SCRIBBLE_SIGNATURE_IDS = ['s1', 's2', 's3'];
+const MAX_SIGNATURES = 8;
 
 const showSignatures = computed(() => {
   return uiState.hasDiscoveredSignatures;
@@ -55,10 +56,10 @@ const showSignatures = computed(() => {
 const newSignatures = computed(() => {
   if (!uiState.lib) return [];
   const learned = new Set(uiState.learnedSignatureIds);
-  return SCRIBBLE_SIGNATURE_IDS
-    .filter(id => !learned.has(id))
-    .map(id => uiState.lib!.signatures.get(id))
-    .filter(Boolean) as { id: string; name: string }[];
+  const unlearned = Array.from(uiState.lib.signatures.values())
+    .filter(sig => !learned.has(sig.id))
+    .slice(0, MAX_SIGNATURES);
+  return unlearned as { id: string; name: string }[];
 });
 
 const moleculesSource = atlasStorage.getMoleculesSource();
@@ -103,6 +104,7 @@ function close() {
   if (idsToLearn.length > 0) {
     rewards.push({ kind: 'learn_signatures', signatureIds: idsToLearn });
   }
+  rewards.push({ kind: 'discovery', discoveryId: DISCOVERY.UI_SIGNATURES });
   emit('close', rewards.length > 0 ? rewards : undefined);
 }
 </script>
@@ -157,36 +159,37 @@ function close() {
   gap: 12px;
 }
 
-.scribbles-image {
+.symbols-image {
   max-width: 100%;
-  width: 280px;
-  height: auto;
+  width: auto;
+  height: 320px;
   border-radius: 4px;
   transition: transform 0.2s ease;
 }
 
-.modal.has-signatures .scribbles-image {
-  width: 448px;
+.modal.has-signatures .symbols-image {
+  height: 400px;
 }
 
-.scribbles-image.clickable {
+.symbols-image.clickable {
   cursor: zoom-in;
 }
 
-.scribbles-image.clickable:hover {
+.symbols-image.clickable:hover {
   transform: scale(1.02);
 }
 
-.modal.maximized .scribbles-image {
+.modal.maximized .symbols-image {
   cursor: zoom-out;
   max-width: 100%;
-  min-height: 0;
+  max-height: 80vh;
+  height: auto;
   flex: 1 1 auto;
   width: auto;
   object-fit: contain;
 }
 
-.scribbles-text {
+.symbols-text {
   text-align: center;
   color: var(--text-secondary);
   font-style: italic;
@@ -208,7 +211,7 @@ function close() {
 .signatures-grid {
   display: flex;
   justify-content: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 16px;
 }
 

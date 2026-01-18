@@ -60,6 +60,7 @@ export interface RaidDefinition {
   baseLootChance: number;
   items: string[];
   itemPoolsByRarity: Record<LootRarity, string[]>;
+  allPotentialItems: string[];
   encounters: Array<{ count: number; encounter: EncounterDef }>;
   order: number;
   zoneCollapseSec: number;
@@ -95,6 +96,7 @@ export function parseRaidDefinitions(raw: Record<string, RawRaidDefinition>): {
       zoneCollapseSec: def.zoneCollapseSec,
       zoneCollapseStepPerMutation: def.zoneCollapseStepPerMutation,
       itemPoolsByRarity: emptyItemPoolsByRarity(),
+      allPotentialItems: [...def.items],
     };
     raidSources.set(id, withId);
 
@@ -113,6 +115,7 @@ export function parseRaidDefinitions(raw: Record<string, RawRaidDefinition>): {
       zoneCollapseSec: withId.zoneCollapseSec,
       zoneCollapseStepPerMutation: withId.zoneCollapseStepPerMutation,
       itemPoolsByRarity: emptyItemPoolsByRarity(),
+      allPotentialItems: [...def.items],
     };
     raidsCopy.set(id, cloned);
   }

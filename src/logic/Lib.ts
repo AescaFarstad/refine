@@ -72,6 +72,35 @@ export class Lib {
     return pools;
   }
 
+  // Compile all potential items for each raid (base items + quest reward items)
+  private compileAllPotentialItems(): void {
+    for (const quest of this.quests.values()) {
+      for (const reward of quest.rewards) {
+        if (reward.kind !== 'raid_add_item') continue;
+
+        // Determine which raids this reward applies to
+        const targetRaidIds: string[] = reward.targetRaidId
+          ? [reward.targetRaidId]
+          : quest.raidRestriction;
+
+        for (const raidId of targetRaidIds) {
+          const raidSource = this.raidSources.get(raidId);
+          const raid = this.raids.get(raidId);
+          if (!raidSource || !raid) continue;
+
+          for (const itemId of reward.itemIds) {
+            if (!raidSource.allPotentialItems.includes(itemId)) {
+              raidSource.allPotentialItems.push(itemId);
+            }
+            if (!raid.allPotentialItems.includes(itemId)) {
+              raid.allPotentialItems.push(itemId);
+            }
+          }
+        }
+      }
+    }
+  }
+
   private loadAllDefinitions(): void {
     if (this.isLoaded) {
       return;
@@ -102,6 +131,8 @@ export class Lib {
           questsBirdmundshireData,
         ]);
       }
+
+      this.compileAllPotentialItems();
 
       this.monsters = parseMonsterDefinitions(monstersData);
 

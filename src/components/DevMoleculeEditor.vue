@@ -1,23 +1,5 @@
 <template>
   <div class="dev-editor-root" @click.stop>
-    <header class="editor-header">
-      <div class="header-actions">
-        <button type="button" class="btn" @click="onClear">Clear</button>
-        <button type="button" class="btn" @click="onClearConnections">
-          Clear connections
-        </button>
-        <button type="button" class="btn" @click="onBreakDown">
-          Break down
-        </button>
-        <button type="button" class="btn" @click="copyToClipboard">
-          Copy molecule code
-        </button>
-        <button type="button" class="btn close" @click="$emit('close')">
-          Close
-        </button>
-      </div>
-    </header>
-
     <div class="editor-body">
       <div class="items-panel">
         <AllItems
@@ -29,6 +11,7 @@
           :available-raids="availableRaids"
           :active-raid-filter="activeRaidFilter"
           :show-rarity-label="true"
+          :hide-sorting-ui="true"
           @pick-item="onPickItem"
           @drag-end="onDragEnd"
           @raid-filter="onRaidFilter"
@@ -36,6 +19,23 @@
       </div>
 
       <div class="right-panel">
+        <header class="editor-header">
+          <div class="header-actions">
+            <button type="button" class="btn" @click="onClear">Clear</button>
+            <button type="button" class="btn" @click="onClearConnections">
+              Clear connections
+            </button>
+            <button type="button" class="btn" @click="onBreakDown">
+              Break down
+            </button>
+            <button type="button" class="btn" @click="copyToClipboard">
+              Copy molecule code
+            </button>
+            <button type="button" class="btn close" @click="$emit('close')">
+              Close
+            </button>
+          </div>
+        </header>
         <div class="wafer-panel">
           <div class="wafer-header">
             <span>{{ hoverCoords }}</span>
@@ -157,9 +157,9 @@ const filteredItems = computed(() => {
   if (!uiState.lib) return allItems.value;
 
   const raid = uiState.lib.raids.get(activeRaidFilter.value);
-  if (!raid || !raid.items) return allItems.value;
+  if (!raid || !raid.allPotentialItems) return allItems.value;
 
-  const raidItemIds = new Set(raid.items);
+  const raidItemIds = new Set(raid.allPotentialItems);
 
   return allItems.value.filter(item => {
     if (item.id.startsWith('dev_')) return true;
@@ -467,7 +467,7 @@ function onRotate() {
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 6px 10px;
+  padding: 6px 4px;
   box-sizing: border-box;
 }
 
@@ -475,7 +475,7 @@ function onRotate() {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  margin-bottom: 4px;
+  flex: 0 0 auto;
 }
 
 .header-actions {
@@ -486,7 +486,7 @@ function onRotate() {
 
 .editor-body {
   display: flex;
-  gap: 12px;
+  gap: 6px;
   flex: 1;
   min-height: 0;
 }
@@ -500,19 +500,21 @@ function onRotate() {
 .right-panel {
   flex: 0 0 auto;
   width: 820px;
-  display: grid;
-  grid-template-rows: minmax(0, 1fr);
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   min-width: 0;
 }
 
 .wafer-panel {
   background: var(--panel-bg);
   border-radius: 6px;
-  padding: 10px;
+  padding: 6px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex: 1;
+  min-height: 0;
 }
 
 .wafer-header {

@@ -346,9 +346,19 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
   },
   corkscrew: {
     name: 'Corkscrew',
-    volume: 1,
+    volume: 3,
     rarity: 1,
-    molecule: blankMolecule,
+    molecule: {
+      atoms: [
+        { color: 'green', x: -1, y: 0 },
+        { color: 'green', x: 0, y: 0 },
+        { color: 'green', x: 1, y: 0 },
+      ],
+      connections: [
+        { from: { x: 0, y: 0 }, to: { x: 1, y: 0 } },
+        { from: { x: -1, y: 0 }, to: { x: 0, y: 0 } },
+      ],
+    },
   },
   poetry_book: {
     name: 'Poetry Book',
@@ -819,9 +829,21 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
   },
   electrical_wire: {
     name: 'Wire',
-    volume: 1,
-    rarity: 1,
-    molecule: blankMolecule,
+    volume: 2,
+    rarity: 3,
+    molecule: {
+      atoms: [
+        { color: 'magenta', x: 0, y: -1 },
+        { color: 'red', x: 2, y: -1 },
+        { color: 'gray', x: 0, y: 0 },
+        { color: 'yellow', x: 2, y: 0 },
+      ],
+      connections: [
+        { from: { x: 0, y: -1 }, to: { x: 0, y: 0 } },
+        { from: { x: 0, y: 0 }, to: { x: 2, y: -1 } },
+        { from: { x: 2, y: -1 }, to: { x: 2, y: 0 } },
+      ],
+    },
   },
   insulation_tape: {
     name: 'Tape',
@@ -1070,27 +1092,78 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
   },
   pine_cone: {
     name: 'Pine Cone',
-    volume: 1,
+    volume: 4,
     rarity: 1,
-    molecule: blankMolecule,
+    molecule: {
+      atoms: [
+        { color: 'red', x: 0, y: -1 },
+        { color: 'red', x: 1, y: -1 },
+        { color: 'red', x: 1, y: 0 },
+        { color: 'red', x: 0, y: 1 },
+      ],
+      connections: [
+        { from: { x: 0, y: 1 }, to: { x: 1, y: 0 } },
+        { from: { x: 1, y: 0 }, to: { x: 1, y: -1 } },
+        { from: { x: 1, y: -1 }, to: { x: 0, y: -1 } },
+      ],
+    },
   },
   pine_toy: {
     name: 'Pine Toy',
-    volume: 1,
-    rarity: 1,
-    molecule: blankMolecule,
+    volume: 3,
+    rarity: 3,
+    molecule: {
+      atoms: [
+        { color: 'red', x: -1, y: 0 },
+        { color: 'red', x: 0, y: 0 },
+        { color: 'red', x: 1, y: 0 },
+        { color: 'cyan', x: -1, y: 1 },
+      ],
+      connections: [
+        { from: { x: -1, y: 1 }, to: { x: 0, y: 0 } },
+        { from: { x: -1, y: 0 }, to: { x: -1, y: 1 } },
+        { from: { x: 0, y: 0 }, to: { x: -1, y: 0 } },
+        { from: { x: 1, y: 0 }, to: { x: 0, y: 0 } },
+      ],
+    },
   },
   paint: {
     name: 'Paint',
-    volume: 1,
-    rarity: 1,
-    molecule: blankMolecule,
+    volume: 3,
+    rarity: 2,
+    molecule: {
+      atoms: [
+        { color: 'red', x: 0, y: -1 },
+        { color: 'blue', x: 1, y: -1 },
+        { color: 'blue', x: -1, y: 0 },
+        { color: 'emerald', x: 0, y: 0 },
+        { color: 'red', x: 1, y: 0 },
+      ],
+      connections: [
+        { from: { x: 0, y: -1 }, to: { x: -1, y: 0 } },
+        { from: { x: 0, y: 0 }, to: { x: 1, y: 0 } },
+        { from: { x: 1, y: -1 }, to: { x: 0, y: -1 } },
+        { from: { x: 1, y: -1 }, to: { x: 0, y: 0 } },
+        { from: { x: 1, y: -1 }, to: { x: 1, y: 0 } },
+        { from: { x: -1, y: 0 }, to: { x: 0, y: 0 } },
+      ],
+    },
   },
   brush: {
     name: 'Brush',
-    volume: 1,
+    volume: 2,
     rarity: 1,
-    molecule: blankMolecule,
+    molecule: {
+      atoms: [
+        { color: 'blue', x: -1, y: 0 },
+        { color: 'green', x: 0, y: 0 },
+        { color: 'blue', x: 1, y: 0 },
+      ],
+      connections: [
+        { from: { x: 0, y: 0 }, to: { x: 1, y: 0 } },
+        { from: { x: 0, y: 0 }, to: { x: -1, y: 0 } },
+      ],
+    },
   },
   tall_glass: {
     name: 'Tall Glass',

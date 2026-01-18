@@ -1,6 +1,6 @@
 <template>
   <div class="panel all-items" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
-    <div class="essence-header" :class="{ reserved: essenceKeys.length === 0 }" :aria-hidden="essenceKeys.length === 0">
+    <div v-if="!hideSortingUi" class="essence-header" :class="{ reserved: essenceKeys.length === 0 }" :aria-hidden="essenceKeys.length === 0">
       <button
         class="essence-btn raid-sort-btn"
         type="button"
@@ -85,6 +85,7 @@ const props = defineProps<{
   showRarityLabel?: boolean;
   showScores?: boolean;
   showVolumes?: boolean;
+  hideSortingUi?: boolean;
 }>();
 const emit = defineEmits<{
   (e: 'pick-item', id: string): void;

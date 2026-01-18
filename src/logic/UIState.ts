@@ -101,6 +101,7 @@ export const uiState = reactive({
   hasDiscoveredRaidSpeed: false,
   hasDiscoveredRaidSelection: false,
   hasDiscoveredCyanYield: false,
+  hasDiscoveredSignatureInfo: false,
   hasVisitedRefineTab: false,
   hasVisitedResearchTab: false,
   hasVisitedMazeTab: false,
@@ -283,6 +284,7 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.hasDiscoveredRaidSpeed = game.discoveries[DISCOVERY.UI_RAID_SPEED] === true;
   uiState.hasDiscoveredRaidSelection = game.discoveries[DISCOVERY.UI_RAID_SELECTION] === true;
   uiState.hasDiscoveredCyanYield = game.discoveries[DISCOVERY.CYAN_YIELD] === true;
+  uiState.hasDiscoveredSignatureInfo = game.discoveries[DISCOVERY.UI_SIGNATURE_INFO] === true;
   uiState.hasVisitedRefineTab = game.discoveries[DISCOVERY.TAB_REFINE_VISITED] === true;
   uiState.hasVisitedResearchTab = game.discoveries[DISCOVERY.TAB_RESEARCH_VISITED] === true;
   uiState.hasVisitedMazeTab = game.discoveries[DISCOVERY.TAB_MAZE_VISITED] === true;

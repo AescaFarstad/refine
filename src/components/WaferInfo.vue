@@ -9,7 +9,7 @@
       </div>
       <div
         class="info-tab"
-        :class="{ active: infoTab === 'signatures' }"
+        :class="{ active: infoTab === 'signatures', flashing: shouldFlashSignaturesTab }"
       >
         Signatures
       </div>
@@ -122,6 +122,8 @@ import { computed, onMounted, ref } from 'vue';
 import Signatures from './Signatures.vue';
 import atlasStorage from '../logic/AtlasStorage';
 import { DISCOVERY } from '../logic/DiscoveryLib';
+import { CmdDiscover } from '../logic/input/InputCommands';
+import { globalInputQueue } from '../logic/Model';
 import type { Point2 } from '../logic/ItemLib';
 import { getResourceSpec } from '../logic/Resources';
 import { uiState, getGameState } from '../logic/UIState';
@@ -264,9 +266,17 @@ function essenceLetter(k: string): string {
   return m[k] || k[0]?.toUpperCase() || '?';
 }
 
+const shouldFlashSignaturesTab = computed(() => {
+  return uiState.hasDiscoveredSignatures && !uiState.hasDiscoveredSignatureInfo;
+});
+
 function cycleInfoTab() {
   if (!showSignatureTabs.value) return;
-  infoTab.value = infoTab.value === 'wafer' ? 'signatures' : 'wafer';
+  const newTab = infoTab.value === 'wafer' ? 'signatures' : 'wafer';
+  infoTab.value = newTab;
+  if (newTab === 'signatures' && !uiState.hasDiscoveredSignatureInfo) {
+    globalInputQueue.push(new CmdDiscover({ discoveryId: DISCOVERY.UI_SIGNATURE_INFO }));
+  }
 }
 </script>
 
@@ -419,5 +429,22 @@ function cycleInfoTab() {
   background: rgba(239, 68, 68, 0.25);
   box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
   border-radius: 4px;
+}
+
+/* Flashing animation for Signatures tab when newly discovered */
+.info-tab.flashing {
+  animation: tab-flash 1.2s ease-in-out infinite;
+}
+
+@keyframes tab-flash {
+  0%, 100% {
+    color: var(--text-secondary);
+    background: transparent;
+  }
+  50% {
+    color: #4fd1c5;
+    background: rgba(79, 209, 197, 0.2);
+    text-shadow: 0 0 10px rgba(79, 209, 197, 0.8);
+  }
 }
 </style>

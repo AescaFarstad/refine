@@ -20,27 +20,32 @@
         <div v-if="showYield" class="stat-row">
           <span class="stat-label">Yield:</span>
           <span class="stat-value" :class="{ 'yield-bonus': preview.totalYieldPct > 100 }">{{ preview.totalYieldPct }}%</span>
-          <span class="stat-source" v-if="preview.signatureYieldBonus > 0">
-            +{{ preview.signatureYieldBonus }}% from signatures
-          </span>
-          <span class="stat-source" v-if="preview.newSignatureYieldBonus > 0">
-            +{{ preview.newSignatureYieldBonus }}% from NEW signatures
-            <template v-for="sig in preview.newSignatureMatches" :key="sig.id">
-              <span
-                class="sig-inline"
-                :style="signatureInlineStyle(sig.id)"
-              />
+          <span class="stat-source">
+            <template v-if="preview.signatureYieldBonus > 0">
+              +{{ preview.signatureYieldBonus }}% from signatures
             </template>
-          </span>
-          <span class="stat-source" v-if="preview.cyanYieldBonus > 0">
-            +{{ preview.cyanYieldBonus }}% from {{ cyanEssences }}
-            <template v-for="key in cyanEssenceKeys" :key="key">
-              <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
-              <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
+            <template v-if="preview.newSignatureYieldBonus > 0">
+              <template v-if="preview.signatureYieldBonus > 0">, </template>
+              +{{ preview.newSignatureYieldBonus }}% from NEW signatures
+              <template v-for="sig in preview.newSignatureMatches" :key="sig.id">
+                <span
+                  class="sig-inline"
+                  :style="signatureInlineStyle(sig.id)"
+                />
+              </template>
             </template>
-          </span>
-          <span class="stat-source" v-if="preview.uniqueItemsYieldBonus > 0">
-            +{{ preview.uniqueItemsYieldBonus }}% from unique items
+            <template v-if="preview.cyanYieldBonus > 0">
+              <template v-if="preview.signatureYieldBonus > 0 || preview.newSignatureYieldBonus > 0">, </template>
+              +{{ preview.cyanYieldBonus }}% from {{ cyanEssences }}
+              <template v-for="key in cyanEssenceKeys" :key="key">
+                <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
+                <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
+              </template>
+            </template>
+            <template v-if="preview.uniqueItemsYieldBonus > 0">
+              <template v-if="preview.signatureYieldBonus > 0 || preview.newSignatureYieldBonus > 0 || preview.cyanYieldBonus > 0">, </template>
+              +{{ preview.uniqueItemsYieldBonus }}% from unique items
+            </template>
           </span>
         </div>
 

@@ -8,7 +8,7 @@
       <Maze v-else-if="activeTab === 'maze'" />
     </section>
   </main>
-  <RaidOutcomeModal />
+  <RaidOutcomeModal v-if="uiState.lastOutcome" />
   <GearUpgradeModal />
   <SignatureLearnModal />
   <CheatOverlay />

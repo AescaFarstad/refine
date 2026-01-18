@@ -94,7 +94,7 @@
               <div class="wlabel">{{ weight }}/{{ maxWeight }} weight</div>
             </div>
           </div>
-          <div class="speed">Speed: {{ speedKmH.toFixed(2) }} km/h</div>
+          <div class="speed">{{ speedKmH.toFixed(2) }} km/h</div>
           <div class="time">Walking time: {{ walkingTime }}</div>
         </div>
         <div v-if="overweight" class="overweight-warning">

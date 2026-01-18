@@ -18,12 +18,12 @@
 
 {
   image:ChatGPT Image Oct 12, 2025, 09_15_01 PM.png
-  content:fur_shapka condensed_milk wrench soviet_champagne
+  content:fur_shapka condensed_milk wrench _
 }
 
 {
   image:ChatGPT Image Oct 12, 2025, 07_08_47 PM.png
-  content:vodka_bottle canned_sprats tea_brick old_cigarettes
+  content:_ canned_sprats tea_brick old_cigarettes
 }
 
 {
@@ -135,8 +135,33 @@
   image:ChatGPT Image Jan 5, 2026, 12_56_05 AM.png
   content: lightning_remains dendroid_remains soldier_remains squid_remains
 }
-#start
+
 {
   image:ChatGPT Image Jan 17, 2026, 05_53_29 PM.png
   content: spider_portrait wall_piece satillite_dish xray_photo
+}
+
+{
+  image:ChatGPT Image Jan 18, 2026, 02_33_33 PM.png
+  content: red_christmas_ball pine_cone brush glass
+}
+
+{
+  image:ChatGPT Image Jan 18, 2026, 02_33_33 PM.png
+  content: pine_toy tall_glass pait _
+}
+#start
+{
+  image:ChatGPT Image Jan 18, 2026, 03_14_29 PM.png
+  content: soviet_champagne vodka_bottle poetry_book captains_hat 
+}
+
+{
+  image:ChatGPT Image Jan 18, 2026, 03_23_55 PM.png
+  content: _ driving_wheel aspirator spinner
+}
+
+{
+  image:ChatGPT Image Jan 18, 2026, 03_47_37 PM.png
+  content: pushkin _ tire corkscrew
 }

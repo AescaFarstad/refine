@@ -172,13 +172,16 @@ const hintSections = computed<HintSection[]>(() => {
       }
     } else if (r.kind === 'raid_add_item' && lib && sentiment) {
       if (q.showAddedItems) {
-        const name = lib.getItem(r.itemId).name;
-        outcomeItems.push({ text: `Drops: ${name}`, sentiment });
+        const names = r.itemIds.map(id => lib.getItem(id).name);
+        outcomeItems.push({ text: `Possible loot in raid: ${names.join(', ')}`, sentiment });
       } else {
         outcomeItems.push({ text: 'New items can be found in raid', sentiment });
       }
     } else if (r.kind === 'unlock_raid' && sentiment) {
       outcomeItems.push({ text: 'Discover a new raid location', sentiment });
+    } else if (r.kind === 'unlock_gear' && lib) {
+      const gearName = lib.gear.get(r.gearId)?.name ?? r.gearId;
+      outcomeItems.push({ text: `Gear: ${gearName}`, sentiment: 'positive' });
     } else if (r.kind === 'countable_gear' && lib) {
       const gearName = lib.gear.get(r.gearId)?.name ?? r.gearId;
       outcomeItems.push({ text: `+${r.amount} ${gearName}`, sentiment: 'positive' });

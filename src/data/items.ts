@@ -344,6 +344,18 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
     rarity: 1,
     molecule: blankMolecule,
   },
+  corkscrew: {
+    name: 'Corkscrew',
+    volume: 1,
+    rarity: 1,
+    molecule: blankMolecule,
+  },
+  poetry_book: {
+    name: 'Poetry Book',
+    volume: 1,
+    rarity: 1,
+    molecule: blankMolecule,
+  },
   tea_brick: {
     name: 'Tea Brick',
     volume: 1,
@@ -693,12 +705,6 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
       ],
     },
   },
-  item_smoke_grenade: {
-    name: 'Smoke Grenade',
-    volume: 1,
-    rarity: 1,
-    molecule: blankMolecule,
-  },
   door_handle: {
     name: 'Door Handle',
     volume: 3,
@@ -1034,11 +1040,21 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
       ],
     },
   },
-  christmas_ball: {
+  red_christmas_ball: {
     name: 'Christmas Ball',
     volume: 2,
     rarity: 3,
-    molecule: blankMolecule,
+    molecule: {
+      atoms: [
+        { color: 'crimson', x: 0, y: -1 },
+        { color: 'red', x: 1, y: -1 },
+        { color: 'red', x: -1, y: 0 },
+      ],
+      connections: [
+        { from: { x: 0, y: -1 }, to: { x: 1, y: -1 } },
+        { from: { x: 0, y: -1 }, to: { x: -1, y: 0 } },
+      ],
+    },
   },
   frying_pan: {
     name: 'Frying Pan',
@@ -1048,6 +1064,36 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
   },
   ruined_ammunition_7_62: {
     name: 'Ruined Ammunition 7.62',
+    volume: 1,
+    rarity: 1,
+    molecule: blankMolecule,
+  },
+  pine_cone: {
+    name: 'Pine Cone',
+    volume: 1,
+    rarity: 1,
+    molecule: blankMolecule,
+  },
+  pine_toy: {
+    name: 'Pine Toy',
+    volume: 1,
+    rarity: 1,
+    molecule: blankMolecule,
+  },
+  paint: {
+    name: 'Paint',
+    volume: 1,
+    rarity: 1,
+    molecule: blankMolecule,
+  },
+  brush: {
+    name: 'Brush',
+    volume: 1,
+    rarity: 1,
+    molecule: blankMolecule,
+  },
+  tall_glass: {
+    name: 'Tall Glass',
     volume: 1,
     rarity: 1,
     molecule: blankMolecule,

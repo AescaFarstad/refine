@@ -1,5 +1,5 @@
 <template>
-  <div v-if="visible" class="modal-backdrop">
+  <div class="modal-backdrop">
     <div class="modal">
       <header class="modal-header">
         <div class="header-top">
@@ -14,10 +14,10 @@
           </div>
         </div>
         <div class="header-bars" :class="{ 'no-transition': suppressBarTransition }">
-          <div class="bar-panel time-bar" :style="{ '--bar-pct': timeBarPct + '%', '--danger': timeDangerLevel }">
+          <div class="bar-panel time-bar" :class="{ flashing: timeBarFlashing }" :style="{ '--bar-pct': timeBarPct + '%', '--danger': timeDangerLevel }">
             <div class="bar-label">{{ formatHMS(displayedTimeSec) }}<span class="bar-max" v-if="zoneCollapseSec > 0"> / {{ formatHMS(zoneCollapseSec) }}</span></div>
           </div>
-          <div class="bar-panel health-bar" :style="{ '--bar-pct': healthBarPct + '%', '--danger': healthDangerLevel }">
+          <div class="bar-panel health-bar" :class="{ flashing: healthBarFlashing }" :style="{ '--bar-pct': healthBarPct + '%', '--danger': healthDangerLevel }">
             <div class="bar-label">{{ currentHp }} / {{ currentMaxHp }} HP</div>
           </div>
           <div class="bar-panel bags-bar" :style="{ '--bar-pct': bagsBarPct + '%' }">
@@ -124,7 +124,6 @@ import RaidOutcomeLogPlayback from './raidOutcome/RaidOutcomeLogPlayback.vue';
 import { describeMutation, type RaidMutation } from '../logic/RaidMutation';
 import { getResourceSpec, type ResourceKey } from '../logic/Resources';
 
-const visible = computed(() => uiState.lastOutcome !== null);
 const outcome = computed(() => uiState.lastOutcome!);
 const logEntries = computed<RaidEventLogEntry[]>(() => outcome.value.log.entries);
 
@@ -213,6 +212,41 @@ const healthDangerLevel = computed(() => {
   const max = currentMaxHp.value;
   if (max <= 0) return 1;
   return 1 - Math.min(1, currentHp.value / max);
+});
+
+// Flashing states for critical conditions
+const healthBarFlashingCondition = computed(() => currentHp.value <= 0);
+const timeBarFlashingCondition = computed(() => {
+  const max = zoneCollapseSec.value;
+  if (max <= 0) return false;
+  return displayedTimeSec.value >= max && !outcome.value.success;
+});
+
+const healthBarFlashing = ref(false);
+const timeBarFlashing = ref(false);
+let healthFlashTimeout: ReturnType<typeof setTimeout> | null = null;
+let timeFlashTimeout: ReturnType<typeof setTimeout> | null = null;
+
+watch(healthBarFlashingCondition, (shouldFlash) => {
+  if (shouldFlash) {
+    healthBarFlashing.value = true;
+    if (healthFlashTimeout) clearTimeout(healthFlashTimeout);
+    healthFlashTimeout = setTimeout(() => { healthBarFlashing.value = false; }, 1000);
+  } else {
+    healthBarFlashing.value = false;
+    if (healthFlashTimeout) { clearTimeout(healthFlashTimeout); healthFlashTimeout = null; }
+  }
+});
+
+watch(timeBarFlashingCondition, (shouldFlash) => {
+  if (shouldFlash) {
+    timeBarFlashing.value = true;
+    if (timeFlashTimeout) clearTimeout(timeFlashTimeout);
+    timeFlashTimeout = setTimeout(() => { timeBarFlashing.value = false; }, 1000);
+  } else {
+    timeBarFlashing.value = false;
+    if (timeFlashTimeout) { clearTimeout(timeFlashTimeout); timeFlashTimeout = null; }
+  }
 });
 
 const raidSuccess = computed(() => outcome.value.success);
@@ -318,6 +352,13 @@ const raidChangesPills = computed<RaidChangePill[]>(() => {
   return out;
 });
 
+function clearFlashTimeouts() {
+  if (healthFlashTimeout) { clearTimeout(healthFlashTimeout); healthFlashTimeout = null; }
+  if (timeFlashTimeout) { clearTimeout(timeFlashTimeout); timeFlashTimeout = null; }
+  healthBarFlashing.value = false;
+  timeBarFlashing.value = false;
+}
+
 // Watch the outcome object itself to catch new raids starting
 watch(() => uiState.lastOutcome, (newOutcome) => {
   if (newOutcome) {
@@ -332,6 +373,7 @@ watch(() => uiState.lastOutcome, (newOutcome) => {
     currentMaxHp.value = 0;
     currentBagsUsed.value = 0;
     currentBagsCapacity.value = 0;
+    clearFlashTimeouts();
   } else {
     shownCount.value = 0;
     displayedTimeSec.value = 0;
@@ -340,12 +382,14 @@ watch(() => uiState.lastOutcome, (newOutcome) => {
     currentMaxHp.value = 0;
     currentBagsUsed.value = 0;
     currentBagsCapacity.value = 0;
+    clearFlashTimeouts();
     document.body.style.overflow = '';
   }
 });
 
 onBeforeUnmount(() => {
   document.body.style.overflow = '';
+  clearFlashTimeouts();
 });
 
 function fastForward() {
@@ -400,6 +444,16 @@ function formatHMS(totalSec?: number): string { return formatDurationHM(totalSec
 .bar-panel.time-bar::before { background: color-mix(in srgb, rgba(239, 68, 68, 0.4) calc(var(--danger, 0) * 100%), rgba(79, 209, 197, 0.3)); }
 .bar-panel.health-bar::before { background: color-mix(in srgb, rgba(239, 68, 68, 0.4) calc(var(--danger, 0) * 100%), rgba(104, 211, 145, 0.3)); }
 .bar-panel.bags-bar::before { background: rgba(246, 173, 85, 0.3); }
+.bar-panel.flashing {
+  animation: erratic-flash 0.15s infinite;
+}
+@keyframes erratic-flash {
+  0% { background: rgba(239, 68, 68, 0.5); box-shadow: 0 0 12px rgba(239, 68, 68, 0.6); }
+  25% { background: rgba(0, 0, 0, 0.5); box-shadow: none; }
+  50% { background: rgba(239, 68, 68, 0.7); box-shadow: 0 0 18px rgba(239, 68, 68, 0.8); }
+  75% { background: rgba(0, 0, 0, 0.3); box-shadow: 0 0 6px rgba(239, 68, 68, 0.3); }
+  100% { background: rgba(239, 68, 68, 0.4); box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+}
 .header-bars.no-transition .bar-panel::before { transition: none; }
 .bar-label { position: relative; z-index: 1; font-size: 12px; font-weight: 600; opacity: 0.9; }
 .bar-label .bar-max { opacity: 0.6; }

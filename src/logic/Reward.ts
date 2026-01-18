@@ -23,7 +23,7 @@ export type Reward =
   | { kind: 'raid_mutation'; mutation: RaidMutation; targetRaidId?: string; sentiment?: 'positive' | 'negative' }
   | { kind: 'raid_loot_chance'; delta: number; targetRaidId?: string; sentiment?: 'positive' | 'negative' }
   | { kind: 'raid_rarity_buff'; delta: number; targetRaidId?: string; sentiment?: 'positive' | 'negative' }
-  | { kind: 'raid_add_item'; itemId: string; targetRaidId?: string; sentiment?: 'positive' | 'negative' }
+  | { kind: 'raid_add_item'; itemIds: string[]; targetRaidId?: string; sentiment?: 'positive' | 'negative' }
   ;
 
 export interface RewardContext {
@@ -122,8 +122,10 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
     case 'raid_add_item': {
       const raidId = (reward.targetRaidId ?? context.activeRaidId)!;
       const raidDef = gs.lib.raids.get(raidId)!;
-      if (!raidDef.items.includes(reward.itemId)) {
-        raidDef.items.push(reward.itemId);
+      for (const itemId of reward.itemIds) {
+        if (!raidDef.items.includes(itemId)) {
+          raidDef.items.push(itemId);
+        }
       }
       break;
     }

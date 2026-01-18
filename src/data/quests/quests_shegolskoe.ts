@@ -3,7 +3,7 @@ import type { RawQuestDefinition } from '../../logic/QuestLib';
 const quests: Record<string, RawQuestDefinition> = {
   shegolskoe_explore_loot_locations: {
     name: 'Explore new loot locations',
-    encounterLine: 'A number of buildings in Shegolskoe attract zone inhabitants. Preliminary scouting will show what awaits inside and who might we ran into along the way.',
+    description: 'A number of buildings in Shegolskoe attract zone inhabitants. Preliminary scouting will show what awaits inside and who might we ran into along the way.',
     raidRestriction: ['shegolskoe'],
     requiresRaidSuccesses: 1,
     encounters: [
@@ -12,7 +12,7 @@ const quests: Record<string, RawQuestDefinition> = {
   },
   shegolskoe_break_spikder: {
     name: 'Investigate the artist\'s dacha',
-    encounterLine: 'A powerful spikder is crawling around a spacious dacha of a famous artist. Weed them out and claim the territory.',
+    description: 'A powerful spikder is crawling around a spacious dacha of a famous artist. Weed them out and claim the territory.',
     requiresRaidQuestCompletions: 1,
     raidRestriction: ['shegolskoe'],
     encounters: [
@@ -21,11 +21,12 @@ const quests: Record<string, RawQuestDefinition> = {
     rewards: [
       { kind: 'raid_loot_chance', delta: 5 },
       { kind: 'raid_mutation', mutation: { kind: 'LootMutation', count: 1 } },
+      { kind: 'raid_add_item', itemIds: ['paint', 'brush'] },
     ],
   },
   shegolskoe_break_flower: {
     name: 'Clear the well',
-    encounterLine: 'There is a giant flower in the form of a human, growing around the village well. It blocks the way to a two-story dacha and a picknick spot. Weed them out and claim the territory.',
+    description: 'There is a giant flower in the form of a human, growing around the village well. It blocks the way to a two-story dacha and a picknick spot. Weed them out and claim the territory.',
     requiresRaidQuestCompletions: 1,
     raidRestriction: ['shegolskoe'],
     encounters: [
@@ -37,20 +38,21 @@ const quests: Record<string, RawQuestDefinition> = {
   },
   shegolskoe_break_distorted_pack: {
     name: 'Visit the shop',
-    encounterLine: 'A pack of distorted humanoids are sleeping next to the village shop entrance. Weed them out and gain access to the shop\'s contents.',
+    description: 'A pack of distorted humanoids are sleeping next to the village shop entrance. Weed them out and gain access to the shop\'s contents.',
     requiresRaidQuestCompletions: 1,
     raidRestriction: ['shegolskoe'],
     encounters: [
       { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 3 },
     ],
     rewards: [
-      { kind: 'raid_add_item', itemId: 'red_rubber_ball' },
+      { kind: 'raid_add_item', itemIds: ['red_rubber_ball', 'red_christmas_ball', 'ruined_ammo_cartridge'] },
       { kind: 'raid_rarity_buff', delta: 10 },
     ],
   },
   shegolskoe_locate_next_zone: {
     name: 'Locate another zone',
-    encounterLine: 'The resources are deplete while monsters multiply. Climb the water tower and take a bearing on the nearby zones.',
+    description: 'The resources are deplete while monsters multiply. Climb the water tower and take a bearing on the nearby zones.',
+    encounterLine: 'There is a larger settlement nearby - Ozernoye.',
     requiresRaidQuestCompletions: 3,
     raidRestriction: ['shegolskoe'],
     encounterTimeMin: 50,
@@ -61,6 +63,60 @@ const quests: Record<string, RawQuestDefinition> = {
     ],
     rewards: [
       { kind: 'unlock_raid', raidId: 'ozernoye' },
+      { kind: 'raid_loot_chance', delta: 5 },
+    ],
+  },
+  shegolskoe_forest: {
+    name: 'Investigate the forester\'s house',
+    description: 'The forest consumed this one before the burdok did.',
+    requiresRaidQuestCompletions: 3,
+    requiresRaidSuccesses: 18,
+    raidRestriction: ['shegolskoe'],
+    encounters: [
+      { kind: 'WalkMutation', count: 1 },
+      { kind: 'AddMonsterMutation', monsterId: 'burdock', count: 15 },
+    ],
+    rewards: [
+      { kind: 'raid_rarity_buff', delta: 10 },
+      { kind: 'raid_loot_chance', delta: 10 },
+      { kind: 'raid_add_item', itemIds: ['pine_cone', 'pine_toy'] },
+      { kind: 'raid_mutation', mutation: { kind: 'AddMonsterMutation', monsterId: 'hound', count: 3 } },
+    ],
+  },
+  shegolskoe_powerstation: {
+    name: 'Investigate the power station',
+    description: 'The step-down transformer is sparking there just before the zone collapse.',
+    requiresRaidQuestCompletions: 4,
+    requiresRaidSuccesses: 22,
+    raidRestriction: ['shegolskoe'],
+    encounters: [
+      { kind: 'WalkMutation', count: 1 },
+      { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 7 },
+    ],
+    rewards: [
+      { kind: 'raid_mutation', mutation: { kind: 'ZoneCollapseTimeMutation', amount: 1200 } },
+      { kind: 'raid_mutation', mutation: { kind: 'AddMonsterMutation', monsterId: 'hound', count: 3 } },
+      { kind: 'raid_mutation', mutation: { kind: 'LootMutation', count: 3 } },
+      { kind: 'raid_add_item', itemIds: ['electrical_wire'] },
+    ],
+  },
+  shegolskoe_poet: {
+    name: 'Investigate the poet\'s house',
+    description: 'He was more than a poet, he warned about the perils of regret even before USSR had collapsed. His texts might be worth studying.',
+    encounterLine: 'Decyphering the poetry...',
+    requiresRaidQuestCompletions: 4,
+    requiresRaidSuccesses: 22,
+    encounterTimeMin: 20,
+    raidRestriction: ['shegolskoe'],
+    encounters: [
+      { kind: 'WalkMutation', count: 1 },
+      { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 7 },
+    ],
+    rewards: [
+      { kind: 'raid_mutation', mutation: { kind: 'LootMutation', count: 3 } },
+      { kind: 'raid_loot_chance', delta: 10 },
+      { kind: 'raid_mutation', mutation: { kind: 'AddMonsterMutation', monsterId: 'hound', count: 3 } },
+      { kind: 'raid_add_item', itemIds: ['tall_glass', 'soviet_champagne', 'vodka_bottle', 'corkscrew'] },
     ],
   },
 };

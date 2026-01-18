@@ -32,7 +32,7 @@ export class GameState {
   public connections: any = null;
 
 
-  public credits: number = 1000;
+  public credits: number = 2000;
   public chronotraces: number = 0;
   public timeFlux: number = 0;
   public shardDust: number = 0;

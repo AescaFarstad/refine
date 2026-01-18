@@ -553,7 +553,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
           raidMutationsApplied.push(reward.mutation);
         }
         if (reward.kind === 'raid_add_item') {
-          raidItemsAdded.push(reward.itemId);
+          raidItemsAdded.push(...reward.itemIds);
           shouldRebuildPools = true;
         }
         if (reward.kind === 'raid_loot_chance') {
@@ -637,17 +637,14 @@ export function getEffectiveRaidDefinition(gs: GameState, raidId: string): RaidD
   const gear = loadoutGear(gs, raidId);
   applyGearToRaidDefinition(def, gear);
 
-  // Apply Xeno hound Bait encounter to current raid when equipped
   const hasXenoHoundBait = gear.some(g => g.perk === Perks.XENO_HOUND_BAIT);
   if (hasXenoHoundBait) {
     applyRaidMutation(def, { kind: 'AddMonsterMutation', monsterId: 'hound', count: 1 });
   }
 
-  // Apply Stabilizer Beacon temporary zone collapse time bonus
   const hasStabilizerBeacon = gear.some(g => g.perk === Perks.STABILIZER_BEACON);
   if (hasStabilizerBeacon) {
-    const stabilizerTimeSec = 25 * 60; // 25 minutes in seconds
-    def.zoneCollapseSec = Math.max(0, (def.zoneCollapseSec || 0) + stabilizerTimeSec);
+    def.zoneCollapseSec = Math.max(0, (def.zoneCollapseSec || 0) + STABALIZER_BEACON_BONUS);
   }
 
   return def;

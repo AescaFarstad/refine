@@ -52,9 +52,11 @@ january 10
 january 11
   UI discoveries, fine tunning, signatures, alerts, images
 january 13
-  fixing bugs, implementign feedback
+  fixing bugs, implementign feedback, refactoring
 january 17
-  fixing bugs, implementing feedback
+  raid outcome progress bars and visuals, countable gear
+january 18
+  item bans, purple refining, quest notifications about signatures, quest logic, deck of cards, item images
 
 
 npx vue-tsc --noEmit 2>&1
@@ -199,3 +201,50 @@ What are possible choices and design decisions yet unspecified?
 permanent raid upgraids
 coloring essence which turns things magenta
 crossing items off from raid
+
+
+Trigger.ts //trigger system. Things may 'subscribe' by adding their conditions to the trigger lists.
+These lists are checked by teh game. Example: trigger "{kind: possess_items, list: [clock, watch, weight]}". Whenver the game adds items to the player's inventory, it runs checks for all triggers in gameState.triggers.possess_items[] and gives the rewards.
+
+
+Trigger //universal thing 'description of a situation which needs to happen'
+  kind possess_items
+  rewards:Reward[]
+
+Implement Projects feature
+Project.ts
+
+These are tasks for the player to complete.
+
+ProjectLibDef:
+name
+description
+kind:z5 refine_specific_item | refine_x_items | refine_x_essences | refine_x_resource | refine_with_yield_bonus | refine_together
+params //depend on kind
+  refine_specific_item: item name, count
+  refine_x_items: count
+  refine_x_unique_items: count
+  refine_x_essences: color, count
+  refine_x_resource: resource_name, count //refine that much in a single successfull refinment
+  refine_with_yield_bonus: bonus_value
+  refine_together: list of item ids and their counts to be successfully refined at the same time
+
+rewardOptions: ProjectRewardOption[]
+triggers: Trigger[] //when trigger fires, the 
+
+
+ProjectRewardOption
+  reward
+  customName
+
+
+Projects need to be started or they don't track anything
+
+Project //the started project state in gameState
+  id
+  count
+  isComplete
+  params //i.e. the unique items list that were counted
+
+
+New possible reward: start_project projectId, advance

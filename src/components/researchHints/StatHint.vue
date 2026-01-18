@@ -2,6 +2,7 @@
   <div class="hint-root">
     <div class="hint-body">
       <div v-if="statDescription">Increase {{ statDescription }} by {{ statIncrease }}</div>
+      <div v-if="statLongDescription" class="stat-desc">{{ statLongDescription }}</div>
       <div v-if="currentValue !== null" class="stat-values">{{ currentValue }} → <span class="new-value">{{ newValue }}</span></div>
       <div v-else class="stat-error">Unknown stat</div>
     </div>
@@ -20,18 +21,19 @@ const props = defineProps<{
   archetype: ResearchArchetype | null;
 }>();
 
-const statDescriptions: Record<string, string> = {
-  damage: 'Damage',
-  health: 'Health',
-  volume: 'Bags Volume',
-  baseMaxWeight: 'Max Carry Weight',
-  researchRevealRadius: 'Research Vision Radius',
-  skillPoints: 'Skill Points',
-  strength: 'Strength',
-  looting: 'Looting',
-  speed: 'Speed',
-  chanceToHit: 'Chance to Hit',
-  chanceToBlock: 'Chance to Block',
+const statInfo: Record<string, { name: string; description: string }> = {
+  damage: { name: 'Damage', description: '' },
+  health: { name: 'Health', description: '' },
+  volume: { name: 'Bags Volume', description: '' },
+  baseMaxWeight: { name: 'Max Carry Weight', description: '' },
+  researchRevealRadius: { name: 'Research Vision Radius', description: '' },
+  skillPoints: { name: 'Skill Points', description: '' },
+  strength: { name: 'Strength', description: '' },
+  looting: { name: 'Looting', description: '' },
+  speed: { name: 'Speed', description: '' },
+  chanceToHit: { name: 'Chance to Hit', description: '' },
+  chanceToBlock: { name: 'Chance to Block', description: '' },
+  itemBans: { name: 'Max blocked items', description: 'Exclude items from possible drops. (Raid selection window)' },
 };
 
 const statReward = computed(() => {
@@ -45,7 +47,14 @@ const statIncrease = computed(() => statReward.value?.value || 0);
 
 const statDescription = computed(() => {
   const id = statId.value;
-  return statDescriptions[id] || null;
+  return statInfo[id]?.name || null;
+});
+
+const statLongDescription = computed(() => {
+  const id = statId.value;
+  if (!id) return null;
+  const description = statInfo[id]?.description || '';
+  return description ? description : null;
 });
 
 const currentValue = computed(() => {
@@ -91,6 +100,14 @@ const newValue = computed(() => {
   margin-top: 4px;
   font-size: 15px;
   font-weight: 700;
+}
+
+.stat-desc {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.85;
+  white-space: normal;
 }
 
 .new-value {

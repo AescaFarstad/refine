@@ -63,7 +63,6 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
 
     case 'unlock_raid':
       gs.unlockedRaids.push(new Raid(reward.raidId));
-      // Reset raid selection discovery so the user is prompted to select the new raid
       delete gs.discoveries[DISCOVERY.UI_RAID_SELECTION];
       gs.discoveryCounter = 0;
       break;

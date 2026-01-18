@@ -68,10 +68,35 @@
                   </div>
                 </div>
 
-                <div v-if="foundRegularItems.length || foundRemainsItems.length" class="ov ov-bottom">
+                <div v-if="itemBansMax > 0" class="ov ov-bans" :style="bansPositionStyle">
+                  <div class="ban-panel-label">Items blocked</div>
+                  <div class="ban-panel-value">{{ bannedCount }} / {{ itemBansMax }}</div>
+                </div>
+
+                <div v-if="foundRegularItems.length || foundRemainsItems.length" ref="itemsPanelRef" class="ov ov-bottom">
                   <div class="ov-items" :class="{ split: foundRegularItems.length && foundRemainsItems.length }">
-                    <div v-if="foundRegularItems.length" class="ov-items-block">
-                      <ItemGrid :items="foundRegularItems" minor />
+                    <div v-if="foundRegularItems.length" class="ov-items-block ov-items-bannable">
+                      <div
+                        v-for="it in foundRegularItems"
+                        :key="it.id"
+                        class="bannable-item"
+                        :class="{ 
+                          banned: isItemBanned(it.id), 
+                          'can-ban': canBanMore || isItemBanned(it.id),
+                          'just-unbanned': justUnbannedItemId === it.id,
+                          'just-banned': justBannedItemId === it.id
+                        }"
+                        @click="toggleBan(it.id)"
+                        @mouseleave="onItemMouseLeave(it.id)"
+                      >
+                        <ItemDisplay :id="it.id" :quantity="1" minor />
+                        <div v-if="isItemBanned(it.id)" class="banned-overlay">
+                          <span class="banned-cross">✕</span>
+                        </div>
+                        <div v-else-if="canBanMore" class="ban-hover-overlay">
+                          <span class="ban-cross">✕</span>
+                        </div>
+                      </div>
                     </div>
                     <div v-if="foundRemainsItems.length" class="ov-items-block">
                       <ItemGrid :items="foundRemainsItems" minor />
@@ -94,13 +119,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { uiState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
-import { CmdSelectRaid } from '../logic/input/InputCommands';
+import { CmdSelectRaid, CmdToggleItemBan } from '../logic/input/InputCommands';
 import type { FightEncounterDef, RaidDefinition } from '../logic/RaidLib';
 import { formatDurationHM } from '../logic/StringUtils';
 import ItemGrid from './ItemGrid.vue';
+import ItemDisplay from './ItemDisplay.vue';
 import atlasStorage from '../logic/AtlasStorage';
 import { locationsAtlasFrames, locationsAtlasMeta } from '../data/locationsAtlas';
 
@@ -108,6 +134,10 @@ const props = defineProps<{ visible: boolean }>();
 const emit = defineEmits<{ close: [], selected: [] }>();
 
 const previewRaidId = ref<string | null>(null);
+const itemsPanelRef = ref<HTMLElement | null>(null);
+const itemsPanelHeight = ref<number>(0);
+const justUnbannedItemId = ref<string | null>(null);
+const justBannedItemId = ref<string | null>(null);
 
 const previewRaid = computed<RaidDefinition | null>(() => {
   if (!previewRaidId.value) return null;
@@ -272,6 +302,31 @@ const foundRemainsItems = computed(() => {
     .map(id => ({ id, quantity: 1 }));
 });
 
+function updateItemsPanelHeight() {
+  nextTick(() => {
+    if (itemsPanelRef.value) {
+      itemsPanelHeight.value = itemsPanelRef.value.offsetHeight;
+    }
+  });
+}
+
+watch([foundRegularItems, foundRemainsItems], () => {
+  updateItemsPanelHeight();
+});
+
+watch(previewRaidId, () => {
+  updateItemsPanelHeight();
+  justUnbannedItemId.value = null;
+  justBannedItemId.value = null;
+});
+
+const bansPositionStyle = computed(() => {
+  if (itemsPanelHeight.value > 0) {
+    return { bottom: `${10 + itemsPanelHeight.value + 7}px` };
+  }
+  return { bottom: '92px' }; // fallback
+});
+
 function isLocked(r: RaidDefinition): boolean {
   return !uiState.unlockedRaidIds.includes(r.id);
 }
@@ -293,6 +348,9 @@ function onSelect(id: string) {
 watch(() => props.visible, (v) => {
   if (v) {
     previewRaidId.value = uiState.activeRaidId || null;
+    updateItemsPanelHeight();
+    justUnbannedItemId.value = null;
+    justBannedItemId.value = null;
   }
 });
 
@@ -302,6 +360,59 @@ function firstUnlockedRaidId(): string | null {
     if (r && !isLocked(r)) return id;
   }
   return null;
+}
+
+// Item banning
+const itemBansMax = computed(() => uiState.itemBans);
+
+const bannedCount = computed(() => {
+  const id = previewRaidId.value;
+  if (!id) return 0;
+  return (uiState.bannedItemIdsByRaidId[id] ?? []).length;
+});
+
+const canBanMore = computed(() => {
+  return bannedCount.value < itemBansMax.value;
+});
+
+function isItemBanned(itemId: string): boolean {
+  const id = previewRaidId.value;
+  if (!id) return false;
+  return (uiState.bannedItemIdsByRaidId[id] ?? []).includes(itemId);
+}
+
+function toggleBan(itemId: string) {
+  const id = previewRaidId.value;
+  if (!id) return;
+  
+  const currentlyBanned = isItemBanned(itemId);
+  
+  // If trying to ban but already at max, do nothing
+  if (!currentlyBanned && !canBanMore.value) return;
+  
+  // Track just-banned/unbanned state to suppress hover effects until mouse leaves
+  if (currentlyBanned) {
+    justUnbannedItemId.value = itemId;
+    justBannedItemId.value = null;
+  } else {
+    justBannedItemId.value = itemId;
+    justUnbannedItemId.value = null;
+  }
+  
+  globalInputQueue.push(new CmdToggleItemBan({
+    raidId: id,
+    itemId: itemId,
+    banned: !currentlyBanned,
+  }));
+}
+
+function onItemMouseLeave(itemId: string) {
+  if (justUnbannedItemId.value === itemId) {
+    justUnbannedItemId.value = null;
+  }
+  if (justBannedItemId.value === itemId) {
+    justBannedItemId.value = null;
+  }
 }
 </script>
 
@@ -582,6 +693,26 @@ function firstUnlockedRaidId(): string | null {
   font-weight: 900;
   color: var(--text-primary);
 }
+.ov-bans {
+  left: 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 12px;
+  align-items: baseline;
+  min-width: 180px;
+  font-size: 13px;
+}
+.ban-panel-label {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
+  opacity: 0.85;
+}
+.ban-panel-value {
+  font-weight: 900;
+  color: var(--text-primary);
+}
 .ov-bottom {
   left: 10px;
   right: 10px;
@@ -647,4 +778,92 @@ function firstUnlockedRaidId(): string | null {
 .raid-list::-webkit-scrollbar-thumb:hover { background: rgba(79, 209, 197, 0.5); }
 .raid-list::-webkit-scrollbar-thumb:active { background: rgba(79, 209, 197, 0.6); }
 .raid-list { scrollbar-width: thin; scrollbar-color: rgba(79, 209, 197, 0.3) rgba(0, 0, 0, 0.2); }
+
+/* Item banning */
+.ov-items-bannable {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+
+.bannable-item {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  overflow: hidden;
+  transition: transform 0.15s ease, opacity 0.15s ease, filter 0.15s ease;
+}
+
+.bannable-item.can-ban {
+  cursor: pointer;
+}
+
+/* Banned: half-transparent */
+.bannable-item.banned {
+  opacity: 0.5;
+  filter: grayscale(0.7);
+  cursor: pointer;
+}
+
+/* Banned: hover restores opacity, lifts, hides red (unless just-banned) */
+.bannable-item.banned:not(.just-banned):hover {
+  opacity: 1;
+  filter: grayscale(0);
+  transform: translateY(-2px);
+}
+
+.bannable-item.banned:not(.just-banned):hover .banned-overlay {
+  opacity: 0;
+}
+
+/* Just-unbanned: stay flat (no lift) */
+.bannable-item.just-unbanned {
+  transform: translateY(0);
+}
+
+/* Overlays: match item-cell bounds (48x48 with border-radius 6px) */
+.banned-overlay,
+.ban-hover-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  border-radius: 6px;
+}
+
+.banned-overlay {
+  background: rgba(220, 38, 38, 0.4);
+  transition: opacity 0.15s ease;
+}
+
+.banned-cross {
+  color: #fca5a5;
+  font-weight: 400;
+  font-size: 36px;
+  line-height: 1;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+}
+
+.ban-hover-overlay {
+  opacity: 0;
+  background: rgba(220, 38, 38, 0.4);
+  transition: opacity 0.15s ease;
+}
+
+/* Unbanned: hover shows overlay (unless just-unbanned) */
+.bannable-item.can-ban:not(.banned):not(.just-unbanned):hover .ban-hover-overlay {
+  opacity: 1;
+}
+
+.ban-cross {
+  color: #fca5a5;
+  font-weight: 400;
+  font-size: 36px;
+  line-height: 1;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+}
 </style>

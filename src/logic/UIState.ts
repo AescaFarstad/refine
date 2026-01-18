@@ -48,6 +48,8 @@ export const uiState = reactive({
   activeQuests: [] as string[],
   questProgressById: {} as Record<string, number>,
   raidFoundItemIdsByRaidId: {} as Record<string, string[]>,
+  bannedItemIdsByRaidId: {} as Record<string, string[]>,
+  itemBans: 0,
 
   activeRaidId: '',
   selectedGearPrice: 0,
@@ -215,6 +217,15 @@ export function SyncUIFromGameState(game: GameState): void {
       lastUnlockedRaidIdsKey = unlockedKey;
     }
   }
+
+  {
+    const banned: Record<string, string[]> = {};
+    for (const r of game.unlockedRaids) {
+      banned[r.id] = [...r.bannedItemIds];
+    }
+    uiState.bannedItemIdsByRaidId = banned;
+  }
+  uiState.itemBans = game.itemBans;
 
   uiState.activeRaidId = game.raid.id;
   uiState.selectedGearPrice = game.selectedGearPrice ?? 0;

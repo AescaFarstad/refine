@@ -44,6 +44,7 @@ export class GameState {
   public chanceToHit: number = 60;
   public chanceToBlock: number = 30;
   public health: number = 10;
+  public itemBans: number = 0;
   public wafer: Wafer = createWafer(2);
   public waferSize: Point2 = { x: 0, y: 0 };
   public waferUpgradesPurchased: number = 0;
@@ -155,6 +156,7 @@ export class Raid {
   public tmpLootBuff: number = 0;
 
   public foundItemIds: string[] = [];
+  public bannedItemIds: string[] = [];
 
 }
 

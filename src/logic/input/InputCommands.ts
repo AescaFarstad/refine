@@ -175,3 +175,15 @@ export class CmdDismissUIModal implements CmdInput {
     this.rewards = args.rewards ?? [];
   }
 }
+
+export class CmdToggleItemBan implements CmdInput {
+  readonly name = 'CmdToggleItemBan';
+  readonly raidId: string;
+  readonly itemId: string;
+  readonly banned: boolean;
+  constructor(args: { raidId: string; itemId: string; banned: boolean }) {
+    this.raidId = args.raidId;
+    this.itemId = args.itemId;
+    this.banned = args.banned;
+  }
+}

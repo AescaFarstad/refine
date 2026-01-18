@@ -1,6 +1,6 @@
 import { type GameState, Raid } from '../GameState';
 import type { CheatInput } from './CheatCommands';
-import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources, CheatUnlockAllRaids, CheatLoadResearchState, CheatUnlockAllQuests, CheatDisableQuestPrereqs, CheatGrantDiscoveries, CheatGrantRewards, CheatLearnSignatures, CheatCompleteSignatures } from './CheatCommands';
+import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources, CheatUnlockAllRaids, CheatLoadResearchState, CheatUnlockAllQuests, CheatDisableQuestPrereqs, CheatGrantDiscoveries, CheatGrantRewards, CheatLearnSignatures, CheatCompleteSignatures, CheatAddItemBans } from './CheatCommands';
 import type { EncounterDef } from '../RaidLib';
 import { applyResearchNodeEffect, axialToIndex, calculateVisibility } from '../Research';
 import { setEnableQuestPrereqs } from '../Const';
@@ -156,6 +156,11 @@ handlersByName.set('CheatCompleteSignatures', (gs, cheat) => {
       gs.completedSignatureIds.push(id);
     }
   }
+});
+
+handlersByName.set('CheatAddItemBans', (gs, cheat) => {
+  const c = cheat as CheatAddItemBans;
+  gs.itemBans += c.amount;
 });
 
 export function processCheats(gs: GameState): void {

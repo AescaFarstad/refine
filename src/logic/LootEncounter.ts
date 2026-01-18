@@ -64,6 +64,7 @@ export interface LootEncounterContext {
   items: string[];
   poolsByRarity: Record<LootRarity, string[]>;
   baseLootChance: number;
+  bannedItemIds?: string[];
 }
 
 export function handleLootLikeEncounter(
@@ -108,7 +109,18 @@ export function handleLootLikeEncounter(
     return entry;
   }
 
-  const pools = ctx.poolsByRarity
+  const bannedSet = ctx.bannedItemIds && ctx.bannedItemIds.length > 0
+    ? new Set(ctx.bannedItemIds)
+    : null;
+
+  const pools: Record<LootRarity, string[]> = bannedSet
+    ? {
+        common: ctx.poolsByRarity.common.filter(id => !bannedSet.has(id)),
+        uncommon: ctx.poolsByRarity.uncommon.filter(id => !bannedSet.has(id)),
+        rare: ctx.poolsByRarity.rare.filter(id => !bannedSet.has(id)),
+        legendary: ctx.poolsByRarity.legendary.filter(id => !bannedSet.has(id)),
+      }
+    : ctx.poolsByRarity;
 
   const poolSizes: Record<LootRarity, number> = {
     common: pools.common.length,

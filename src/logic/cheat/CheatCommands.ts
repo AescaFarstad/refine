@@ -93,3 +93,11 @@ export class CheatCompleteSignatures implements CheatInput {
     this.signatureIds = args.signatureIds ?? [];
   }
 }
+
+export class CheatAddItemBans implements CheatInput {
+  readonly name = 'CheatAddItemBans';
+  readonly amount: number;
+  constructor(args: { amount: number }) {
+    this.amount = args.amount;
+  }
+}

@@ -1,7 +1,7 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal } from './InputCommands';
+import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan } from './InputCommands';
 import { discover, discoverRefineTab, ensureSignatureDiscoveryFromWafer } from '../Discover';
 import { DISCOVERY } from '../DiscoveryLib';
 import { computeEffectiveEssences } from '../RefinePreview';
@@ -418,6 +418,23 @@ handlersByName.set('CmdDismissUIModal', (gs, cmd) => {
   }
   for (const reward of c.rewards) {
     applyReward(gs, reward);
+  }
+});
+
+handlersByName.set('CmdToggleItemBan', (gs, cmd) => {
+  const c = cmd as CmdToggleItemBan;
+  const raidEntry = gs.unlockedRaids.find(r => r.id === c.raidId);
+  if (!raidEntry) return;
+
+  const idx = raidEntry.bannedItemIds.indexOf(c.itemId);
+  if (c.banned) {
+    if (idx === -1 && raidEntry.bannedItemIds.length < gs.itemBans) {
+      raidEntry.bannedItemIds.push(c.itemId);
+    }
+  } else {
+    if (idx !== -1) {
+      raidEntry.bannedItemIds.splice(idx, 1);
+    }
   }
 });
 

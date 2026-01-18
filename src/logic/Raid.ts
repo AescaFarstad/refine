@@ -423,10 +423,12 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         break;
       }
       case 'LootEncounter': {
+        const raidEntry = gsForRun.unlockedRaids.find(re => re.id === raidDef.id);
         const entry = handleLootLikeEncounter(gsForRun, raid, {
           baseLootChance: raidDef.baseLootChance,
           items: raidDef.items,
           poolsByRarity: raidDef.itemPoolsByRarity,
+          bannedItemIds: raidEntry?.bannedItemIds,
         }, bagItemCounts, discardedItemCounts);
         timeSpentSec += entry.timeSpentSec;
         timeBreakdownSec.totalSec += entry.timeSpentSec;

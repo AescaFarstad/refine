@@ -20,6 +20,7 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
   stat_weight: { type: 'stat', rewards: [{ kind: 'stat', stat: 'baseMaxWeight', value: 1 }] },
   stat_vision: { type: 'stat', rewards: [{ kind: 'stat', stat: 'researchRevealRadius', value: 1 }] },
   stat_speed: { type: 'stat', rewards: [{ kind: 'stat', stat: 'speed', value: 1 }] },
+  stat_itemBans: { type: 'stat', rewards: [{ kind: 'stat', stat: 'itemBans', value: 1 }] },
 
   disc_damage_breakdown: {
     type: 'discovery',
@@ -42,15 +43,25 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     icon: { kind: 'itemImage', key: 'recycle_3', scale: 1.3, offset: { x: 0, y: 3 } },
     rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.UNIQUE_ITEMS_YIELD }],
   },
-  disc_essence_anomaly: {
+  disc_essence_anomaly_cyan: {
     type: 'discovery',
     title: 'Essence anomaly',
     description: 'A mysterious essence mutation of unclear nature.',
     ownedTitle: 'Cyan anomaly',
     ownedDescription: 'Cyan essence now gives 10% bonus yield.',
     icon: { kind: 'glyph', glyph: '?', scale: 2.2, offset: { x: 0, y: 8 }},
-    ownedIcon: { kind: 'itemImage', key: 'cyan' },
+    ownedIcon: { kind: 'itemImage', key: 'cyan', scale: 1.3, offset: { x: 0, y: 4 } },
     rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.CYAN_YIELD }],
+  },
+  disc_essence_anomaly_magenta: {
+    type: 'discovery',
+    title: 'Essence anomaly',
+    description: 'A mysterious essence mutation of unclear nature.',
+    ownedTitle: 'Magenta anomaly',
+    ownedDescription: 'Magenta essence now gives 10% bonus yield.',
+    icon: { kind: 'glyph', glyph: '?', scale: 2.2, offset: { x: 0, y: 8 }},
+    ownedIcon: { kind: 'itemImage', key: 'magenta', scale: 1.3, offset: { x: 0, y: 4 } },
+    rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.MAGENTA_YIELD }],
   },
   disc_maze_navigation: {
     type: 'discovery',

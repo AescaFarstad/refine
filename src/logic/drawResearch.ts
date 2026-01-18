@@ -36,6 +36,7 @@ const RESEARCH_STAT_ICON_SPECS: Record<string, ResearchStatIconSpec> = {
   baseMaxWeight: { kind: 'itemImage', key: 'weight', offsetX: 0.5, offsetY: 0, scale: 1.0 },
   researchRevealRadius: { kind: 'itemImage', key: 'eye', offsetX: 0, offsetY: 0, scale: 1.3 },
   speed: { kind: 'itemImage', key: 'hermes_shoe', offsetX: 0, offsetY: 0, scale: 1.3 },
+  itemBans: { kind: 'glyph', key: '✕', offsetX: 0, offsetY: 3, scale: 1.2 },
 };
 
 const RESOURCE_ICON_OFFSETS: Record<string, StatIconSpec> = {
@@ -321,7 +322,6 @@ function drawArchetypeIconForNode(
   let maxIconSize: number | null = null;
 
   if (specifiedCenterCell) {
-    // Use the explicitly specified center cell
     const pixel = axialToPixel(specifiedCenterCell, hexSize, origin);
     centerX = pixel.x;
     centerY = pixel.y;
@@ -590,7 +590,6 @@ function drawGearIconForNode(
   let maxIconSize: number;
 
   if (specifiedCenterCell) {
-    // Use the explicitly specified center cell
     const pixel = axialToPixel(specifiedCenterCell, hexSize, origin);
     cx = pixel.x;
     cy = pixel.y;

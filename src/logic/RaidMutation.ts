@@ -197,6 +197,7 @@ export function cloneRaid(def: RaidDefinition): RaidDefinition {
     baseLootChance: def.baseLootChance,
     items: [...def.items],
     itemPoolsByRarity: def.itemPoolsByRarity,
+    allPotentialItems: [...def.allPotentialItems],
     encounters: def.encounters.map(step => ({ count: step.count | 0, encounter: cloneEncounter(step.encounter) })),
     order: def.order,
     zoneCollapseSec: def.zoneCollapseSec,

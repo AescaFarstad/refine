@@ -11,6 +11,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { GearDefinition } from '../logic/GearLib';
+import { formatDurationHM } from '../logic/StringUtils';
 
 const props = defineProps<{
   gear: GearDefinition;
@@ -48,6 +49,7 @@ const hintRows = computed((): Array<{ label: string; value: string }> => {
   if (g.biopsyChance) rows.push({ label: 'Remains harvest chance', value: `${fmtSigned(g.biopsyChance, '%')}` });
   if (g.maxWeight) rows.push({ label: 'Max weight', value: `${fmtSigned(g.maxWeight)}` });
   if (g.volume) rows.push({ label: 'Volume', value: `${fmtSigned(g.volume)}` });
+  if (g.zoneBoost) rows.push({ label: 'Zone stability', value: `+${formatDurationHM(g.zoneBoost)} (permanent)` });
   // Perk
   if (g.perk) rows.push({ label: 'Perk', value: g.perk });
   // Description

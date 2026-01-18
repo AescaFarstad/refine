@@ -37,14 +37,21 @@
             </template>
             <template v-if="preview.cyanYieldBonus > 0">
               <template v-if="preview.signatureYieldBonus > 0 || preview.newSignatureYieldBonus > 0"> </template>
-              +{{ preview.cyanYieldBonus }}% ({{ cyanEssences }})
+              +{{ preview.cyanYieldBonus }}% {{ cyanEssences }}
               <template v-for="key in cyanEssenceKeys" :key="key">
                 <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
                 <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
               </template>
             </template>
+            <template v-if="preview.magentaYieldBonus > 0">
+              <template v-if="preview.signatureYieldBonus > 0 || preview.newSignatureYieldBonus > 0 || preview.cyanYieldBonus > 0"> </template>
+              +{{ preview.magentaYieldBonus }}% from {{ magentaEssences }}
+              <template v-for="key in magentaEssenceKeys" :key="key">
+                <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
+                <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
+              </template>
+            </template>
             <template v-if="preview.uniqueItemsYieldBonus > 0">
-              <template v-if="preview.signatureYieldBonus > 0 || preview.newSignatureYieldBonus > 0 || preview.cyanYieldBonus > 0">, </template>
               +{{ preview.uniqueItemsYieldBonus }}% (unique items)
             </template>
           </span>
@@ -136,6 +143,7 @@ export interface WaferInfoPreview {
   newSignatureYieldBonus: number;
   newSignatureMatches: Array<{ id: string; offset: Point2 }>;
   cyanYieldBonus: number;
+  magentaYieldBonus: number;
   uniqueItemsYieldBonus: number;
 
   expectedCredits: number;

@@ -2,7 +2,7 @@ import type { RawQuestDefinition } from '../../logic/QuestLib';
 
 const quests: Record<string, RawQuestDefinition> = {
   ozernoye_explore_fire_station: {
-    name: 'Explore the fire station',
+    name: 'Fire station',
     description: 'There is a fire station which could use some actual fire to get rid of its cornivorous inhabitants. Opening it might cause long-term flower trouble, but there must be some useful equipment in there.',
     raidRestriction: ['ozernoye'],
     requiresRaidSuccesses: 1,
@@ -18,7 +18,7 @@ const quests: Record<string, RawQuestDefinition> = {
     ],
   },
   ozernoye_explore_bus_station_: {
-    name: 'Explore the bus station',
+    name: 'Bus station',
     encounterLine: 'Disturb the carnivorous flora inhabiting the bus station. This will spread the pollen, but you can’t make a salad without cutting some veggies.',
     raidRestriction: ['ozernoye'],
     requiresRaidSuccesses: 2,

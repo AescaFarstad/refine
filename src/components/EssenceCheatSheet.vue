@@ -49,6 +49,7 @@ import {
   ESSENCE_CHRONOTRACES,
   ESSENCE_TEMPORAL_FLUX,
   MAGENTA_SUCCESS_PENALTY_PCT,
+  MAGENTA_YIELD_BONUS_PCT,
 } from '../logic/Const';
 import { getResourceSpec } from '../logic/Resources';
 
@@ -143,7 +144,7 @@ function essenceEffectHtml(k: string): string {
     case 'cyan':
       return `${CYAN_SUCCESS_BONUS_PCT}% refining success` + (uiState.hasDiscoveredCyanYield ? `, +${CYAN_YIELD_BONUS_PCT}% bonus yield` : '');
     case 'magenta':
-      return `-${MAGENTA_SUCCESS_PENALTY_PCT}% refining success`;
+      return `-${MAGENTA_SUCCESS_PENALTY_PCT}% refining success` + (uiState.hasDiscoveredMagentaYield ? `, +${MAGENTA_YIELD_BONUS_PCT}% bonus yield` : '');
     case 'indigo':
       return 'Converts adjacent clusters to blue';
     case 'crimson':

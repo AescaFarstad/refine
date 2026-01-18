@@ -511,8 +511,7 @@ const gear: Record<string, RawGearDefinition> = {
     price: 250,
     weight: 5,
     image: 'beckon',
-    perk: 'Stabilizer Beacon',
-    description: 'Permanently increases the stability of the zone by 30 minutes',
+    zoneBoost: 30 * 60,
   },
   distress_beacon: {
     name: 'Distress Beacon',
@@ -548,6 +547,14 @@ const gear: Record<string, RawGearDefinition> = {
     image: 'bait',
     perk: 'Xeno hound Bait',
     description: 'Permanently attracts a xeno hound to the raid',
+  },
+  zone_crystal: {
+    name: 'Zone Crystal',
+    category: 'grenades',
+    countable:true,
+    weight: 1,
+    image: 'quartz',
+    zoneBoost: 5 * 60,
   },
   /*
   summon_slimy_mound: {

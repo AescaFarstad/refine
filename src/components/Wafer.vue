@@ -103,7 +103,7 @@
 	import type { Wafer } from '../logic/Wafer';
 	import type { Molecule, Point2 } from '../logic/ItemLib';
 	import { canPlaceMolecule, getCell, computeUpgradeableRegion, computeWaferUpgradePrice } from '../logic/Wafer';
-	import { computeRefinePreviewChem, computeUniqueItemsYieldBonusPct } from '../logic/RefinePreview';
+	import { computeRefinePreviewChem } from '../logic/RefinePreview';
 	import { uiState, getGameState } from '../logic/UIState';
 	import { formatDurationHM } from '../logic/StringUtils';
 	import { globalInputQueue } from '../logic/Model';
@@ -212,7 +212,9 @@ const preview = computed(() => {
   // Touch discoveryCounter to react to discovery changes
   const _dep = uiState.discoveryCounter;
 
-  if (!wafer.value) {
+  const gs = getGameState();
+
+  if (!wafer.value || !gs) {
     return {
       essenceTotals: {} as Record<string, number>,
       expectedCredits: 0,
@@ -226,6 +228,7 @@ const preview = computed(() => {
       cellEffectiveCounts: {} as Record<string, number>,
       totalYieldPct: 100,
       cyanYieldBonus: 0,
+      magentaYieldBonus: 0,
       uniqueItemsYieldBonus: 0,
       signatureYieldBonus: 0,
       newSignatureYieldBonus: 0,
@@ -233,16 +236,12 @@ const preview = computed(() => {
     };
   }
 
-  const gs = getGameState()!;
-  const uniqueItemsYieldBonus = (gs.discoveries[DISCOVERY.UNIQUE_ITEMS_YIELD] === true)
-    ? computeUniqueItemsYieldBonusPct(gs.refinedUniqueItemIds, wafer.value.items)
-    : 0;
-
   const basePreview = computeRefinePreviewChem(wafer.value, {
     signatures: uiState.lib!.signatures,
     signatureLevel: uiState.signatureLevel,
     completedSignatureIds: uiState.completedSignatureIds,
-    uniqueItemsYieldBonus,
+    discoveries: gs.discoveries,
+    refinedUniqueItemIds: gs.refinedUniqueItemIds,
   });
 
   // Calculate essence counts for each resource type
@@ -254,32 +253,8 @@ const preview = computed(() => {
   // Use the pre-calculated empty count from wafer
   const emptyCells = wafer.value.emptyCount || 0;
 
-  // Check if CYAN_YIELD is discovered - only then apply cyan yield bonus
-  const hasCyanYield = gs.discoveries[DISCOVERY.CYAN_YIELD] === true;
-
-  // If CYAN_YIELD is not discovered, recalculate expected values without the cyan yield bonus
-  let { expectedCredits, expectedChrono, expectedFlux, totalYieldPct, cyanYieldBonus } = basePreview;
-
-  if (!hasCyanYield && cyanYieldBonus > 0) {
-    // Remove the cyan yield bonus from the calculation
-    const yieldWithoutCyan = (totalYieldPct - cyanYieldBonus) / 100;
-    const yieldWithCyan = totalYieldPct / 100;
-    const adjustmentFactor = yieldWithoutCyan / yieldWithCyan;
-
-    expectedCredits = Math.round(expectedCredits * adjustmentFactor);
-    expectedChrono = Math.round(expectedChrono * adjustmentFactor);
-    expectedFlux = Math.round(expectedFlux * adjustmentFactor);
-    totalYieldPct = totalYieldPct - cyanYieldBonus;
-    cyanYieldBonus = 0;
-  }
-
   return {
     ...basePreview,
-    expectedCredits,
-    expectedChrono,
-    expectedFlux,
-    totalYieldPct,
-    cyanYieldBonus,
     creditsEssences,
     chronoEssences,
     fluxEssences,

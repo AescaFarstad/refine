@@ -2,14 +2,14 @@ import type { Lib } from './Lib';
 import type { Essence } from './ItemLib';
 import type { GameState } from './GameState';
 import { RefineryOutcome } from './GameState';
-import { calculateOutputs, computeRefinePreviewChem, computeUniqueItemsYieldBonusPct, rollSuccess } from './RefinePreview';
+import { calculateOutputs, computeRefinePreviewChem, rollSuccess } from './RefinePreview';
 import { clearWafer } from './Wafer';
 import { getHypRepresentation } from './HypNumbers';
 import { SHARD_LAUNCH_SPEED, SHARD_MAX_OMEGA, SHARD_MIN_OMEGA, SHARD_OMEGA_POWER } from './Model';
 import { calculateShardFontSize } from '../utils/ShardDisplay';
 import { EvtRefineryDone } from './evt/Evt';
 import { discover } from './Discover';
-import { DISCOVERY } from './DiscoveryLib';
+import { DISCOVERY } from './DiscoveryLib'; // Used in resolveRefineryDone for SIGNATURES discovery
 
 export function computeLoadedEssencesFromItems(lib: Lib, items: Array<{ id: string; quantity: number }>): Essence {
   const totals: Essence = {};
@@ -36,9 +36,8 @@ export function startRefining(gs: GameState): void {
     signatures: gs.lib.signatures,
     signatureLevel: gs.signatureLevel,
     completedSignatureIds: gs.completedSignatureIds,
-    uniqueItemsYieldBonus: (gs.discoveries[DISCOVERY.UNIQUE_ITEMS_YIELD] === true)
-      ? computeUniqueItemsYieldBonusPct(gs.refinedUniqueItemIds, gs.wafer.items)
-      : 0,
+    discoveries: gs.discoveries,
+    refinedUniqueItemIds: gs.refinedUniqueItemIds,
   });
   gs.refiningDuration = Math.max(0, Math.round(preview.timeSec));
 
@@ -54,9 +53,8 @@ export function resolveRefineryDone(gs: GameState): void {
     signatures: gs.lib.signatures,
     signatureLevel: gs.signatureLevel,
     completedSignatureIds: gs.completedSignatureIds,
-    uniqueItemsYieldBonus: (gs.discoveries[DISCOVERY.UNIQUE_ITEMS_YIELD] === true)
-      ? computeUniqueItemsYieldBonusPct(gs.refinedUniqueItemIds, wafer.items)
-      : 0,
+    discoveries: gs.discoveries,
+    refinedUniqueItemIds: gs.refinedUniqueItemIds,
   });
   const succeeded = rollSuccess(preview.failureChancePct);
 

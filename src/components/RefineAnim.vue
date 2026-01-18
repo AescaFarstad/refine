@@ -19,8 +19,7 @@ import { WAFER_CANVAS_WIDTH, WAFER_CANVAS_HEIGHT, HEX_SIZE, ESSENCE_SIZE, eventT
 import { axialToPixel } from '../logic/HexMath';
 import atlasStorage from '../logic/AtlasStorage';
 import { getShardDisplay, calculateShardFontSize } from '../utils/ShardDisplay';
-import { computeRefinePreviewChem, computeUniqueItemsYieldBonusPct } from '../logic/RefinePreview';
-import { DISCOVERY } from '../logic/DiscoveryLib';
+import { computeRefinePreviewChem } from '../logic/RefinePreview';
 
 // Animation tuning constants (t is 0..1 over refiningDuration)
 const T_DRAG_END = 0.2;
@@ -115,14 +114,12 @@ function initAtoms() {
   const newAtoms: AnimAtom[] = [];
 
   const gs = getGameState()!;
-  const uniqueItemsYieldBonus = (gs.discoveries[DISCOVERY.UNIQUE_ITEMS_YIELD] === true)
-    ? computeUniqueItemsYieldBonusPct(gs.refinedUniqueItemIds, props.wafer.items)
-    : 0;
   const preview = computeRefinePreviewChem(props.wafer, {
     signatures: gs.lib.signatures,
     signatureLevel: gs.signatureLevel,
     completedSignatureIds: gs.completedSignatureIds,
-    uniqueItemsYieldBonus,
+    discoveries: gs.discoveries,
+    refinedUniqueItemIds: gs.refinedUniqueItemIds,
   });
   const cellEffectiveCounts = preview.cellEffectiveCounts || {};
 

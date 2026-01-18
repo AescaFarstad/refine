@@ -10,7 +10,6 @@ import SeededRandom from './core/SeededRandom';
 import { cloneRaid, applyRaidMutation, questIsActive, type RaidMutation } from './RaidMutation';
 import type { Reward } from './Reward';
 import { Perks } from './Perks';
-import { STABALIZER_BEACON_BONUS } from './Const';
 
 export interface RaidRunResult {
   success: boolean;
@@ -577,10 +576,10 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
 
     raidEntry.questCompletions += questsCompleted.length;
 
-    // Apply permanent Stabilizer Beacon mutation on successful completion
-    if (gsForRun.raid.perks.includes(Perks.STABILIZER_BEACON)) {
-      const stabilizerTimeSec = STABALIZER_BEACON_BONUS;
-      const mutation: RaidMutation = { kind: 'ZoneCollapseTimeMutation', amount: stabilizerTimeSec };
+    // Apply permanent zone boost mutation on successful completion (from gear with zoneBoost)
+    const totalZoneBoost = gear.reduce((sum, g) => sum + g.zoneBoost, 0);
+    if (totalZoneBoost > 0) {
+      const mutation: RaidMutation = { kind: 'ZoneCollapseTimeMutation', amount: totalZoneBoost };
       const raidDefToChange = gsForRun.lib.raids.get(raidId)!;
       applyRaidMutation(raidDefToChange, mutation);
       raidMutationsApplied.push(mutation);
@@ -624,7 +623,6 @@ export function getEffectiveRaidDefinition(gs: GameState, raidId: string): RaidD
   gs.lib.quests.forEach((q) => {
     if (!questIsActive(gs, q, raidId)) return;
     if (q.encounterTimeMin > 0) {
-      // Ensure active quests with an encounter time create a quest encounter (for timing/log/completion).
       const hasOwnQuestEncounter = def.encounters.some(step =>
         step.encounter.type === 'QuestEncounter' && (step.encounter as QuestEncounterDef).questId === q.id && (step.count | 0) > 0
       );
@@ -642,9 +640,10 @@ export function getEffectiveRaidDefinition(gs: GameState, raidId: string): RaidD
     applyRaidMutation(def, { kind: 'AddMonsterMutation', monsterId: 'hound', count: 1 });
   }
 
-  const hasStabilizerBeacon = gear.some(g => g.perk === Perks.STABILIZER_BEACON);
-  if (hasStabilizerBeacon) {
-    def.zoneCollapseSec = Math.max(0, (def.zoneCollapseSec || 0) + STABALIZER_BEACON_BONUS);
+  // Apply zone boost from gear to preview zone collapse time
+  const totalZoneBoost = gear.reduce((sum, g) => sum + g.zoneBoost, 0);
+  if (totalZoneBoost > 0) {
+    def.zoneCollapseSec = Math.max(0, (def.zoneCollapseSec || 0) + totalZoneBoost);
   }
 
   return def;

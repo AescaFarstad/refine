@@ -31,6 +31,7 @@ export function initDebug(gameState: GameState): void {
     new CheatUnlockAllGear(),
     new CheatDisableQuestPrereqs({ disabled: true }),
     new CheatGrantRewards({ rewards: [{ kind: 'countable_gear', gearId: 'xeno_bait', amount: 10 }] }),
+    new CheatGrantRewards({ rewards: [{ kind: 'countable_gear', gearId: 'zone_crystal', amount: 10 }] }),
     new CheatLearnSignatures({ signatureIds: Object.keys(signatures) }),
     new CheatCompleteSignatures({ signatureIds: Object.keys(signatures) }),
     // raidItemCheats[0],

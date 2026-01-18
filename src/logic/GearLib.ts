@@ -38,6 +38,9 @@ export interface GearDefinition {
   hpMult: number;         // multiplier applied to HP after all flat bonuses (including preparation)
   ignoreLootEncounters: boolean;
 
+  // Zone stability boost in seconds (applied on successful raid completion)
+  zoneBoost: number;
+
   // Visual - key into items.json sprite atlas
   image: string;
 
@@ -85,6 +88,7 @@ export function parseGearDefinitions(raw: Record<string, RawGearDefinition>): Ma
       walkDelta: d.walkDelta ?? 0,
       hpMult: d.hpMult ?? 1,
       ignoreLootEncounters: d.ignoreLootEncounters ?? false,
+      zoneBoost: d.zoneBoost ?? 0,
       image: d.image ?? '',
       description: d.description ?? '',
     };

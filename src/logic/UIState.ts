@@ -3,7 +3,7 @@ import { formatDurationHM } from './StringUtils';
 import { createRaidDamageBreakdown, createRaidTimeBreakdownSec, type GameState, type RaidDamageBreakdown, type RaidOutcome, type RefineryOutcome, type Shard, type RaidTimeBreakdownSec } from './GameState';
 import type { RaidDefinition } from './RaidLib';
 import { getEffectiveRaidDefinition } from './Raid';
-import { computeRefinePreviewChem, computeUniqueItemsYieldBonusPct } from './RefinePreview';
+import { computeRefinePreviewChem } from './RefinePreview';
 import type { Lib } from './Lib';
 import { createWafer, type Wafer } from './Wafer';
 import type { Point2 } from './ItemLib';
@@ -103,6 +103,7 @@ export const uiState = reactive({
   hasDiscoveredRaidSpeed: false,
   hasDiscoveredRaidSelection: false,
   hasDiscoveredCyanYield: false,
+  hasDiscoveredMagentaYield: false,
   hasDiscoveredSignatureInfo: false,
   hasVisitedRefineTab: false,
   hasVisitedResearchTab: false,
@@ -247,9 +248,8 @@ export function SyncUIFromGameState(game: GameState): void {
       signatures: game.lib.signatures,
       signatureLevel: game.signatureLevel,
       completedSignatureIds: game.completedSignatureIds,
-      uniqueItemsYieldBonus: (game.discoveries[DISCOVERY.UNIQUE_ITEMS_YIELD] === true)
-        ? computeUniqueItemsYieldBonusPct(game.refinedUniqueItemIds, game.wafer!.items)
-        : 0,
+      discoveries: game.discoveries,
+      refinedUniqueItemIds: game.refinedUniqueItemIds,
     });
     const duration = Math.max(0, game.refiningDuration || preview.timeSec || 0);
     const startedAt = (game.nextEvt.at || 0) - duration;
@@ -286,6 +286,7 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.hasDiscoveredRaidSpeed = game.discoveries[DISCOVERY.UI_RAID_SPEED] === true;
   uiState.hasDiscoveredRaidSelection = game.discoveries[DISCOVERY.UI_RAID_SELECTION] === true;
   uiState.hasDiscoveredCyanYield = game.discoveries[DISCOVERY.CYAN_YIELD] === true;
+  uiState.hasDiscoveredMagentaYield = game.discoveries[DISCOVERY.MAGENTA_YIELD] === true;
   uiState.hasDiscoveredSignatureInfo = game.discoveries[DISCOVERY.UI_SIGNATURE_INFO] === true;
   uiState.hasVisitedRefineTab = game.discoveries[DISCOVERY.TAB_REFINE_VISITED] === true;
   uiState.hasVisitedResearchTab = game.discoveries[DISCOVERY.TAB_RESEARCH_VISITED] === true;

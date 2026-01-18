@@ -4,6 +4,7 @@ import { axialNeighbors } from './HexMath';
 import {
     CYAN_SUCCESS_BONUS_PCT,
     CYAN_YIELD_BONUS_PCT,
+    MAGENTA_YIELD_BONUS_PCT,
     ESSENCE_CREDITS,
     ESSENCE_CHRONOTRACES,
     ESSENCE_TEMPORAL_FLUX,
@@ -14,6 +15,7 @@ import {
 import { getWaferBuffAt } from './waferLayout';
 import { scanWaferForNewSignatures, SIGNATURE_YIELD_BONUS_PCT } from './Signatures';
 import type { SignatureDefinition } from './SignatureLib';
+import { DISCOVERY } from './DiscoveryLib';
 
 export interface RefinePreviewChem {
     timeSec: number;
@@ -24,6 +26,7 @@ export interface RefinePreviewChem {
     newSignatureYieldBonus: number;
     signatureSpeedBonus: number;
     cyanYieldBonus: number;
+    magentaYieldBonus: number;
     uniqueItemsYieldBonus: number;
 
     totalYieldPct: number;
@@ -52,7 +55,10 @@ export interface SignatureContext {
 }
 
 export interface RefineContext extends SignatureContext {
-    uniqueItemsYieldBonus: number;
+    /** Player's discoveries - used to determine which yield bonuses are unlocked */
+    discoveries: Record<string, boolean>;
+    /** Map of item IDs that have been refined before (for unique items yield calculation) */
+    refinedUniqueItemIds: Record<string, true>;
 }
 
 // Color-changing essences and their target colors.
@@ -312,7 +318,7 @@ function computeEffectiveEssenceTotals(wafer: Wafer): {
     };
 }
 
-export function computeRefinePreviewChem(wafer: Wafer, sig: RefineContext): RefinePreviewChem {
+export function computeRefinePreviewChem(wafer: Wafer, ctx: RefineContext): RefinePreviewChem {
 
     const { essenceTotals, cellEffectiveCounts } = computeEffectiveEssenceTotals(wafer);
 
@@ -326,17 +332,26 @@ export function computeRefinePreviewChem(wafer: Wafer, sig: RefineContext): Refi
 
     const baseYieldPct = 100;
 
-    const completedIdSet = new Set(sig.completedSignatureIds);
-    const signatureDefsForLevel = Array.from(sig.signatures.values()).filter(s => s.level === sig.signatureLevel);
+    const completedIdSet = new Set(ctx.completedSignatureIds);
+    const signatureDefsForLevel = Array.from(ctx.signatures.values()).filter(s => s.level === ctx.signatureLevel);
     const { newlyCompletedSignatureIds, newSignatureMatches } = scanWaferForNewSignatures(wafer, signatureDefsForLevel, completedIdSet);
 
-    const signatureYieldBonus = sig.completedSignatureIds.length * SIGNATURE_YIELD_BONUS_PCT;
+    const signatureYieldBonus = ctx.completedSignatureIds.length * SIGNATURE_YIELD_BONUS_PCT;
     const newSignatureYieldBonus = newlyCompletedSignatureIds.length * SIGNATURE_YIELD_BONUS_PCT;
     const signatureSpeedBonus = 0;
-    const cyanYieldBonus = cyanCount * CYAN_YIELD_BONUS_PCT;
-    const uniqueItemsYieldBonus = sig.uniqueItemsYieldBonus;
 
-    const totalYieldPct = baseYieldPct + signatureYieldBonus + newSignatureYieldBonus + cyanYieldBonus + uniqueItemsYieldBonus;
+    // Yield bonuses that require discovery to be unlocked
+    const cyanYieldBonus = ctx.discoveries[DISCOVERY.CYAN_YIELD]
+        ? cyanCount * CYAN_YIELD_BONUS_PCT
+        : 0;
+    const magentaYieldBonus = ctx.discoveries[DISCOVERY.MAGENTA_YIELD]
+        ? magentaCount * MAGENTA_YIELD_BONUS_PCT
+        : 0;
+    const uniqueItemsYieldBonus = ctx.discoveries[DISCOVERY.UNIQUE_ITEMS_YIELD]
+        ? computeUniqueItemsYieldBonusPct(ctx.refinedUniqueItemIds, wafer.items)
+        : 0;
+
+    const totalYieldPct = baseYieldPct + signatureYieldBonus + newSignatureYieldBonus + cyanYieldBonus + magentaYieldBonus + uniqueItemsYieldBonus;
 
     const red = essenceTotals['red'] || 0;
     const green = essenceTotals['green'] || 0;
@@ -355,6 +370,7 @@ export function computeRefinePreviewChem(wafer: Wafer, sig: RefineContext): Refi
         newSignatureYieldBonus,
         signatureSpeedBonus,
         cyanYieldBonus,
+        magentaYieldBonus,
         uniqueItemsYieldBonus,
         totalYieldPct,
         expectedCredits,

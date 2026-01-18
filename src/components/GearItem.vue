@@ -26,7 +26,7 @@
       <span v-else class="g-weight-fallback" aria-hidden="true">w</span>
     </div>
 
-    <div class="g-price" v-if="count !== undefined">x{{ count }}</div>
+    <div class="g-count" v-if="count !== undefined">x{{ count }}</div>
     <div class="g-price" v-else-if="price > 0">{{ price.toLocaleString() }}{{ creditsSpec.glyph }}</div>
   </button>
 
@@ -285,6 +285,19 @@ function updateHintSide(): void {
   border-top-right-radius: 4px;
   background: var(--raid-item-bg, rgba(255,255,255,0.08)); /* dim badge */
   color: var(--text-primary);          /* bright price text */
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.g-count {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 3px 6px;
+  border-bottom-left-radius: 6px;
+  border-top-right-radius: 4px;
+  background: rgba(96, 165, 250, 0.3); /* blue-tinted to distinguish from price */
+  color: var(--text-primary);
   font-size: 14px;
   font-weight: 900;
 }

@@ -1,3 +1,6 @@
+// Discoveries track what the player has seen or unlocked.
+// Some discoveries are purely visual - they control when UI elements appear.
+// Others behave like unlocks - the bonus/feature is not applied until discovered.
 const ids = [
   'UI_GEAR',
   'UI_GEAR_UPGRADE_MODAL_OPENED',
@@ -7,6 +10,7 @@ const ids = [
   'UI_REFINE_YIELD',
   'UNIQUE_ITEMS_YIELD',
   'CYAN_YIELD',
+  'MAGENTA_YIELD',
   'MAZE_NAVIGATION',
   'SIGNATURES',
   'TAB_REFINE',

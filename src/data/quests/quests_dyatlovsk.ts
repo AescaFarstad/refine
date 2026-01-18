@@ -2,7 +2,7 @@ import type { RawQuestDefinition } from '../../logic/QuestLib';
 
 const quests: Record<string, RawQuestDefinition> = {
   dyatlovsk_explore_hospital: {
-    name: 'Explore the hospital',
+    name: 'Hospital',
     raidRestriction: ['dyatlovsk'],
     requiresRaidSuccesses: 1,
     encounters: [
@@ -15,7 +15,7 @@ const quests: Record<string, RawQuestDefinition> = {
     ],
   },
   dyatlovsk_explore_morgue: {
-    name: 'Explore the morgue',
+    name: 'Morgue',
     raidRestriction: ['dyatlovsk'],
     requiresQuestIds: ['dyatlovsk_explore_hospital'],
     encounters: [
@@ -28,7 +28,7 @@ const quests: Record<string, RawQuestDefinition> = {
     ],
   },
   dyatlovsk_explore_department_store: {
-    name: 'Explore the department store',
+    name: 'Department store',
     raidRestriction: ['dyatlovsk'],
     requiresQuestIds: ['dyatlovsk_explore_morgue'],
     encounters: [

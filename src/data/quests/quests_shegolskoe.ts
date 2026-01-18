@@ -11,7 +11,7 @@ const quests: Record<string, RawQuestDefinition> = {
     ],
   },
   shegolskoe_break_spikder: {
-    name: 'Investigate the artist\'s dacha',
+    name: 'Artist\'s dacha',
     description: 'A powerful spikder is crawling around a spacious dacha of a famous artist. Weed them out and claim the territory.',
     requiresRaidQuestCompletions: 1,
     raidRestriction: ['shegolskoe'],
@@ -25,7 +25,7 @@ const quests: Record<string, RawQuestDefinition> = {
     ],
   },
   shegolskoe_break_flower: {
-    name: 'Clear the well',
+    name: 'Well',
     description: 'There is a giant flower in the form of a human, growing around the village well. It blocks the way to a two-story dacha and a picknick spot. Weed them out and claim the territory.',
     requiresRaidQuestCompletions: 1,
     raidRestriction: ['shegolskoe'],
@@ -37,7 +37,7 @@ const quests: Record<string, RawQuestDefinition> = {
     ],
   },
   shegolskoe_break_distorted_pack: {
-    name: 'Visit the shop',
+    name: 'Shop',
     description: 'A pack of distorted humanoids are sleeping next to the village shop entrance. Weed them out and gain access to the shop\'s contents.',
     requiresRaidQuestCompletions: 1,
     raidRestriction: ['shegolskoe'],
@@ -67,8 +67,8 @@ const quests: Record<string, RawQuestDefinition> = {
     ],
   },
   shegolskoe_forest: {
-    name: 'Investigate the forester\'s house',
-    description: 'The forest consumed this one before the burdok did.',
+    name: 'Forester\'s house',
+    description: 'The forest consumed this one before the burdok could.',
     requiresRaidQuestCompletions: 3,
     requiresRaidSuccesses: 18,
     raidRestriction: ['shegolskoe'],
@@ -84,7 +84,7 @@ const quests: Record<string, RawQuestDefinition> = {
     ],
   },
   shegolskoe_powerstation: {
-    name: 'Investigate the power station',
+    name: 'Power station',
     description: 'The step-down transformer is sparking there just before the zone collapse.',
     requiresRaidQuestCompletions: 4,
     requiresRaidSuccesses: 22,
@@ -101,7 +101,7 @@ const quests: Record<string, RawQuestDefinition> = {
     ],
   },
   shegolskoe_poet: {
-    name: 'Investigate the poet\'s house',
+    name: 'Poet\'s house',
     description: 'He was more than a poet, he warned about the perils of regret even before USSR had collapsed. His texts might be worth studying.',
     encounterLine: 'Decyphering the poetry...',
     requiresRaidQuestCompletions: 4,

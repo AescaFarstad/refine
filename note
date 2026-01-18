@@ -179,3 +179,23 @@ deliniate
 patronize
 formulate
 objectify
+
+
+We need to implement a 'deck of cards' component. It should have limited width. The cards are individual displays which may be created from varying components. The cards need to be show in a row, overlapping each other slightly. (or not so slightly if we're out of space). Hovering the mouse over them should move the cards so that the hovered card is fully visible and if lifted a bit, while the cards to the left and to the right are squeezed tighter. The cards may have custom interactions with click or drag n drop.
+
+Real use case 1:
+Learned signatures are displayed as cards. Cliking them displays a modal window.
+
+use case 2:
+Pattern images are displayed as cards in Research tab. The user can drag such card outside of the deck. When that happens, the card is replaced with the pattern image scaled according to the current Research Pane scale. This image has more custom interactions with reserach pane.
+
+But we should focus on the component itself for now.
+How would you implement it?
+What are possible choices and design decisions yet unspecified?
+
+(Don't edit code yet)
+
+
+permanent raid upgraids
+coloring essence which turns things magenta
+crossing items off from raid

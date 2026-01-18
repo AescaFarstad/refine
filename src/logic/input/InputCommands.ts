@@ -27,6 +27,18 @@ export class CmdAcknowledgeSignatureLearn implements CmdInput {
   readonly name = 'CmdAcknowledgeSignatureLearn';
 }
 
+export class CmdAcknowledgeSignaturePlacementDiscovery implements CmdInput {
+  readonly name = 'CmdAcknowledgeSignaturePlacementDiscovery';
+}
+
+export class CmdPreviewSignature implements CmdInput {
+  readonly name = 'CmdPreviewSignature';
+  readonly id: string;
+  constructor(args: { id: string }) {
+    this.id = args.id;
+  }
+}
+
 export class CmdStartRefining implements CmdInput {
   readonly name = 'CmdStartRefining';
   constructor() { }

@@ -22,21 +22,22 @@
           <span class="stat-value" :class="{ 'yield-bonus': preview.totalYieldPct > 100 }">{{ preview.totalYieldPct }}%</span>
           <span class="stat-source">
             <template v-if="preview.signatureYieldBonus > 0">
-              +{{ preview.signatureYieldBonus }}% from signatures
+              +{{ preview.signatureYieldBonus }}% (signatures)
             </template>
             <template v-if="preview.newSignatureYieldBonus > 0">
-              <template v-if="preview.signatureYieldBonus > 0">, </template>
-              +{{ preview.newSignatureYieldBonus }}% from NEW signatures
+              <template v-if="preview.signatureYieldBonus > 0"> </template>
+              +{{ preview.newSignatureYieldBonus }}% (NEW
               <template v-for="sig in preview.newSignatureMatches" :key="sig.id">
                 <span
                   class="sig-inline"
                   :style="signatureInlineStyle(sig.id)"
                 />
               </template>
+              signatures)
             </template>
             <template v-if="preview.cyanYieldBonus > 0">
-              <template v-if="preview.signatureYieldBonus > 0 || preview.newSignatureYieldBonus > 0">, </template>
-              +{{ preview.cyanYieldBonus }}% from {{ cyanEssences }}
+              <template v-if="preview.signatureYieldBonus > 0 || preview.newSignatureYieldBonus > 0"> </template>
+              +{{ preview.cyanYieldBonus }}% ({{ cyanEssences }})
               <template v-for="key in cyanEssenceKeys" :key="key">
                 <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
                 <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
@@ -44,7 +45,7 @@
             </template>
             <template v-if="preview.uniqueItemsYieldBonus > 0">
               <template v-if="preview.signatureYieldBonus > 0 || preview.newSignatureYieldBonus > 0 || preview.cyanYieldBonus > 0">, </template>
-              +{{ preview.uniqueItemsYieldBonus }}% from unique items
+              +{{ preview.uniqueItemsYieldBonus }}% (unique items)
             </template>
           </span>
         </div>

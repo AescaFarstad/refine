@@ -76,7 +76,6 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
       break;
 
     case 'learn_signatures':
-      discover(gs, DISCOVERY.UI_SIGNATURES);
       for (const id of reward.signatureIds) {
         if (gs.learnedSignatureIds.includes(id)) continue;
         gs.learnedSignatureIds.push(id);
@@ -84,7 +83,7 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
       break;
 
     case 'learn_n_signatures': {
-      discover(gs, DISCOVERY.UI_SIGNATURES);
+      discover(gs, DISCOVERY.SIGNATURES);
       const learned = new Set(gs.learnedSignatureIds);
       const unlearned = Array.from(gs.lib.signatures.values())
         .map(s => s.id)

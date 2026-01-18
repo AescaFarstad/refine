@@ -75,6 +75,7 @@ export class GameState {
   public learnedSignatureIds: string[] = [];
   public completedSignatureIds: string[] = [];
   public signatureLearnQueue: string[] = [];
+  public signaturePlacementDiscoveryId: string = '';
 
   public maze: IceMaze | null = null;
   public mazeLevelIndex: number = 0;

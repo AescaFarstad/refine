@@ -44,7 +44,7 @@ let canvasHeight = 0;
 
 // Activity tracking for movement subsiding
 let lastActivityTime = 0;
-const ACTIVITY_FADE_DURATION = 900;
+const ACTIVITY_FADE_DURATION = 1400;
 const BASE_MOVEMENT_MULTIPLIER = 4;
 const HEX_SIZE_MULTIPLIER = 0.3;
 

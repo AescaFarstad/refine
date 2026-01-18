@@ -1,7 +1,7 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal } from './InputCommands';
+import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal } from './InputCommands';
 import { discover, discoverRefineTab, ensureSignatureDiscoveryFromWafer } from '../Discover';
 import { DISCOVERY } from '../DiscoveryLib';
 import { computeEffectiveEssences } from '../RefinePreview';
@@ -222,6 +222,16 @@ handlersByName.set('CmdAcknowledgeSignatureLearn', (gs, cmd) => {
   if (gs.signatureLearnQueue.length > 0) {
     gs.signatureLearnQueue.shift();
   }
+});
+
+handlersByName.set('CmdAcknowledgeSignaturePlacementDiscovery', (gs, cmd) => {
+  gs.signaturePlacementDiscoveryId = '';
+});
+
+handlersByName.set('CmdPreviewSignature', (gs, cmd) => {
+  const c = cmd as CmdPreviewSignature;
+  gs.lib.signatures.get(c.id)!;
+  gs.signatureLearnQueue.push(c.id);
 });
 
 handlersByName.set('CmdAcknowledgeRefineryOutcome', (gs, cmd) => {

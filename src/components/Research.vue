@@ -66,6 +66,20 @@
         </span>
       </span>
     </div>
+    <div v-if="learnedSignatures.length > 0 && !uiState.hasDiscoveredSignatures" class="signature-deck">
+      <CardDeck
+        :items="learnedSignatures"
+        :card-width="signatureCardWidth"
+        :card-height="signatureCardHeight"
+        :overlap="20"
+        :squeeze="0.6"
+        :lift="12"
+      >
+        <template #default="{ item, width, height }">
+          <SignatureCard :sig-id="item.id" :width="width" :height="height" />
+        </template>
+      </CardDeck>
+    </div>
   </div>
 </template>
 
@@ -83,6 +97,8 @@ import type { ResearchArchetype, ResearchNodeInstance } from '../logic/ResearchL
 import { axialToPixel } from '../logic/HexMath';
 import { RESEARCH_OBSTACLE_PRICE, RESEARCH_OBSTACLE_PRICE_GROWTH } from '../logic/Const';
 import { getResourceSpec } from '../logic/Resources';
+import CardDeck from './CardDeck.vue';
+import SignatureCard from './SignatureCard.vue';
 
 const hoverCell = ref<Point2 | null>(null);
 const researchPane = ref<InstanceType<typeof ResearchPane> | null>(null);
@@ -195,6 +211,11 @@ const showHoverPreviewPanel = computed(() => {
   if (!hp) return false;
   return hp.reachable && !hp.alreadyOwned;
 });
+
+const signatureCardWidth = 120;
+const signatureCardHeight = 140;
+
+const learnedSignatures = computed(() => uiState.learnedSignatureIds.map((id) => ({ id })));
 
 const hoverNodePosition = computed<Point2 | null>(() => {
   const cell = hoverCell.value;
@@ -315,5 +336,15 @@ const nextClearCost = computed(() => {
   font-size: 13.75px;
   pointer-events: none;
   z-index: 25;
+}
+
+.signature-deck {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  width: min(420px, 45vw);
+  max-width: 420px;
+  pointer-events: auto;
+  z-index: 30;
 }
 </style>

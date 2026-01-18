@@ -8,7 +8,7 @@ export function discover(gs: GameState, id: DiscoveryId): boolean {
   gs.discoveries[id] = true;
   gs.discoveryCounter++;
 
-  if (id === DISCOVERY.UI_SIGNATURES || id === DISCOVERY.CYAN_YIELD || id === DISCOVERY.UNIQUE_ITEMS_YIELD) {
+  if (id === DISCOVERY.SIGNATURES || id === DISCOVERY.CYAN_YIELD || id === DISCOVERY.UNIQUE_ITEMS_YIELD) {
     if (!hasDiscovered(gs, DISCOVERY.UI_REFINE_YIELD)) {
       gs.discoveries[DISCOVERY.UI_REFINE_YIELD] = true;
       gs.discoveryCounter++;
@@ -76,7 +76,10 @@ export function ensureSignatureDiscoveryFromWafer(gs: GameState): void {
   const { newlyCompletedSignatureIds } = scanWaferForNewSignatures(gs.wafer, signatureDefsForLevel, completed);
   if (newlyCompletedSignatureIds.length === 0) return;
 
-  discover(gs, DISCOVERY.UI_SIGNATURES);
+  const isFirstDiscovery = discover(gs, DISCOVERY.SIGNATURES);
+  if (isFirstDiscovery && newlyCompletedSignatureIds.length > 0) {
+    gs.signaturePlacementDiscoveryId = newlyCompletedSignatureIds[0];
+  }
 
   for (const id of newlyCompletedSignatureIds) {
     if (gs.learnedSignatureIds.includes(id)) continue;

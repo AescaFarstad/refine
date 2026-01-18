@@ -23,14 +23,12 @@ handlersByName.set('CheatAddRaidItems', (gs, cheat) => {
   const count = Math.max(0, c.count || 0);
   if (count <= 0) return;
 
-  // Collect item ids from the raid definition (items + monster loot), fallback to a sample of all items
   const ids = new Set<string>();
-  const raidItems = Array.isArray(def.items) ? def.items : [];
+  const raidItems = Array.isArray(def.allPotentialItems) ? def.allPotentialItems : [];
   for (const id of raidItems) {
     ids.add(id);
   }
 
-  // Add any monster loot items referenced by this raid's encounters
   for (const step of def.encounters || []) {
     const enc = step.encounter as EncounterDef;
     if (enc.type === 'FightEncounter' || enc.type === 'MonsterLootEncounter') {
@@ -40,12 +38,6 @@ handlersByName.set('CheatAddRaidItems', (gs, cheat) => {
         ids.add(monster.lootItemId);
       }
     }
-  }
-
-  // Fallback: if nothing was collected, take the first 24 item ids from the item library for quick testing
-  if (ids.size === 0) {
-    const all = Array.from(gs.lib.items.keys());
-    for (let i = 0; i < Math.min(24, all.length); i++) ids.add(all[i]);
   }
 
   function addToInventory(id: string, qty: number): void {

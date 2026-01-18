@@ -104,7 +104,7 @@ function close() {
   if (idsToLearn.length > 0) {
     rewards.push({ kind: 'learn_signatures', signatureIds: idsToLearn });
   }
-  rewards.push({ kind: 'discovery', discoveryId: DISCOVERY.UI_SIGNATURES });
+  rewards.push({ kind: 'discovery', discoveryId: DISCOVERY.SIGNATURES });
   emit('close', rewards.length > 0 ? rewards : undefined);
 }
 </script>

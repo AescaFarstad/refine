@@ -93,6 +93,8 @@ export const uiState = reactive({
   seenEssences: [] as string[],
   discoveryCounter: 0,
   hasDiscoveredSignatures: false,
+  showSignaturePlacementDiscoveryModal: false,
+  signaturePlacementDiscoveryId: '' as string,
   hasDiscoveredRefineTab: false,
   hasDiscoveredResearchTab: false,
   hasDiscoveredMazeTab: false,
@@ -275,7 +277,7 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.discoveryCounter = game.discoveryCounter;
   uiState.hasDiscoveredGear = game.discoveries[DISCOVERY.UI_GEAR] === true;
   uiState.hasDiscoveredGearUpgradeModal = game.discoveries[DISCOVERY.UI_GEAR_UPGRADE_MODAL_OPENED] === true;
-  uiState.hasDiscoveredSignatures = game.discoveries[DISCOVERY.UI_SIGNATURES] === true;
+  uiState.hasDiscoveredSignatures = game.discoveries[DISCOVERY.SIGNATURES] === true;
   uiState.hasDiscoveredRefineTab = game.discoveries[DISCOVERY.TAB_REFINE] === true;
   uiState.hasDiscoveredResearchTab = game.discoveries[DISCOVERY.TAB_RESEARCH] === true;
   uiState.hasDiscoveredMazeTab = game.discoveries[DISCOVERY.TAB_MAZE] === true;
@@ -292,6 +294,8 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.learnedSignatureIds = [...game.learnedSignatureIds];
   uiState.completedSignatureIds = [...game.completedSignatureIds];
   uiState.signatureLearnQueue = [...game.signatureLearnQueue];
+  uiState.showSignaturePlacementDiscoveryModal = !!game.signaturePlacementDiscoveryId;
+  uiState.signaturePlacementDiscoveryId = game.signaturePlacementDiscoveryId;
   uiState.hasEverHadShards =
     (game.discoveries[DISCOVERY.UI_SHARDS] === true) ||
     (game.shardDust > 0) ||

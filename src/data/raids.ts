@@ -1,6 +1,6 @@
-import type { RaidDefinition } from '../logic/RaidLib';
+import type { RawRaidDefinition } from '../logic/RaidLib';
 
-const raids: Record<string, Omit<RaidDefinition, 'id' | 'order' | 'itemPoolsByRarity' >> = {
+const raids: Record<string, RawRaidDefinition> = {
   shegolskoe: {
     name: 'Shegolskoe',
     locationImageId: 'shegolskoe',

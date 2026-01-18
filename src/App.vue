@@ -11,6 +11,7 @@
   <RaidOutcomeModal v-if="uiState.lastOutcome" />
   <GearUpgradeModal />
   <SignatureLearnModal />
+  <RewardUIRouter />
   <CheatOverlay />
 </template>
 
@@ -24,6 +25,7 @@ import Maze from './components/Maze.vue';
 import RaidOutcomeModal from './components/RaidOutcomeModal.vue';
 import GearUpgradeModal from './components/GearUpgradeModal.vue';
 import SignatureLearnModal from './components/SignatureLearnModal.vue';
+import RewardUIRouter from './components/rewardUI/RewardUIRouter.vue';
 import CheatOverlay from './components/CheatOverlay.vue';
 import { uiState } from './logic/UIState';
 

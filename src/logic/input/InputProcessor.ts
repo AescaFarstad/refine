@@ -1,7 +1,7 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdAcknowledgeSignatureLearn, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab } from './InputCommands';
+import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal } from './InputCommands';
 import { discover, discoverRefineTab, ensureSignatureDiscoveryFromWafer } from '../Discover';
 import { DISCOVERY } from '../DiscoveryLib';
 import { computeEffectiveEssences } from '../RefinePreview';
@@ -11,6 +11,7 @@ import { pickAndApplyRaidSuccessMutation, describeMutation, questIsAvailable } f
 import { placeMolecule, removeMolecule, enableCellWithFloodfill, computeWaferUpgradePrice } from '../Wafer';
 import { applyResearchPurchase } from '../Research';
 import { startRefining } from '../Refine';
+import { applyReward } from '../Reward';
 
 type Handler = (gs: GameState, cmd: CmdInput) => void;
 const handlersByName = new Map<string, Handler>();
@@ -167,6 +168,7 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
       .filter(it => it.quantity > 0),
     questsCompleted: result.questsCompleted,
     rewardsApplied: result.rewardsApplied,
+    rewardsConsumed: false,
     raidMutationsApplied: result.raidMutationsApplied,
     raidItemsAdded: result.raidItemsAdded,
     lootChanceDeltaApplied: result.lootChanceDeltaApplied,
@@ -191,7 +193,29 @@ handlersByName.set('CmdStartRefining', (gs, cmd) => {
 });
 
 handlersByName.set('CmdAcknowledgeOutcome', (gs, cmd) => {
+  // Safety net
+  if (gs.lastRaidOutcome && !gs.lastRaidOutcome.rewardsConsumed) {
+    const outcome = gs.lastRaidOutcome;
+    const raidId = outcome.id;
+    const raidEntry = gs.unlockedRaids.find(r => r.id === raidId);
+    for (const reward of outcome.rewardsApplied) {
+      applyReward(gs, reward, { activeRaidId: raidId, raidEntry });
+    }
+    outcome.rewardsConsumed = true;
+  }
   gs.lastRaidOutcome = null;
+});
+
+handlersByName.set('CmdConsumeOutcomeRewards', (gs, cmd) => {
+  const outcome = gs.lastRaidOutcome;
+  if (!outcome || outcome.rewardsConsumed) return;
+
+  const raidId = outcome.id;
+  const raidEntry = gs.unlockedRaids.find(r => r.id === raidId);
+  for (const reward of outcome.rewardsApplied) {
+    applyReward(gs, reward, { activeRaidId: raidId, raidEntry });
+  }
+  outcome.rewardsConsumed = true;
 });
 
 handlersByName.set('CmdAcknowledgeSignatureLearn', (gs, cmd) => {
@@ -376,6 +400,16 @@ handlersByName.set('CmdSwitchTab', (gs, cmd) => {
   }
 });
 
+handlersByName.set('CmdDismissUIModal', (gs, cmd) => {
+  const c = cmd as CmdDismissUIModal;
+  const idx = gs.pendingUIModals.indexOf(c.ui);
+  if (idx !== -1) {
+    gs.pendingUIModals.splice(idx, 1);
+  }
+  for (const reward of c.rewards) {
+    applyReward(gs, reward);
+  }
+});
 
 export function processInputs(gameState: GameState): void {
   for (const command of globalInputQueue) {

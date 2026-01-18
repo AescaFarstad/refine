@@ -7,14 +7,26 @@
 
       <section class="modal-body" v-if="!hasFullscreen">
         <div class="grid">
-          <button v-for="k in atlasKeys" :key="k" class="btn primary" @click="openAtlas(k)">
-            Open {{ k.toUpperCase() }} Atlas
+          <button v-for="k in atlasKeys" :key="k" class="btn atlas-btn" @click="openAtlas(k)">
+            {{ k.toUpperCase() }}
           </button>
           <button class="btn primary" type="button" @click="openMoleculeEditor">
-            Open Molecule Editor
+            Molecule Editor
           </button>
           <button class="btn primary" type="button" @click="openEditResearchPane">
-            Open Edit Research Pane
+            Edit Research Pane
+          </button>
+        </div>
+
+        <div class="grid" style="margin-top: 12px;">
+          <button
+            v-for="uiKey in REWARD_UI_KEYS"
+            :key="uiKey"
+            class="btn primary"
+            type="button"
+            @click="triggerUIModal(uiKey)"
+          >
+            {{ formatUILabel(uiKey) }}
           </button>
         </div>
 
@@ -73,6 +85,20 @@
             </div>
           </div>
         </div>
+
+        <div class="signature-cheat-grid" :style="atlasVars">
+          <button class="btn sig-all-btn" @click="cycleAllSignatures">ALL</button>
+          <div
+            v-for="sig in allSignatures"
+            :key="sig.id"
+            class="sig-cheat-entry"
+            :class="signatureEntryClass(sig.id)"
+            @click="cycleSignatureState(sig.id)"
+          >
+            <div class="sig-cheat-sprite" :style="sigCheatSpriteStyle(sig.id)" />
+            <div class="sig-cheat-name">{{ sig.name }}</div>
+          </div>
+        </div>
       </section>
 
       <section v-else class="viewer" :class="{ fill: hasFullscreen }">
@@ -99,8 +125,130 @@ import { listAtlasKeys, type AtlasKey } from '../logic/AtlasStorage';
 import { RESOURCE_SPECS, type ResourceKey } from '../logic/Resources';
 import { DISCOVERY, type DiscoveryId } from '../logic/DiscoveryLib';
 import { discover } from '../logic/Discover';
+import { REWARD_UI_KEYS } from './rewardUI/RewardUIRegistry';
+import type { SignatureDefinition } from '../logic/SignatureLib';
+import atlasStorage from '../logic/AtlasStorage';
 
 const open = computed(() => uiState.cheatOpen);
+
+// Signature atlas styling
+const moleculesSource = atlasStorage.getMoleculesSource();
+const atlasW = moleculesSource?.naturalWidth ?? 0;
+const atlasH = moleculesSource?.naturalHeight ?? 0;
+const atlasVars = {
+  '--sig-atlas': moleculesSource ? `url(${moleculesSource.src})` : 'none',
+  '--sig-atlas-size': `${atlasW}px ${atlasH}px`,
+} as Record<string, string>;
+
+// All signatures from lib
+const allSignatures = computed<SignatureDefinition[]>(() => {
+  const lib = uiState.lib;
+  if (!lib) return [];
+  return Array.from(lib.signatures.values());
+});
+
+const learnedIdSet = computed(() => new Set(uiState.learnedSignatureIds));
+const completedIdSet = computed(() => new Set(uiState.completedSignatureIds));
+
+function signatureEntryClass(id: string): Record<string, boolean> {
+  const learned = learnedIdSet.value.has(id);
+  const completed = completedIdSet.value.has(id);
+  return {
+    unknown: !learned,
+    incomplete: learned && !completed,
+    complete: completed,
+  };
+}
+
+function cycleSignatureState(id: string): void {
+  const gs = getGameState();
+  const learnedIdx = gs.learnedSignatureIds.indexOf(id);
+  const completedIdx = gs.completedSignatureIds.indexOf(id);
+  const isLearned = learnedIdx !== -1;
+  const isCompleted = completedIdx !== -1;
+
+  if (!isLearned && !isCompleted) {
+    // unknown → learned
+    gs.learnedSignatureIds.push(id);
+  } else if (isLearned && !isCompleted) {
+    // learned → completed
+    gs.completedSignatureIds.push(id);
+  } else {
+    // completed → unknown
+    if (learnedIdx !== -1) gs.learnedSignatureIds.splice(learnedIdx, 1);
+    if (completedIdx !== -1) gs.completedSignatureIds.splice(completedIdx, 1);
+  }
+}
+
+function cycleAllSignatures(): void {
+  const gs = getGameState();
+  const ids = allSignatures.value.map(s => s.id);
+  const allLearned = ids.every(id => gs.learnedSignatureIds.includes(id));
+  const allCompleted = ids.every(id => gs.completedSignatureIds.includes(id));
+
+  if (!allLearned) {
+    // not all learned → make all learned
+    for (const id of ids) {
+      if (!gs.learnedSignatureIds.includes(id)) {
+        gs.learnedSignatureIds.push(id);
+      }
+    }
+  } else if (!allCompleted) {
+    // all learned but not all completed → make all completed
+    for (const id of ids) {
+      if (!gs.completedSignatureIds.includes(id)) {
+        gs.completedSignatureIds.push(id);
+      }
+    }
+  } else {
+    // all completed → reset all to unknown
+    gs.learnedSignatureIds.length = 0;
+    gs.completedSignatureIds.length = 0;
+  }
+}
+
+function sigCheatSpriteStyle(id: string): Record<string, string> {
+  const sig = uiState.lib?.signatures.get(id);
+  if (!sig) return {};
+  const src = atlasStorage.getMoleculesSource();
+  if (!src) return {};
+
+  const isLearned = learnedIdSet.value.has(id);
+  const isCompleted = completedIdSet.value.has(id);
+
+  // Use wafer (line) image for unknown, card images for learned/completed
+  if (!isLearned) {
+    // Wafer/line image for unknown - scaled to fit
+    const f = atlasStorage.getMoleculesFrame(`sig:wafer:${id}`);
+    if (!f) return {};
+    const targetSize = 48;
+    const scale = Math.min(targetSize / f.w, targetSize / f.h);
+    return {
+      width: `${Math.round(f.w * scale)}px`,
+      height: `${Math.round(f.h * scale)}px`,
+      backgroundImage: `url(${src.src})`,
+      backgroundRepeat: 'no-repeat',
+      backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
+      backgroundSize: `${src.naturalWidth * scale}px ${src.naturalHeight * scale}px`,
+    };
+  }
+
+  // Card images for learned/completed
+  const key = isCompleted ? `sig:card:done:${id}` : `sig:card:open:${id}`;
+  const f = atlasStorage.getMoleculesFrame(key);
+  if (!f) return {};
+  // Scale card down to be more compact
+  const targetH = 54;
+  const scale = targetH / f.h;
+  return {
+    width: `${Math.round(f.w * scale)}px`,
+    height: `${Math.round(f.h * scale)}px`,
+    backgroundImage: `url(${src.src})`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
+    backgroundSize: `${src.naturalWidth * scale}px ${src.naturalHeight * scale}px`,
+  };
+}
 
 const resources = Object.values(RESOURCE_SPECS);
 const tabDiscoveryIds = computed<DiscoveryId[]>(() =>
@@ -159,6 +307,18 @@ function openEditResearchPane() {
   uiState.cheatOpen = false;
 }
 
+function triggerUIModal(uiKey: string) {
+  const gs = getGameState();
+  if (!gs.pendingUIModals.includes(uiKey)) {
+    gs.pendingUIModals.push(uiKey);
+  }
+  uiState.cheatOpen = false;
+}
+
+function formatUILabel(key: string): string {
+  return key.replaceAll('_', ' ');
+}
+
 function closeAll() {
   uiState.cheatOpen = false;
   uiState.devAtlasKey = '';
@@ -176,7 +336,7 @@ function closeAll() {
   z-index: 20000; /* above other modals */
 }
 .modal {
-  width: min(90vw, 1000px);
+  width: min(90vw, 1400px);
   max-height: 90vh;
   background: linear-gradient(180deg, rgba(20, 28, 40, 0.98), rgba(10, 15, 26, 0.94));
   border: 1px solid var(--panel-border);
@@ -201,7 +361,7 @@ function closeAll() {
 .modal-header h3 { margin: 0; font-size: 18px; letter-spacing: 0.02em; }
 .spacer { flex: 1; }
 
-.modal-body { margin-top: 10px; }
+.modal-body { margin-top: 10px; overflow-y: auto; flex: 1; min-height: 0; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
 
 .viewer { margin-top: 10px; overflow: auto; }
@@ -219,6 +379,8 @@ function closeAll() {
 }
 .btn.primary { background: rgba(79, 209, 197, 0.14); color: var(--accent); }
 .btn.primary:hover { background: rgba(79, 209, 197, 0.22); }
+.btn.atlas-btn { background: rgba(251, 191, 36, 0.18); color: rgb(251, 191, 36); }
+.btn.atlas-btn:hover { background: rgba(251, 191, 36, 0.28); }
 
 .section-title {
   margin: 16px 0 8px;
@@ -276,5 +438,74 @@ function closeAll() {
   .resource-and-discovery {
     grid-template-columns: 1fr;
   }
+}
+
+.signature-cheat-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.sig-cheat-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  padding: 3px;
+  border-radius: 3px;
+  border: 1px solid transparent;
+  transition: background 0.12s, border-color 0.12s;
+  min-width: 52px;
+}
+
+.sig-cheat-entry:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--panel-border);
+}
+
+.sig-cheat-sprite {
+  display: block;
+}
+
+.sig-cheat-name {
+  text-align: center;
+  font-size: 9px;
+  color: var(--text-secondary);
+  line-height: 1;
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sig-cheat-entry.complete {
+  background: rgba(79, 209, 197, 0.08);
+}
+
+.sig-cheat-entry.complete .sig-cheat-name {
+  color: var(--accent);
+}
+
+.sig-cheat-entry.incomplete .sig-cheat-sprite {
+  opacity: 0.7;
+}
+
+.sig-cheat-entry.unknown .sig-cheat-sprite {
+  opacity: 0.5;
+}
+
+.sig-all-btn {
+  align-self: center;
+  min-width: 52px;
+  height: 54px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(251, 191, 36, 0.18);
+  color: rgb(251, 191, 36);
+}
+.sig-all-btn:hover {
+  background: rgba(251, 191, 36, 0.28);
 }
 </style>

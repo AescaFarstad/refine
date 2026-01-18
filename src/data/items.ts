@@ -334,15 +334,37 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
   },
   soviet_champagne: {
     name: 'Soviet Champagne',
-    volume: 1,
-    rarity: 1,
-    molecule: blankMolecule,
+    volume: 2,
+    rarity: 2,
+    molecule: {
+      atoms: [
+        { color: 'blue', x: -1, y: 0 },
+        { color: 'blue', x: 0, y: 0 },
+        { color: 'green', x: 1, y: 0 },
+        { color: 'green', x: 2, y: 0 },
+      ],
+      connections: [
+        { from: { x: 2, y: 0 }, to: { x: 1, y: 0 } },
+        { from: { x: 1, y: 0 }, to: { x: 0, y: 0 } },
+        { from: { x: 0, y: 0 }, to: { x: -1, y: 0 } },
+      ],
+    },
   },
   vodka_bottle: {
     name: 'Vodka Bottle',
-    volume: 1,
-    rarity: 1,
-    molecule: blankMolecule,
+    volume: 2,
+    rarity: 2,
+    molecule: {
+      atoms: [
+        { color: 'magenta', x: 1, y: -1 },
+        { color: 'magenta', x: 0, y: 0 },
+        { color: 'magenta', x: -1, y: 1 },
+      ],
+      connections: [
+        { from: { x: 1, y: -1 }, to: { x: 0, y: 0 } },
+        { from: { x: 0, y: 0 }, to: { x: -1, y: 1 } },
+      ],
+    },
   },
   corkscrew: {
     name: 'Corkscrew',
@@ -362,9 +384,22 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
   },
   poetry_book: {
     name: 'Poetry Book',
-    volume: 1,
-    rarity: 1,
-    molecule: blankMolecule,
+    volume: 2,
+    rarity: 3,
+    molecule: {
+      atoms: [
+        { color: 'blue', x: 0, y: 0 },
+        { color: 'cyan', x: 1, y: 0 },
+        { color: 'cyan', x: -1, y: 1 },
+        { color: 'blue', x: 0, y: 1 },
+      ],
+      connections: [
+        { from: { x: 1, y: 0 }, to: { x: 0, y: 0 } },
+        { from: { x: 1, y: 0 }, to: { x: 0, y: 1 } },
+        { from: { x: -1, y: 1 }, to: { x: 0, y: 0 } },
+        { from: { x: -1, y: 1 }, to: { x: 0, y: 1 } },
+      ],
+    },
   },
   tea_brick: {
     name: 'Tea Brick',
@@ -1168,8 +1203,16 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
   tall_glass: {
     name: 'Tall Glass',
     volume: 1,
-    rarity: 1,
-    molecule: blankMolecule,
+    rarity: 3,
+    molecule: {
+      atoms: [
+        { color: 'cyan', x: 0, y: 0 },
+        { color: 'magenta', x: 0, y: 1 },
+      ],
+      connections: [
+        { from: { x: 0, y: 0 }, to: { x: 0, y: 1 } },
+      ],
+    },
   },
   taxi_sign: {
     name: 'Taxi Sign',

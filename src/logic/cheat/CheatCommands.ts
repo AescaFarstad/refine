@@ -77,3 +77,19 @@ export class CheatGrantRewards implements CheatInput {
     this.rewards = args.rewards;
   }
 }
+
+export class CheatLearnSignatures implements CheatInput {
+  readonly name = 'CheatLearnSignatures';
+  readonly signatureIds: string[];
+  constructor(args: { signatureIds?: string[] }) {
+    this.signatureIds = args.signatureIds ?? [];
+  }
+}
+
+export class CheatCompleteSignatures implements CheatInput {
+  readonly name = 'CheatCompleteSignatures';
+  readonly signatureIds: string[];
+  constructor(args: { signatureIds?: string[] }) {
+    this.signatureIds = args.signatureIds ?? [];
+  }
+}

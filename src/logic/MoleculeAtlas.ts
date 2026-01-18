@@ -226,18 +226,36 @@ export async function ensureMoleculeAtlas(): Promise<void> {
       // Inline (small, unblurred)
       {
         const canvasSize = 32;
+        const cells = sig.molecule.atoms.map(a => ({ x: a.x, y: a.y }));
+        const baseHexSize = 4.6;
+        const lineWidth = 2;
+        const margin = lineWidth + 1;
+
+        // Calculate bounds at base hex size to check if scaling is needed
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        for (const c of cells) {
+          const p = axialToPixel(c, baseHexSize, { x: 0, y: 0 });
+          minX = Math.min(minX, p.x);
+          maxX = Math.max(maxX, p.x);
+          minY = Math.min(minY, p.y);
+          maxY = Math.max(maxY, p.y);
+        }
+        const spanX = Math.max(1, maxX - minX);
+        const spanY = Math.max(1, maxY - minY);
+        const availableSize = canvasSize - margin * 2;
+        const scale = Math.min(1, availableSize / spanX, availableSize / spanY);
+        const hexSize = baseHexSize * scale;
+
         packed.push({
           key: `sig:inline:${sig.id}`,
           w: canvasSize,
           h: canvasSize,
           draw: (ctx, x, y) => {
-            const cells = sig.molecule.atoms.map(a => ({ x: a.x, y: a.y }));
-            const hexSize = 4.6;
             const origin = computeSignatureOriginForCanvas(cells, hexSize, { w: canvasSize, h: canvasSize });
             ctx.save();
             ctx.translate(x, y);
             ctx.clearRect(0, 0, canvasSize, canvasSize);
-            drawSignatureLines(ctx, cells, { origin, hexSize, color: sig.color, lineWidth: 2, blur: 0 });
+            drawSignatureLines(ctx, cells, { origin, hexSize, color: sig.color, lineWidth, blur: 0 });
             ctx.restore();
           },
         });

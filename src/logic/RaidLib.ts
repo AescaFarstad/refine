@@ -67,7 +67,7 @@ export interface RaidDefinition {
   zoneCollapseStepPerMutation: number;
 }
 
-export type RawRaidDefinition = Omit<RaidDefinition, 'id' | 'order' | 'itemPoolsByRarity'>;
+export type RawRaidDefinition = Omit<RaidDefinition, 'id' | 'order' | 'itemPoolsByRarity' | 'allPotentialItems'>;
 
 function emptyItemPoolsByRarity(): Record<LootRarity, string[]> {
   return { common: [], uncommon: [], rare: [], legendary: [] };

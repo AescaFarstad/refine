@@ -114,7 +114,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { uiState, getGameLib, getGameState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
-import { CmdAcknowledgeOutcome, CmdSwitchTab } from '../logic/input/InputCommands';
+import { CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdSwitchTab } from '../logic/input/InputCommands';
 import ItemDisplay from './ItemDisplay.vue';
 import QuestHint from './QuestHint.vue';
 import { formatDurationHM } from '../logic/StringUtils';
@@ -140,6 +140,12 @@ const suppressBarTransition = ref(false);
 function onShownCount(v: number) { shownCount.value = v; }
 function onTimelineComplete(v: boolean) { timelineComplete.value = v; }
 function onDisplayedTimeSec(v: number) { displayedTimeSec.value = v; }
+
+watch(timelineComplete, (complete) => {
+  if (complete) {
+    globalInputQueue.push(new CmdConsumeOutcomeRewards());
+  }
+});
 function onCurrentHp(v: number) { currentHp.value = v; }
 function onCurrentMaxHp(v: number) { currentMaxHp.value = v; }
 function onBagsUsed(v: number) { currentBagsUsed.value = v; }

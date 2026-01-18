@@ -102,6 +102,9 @@ export class GameState {
   public raidSimulation: RaidSimulation = new RaidSimulation();
   public raidFoundItemsVersion: number = 0;
 
+  // Queue of UI modal keys to show (from show_ui rewards)
+  public pendingUIModals: string[] = [];
+
   constructor() {
     for (const categoryId of Object.keys(gearCategories)) {
       this.gearLevels[categoryId] = 1;
@@ -169,6 +172,7 @@ export class RaidOutcome {
   public timeSpentSec: number = 0;
   public questsCompleted: string[] = [];
   public rewardsApplied: Reward[] = [];
+  public rewardsConsumed: boolean = false;
   public raidMutationsApplied: RaidMutation[] = [];
   public raidItemsAdded: string[] = [];
   public lootChanceDeltaApplied: number = 0;

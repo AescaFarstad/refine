@@ -19,6 +19,10 @@ export class CmdAcknowledgeOutcome implements CmdInput {
   readonly name = 'CmdAcknowledgeOutcome';
 }
 
+export class CmdConsumeOutcomeRewards implements CmdInput {
+  readonly name = 'CmdConsumeOutcomeRewards';
+}
+
 export class CmdAcknowledgeSignatureLearn implements CmdInput {
   readonly name = 'CmdAcknowledgeSignatureLearn';
 }
@@ -147,5 +151,15 @@ export class CmdSwitchTab implements CmdInput {
   readonly tab: 'raid' | 'refine' | 'research' | 'maze';
   constructor(args: { tab: 'raid' | 'refine' | 'research' | 'maze' }) {
     this.tab = args.tab;
+  }
+}
+
+export class CmdDismissUIModal implements CmdInput {
+  readonly name = 'CmdDismissUIModal';
+  readonly ui: string;
+  readonly rewards: import('../Reward').Reward[];
+  constructor(args: { ui: string; rewards?: import('../Reward').Reward[] }) {
+    this.ui = args.ui;
+    this.rewards = args.rewards ?? [];
   }
 }

@@ -128,6 +128,9 @@ export const uiState = reactive({
   researchNewlyPlaced: [] as Array<{ archetypeId: string; cells: { x: number; y: number }; radius: number }>,
 
   questPrereqsVersion: 0,
+
+  // Queue of UI modal keys to show (from show_ui rewards)
+  pendingUIModals: [] as string[],
 });
 
 // Formatted time display: "X days, HH:MM"
@@ -329,6 +332,8 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.researchRevealRadius = typeof radius === 'number' ? radius : 0;
 
   uiState.activeTab = game.activeTab;
+
+  uiState.pendingUIModals = [...game.pendingUIModals];
 }
 
 // Expose current game lib for UI components that need live definitions

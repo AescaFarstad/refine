@@ -8,7 +8,7 @@ import { handleFightEncounter } from './FightEncounter';
 import { handlePreparationEncounter, createPreparationEncounter, type GearPreparationPlan } from './PreparationEncounter';
 import SeededRandom from './core/SeededRandom';
 import { cloneRaid, applyRaidMutation, questIsActive, type RaidMutation } from './RaidMutation';
-import { applyReward, type Reward } from './Reward';
+import type { Reward } from './Reward';
 import { Perks } from './Perks';
 import { STABALIZER_BEACON_BONUS } from './Const';
 
@@ -546,7 +546,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
       const q = gsForRun.lib.quests.get(qid)!;
 
       for (const reward of q.rewards) {
-        applyReward(gsForRun, reward, { activeRaidId: raidId, raidEntry });
+        // Collect rewards for later application (after playback completes) via CmdConsumeOutcomeRewards
         rewardsApplied.push(reward);
 
         if (reward.kind === 'raid_mutation') {

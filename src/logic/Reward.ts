@@ -24,6 +24,9 @@ export type Reward =
   | { kind: 'raid_loot_chance'; delta: number; targetRaidId?: string; sentiment?: 'positive' | 'negative' }
   | { kind: 'raid_rarity_buff'; delta: number; targetRaidId?: string; sentiment?: 'positive' | 'negative' }
   | { kind: 'raid_add_item'; itemIds: string[]; targetRaidId?: string; sentiment?: 'positive' | 'negative' }
+
+  // UI interactions
+  | { kind: 'show_ui'; ui: string }
   ;
 
 export interface RewardContext {
@@ -129,5 +132,11 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
       }
       break;
     }
+
+    case 'show_ui':
+      if (!gs.pendingUIModals.includes(reward.ui)) {
+        gs.pendingUIModals.push(reward.ui);
+      }
+      break;
   }
 }

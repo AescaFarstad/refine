@@ -2,7 +2,8 @@ import { Raid, type GameState } from './GameState';
 import { setIsDebug } from './Const';
 import { uiState } from './UIState';
 import { DISCOVERY } from './DiscoveryLib';
-import { CheatAddResources, CheatLoadResearchState, CheatUnlockAllRaids, CheatDisableQuestPrereqs, CheatGrantDiscoveries, CheatAddRaidItems, CheatUnlockAllGear, CheatGrantRewards } from './cheat/CheatCommands';
+import { CheatAddResources, CheatLoadResearchState, CheatUnlockAllRaids, CheatDisableQuestPrereqs, CheatGrantDiscoveries, CheatAddRaidItems, CheatUnlockAllGear, CheatGrantRewards, CheatLearnSignatures, CheatCompleteSignatures } from './cheat/CheatCommands';
+import signatures from '../data/signatures';
 import { recomputeActiveRaidEstimates, recomputeActiveRaidParams } from './Raid';
 
 export function initDebug(gameState: GameState): void {
@@ -30,6 +31,8 @@ export function initDebug(gameState: GameState): void {
     new CheatUnlockAllGear(),
     new CheatDisableQuestPrereqs({ disabled: true }),
     new CheatGrantRewards({ rewards: [{ kind: 'countable_gear', gearId: 'xeno_bait', amount: 10 }] }),
+    new CheatLearnSignatures({ signatureIds: Object.keys(signatures) }),
+    new CheatCompleteSignatures({ signatureIds: Object.keys(signatures) }),
     // raidItemCheats[0],
     ...raidItemCheats,
     // new CheatLoadResearchState({

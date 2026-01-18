@@ -11,7 +11,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     name: 'Delineate',
     group: 'starter',
     layout: 'up_triangle',
-    colors: ['red'],
+    colors: ['green'],
   },
   s3: {
     name: 'Summarize',
@@ -20,16 +20,16 @@ const signatures: Record<string, RawSignatureDefinition> = {
     colors: ['blue'],
   },
   s4: {
-    name: 'Encapsulate',
+    name: 'Amplify',
     group: 'starter',
-    layout: 'ex',
-    colors: ['blue'],
+    layout: 'h',
+    colors: ['red'],
   },
   s5: {
     name: 'Mesmerize',
     group: 'starter',
     layout: 'up_serpinski',
-    colors: ['red'],
+    colors: ['blue'],
   },
   s6: {
     name: 'Pulverize',
@@ -41,13 +41,13 @@ const signatures: Record<string, RawSignatureDefinition> = {
     name: 'Harmonize',
     group: 'starter',
     layout: 'candy_left',
-    colors: ['red'],
+    colors: ['green'],
   },
   s8: {
     name: 'Patronize',
     group: 'starter',
     layout: 'shelf_left',
-    colors: ['red'],
+    colors: ['gray'],
   },
 
 
@@ -55,7 +55,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     name: 'Galvanize',
     group: 'starter',
     layout: 'down_trihex',
-    colors: ['red'],
+    colors: ['blue'],
   },
   s10: {
     name: 'Codify',
@@ -67,25 +67,25 @@ const signatures: Record<string, RawSignatureDefinition> = {
     name: 'Simplify',
     group: 'starter',
     layout: 'hexagon',
-    colors: ['red'],
+    colors: ['green'],
   },
   s12: {
-    name: 'Amplify',
+    name: 'Encapsulate',
     group: 'starter',
-    layout: 'h',
-    colors: ['red'],
+    layout: 'ex',
+    colors: ['blue'],
   },
   s13: {
     name: 'Stipulate',
     group: 'starter',
     layout: 'down_serpinski',
-    colors: ['red'],
+    colors: ['green'],
   },
   s14: {
     name: 'Downgrade',
     group: 'starter',
     layout: 'down_blunt_triangle',
-    colors: ['red'],
+    colors: ['blue'],
   },
   s15: {
     name: 'Uplift',
@@ -97,7 +97,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     name: 'Formulate',
     group: 'starter',
     layout: 'shelf_right',
-    colors: ['red'],
+    colors: ['green'],
   },
 };
 

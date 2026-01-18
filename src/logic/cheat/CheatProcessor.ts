@@ -1,6 +1,6 @@
 import { type GameState, Raid } from '../GameState';
 import type { CheatInput } from './CheatCommands';
-import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources, CheatUnlockAllRaids, CheatLoadResearchState, CheatUnlockAllQuests, CheatDisableQuestPrereqs, CheatGrantDiscoveries, CheatGrantRewards } from './CheatCommands';
+import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources, CheatUnlockAllRaids, CheatLoadResearchState, CheatUnlockAllQuests, CheatDisableQuestPrereqs, CheatGrantDiscoveries, CheatGrantRewards, CheatLearnSignatures, CheatCompleteSignatures } from './CheatCommands';
 import type { EncounterDef } from '../RaidLib';
 import { applyResearchNodeEffect, axialToIndex, calculateVisibility } from '../Research';
 import { setEnableQuestPrereqs } from '../Const';
@@ -145,6 +145,24 @@ handlersByName.set('CheatGrantRewards', (gs, cheat) => {
   const c = cheat as CheatGrantRewards;
   for (const reward of c.rewards) {
     applyReward(gs, reward);
+  }
+});
+
+handlersByName.set('CheatLearnSignatures', (gs, cheat) => {
+  const c = cheat as CheatLearnSignatures;
+  for (const id of c.signatureIds) {
+    if (!gs.learnedSignatureIds.includes(id)) {
+      gs.learnedSignatureIds.push(id);
+    }
+  }
+});
+
+handlersByName.set('CheatCompleteSignatures', (gs, cheat) => {
+  const c = cheat as CheatCompleteSignatures;
+  for (const id of c.signatureIds) {
+    if (!gs.completedSignatureIds.includes(id)) {
+      gs.completedSignatureIds.push(id);
+    }
   }
 });
 

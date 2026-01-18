@@ -113,10 +113,11 @@ const quests: Record<string, RawQuestDefinition> = {
       { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 7 },
     ],
     rewards: [
+      { kind: 'show_ui', ui: 'poets_scribbles' },
       { kind: 'raid_mutation', mutation: { kind: 'LootMutation', count: 3 } },
       { kind: 'raid_loot_chance', delta: 10 },
       { kind: 'raid_mutation', mutation: { kind: 'AddMonsterMutation', monsterId: 'hound', count: 3 } },
-      { kind: 'raid_add_item', itemIds: ['tall_glass', 'soviet_champagne', 'vodka_bottle', 'corkscrew'] },
+      { kind: 'raid_add_item', itemIds: ['tall_glass', 'soviet_champagne', 'vodka_bottle', 'corkscrew', 'poetry_book'] },
     ],
   },
 };

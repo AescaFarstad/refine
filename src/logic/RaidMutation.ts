@@ -416,49 +416,54 @@ export function pickAndApplyRaidSuccessMutation(gs: GameState, raidId: string): 
   return chosen;
 }
 
-export function describeMutation(gs: GameState, mutation: RaidMutation): string {
+export interface MutationDescription {
+  label: string;
+  value: string;
+}
+
+export function describeMutation(gs: GameState, mutation: RaidMutation): MutationDescription {
   const sign = (n: number) => (n >= 0 ? '+' : '-');
   switch (mutation.kind) {
     case 'LootMutation': {
       const n = Math.trunc(mutation.count);
       const abs = Math.abs(n);
       const label = `Scavenge site${abs === 1 ? '' : 's'}`;
-      return `${label} ${sign(n)}${abs}`;
+      return { label, value: `${sign(n)}${abs}` };
     }
     case 'WalkMutation': {
       const n = Math.trunc(mutation.count);
       const abs = Math.abs(n);
-      return `Distance ${sign(n)}${abs} km`;
+      return { label: 'Distance', value: `${sign(n)}${abs} km` };
     }
     case 'AddMonsterMutation': {
       const n = Math.trunc(mutation.count);
       const abs = Math.abs(n);
       const name = gs.lib.monsters.get(mutation.monsterId)!.name;
-      return `${name} ${sign(n)}${abs}`;
+      return { label: name, value: `${sign(n)}${abs}` };
     }
     case 'LootDifficultyMutation': {
       const amt = mutation.amount;
       const prefix = amt >= 0 ? '+' : '';
-      return `Loot chance ${prefix}${amt}%`;
+      return { label: 'Loot chance', value: `${prefix}${amt}%` };
     }
     case 'UpgradeMonsterMutation': {
       const from = gs.lib.monsters.get(mutation.fromMonsterId)!.name;
       const to = gs.lib.monsters.get(mutation.toMonsterId)!.name;
       const cnt = Math.max(1, Math.trunc(mutation.count));
-      if (cnt === 1) return `a ${to} replaced one of the ${from}`;
-      return `${cnt} ${to} replaced ${cnt} ${from}`;
+      if (cnt === 1) return { label: `a ${to} replaced one of the ${from}`, value: '' };
+      return { label: `${cnt} ${to} replaced ${cnt} ${from}`, value: '' };
     }
     case 'QuestMutation': {
       const n = Math.trunc(mutation.count);
       const abs = Math.abs(n);
       const questName = mutation.questId;
-      return `${questName} quest${abs === 1 ? '' : 's'} ${sign(n)}${abs}`;
+      return { label: `${questName} quest${abs === 1 ? '' : 's'}`, value: `${sign(n)}${abs}` };
     }
     case 'ZoneCollapseTimeMutation': {
       const amt = mutation.amount;
       const absMin = Math.abs(Math.round(amt / 60));
       const prefix = amt >= 0 ? '+' : '-';
-      return `Zone collapse ${prefix}${absMin}m`;
+      return { label: 'Zone collapse', value: `${prefix}${absMin}m` };
     }
   }
 }

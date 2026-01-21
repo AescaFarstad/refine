@@ -162,7 +162,7 @@ const gear: Record<string, RawGearDefinition> = {
     name: 'Rusty Machete',
     category: 'melee_weapons',
     damage: 2,
-    chanceToHit: 5,
+    chanceToHit: 10,
     price: 40,
     weight: 2,
     image: 'machete',

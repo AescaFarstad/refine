@@ -26,7 +26,7 @@
         :wafer="wafer"
       />
       <div v-if="draggingItem && !showRefineAnim" class="rotate-hint">
-        Right-Click or Space to rotate ⟳
+        ⟳ Right-Click or Space to rotate ⟳
       </div>
       <div
         v-if="!hasGrownWafer && placedItemEntries.length === 0 && !draggingItem && !showRefineAnim && !hasUpgradePreview"

@@ -142,4 +142,8 @@ watch(() => uiState.raidOrder.join('|'), () => {
   position: relative;
   z-index: 1;
 }
+/* Allow gear hints to float above the deploy panel below */
+.raid-main-bg:has(.gear-item:hover) {
+  z-index: 2;
+}
 </style>

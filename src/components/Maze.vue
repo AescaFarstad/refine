@@ -3,7 +3,7 @@
     <div v-if="!hasMazeNavigation" class="maze-locked">
       <div class="locked-text">This is the Maze of Time.</div>
       <div class="locked-text">You will have to navigate it to return home.</div>
-      <div class="locked-text">Yet there seem to be no entrance.</div>
+      <div class="locked-text">Yet there seems to be no entrance.</div>
     </div>
     <div v-else class="maze-layout">
       <div class="left-panel">

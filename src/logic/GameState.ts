@@ -10,7 +10,7 @@ import { createWafer } from "./Wafer";
 import { initResearchCells } from "./Research";
 import gearCategories from "../data/gear_categories";
 import type { RaidEventLog } from './RaidLog';
-import type { RaidMutation } from './RaidMutation';
+import type { RaidMutation, MutationDescription } from './RaidMutation';
 import type { Reward } from './Reward';
 
 export const DEFAULT_SPEED: number = 6;
@@ -181,7 +181,7 @@ export class RaidOutcome {
   public lootChanceDeltaApplied: number = 0;
   public lootingRarityBuffDeltaApplied: number = 0;
   public newQuestsAvailable: string[] = [];
-  public zoneChange: string | null = null;
+  public zoneChange: MutationDescription | null = null;
   public finalHp: number = 0;
   public finalMaxHp: number = 0;
   public finalBagsUsed: number = 0;

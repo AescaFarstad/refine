@@ -141,10 +141,11 @@ const hintSections = computed<HintSection[]>(() => {
     const items: HintItem[] = [];
     for (const enc of encs) {
       const desc = describeMutation(gs!, enc);
-      if (desc && desc.length > 0) {
+      if (desc) {
+        const text = desc.value ? `${desc.label} ${desc.value}` : desc.label;
         const encSentiment = determineMutationSentiment(enc);
         if (encSentiment) {
-          items.push({ text: desc, sentiment: encSentiment });
+          items.push({ text, sentiment: encSentiment });
         }
       }
     }
@@ -168,7 +169,8 @@ const hintSections = computed<HintSection[]>(() => {
     } else if (r.kind === 'raid_mutation' && gs && sentiment) {
       const desc = describeMutation(gs, r.mutation);
       if (desc) {
-        outcomeItems.push({ text: desc, sentiment });
+        const text = desc.value ? `${desc.label} ${desc.value}` : desc.label;
+        outcomeItems.push({ text, sentiment });
       }
     } else if (r.kind === 'raid_add_item' && lib && sentiment) {
       if (q.showAddedItems) {

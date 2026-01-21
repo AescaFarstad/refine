@@ -140,7 +140,7 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
     }
   }
 
-  let zoneChange: string | null = null;
+  let zoneChange: { label: string; value: string } | null = null;
   if (result.success) {
     const chosen = pickAndApplyRaidSuccessMutation(gs, c.id);
     if (chosen) {

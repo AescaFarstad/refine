@@ -59,15 +59,15 @@
             <span v-for="(chip, i) in rewardChips" :key="i" class="chip" :class="chip.class" :style="chip.style">{{ chip.text }}</span>
           </div>
         </section>
-        <section class="raid-changes" v-if="raidChangesPills.length || zoneChangeText">
+        <section class="raid-changes" v-if="raidChangesPills.length || zoneChangeParsed">
           <div class="rc-row" v-if="raidChangesPills.length">
             <div class="rc-pills">
-              <span v-for="(pill, i) in raidChangesPills" :key="i" class="rc-pill" :class="pill.positive ? 'positive' : 'negative'">{{ pill.text }}</span>
+              <span v-for="(pill, i) in raidChangesPills" :key="i" class="rc-pill" :class="pill.positive ? 'positive' : 'negative'">{{ pill.label }}<span v-if="pill.value" class="rc-value">{{ pill.value }}</span></span>
             </div>
           </div>
-          <div class="rc-row inline" v-if="zoneChangeText">
+          <div class="rc-row inline" v-if="zoneChangeParsed">
             <div class="rc-cap">Zone deterioration: </div>
-            <span class="rc-pill negative">{{ zoneChangeText }}</span>
+            <span class="rc-pill negative">{{ zoneChangeParsed.label }}<span v-if="zoneChangeParsed.value" class="rc-value">{{ zoneChangeParsed.value }}</span></span>
           </div>
         </section>
         <section class="barely-in-time" v-if="raidSuccess && barelyInTime">
@@ -260,8 +260,8 @@ const raidSuccess = computed(() => outcome.value.success);
 const gainedItems = computed(() => (outcome.value.looted || []).filter(it => (it.quantity || 0) > 0));
 const discardedItems = computed(() => (outcome.value.discarded || []).filter(it => (it.quantity || 0) > 0));
 
-const zoneChangeText = computed(() => {
-  return outcome.value.zoneChange || '';
+const zoneChangeParsed = computed(() => {
+  return outcome.value.zoneChange;
 });
 
 const newQuests = computed(() => {
@@ -322,7 +322,7 @@ function resourceChipStyle(key: ResourceKey): Record<string, string> {
   return { color: spec.color, background: spec.bgColor };
 }
 
-type RaidChangePill = { text: string; positive: boolean };
+type RaidChangePill = { label: string; value: string; positive: boolean };
 
 function isMutationPositive(m: RaidMutation): boolean {
   switch (m.kind) {
@@ -339,20 +339,24 @@ function isMutationPositive(m: RaidMutation): boolean {
 const raidChangesPills = computed<RaidChangePill[]>(() => {
   const out: RaidChangePill[] = [];
   const lc = outcome.value.lootChanceDeltaApplied || 0;
-  if (lc) out.push({ text: `Loot chance ${lc >= 0 ? '+' : ''}${lc}%`, positive: lc > 0 });
+  if (lc) {
+    out.push({ label: 'Loot chance', value: `${lc >= 0 ? '+' : ''}${lc}%`, positive: lc > 0 });
+  }
   const rb = outcome.value.lootingRarityBuffDeltaApplied || 0;
-  if (rb) out.push({ text: `Loot rarity ${rb >= 0 ? '+' : ''}${rb}`, positive: rb > 0 });
+  if (rb) {
+    out.push({ label: 'Loot rarity', value: `${rb >= 0 ? '+' : ''}${rb}`, positive: rb > 0 });
+  }
   if (outcome.value.raidMutationsApplied.length) {
     const gs = getGameState()!;
     for (const m of outcome.value.raidMutationsApplied) {
-      const desc = describeMutation(gs, m);
-      if (desc) out.push({ text: desc, positive: isMutationPositive(m) });
+      const { label, value } = describeMutation(gs, m);
+      out.push({ label, value, positive: isMutationPositive(m) });
     }
   }
   if (outcome.value.raidItemsAdded.length) {
     const lib = getGameLib()!;
     for (const id of outcome.value.raidItemsAdded) {
-      out.push({ text: `New drop: ${lib.getItem(id).name}`, positive: true });
+      out.push({ label: 'New drop:', value: lib.getItem(id).name, positive: true });
     }
   }
   return out;
@@ -520,19 +524,29 @@ function formatHMS(totalSec?: number): string { return formatDurationHM(totalSec
 .rc-pill {
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  padding: 6px 14px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 .rc-pill.positive {
-  background: rgba(79, 209, 197, 0.12);
+  background: rgba(20, 60, 55, 0.7);
   color: #5eead4;
+  border-color: rgba(79, 209, 197, 0.35);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 .rc-pill.negative {
-  background: rgba(239, 68, 68, 0.12);
+  background: rgba(60, 20, 20, 0.7);
   color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.35);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+.rc-pill .rc-value {
+  font-weight: 800;
+  filter: brightness(1.3);
+  margin-left: 0.4em;
 }
 .death-note { margin-top: 10px; padding: 8px 10px; border: none; border-radius: 6px; background: rgba(255,255,255,0.03); }
 .reimbursed { margin-top: 6px; color: #86efac; font-size: 0.95em; }

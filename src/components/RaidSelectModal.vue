@@ -345,12 +345,21 @@ function onSelect(id: string) {
   emit('close');
 }
 
-watch(() => props.visible, (v) => {
+watch(() => props.visible, (v, oldV) => {
   if (v) {
     previewRaidId.value = uiState.activeRaidId || null;
     updateItemsPanelHeight();
     justUnbannedItemId.value = null;
     justBannedItemId.value = null;
+  } else if (oldV && !v) {
+    // Closing: select the previewed raid if it exists and is different from active
+    if (previewRaidId.value && previewRaidId.value !== uiState.activeRaidId) {
+      const r = uiState.raids.find(rr => rr.id === previewRaidId.value);
+      if (r && !isLocked(r)) {
+        globalInputQueue.push(new CmdSelectRaid({ id: previewRaidId.value }));
+        emit('selected');
+      }
+    }
   }
 });
 

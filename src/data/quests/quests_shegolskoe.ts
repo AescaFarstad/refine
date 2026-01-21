@@ -51,7 +51,7 @@ const quests: Record<string, RawQuestDefinition> = {
   },
   shegolskoe_locate_next_zone: {
     name: 'Locate another zone',
-    description: 'The resources are deplete while monsters multiply. Climb the water tower and take a bearing on the nearby zones.',
+    description: 'The resources are depleting while monsters multiply. Climb the water tower and take a bearing on the nearby zones.',
     encounterLine: 'There is a larger settlement nearby - Ozernoye.',
     requiresRaidQuestCompletions: 3,
     raidRestriction: ['shegolskoe'],

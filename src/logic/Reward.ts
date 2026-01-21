@@ -123,10 +123,15 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
     case 'raid_add_item': {
       const raidId = (reward.targetRaidId ?? context.activeRaidId)!;
       const raidDef = gs.lib.raids.get(raidId)!;
+      let changed = false;
       for (const itemId of reward.itemIds) {
         if (!raidDef.items.includes(itemId)) {
           raidDef.items.push(itemId);
+          changed = true;
         }
+      }
+      if (changed) {
+        raidDef.itemPoolsByRarity = gs.lib.buildItemPoolsByRarity(raidDef.items);
       }
       break;
     }

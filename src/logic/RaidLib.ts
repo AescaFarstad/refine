@@ -1,3 +1,5 @@
+import type { RaidMutation } from './RaidMutation';
+
 export type EncounterType =
   | 'PreparationEncounter'
   | 'WalkEncounter'
@@ -65,9 +67,12 @@ export interface RaidDefinition {
   order: number;
   zoneCollapseSec: number;
   zoneCollapseStepPerMutation: number;
+  initialMutations: RaidMutation[];
 }
 
-export type RawRaidDefinition = Omit<RaidDefinition, 'id' | 'order' | 'itemPoolsByRarity' | 'allPotentialItems'>;
+export type RawRaidDefinition = Omit<RaidDefinition, 'id' | 'order' | 'itemPoolsByRarity' | 'allPotentialItems' | 'initialMutations'> & {
+  initialMutations?: RaidMutation[];
+};
 
 function emptyItemPoolsByRarity(): Record<LootRarity, string[]> {
   return { common: [], uncommon: [], rare: [], legendary: [] };
@@ -97,6 +102,7 @@ export function parseRaidDefinitions(raw: Record<string, RawRaidDefinition>): {
       zoneCollapseStepPerMutation: def.zoneCollapseStepPerMutation,
       itemPoolsByRarity: emptyItemPoolsByRarity(),
       allPotentialItems: [...def.items],
+      initialMutations: def.initialMutations ?? [],
     };
     raidSources.set(id, withId);
 
@@ -116,6 +122,7 @@ export function parseRaidDefinitions(raw: Record<string, RawRaidDefinition>): {
       zoneCollapseStepPerMutation: withId.zoneCollapseStepPerMutation,
       itemPoolsByRarity: emptyItemPoolsByRarity(),
       allPotentialItems: [...def.items],
+      initialMutations: [...withId.initialMutations],
     };
     raidsCopy.set(id, cloned);
   }

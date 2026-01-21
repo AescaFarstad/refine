@@ -31,6 +31,16 @@ const raids: Record<string, RawRaidDefinition> = {
       { count: 1, encounter: { type: 'FightEncounter', monsterId: 'distorted' } },
       { count: 12, encounter: { type: 'LootEncounter' } }
     ],
+    initialMutations: [
+      { kind: 'AddMonsterMutation', monsterId: 'hound', count: 1 },
+      { kind: 'ZoneCollapseTimeMutation', amount: -300 },
+      { kind: 'AddMonsterMutation', monsterId: 'hound', count: 1 },
+      { kind: 'LootMutation', count: -1 },
+      { kind: 'WalkMutation', count: 1 },
+      { kind: 'AddMonsterMutation', monsterId: 'hound', count: 1 },
+      { kind: 'LootDifficultyMutation', amount: -5 },
+      { kind: 'UpgradeMonsterMutation', fromMonsterId: 'hound', toMonsterId: 'arch_hound', count: 1 },
+    ],
   },
   ozernoye: {
     name: 'Ozernoye',

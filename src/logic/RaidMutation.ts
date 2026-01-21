@@ -202,6 +202,7 @@ export function cloneRaid(def: RaidDefinition): RaidDefinition {
     order: def.order,
     zoneCollapseSec: def.zoneCollapseSec,
     zoneCollapseStepPerMutation: def.zoneCollapseStepPerMutation,
+    initialMutations: [...def.initialMutations],
   };
 }
 
@@ -402,6 +403,17 @@ export function buildSuccessMutationCandidates(gs: GameState, raidId: string): W
 }
 
 export function pickAndApplyRaidSuccessMutation(gs: GameState, raidId: string): WeightedMutation | null {
+  const raidSource = gs.lib.raidSources.get(raidId);
+  const raidState = gs.unlockedRaids.find(r => r.id === raidId);
+  if (raidSource && raidState) {
+    const mutationIndex = raidState.successes;
+    if (mutationIndex < raidSource.initialMutations.length) {
+      const mutation = raidSource.initialMutations[mutationIndex];
+      applyPermanentRaidMutation(gs, raidId, mutation);
+      return { mutation, weight: 1 };
+    }
+  }
+
   const candidates = buildSuccessMutationCandidates(gs, raidId);
   if (!candidates.length) return null;
   const total = candidates.reduce((a, c) => a + c.weight, 0);

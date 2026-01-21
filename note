@@ -248,3 +248,78 @@ Project //the started project state in gameState
 
 
 New possible reward: start_project projectId, advance
+
+
+"New category!" for the first item in a category
+display possible loot
+
+
+r menu when dragging
+
+it's possible to miss cyan anomaly if a signature appears
+
+paint has no image
+
+church inscriptions 100m + monster
+backpack = 60
+
+converts ajecent COLOR clusters
+
+raise th edome - more time, more enemies
+even higher - more time more enemies
+
+reveal the win condition - how to find the next zone
+
+guaranteed to loot Item - quest (consumable to make it happen)
+the "refine it!"
+
+10d 19h 38m - dyatlovsk is on
+
+extract stuff from raid outcome modal
+
+show signature names when success - so that the player knows they have names
+
+why didn't magenta give crystals
+
+raid outcome too wide when too many encounters
+
+unlock dyatlovsk eventually
+
+
+Extract all the logic regarding rewards, zone modifications etc into a separate component RaidOutcomeSummary
+
+
+new CheatLoadResearchState({
+  ownedCells: [
+    { x: 2, y: -14 }, { x: 3, y: -14 }, { x: 1, y: -13 }, { x: 2, y: -13 }, { x: 3, y: -13 }, { x: 5, y: -13 },
+    { x: 6, y: -13 }, { x: 1, y: -12 }, { x: 2, y: -12 }, { x: 4, y: -12 }, { x: 5, y: -12 }, { x: 6, y: -12 },
+    { x: 7, y: -12 }, { x: 8, y: -12 }, { x: -2, y: -11 }, { x: -1, y: -11 }, { x: 2, y: -11 }, { x: 3, y: -11 },
+    { x: 4, y: -11 }, { x: 5, y: -11 }, { x: -3, y: -10 }, { x: -2, y: -10 }, { x: -1, y: -10 }, { x: 0, y: -10 },
+    { x: 1, y: -10 }, { x: -3, y: -9 }, { x: -2, y: -9 }, { x: 0, y: -9 }, { x: -1, y: -8 }, { x: 14, y: -8 },
+    { x: 15, y: -8 }, { x: -2, y: -7 }, { x: 0, y: -7 }, { x: 1, y: -7 }, { x: 7, y: -7 }, { x: 8, y: -7 },
+    { x: 9, y: -7 }, { x: 14, y: -7 }, { x: -3, y: -6 }, { x: -1, y: -6 }, { x: 0, y: -6 }, { x: 1, y: -6 },
+    { x: 6, y: -6 }, { x: 7, y: -6 }, { x: 13, y: -6 }, { x: 20, y: -6 }, { x: 21, y: -6 }, { x: -5, y: -5 },
+    { x: -4, y: -5 }, { x: -3, y: -5 }, { x: -2, y: -5 }, { x: -1, y: -5 }, { x: 0, y: -5 }, { x: 1, y: -5 },
+    { x: 2, y: -5 }, { x: 3, y: -5 }, { x: 4, y: -5 }, { x: 5, y: -5 }, { x: 6, y: -5 }, { x: 7, y: -5 },
+    { x: 10, y: -5 }, { x: 11, y: -5 }, { x: 12, y: -5 }, { x: 13, y: -5 }, { x: 19, y: -5 }, { x: 20, y: -5 },
+    { x: 21, y: -5 }, { x: -5, y: -4 }, { x: -4, y: -4 }, { x: -3, y: -4 }, { x: -1, y: -4 }, { x: 1, y: -4 },
+    { x: 5, y: -4 }, { x: 6, y: -4 }, { x: 7, y: -4 }, { x: 8, y: -4 }, { x: 9, y: -4 }, { x: 11, y: -4 },
+    { x: 12, y: -4 }, { x: 13, y: -4 }, { x: 19, y: -4 }, { x: 20, y: -4 }, { x: -4, y: -3 }, { x: 1, y: -3 },
+    { x: 4, y: -3 }, { x: 8, y: -3 }, { x: 11, y: -3 }, { x: 12, y: -3 }, { x: 15, y: -3 }, { x: 16, y: -3 },
+    { x: 18, y: -3 }, { x: -4, y: -2 }, { x: 3, y: -2 }, { x: 12, y: -2 }, { x: 14, y: -2 }, { x: 15, y: -2 },
+    { x: 16, y: -2 }, { x: 17, y: -2 }, { x: -6, y: -1 }, { x: -5, y: -1 }, { x: -2, y: -1 }, { x: 3, y: -1 },
+    { x: 10, y: -1 }, { x: 11, y: -1 }, { x: 12, y: -1 }, { x: 13, y: -1 }, { x: 14, y: -1 }, { x: 15, y: -1 },
+    { x: 17, y: -1 }, { x: -5, y: 0 }, { x: -2, y: 0 }, { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 },
+    { x: 11, y: 0 }, { x: -2, y: 1 }, { x: -1, y: 1 }, { x: 2, y: 1 }, { x: 10, y: 1 }, { x: 11, y: 1 },
+    { x: -3, y: 2 }, { x: -1, y: 2 }, { x: 9, y: 2 }, { x: 10, y: 2 }, { x: 11, y: 2 }, { x: -4, y: 3 },
+    { x: -1, y: 3 }, { x: 9, y: 3 }, { x: 10, y: 3 }, { x: -6, y: 4 }, { x: -5, y: 4 }, { x: -1, y: 4 },
+    { x: 1, y: 4 }, { x: 2, y: 4 }, { x: 9, y: 4 }, { x: 12, y: 4 }, { x: 13, y: 4 }, { x: -7, y: 5 },
+    { x: -6, y: 5 }, { x: -5, y: 5 }, { x: -2, y: 5 }, { x: -1, y: 5 }, { x: 0, y: 5 }, { x: 1, y: 5 },
+    { x: 2, y: 5 }, { x: 9, y: 5 }, { x: 10, y: 5 }, { x: 11, y: 5 }, { x: 12, y: 5 }, { x: 13, y: 5 },
+    { x: -10, y: 6 }, { x: -7, y: 6 }, { x: -6, y: 6 }, { x: -4, y: 6 }, { x: -3, y: 6 }, { x: 0, y: 6 },
+    { x: 1, y: 6 }, { x: 9, y: 6 }, { x: 11, y: 6 }, { x: 12, y: 6 }, { x: -10, y: 7 }, { x: -9, y: 7 },
+    { x: -8, y: 7 }, { x: -3, y: 7 }, { x: -11, y: 8 }, { x: -9, y: 8 }, { x: -3, y: 8 }, { x: -10, y: 9 },
+    { x: -9, y: 9 }, { x: -8, y: 9 }, { x: -11, y: 10 }, { x: -13, y: 11 }, { x: -12, y: 11 }, { x: -14, y: 12 },
+    { x: -13, y: 12 }, { x: -12, y: 12 }, { x: -14, y: 13 }, { x: -13, y: 13 },
+  ],
+})

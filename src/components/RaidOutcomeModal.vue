@@ -269,7 +269,7 @@ function formatHMS(totalSec?: number): string { return formatDurationHM(totalSec
 .header-top { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .modal-title { margin: 0; font-size: 18px; letter-spacing: 0.02em; display: flex; align-items: baseline; gap: 10px; }
 .modal-title .raiding { font-weight: 400; }
-.progress { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; }
+.progress { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; flex-wrap: wrap; }
 .dot { color: var(--text-secondary); }
 .dot.done { color: var(--accent-hover); }
 

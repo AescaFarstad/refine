@@ -140,6 +140,7 @@ export class ActiveRaid {
   public reflectOnBlockPct: number = 0; // you block monster
   public biopsyChance: number = 0;      // chance to successfully harvest monster loot
   public reimbursedPct: number = 0;     // % of gear price reimbursed on combat death
+  public rarityBuff: number = 0;        // bonus to loot rarity from gear
 }
 
 

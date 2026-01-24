@@ -46,6 +46,7 @@ const hintRows = computed((): Array<{ label: string; value: string }> => {
   if (g.reflectOnBlockPct) rows.push({ label: 'Reflect on block', value: `${fmtSigned(g.reflectOnBlockPct, '%')}` });
 
   if (g.lootChance) rows.push({ label: 'Loot chance', value: `${fmtSigned(g.lootChance, '%')}` });
+  if (g.rarityBuff) rows.push({ label: 'Loot rarity', value: `${fmtSigned(g.rarityBuff, '')}` });
   if (g.biopsyChance) rows.push({ label: 'Remains harvest chance', value: `${fmtSigned(g.biopsyChance, '%')}` });
   if (g.maxWeight) rows.push({ label: 'Max weight', value: `${fmtSigned(g.maxWeight)}` });
   if (g.volume) rows.push({ label: 'Volume', value: `${fmtSigned(g.volume)}` });

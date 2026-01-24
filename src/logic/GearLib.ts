@@ -25,6 +25,7 @@ export interface GearDefinition {
   reflectOnBlockPct: number;
   biopsyChance: number;
   reimbursed: number; // percentage of gear cost reimbursed on death in combat (not zone collapse)
+  rarityBuff: number; // increases chance of higher rarity loot
   perk: string;
 
   prepTimeMin: number;
@@ -79,6 +80,7 @@ export function parseGearDefinitions(raw: Record<string, RawGearDefinition>): Ma
       reflectOnBlockPct: d.reflectOnBlockPct ?? 0,
       biopsyChance: d.biopsyChance ?? 0,
       reimbursed: d.reimbursed ?? 0,
+      rarityBuff: d.rarityBuff ?? 0,
       perk: d.perk ?? '',
       prepTimeMin: d.prepTimeMin ?? 0,
       bonusDamagePerCategory: d.bonusDamagePerCategory ?? {},

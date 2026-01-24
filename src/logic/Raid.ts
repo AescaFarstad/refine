@@ -819,6 +819,7 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
   gs.raid.reflectOnBlockPct = 0;
   gs.raid.biopsyChance = 0;
   gs.raid.reimbursedPct = 0;
+  gs.raid.rarityBuff = 0;
   gs.selectedGearPrice = 0;
 
   const raidEntry = gs.unlockedRaids.find(r => r.id === raidId);
@@ -848,6 +849,7 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
     gs.raid.reflectOnBlockPct += g.reflectOnBlockPct;
     gs.raid.biopsyChance += g.biopsyChance;
     gs.raid.reimbursedPct += g.reimbursed;
+    gs.raid.rarityBuff += g.rarityBuff;
     if (g.perk) gs.raid.perks.push(g.perk);
     gs.selectedGearPrice += g.price;
     if (g.hpMult !== 1) hpMult *= g.hpMult;

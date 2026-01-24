@@ -146,13 +146,13 @@ function essenceEffectHtml(k: string): string {
     case 'magenta':
       return `-${MAGENTA_SUCCESS_PENALTY_PCT}% refining success` + (uiState.hasDiscoveredMagentaYield ? `, +${MAGENTA_YIELD_BONUS_PCT}% bonus yield` : '');
     case 'indigo':
-      return 'Converts adjacent clusters to blue';
+      return 'Converts adjacent color clusters to blue';
     case 'crimson':
-      return 'Converts adjacent clusters to red';
+      return 'Converts adjacent color clusters to red';
     case 'emerald':
-      return 'Converts adjacent clusters to green';
+      return 'Converts adjacent color clusters to green';
     case 'gold':
-      return 'Converts adjacent clusters to yellow';
+      return 'Converts adjacent color clusters to yellow';
     case 'gray':
       return 'Junk';
     default:

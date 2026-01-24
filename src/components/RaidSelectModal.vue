@@ -737,7 +737,7 @@ function onItemMouseLeave(itemId: string) {
   gap: 10px;
 }
 .ov-items.split {
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 3fr 1fr;
   gap: 12px;
 }
 .ov-items-block {

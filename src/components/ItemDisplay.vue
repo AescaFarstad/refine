@@ -52,7 +52,7 @@
       <div class="tp-title">{{ displayName }}</div>
       <div v-if="displayRarity" class="tp-row">
         <span class="tp-label">Rarity</span>
-        <span class="tp-value">{{ displayRarity }}</span>
+        <span class="tp-value" :class="`rarity-${itemDef.rarity}`">{{ displayRarity }}</span>
       </div>
       <div v-if="displayVolume != null" class="tp-row">
         <span class="tp-label">Volume</span>
@@ -445,6 +445,10 @@ function essenceIconStyle(k: string): Record<string, string> {
 .tp-row { display: flex; align-items: baseline; gap: 6px; font-size: 12px; }
 .tp-label { opacity: 0.8; text-transform: uppercase; letter-spacing: 0.06em; }
 .tp-value { font-weight: 800; }
+.tp-value.rarity-common { color: #9ca3af; }
+.tp-value.rarity-uncommon { color: white; }
+.tp-value.rarity-rare { color: #60a5fa; }
+.tp-value.rarity-legendary { color: #fbbf24; }
 
 .rarity-label {
   position: absolute;

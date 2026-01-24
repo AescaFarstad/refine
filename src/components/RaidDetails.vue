@@ -65,13 +65,30 @@
             <th></th>
             <th>Count</th>
             <th>Find item chance</th>
+            <th>Rarity %</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td>Scavenge sites</td>
+            <td class="scavenge-cell">
+              <span class="scavenge-label">Scavenge sites</span>
+              <div class="scavenge-hint">
+                <div v-for="prob in lootRarityProbabilities" :key="prob.rarity" class="hint-row">
+                  <div class="hint-header" :class="prob.rarity">{{ prob.rarity }} {{ prob.pct }}%</div>
+                  <div v-if="getKnownItemsForRarity(prob.rarity).length > 0" class="hint-items">
+                    <ItemDisplay v-for="item in getKnownItemsForRarity(prob.rarity)" :key="item.id" :id="item.id" :minor="true" />
+                  </div>
+                </div>
+              </div>
+            </td>
             <td>{{ lootCount }}</td>
             <td>{{ lootChanceBasePct }}%<template v-if="lootChanceBuffPct"> + {{ lootChanceBuffPct }}%</template></td>
+            <td class="rarity-probs">
+              <template v-for="(prob, idx) in lootRarityProbabilities" :key="prob.rarity">
+                <span v-if="idx > 0" class="rarity-sep">-</span>
+                <span class="rarity-val" :class="prob.rarity">{{ formatRarityPct(prob.pct) }}</span>
+              </template>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -115,11 +132,13 @@ import { uiState, getGameState, getGameLib } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
 import { CmdDiscover } from '../logic/input/InputCommands';
 import { DISCOVERY } from '../logic/DiscoveryLib';
+import ItemDisplay from './ItemDisplay.vue';
 import { MIN_WALK_SPEED } from '../logic/GameState';
 import type { RaidDefinition } from '../logic/RaidLib';
 import GearStatsHint from './GearStatsHint.vue';
 import { FEATURE_SUMMON, FEATURE_SUMMON2, FEATURE_SELF_DESTRUCT, FEATURE_RETALIATES, SUMMON_CHANCE_PER_ROUND, SUMMON_CHANCE_PER_ROUND2 } from '../logic/MonsterFeatures';
 import { Perks } from '../logic/Perks';
+import { computeLootRarityWeights } from '../logic/LootEncounter';
 
 const hasDiscoveredMonsters = computed(() => uiState.hasDiscoveredRaidMonsters);
 const hasDiscoveredLoot = computed(() => uiState.hasDiscoveredRaidLoot);
@@ -322,6 +341,107 @@ const lootChanceBuffPct = computed(() => {
   return Math.max(0, Math.round(gs.raid.tmpLootBuffAppliedPct));
 });
 
+interface RarityProbability {
+  rarity: 'common' | 'uncommon' | 'rare' | 'legendary';
+  weight: number;
+  pct: number;
+}
+const lootRarityProbabilities = computed<RarityProbability[]>(() => {
+  uiState.raidKey;
+  const raid = selectedRaid.value;
+  const gs = getGameState();
+  if (!raid || !gs) return [];
+
+  const raidEntry = gs.unlockedRaids.find(rr => rr.id === raid.id);
+  const effLootChance = (gs.raid.lootChanceBonus || 0)
+    + (raidEntry?.lootingRarityBuff || 0)
+    + (gs.raid.rarityBuff || 0);
+
+  const bannedSet = raidEntry?.bannedItemIds?.length
+    ? new Set(raidEntry.bannedItemIds)
+    : null;
+  const poolSizes = {
+    common: bannedSet
+      ? raid.itemPoolsByRarity.common.filter(id => !bannedSet.has(id)).length
+      : raid.itemPoolsByRarity.common.length,
+    uncommon: bannedSet
+      ? raid.itemPoolsByRarity.uncommon.filter(id => !bannedSet.has(id)).length
+      : raid.itemPoolsByRarity.uncommon.length,
+    rare: bannedSet
+      ? raid.itemPoolsByRarity.rare.filter(id => !bannedSet.has(id)).length
+      : raid.itemPoolsByRarity.rare.length,
+    legendary: bannedSet
+      ? raid.itemPoolsByRarity.legendary.filter(id => !bannedSet.has(id)).length
+      : raid.itemPoolsByRarity.legendary.length,
+  };
+
+  const weights = computeLootRarityWeights(poolSizes, effLootChance);
+
+  const total = weights.common + weights.uncommon + weights.rare + weights.legendary;
+  if (total <= 0) return [];
+
+  const result: RarityProbability[] = [];
+  for (const r of ['common', 'uncommon', 'rare', 'legendary'] as const) {
+    if (weights[r] > 0) {
+      result.push({
+        rarity: r,
+        weight: weights[r],
+        pct: Math.round((weights[r] / total) * 1000) / 10,
+      });
+    }
+  }
+  return result;
+});
+
+// Known items by rarity (items in foundItemIds, excluding banned)
+interface KnownItemsByRarity {
+  rarity: 'common' | 'uncommon' | 'rare' | 'legendary';
+  items: Array<{ id: string; name: string }>;
+}
+const knownItemsByRarity = computed<KnownItemsByRarity[]>(() => {
+  uiState.raidKey;
+  const raid = selectedRaid.value;
+  const gs = getGameState();
+  const lib = getGameLib();
+  if (!raid || !gs || !lib) return [];
+
+  const raidEntry = gs.unlockedRaids.find(rr => rr.id === raid.id);
+  if (!raidEntry) return [];
+
+  const foundSet = new Set(raidEntry.foundItemIds || []);
+  const bannedSet = new Set(raidEntry.bannedItemIds || []);
+
+  const result: KnownItemsByRarity[] = [];
+  for (const r of ['common', 'uncommon', 'rare', 'legendary'] as const) {
+    const pool = raid.itemPoolsByRarity[r];
+    const knownItems: Array<{ id: string; name: string }> = [];
+    for (const id of pool) {
+      if (bannedSet.has(id)) continue;
+      if (foundSet.has(id)) {
+        const def = lib.items.get(id);
+        if (def) {
+          knownItems.push({ id, name: def.name });
+        }
+      }
+    }
+    if (knownItems.length > 0 || pool.filter(id => !bannedSet.has(id)).length > 0) {
+      result.push({ rarity: r, items: knownItems });
+    }
+  }
+  return result;
+});
+
+function getKnownItemsForRarity(rarity: string): Array<{ id: string; name: string }> {
+  const group = knownItemsByRarity.value.find(g => g.rarity === rarity);
+  return group?.items || [];
+}
+
+function formatRarityPct(pct: number): string {
+  if (pct === 0) return '0';
+  if (pct >= 10) return Math.round(pct).toString();
+  return pct.toFixed(1);
+}
+
 </script>
 
 <style scoped>
@@ -393,10 +513,10 @@ const lootChanceBuffPct = computed(() => {
 /* Extra spacing specifically between the two encounter tables */
 .enc-table + .enc-table { margin-top: 16px; }
 .section-title { font-weight: 800; text-transform: uppercase; font-size: 12px; letter-spacing: 0.08em; margin-bottom: 8px; }
-.table { width: 100%; border-collapse: collapse; }
-.table th, .table td { text-align: left; padding: 6px 8px; padding-left: 32px; }
+.table { border-collapse: collapse; }
+.table th, .table td { text-align: left; padding: 6px 16px; padding-left: 40px; }
 .table th:first-child, .table td:first-child { border-right: 1px solid rgba(255,255,255,0.28); width: 130px; padding-right: 8px; padding-left: 0; }
-.table th:nth-child(2), .table td:nth-child(2) { width: 80px; padding-left: 32px; }
+.table th:nth-child(2), .table td:nth-child(2) { width: 80px; padding-left: 40px; }
 .table thead th:not(:first-child) { border-bottom: 1px solid rgba(255,255,255,0.28); }
 .table thead th { font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; }
 .count { color: var(--text-secondary); margin-left: 4px; }
@@ -474,4 +594,89 @@ const lootChanceBuffPct = computed(() => {
 .discover-btn:hover {
   background: rgba(34,197,94,0.45);
 }
+
+/* Scavenge sites hint */
+.scavenge-cell {
+  position: relative;
+}
+.scavenge-label {
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 3px;
+  cursor: default;
+}
+.scavenge-hint {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 12px);
+  transform: translateY(-50%);
+  display: none;
+  z-index: 3000;
+  background: var(--hint-bg, rgba(10, 14, 20, 0.95));
+  border: 1px solid var(--hint-border, rgba(255, 255, 255, 0.15));
+  border-radius: 4px;
+  padding: 10px 14px;
+  min-width: 200px;
+  width: max-content;
+  max-width: 360px;
+  font-size: 13px;
+  font-weight: 500;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.scavenge-hint::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  width: 10px;
+  height: 10px;
+  background: var(--hint-bg, rgba(10, 14, 20, 0.95));
+  border-left: 1px solid var(--hint-border, rgba(255, 255, 255, 0.15));
+  border-bottom: 1px solid var(--hint-border, rgba(255, 255, 255, 0.15));
+  transform: translateY(-50%) rotate(45deg);
+}
+.scavenge-cell:hover .scavenge-hint {
+  display: block;
+}
+.hint-row {
+  margin-bottom: 8px;
+}
+.hint-row:last-child {
+  margin-bottom: 0;
+}
+.hint-header {
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: capitalize;
+  margin-bottom: 2px;
+}
+.hint-header.common { color: #9ca3af; }
+.hint-header.uncommon { color: #22c55e; }
+.hint-header.rare { color: #3b82f6; }
+.hint-header.legendary { color: #f59e0b; }
+.hint-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+/* Rarity probabilities column */
+.rarity-probs {
+  white-space: nowrap;
+  padding-left: 12px !important;
+}
+.rarity-sep {
+  color: var(--text-secondary);
+  opacity: 0.5;
+  margin: 0 1px;
+}
+.rarity-val {
+  font-weight: 500;
+}
+.rarity-val.common { color: #9ca3af; }
+.rarity-val.uncommon { color: #22c55e; }
+.rarity-val.rare { color: #3b82f6; }
+.rarity-val.legendary { color: #f59e0b; }
 </style>

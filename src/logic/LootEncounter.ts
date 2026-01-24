@@ -67,6 +67,20 @@ export interface LootEncounterContext {
   bannedItemIds?: string[];
 }
 
+export type LootRarityWeights = Record<LootRarity, number>;
+
+export function computeLootRarityWeights(
+  poolSizes: Record<LootRarity, number>,
+  effLootChance: number
+): LootRarityWeights {
+  return {
+    common: poolSizes.common > 0 ? 200 : 0,
+    uncommon: poolSizes.uncommon > 0 ? 50 + effLootChance / 2 : 0,
+    rare: poolSizes.rare > 0 ? 20 + effLootChance / 4 : 0,
+    legendary: poolSizes.legendary > 0 ? 10 + effLootChance / 7 : 0,
+  };
+}
+
 export function handleLootLikeEncounter(
   gs: GameState,
   r: ActiveRaid,
@@ -130,13 +144,8 @@ export function handleLootLikeEncounter(
   };
 
   const raidEntry = gs.unlockedRaids.find(rr => rr.id === r.id)!;
-  const effLootChance = r.lootChanceBonus + raidEntry.lootingRarityBuff;
-  const weights: Record<LootRarity, number> = {
-    common: poolSizes.common > 0 ? 200 : 0,
-    uncommon: poolSizes.uncommon > 0 ? 50 + effLootChance / 2 : 0,
-    rare: poolSizes.rare > 0 ? 20 + effLootChance / 4 : 0,
-    legendary: poolSizes.legendary > 0 ? 10 + effLootChance / 7 : 0,
-  };
+  const effLootChance = r.lootChanceBonus * 0.5 + (raidEntry.lootingRarityBuff + r.rarityBuff) * 2;
+  const weights = computeLootRarityWeights(poolSizes, effLootChance);
 
   const entries: Array<[LootRarity, number]> = ([
     ['common', weights.common],

@@ -8,12 +8,24 @@ export interface WaferSignatureScanResult {
   newSignatureMatches: Array<{ id: string; offset: Point2 }>;
 }
 
+const essenceEquivalents: Record<string, string> = {
+  indigo: 'blue',
+  crimson: 'red',
+  emerald: 'green',
+  gold: 'yellow',
+};
+
+function essenceMatchesForSignature(essence: string, targetColor: string): boolean {
+  if (essence === targetColor) return true;
+  return essenceEquivalents[essence] === targetColor;
+}
+
 function signatureMatchesAtOffset(wafer: Wafer, molecule: SignatureMolecule, offset: { x: number; y: number }): boolean {
   for (const atom of molecule.atoms) {
     const cell = getCell(wafer, { x: atom.x + offset.x, y: atom.y + offset.y });
     if (!cell || !cell.enabled) return false;
     const effEssence = cell.effectiveEssence ?? cell.essence;
-    if (effEssence !== atom.color) return false;
+    if (!effEssence || !essenceMatchesForSignature(effEssence, atom.color)) return false;
   }
   return true;
 }

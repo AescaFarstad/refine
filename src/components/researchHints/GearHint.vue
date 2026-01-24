@@ -3,7 +3,7 @@
     <div class="hint-body">
       <div v-if="gear">
         <div class="unlock-text">Unlock gear: <span class="gear-name">{{ gear.name }}</span></div>
-        <div class="gear-info">Type: {{ categoryName }}</div>
+        <div class="gear-info">Type: {{ categoryName }}<span v-if="isNewCategory" class="new-category">First of this type!</span></div>
         <div class="gear-info">Price: <span class="price" :style="{ color: creditsSpec.color }">{{ gear.price }}{{ creditsSpec.glyph }}</span></div>
         <div class="gear-info">Weight: {{ gear.weight }}</div>
         <GearStatsHint :gear="gear" class="gear-stats" />
@@ -17,7 +17,7 @@
 import { computed } from 'vue';
 import type { ResearchCell } from '../../logic/GameState';
 import type { ResearchArchetype, ResearchNodeInstance } from '../../logic/ResearchLib';
-import { getGameState } from '../../logic/UIState';
+import { getGameState, uiState } from '../../logic/UIState';
 import GearStatsHint from '../GearStatsHint.vue';
 import { getResourceSpec } from '../../logic/Resources';
 
@@ -46,6 +46,11 @@ const categoryName = computed(() => {
   const gs = getGameState();
   const category = gs.lib.gearCategories.get(gear.value.category);
   return category?.name || gear.value.category;
+});
+
+const isNewCategory = computed(() => {
+  if (!gear.value) return false;
+  return !uiState.unlockedGearCategories.includes(gear.value.category);
 });
 </script>
 
@@ -94,5 +99,11 @@ const categoryName = computed(() => {
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.new-category {
+  color: rgba(251, 191, 36, 0.95);
+  font-weight: 700;
+  margin-left: 1em;
 }
 </style>

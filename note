@@ -252,9 +252,6 @@ Project //the started project state in gameState
 New possible reward: start_project projectId, advance
 
 
-"New category!" for the first item in a category
-display possible loot
-
 
 r menu when dragging
 

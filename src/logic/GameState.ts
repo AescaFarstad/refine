@@ -11,7 +11,7 @@ import { initResearchCells } from "./Research";
 import gearCategories from "../data/gear_categories";
 import type { RaidEventLog } from './RaidLog';
 import type { RaidMutation, MutationDescription } from './RaidMutation';
-import type { Reward } from './Reward';
+import type { Reward, UIModalEntry } from './Reward';
 
 export const DEFAULT_SPEED: number = 6;
 export const MIN_WALK_SPEED: number = 1; // km/h
@@ -105,7 +105,7 @@ export class GameState {
   public raidFoundItemsVersion: number = 0;
 
   // Queue of UI modal keys to show (from show_ui rewards)
-  public pendingUIModals: string[] = [];
+  public pendingUIModals: UIModalEntry[] = [];
 
   constructor() {
     for (const categoryId of Object.keys(gearCategories)) {

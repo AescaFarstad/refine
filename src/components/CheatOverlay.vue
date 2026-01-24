@@ -309,8 +309,8 @@ function openEditResearchPane() {
 
 function triggerUIModal(uiKey: string) {
   const gs = getGameState();
-  if (!gs.pendingUIModals.includes(uiKey)) {
-    gs.pendingUIModals.push(uiKey);
+  if (!gs.pendingUIModals.some(m => m.ui === uiKey)) {
+    gs.pendingUIModals.push({ ui: uiKey });
   }
   uiState.cheatOpen = false;
 }

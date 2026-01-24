@@ -3,8 +3,6 @@ import { getCell } from './Wafer';
 import type { SignatureDefinition, SignatureMolecule } from './SignatureLib';
 import type { Point2 } from './ItemLib';
 
-export const SIGNATURE_YIELD_BONUS_PCT = 20;
-
 export interface WaferSignatureScanResult {
   newlyCompletedSignatureIds: string[];
   newSignatureMatches: Array<{ id: string; offset: Point2 }>;

@@ -26,8 +26,13 @@ export type Reward =
   | { kind: 'raid_add_item'; itemIds: string[]; targetRaidId?: string; sentiment?: 'positive' | 'negative' }
 
   // UI interactions
-  | { kind: 'show_ui'; ui: string }
+  | { kind: 'show_ui'; ui: string; params?: Record<string, unknown> }
   ;
+
+export interface UIModalEntry {
+  ui: string;
+  params?: Record<string, unknown>;
+}
 
 export interface RewardContext {
   activeRaidId?: string;
@@ -137,8 +142,8 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
     }
 
     case 'show_ui':
-      if (!gs.pendingUIModals.includes(reward.ui)) {
-        gs.pendingUIModals.push(reward.ui);
+      if (!gs.pendingUIModals.some(m => m.ui === reward.ui)) {
+        gs.pendingUIModals.push({ ui: reward.ui, params: reward.params });
       }
       break;
   }

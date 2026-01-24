@@ -12,9 +12,10 @@ import {
     FAILURE_PER_EMPTY_CELL,
     MAGENTA_SUCCESS_PENALTY_PCT,
     REFINE_TIME,
+    SIGNATURE_YIELD_BONUS_PCT,
 } from './Const';
 import { getWaferBuffAt } from './waferLayout';
-import { scanWaferForNewSignatures, SIGNATURE_YIELD_BONUS_PCT } from './Signatures';
+import { scanWaferForNewSignatures } from './Signatures';
 import type { SignatureDefinition } from './SignatureLib';
 import { DISCOVERY } from './DiscoveryLib';
 

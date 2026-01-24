@@ -9,7 +9,8 @@ import { SHARD_LAUNCH_SPEED, SHARD_MAX_OMEGA, SHARD_MIN_OMEGA, SHARD_OMEGA_POWER
 import { calculateShardFontSize } from '../utils/ShardDisplay';
 import { EvtRefineryDone } from './evt/Evt';
 import { discover } from './Discover';
-import { DISCOVERY } from './DiscoveryLib'; // Used in resolveRefineryDone for SIGNATURES discovery
+import { DISCOVERY } from './DiscoveryLib';
+import { applyReward } from './Reward';
 
 export function computeLoadedEssencesFromItems(lib: Lib, items: Array<{ id: string; quantity: number }>): Essence {
   const totals: Essence = {};
@@ -70,6 +71,7 @@ export function resolveRefineryDone(gs: GameState): void {
     if (preview.newlyCompletedSignatureIds.length > 0) {
       discover(gs, DISCOVERY.SIGNATURES);
       const completed = new Set(gs.completedSignatureIds);
+      const justCompleted: string[] = [];
       for (const id of preview.newlyCompletedSignatureIds) {
         if (completed.has(id)) continue;
         gs.completedSignatureIds.push(id);
@@ -77,6 +79,14 @@ export function resolveRefineryDone(gs: GameState): void {
           gs.learnedSignatureIds.push(id);
         }
         completed.add(id);
+        justCompleted.push(id);
+      }
+      if (justCompleted.length > 0) {
+        applyReward(gs, {
+          kind: 'show_ui',
+          ui: 'signature_complete',
+          params: { signatureIds: justCompleted },
+        });
       }
     }
 

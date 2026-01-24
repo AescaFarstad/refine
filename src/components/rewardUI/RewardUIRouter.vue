@@ -1,7 +1,8 @@
 <template>
   <component
-    v-if="currentUI"
+    v-if="currentEntry"
     :is="currentComponent"
+    :params="currentEntry.params"
     @close="dismissCurrent"
   />
 </template>
@@ -14,16 +15,16 @@ import { CmdDismissUIModal } from '../../logic/input/InputCommands';
 import type { Reward } from '../../logic/Reward';
 import { REWARD_UI_COMPONENTS } from './RewardUIRegistry';
 
-const currentUI = computed(() => uiState.pendingUIModals[0] ?? null);
+const currentEntry = computed(() => uiState.pendingUIModals[0] ?? null);
 
 const currentComponent = computed(() => {
-  if (!currentUI.value) return null;
-  return REWARD_UI_COMPONENTS[currentUI.value] ?? null;
+  if (!currentEntry.value) return null;
+  return REWARD_UI_COMPONENTS[currentEntry.value.ui] ?? null;
 });
 
 function dismissCurrent(rewards?: Reward[]) {
-  if (currentUI.value) {
-    globalInputQueue.push(new CmdDismissUIModal({ ui: currentUI.value, rewards }));
+  if (currentEntry.value) {
+    globalInputQueue.push(new CmdDismissUIModal({ ui: currentEntry.value.ui, rewards }));
   }
 }
 </script>

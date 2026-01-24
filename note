@@ -57,6 +57,8 @@ january 17
   raid outcome progress bars and visuals, countable gear
 january 18
   item bans, purple refining, quest notifications about signatures, quest logic, deck of cards, item images
+january 21
+  UI tweaks, balancing, testing, refactoring
 
 
 npx vue-tsc --noEmit 2>&1
@@ -275,7 +277,6 @@ the "refine it!"
 
 10d 19h 38m - dyatlovsk is on
 
-extract stuff from raid outcome modal
 
 show signature names when success - so that the player knows they have names
 
@@ -285,8 +286,6 @@ raid outcome too wide when too many encounters
 
 unlock dyatlovsk eventually
 
-
-Extract all the logic regarding rewards, zone modifications etc into a separate component RaidOutcomeSummary
 
 
 new CheatLoadResearchState({

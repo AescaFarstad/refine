@@ -8,6 +8,7 @@ import type { Lib } from './Lib';
 import { createWafer, type Wafer } from './Wafer';
 import type { Point2 } from './ItemLib';
 import { DISCOVERY } from './DiscoveryLib';
+import type { UIModalEntry } from './Reward';
 
 export interface UIRaidDef extends RaidDefinition { }
 
@@ -136,7 +137,7 @@ export const uiState = reactive({
   questPrereqsVersion: 0,
 
   // Queue of UI modal keys to show (from show_ui rewards)
-  pendingUIModals: [] as string[],
+  pendingUIModals: [] as UIModalEntry[],
 });
 
 // Formatted time display: "X days, HH:MM"

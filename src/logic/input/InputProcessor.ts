@@ -412,7 +412,7 @@ handlersByName.set('CmdSwitchTab', (gs, cmd) => {
 
 handlersByName.set('CmdDismissUIModal', (gs, cmd) => {
   const c = cmd as CmdDismissUIModal;
-  const idx = gs.pendingUIModals.indexOf(c.ui);
+  const idx = gs.pendingUIModals.findIndex(m => m.ui === c.ui);
   if (idx !== -1) {
     gs.pendingUIModals.splice(idx, 1);
   }

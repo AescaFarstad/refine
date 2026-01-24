@@ -68,6 +68,13 @@ export function resolveRefineryDone(gs: GameState): void {
   }
 
   if (succeeded) {
+    const magentaCount = preview.essenceTotals['magenta'] || 0;
+    if (magentaCount > 0 && !gs.discoveries[DISCOVERY.MAGENTA_CRYSTALS]) {
+      applyReward(gs, { kind: 'discovery', discoveryId: DISCOVERY.MAGENTA_CRYSTALS });
+      applyReward(gs, { kind: 'countable_gear', gearId: 'zone_crystal', amount: magentaCount });
+      applyReward(gs, { kind: 'show_ui', ui: 'RUIMagentsCrystals' });
+    }
+
     if (preview.newlyCompletedSignatureIds.length > 0) {
       discover(gs, DISCOVERY.SIGNATURES);
       const completed = new Set(gs.completedSignatureIds);

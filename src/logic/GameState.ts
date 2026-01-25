@@ -159,6 +159,8 @@ export class Raid {
   public foundItemIds: string[] = [];
   public bannedItemIds: string[] = [];
 
+  // Cumulative price adjustments per gear item for this raid
+  public gearPriceAdjustments: Record<string, number> = {};
 }
 
 export class RaidOutcome {

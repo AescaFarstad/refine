@@ -587,6 +587,17 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
       raidMutationsApplied.push(mutation);
     }
 
+    // Apply price changes on successful completion (from gear with priceChange)
+    // Price changes are tracked per-raid, so the same gear starts at base price in other raids
+    for (const g of gear) {
+      if (g.priceChange !== 0) {
+        const currentAdjustment = raidEntry.gearPriceAdjustments[g.id] ?? 0;
+        const newAdjustment = currentAdjustment + g.priceChange;
+        // Ensure effective price (base + adjustment) doesn't go below 0
+        raidEntry.gearPriceAdjustments[g.id] = Math.max(-g.price, newAdjustment);
+      }
+    }
+
     if (gsForRun.raid.perks.includes(Perks.XENO_HOUND_BAIT)) {
       const mutation: RaidMutation = { kind: 'AddMonsterMutation', monsterId: 'hound', count: 1 };
       const raidDefToChange = gsForRun.lib.raids.get(raidId)!;
@@ -851,7 +862,8 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
     gs.raid.reimbursedPct += g.reimbursed;
     gs.raid.rarityBuff += g.rarityBuff;
     if (g.perk) gs.raid.perks.push(g.perk);
-    gs.selectedGearPrice += g.price;
+    const priceAdjustment = raidEntry.gearPriceAdjustments[gid] ?? 0;
+    gs.selectedGearPrice += Math.max(0, g.price + priceAdjustment);
     if (g.hpMult !== 1) hpMult *= g.hpMult;
   };
 

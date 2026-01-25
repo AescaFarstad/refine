@@ -512,6 +512,7 @@ const gear: Record<string, RawGearDefinition> = {
     name: 'Stabilizer Beacon',
     category: 'devices',
     price: 250,
+    priceChange: 100,
     weight: 5,
     image: 'beckon',
     zoneBoost: 30 * 60,

@@ -53,8 +53,9 @@ const quests: Record<string, RawQuestDefinition> = {
     encounterLine: 'Studying the inscriptions...',
     raidRestriction: ['ozernoye'],
     requiresRaidSuccesses: 6,
-    encounterTimeMin: 40,
+    encounterTimeMin: 90,
     encounters: [
+      { kind: 'AddMonsterMutation', monsterId: 'stalker', count: 2 },
     ],
     rewards: [
       { kind: 'show_ui', ui: 'church_symbols' }

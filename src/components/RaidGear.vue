@@ -110,8 +110,8 @@ const gearByCategory = computed<Record<string, GearDefinition[]>>(() => {
     map[g.category].push(g);
   });
   for (const k of Object.keys(map)) map[k].sort((a, b) => {
-    const priceA = a.price || 0;
-    const priceB = b.price || 0;
+    const priceA = getPrice(a);
+    const priceB = getPrice(b);
     if (priceA !== priceB) return priceA - priceB;
     return a.name < b.name ? -1 : 1;
   });
@@ -119,7 +119,12 @@ const gearByCategory = computed<Record<string, GearDefinition[]>>(() => {
 });
 
 function isSelected(id: string): boolean { return loadout().includes(id); }
-function getPrice(g: GearDefinition): number { return Math.max(0, g.price || 0); }
+function getPrice(g: GearDefinition): number {
+  const gs = getGameState();
+  const raidEntry = gs?.unlockedRaids.find(r => r.id === activeRaidId.value);
+  const adjustment = raidEntry?.gearPriceAdjustments?.[g.id] ?? 0;
+  return Math.max(0, (g.price || 0) + adjustment);
+}
 function canAffordItem(g: GearDefinition): boolean { return uiState.credits >= getPrice(g); }
 
 function toggleItem(id: string): void {

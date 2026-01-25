@@ -26,12 +26,15 @@ export function hasMissingRequiredQuestGear(gs: GameState, raidId: string): bool
 
 export function getRaidGearCost(gs: GameState, raidId: string): number {
   const gearIds = gs.loadouts[raidId] ?? [];
+  const raidEntry = gs.unlockedRaids.find(r => r.id === raidId);
   const seen = new Set<string>();
   let total = 0;
   for (const gearId of gearIds) {
     if (seen.has(gearId)) continue;
     seen.add(gearId);
-    total += gs.lib.gear.get(gearId)!.price;
+    const gear = gs.lib.gear.get(gearId)!;
+    const priceAdjustment = raidEntry?.gearPriceAdjustments?.[gearId] ?? 0;
+    total += Math.max(0, gear.price + priceAdjustment);
   }
   return Math.max(0, Math.floor(total));
 }

@@ -42,6 +42,9 @@ export interface GearDefinition {
   // Zone stability boost in seconds (applied on successful raid completion)
   zoneBoost: number;
 
+  // Price change applied after each successful raid (can be positive or negative)
+  priceChange: number;
+
   // Visual - key into items.json sprite atlas
   image: string;
 
@@ -91,6 +94,7 @@ export function parseGearDefinitions(raw: Record<string, RawGearDefinition>): Ma
       hpMult: d.hpMult ?? 1,
       ignoreLootEncounters: d.ignoreLootEncounters ?? false,
       zoneBoost: d.zoneBoost ?? 0,
+      priceChange: d.priceChange ?? 0,
       image: d.image ?? '',
       description: d.description ?? '',
     };

@@ -12,6 +12,9 @@
 import { computed } from 'vue';
 import type { GearDefinition } from '../logic/GearLib';
 import { formatDurationHM } from '../logic/StringUtils';
+import { getResourceSpec } from '../logic/Resources';
+
+const creditsSpec = getResourceSpec('credits');
 
 const props = defineProps<{
   gear: GearDefinition;
@@ -51,6 +54,7 @@ const hintRows = computed((): Array<{ label: string; value: string }> => {
   if (g.maxWeight) rows.push({ label: 'Max weight', value: `${fmtSigned(g.maxWeight)}` });
   if (g.volume) rows.push({ label: 'Volume', value: `${fmtSigned(g.volume)}` });
   if (g.zoneBoost) rows.push({ label: 'Zone stability', value: `+${formatDurationHM(g.zoneBoost)} (permanent)` });
+  if (g.priceChange) rows.push({ label: 'Price change', value: `${fmtSigned(g.priceChange)}${creditsSpec.glyph} for each usage in raid` });
   // Perk
   if (g.perk) rows.push({ label: 'Perk', value: g.perk });
   // Description

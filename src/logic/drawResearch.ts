@@ -153,9 +153,12 @@ export function renderResearchBaseLayer(
 
 function getGearDefinitionForArchetype(lib: Lib, archetype: ResearchArchetype | null): GearDefinition | null {
   if (!archetype) return null;
-  const reward = archetype.rewards.find(r => r.kind === 'unlock_gear');
-  if (!reward || reward.kind !== 'unlock_gear') return null;
-  return lib.gear.get(reward.gearId) || null;
+  const reward = archetype.rewards.find(r => r.kind === 'unlock_gear' || r.kind === 'countable_gear');
+  if (!reward) return null;
+  if (reward.kind === 'unlock_gear' || reward.kind === 'countable_gear') {
+    return lib.gear.get(reward.gearId) || null;
+  }
+  return null;
 }
 
 function getVisualStyle(archetype: ResearchArchetype | null, owned: boolean): {

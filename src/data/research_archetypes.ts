@@ -87,5 +87,10 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.MAZE_NAVIGATION }],
   },
 
+  gear_zone_crystal: {
+    type: 'gear',
+    rewards: [{ kind: 'countable_gear', gearId: 'zone_crystal', amount: 5 }],
+  },
+
   // Gear archetypes are auto-generated from gear definitions in ResearchLib.load()
 };

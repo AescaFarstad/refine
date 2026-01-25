@@ -8,6 +8,7 @@ import { computeEffectiveEssences } from '../RefinePreview';
 import type { Point2 } from '../core/math';
 import { runRaid, recomputeActiveRaidParams, toggleGearForRaid, recomputeActiveRaidEstimates, getEffectiveRaidDefinition } from '../Raid';
 import { pickAndApplyRaidSuccessMutation, describeMutation, questIsAvailable } from '../RaidMutation';
+import { getRaidGearCost, getRaidStartFailureReason } from '../useRaidAgain';
 import { placeMolecule, removeMolecule, enableCellWithFloodfill, computeWaferUpgradePrice } from '../Wafer';
 import { applyResearchPurchase } from '../Research';
 import { startRefining } from '../Refine';
@@ -29,9 +30,6 @@ handlersByName.set('CmdMarkEssencesSeen', (gs, cmd) => {
 handlersByName.set('CmdStartRaid', (gs, cmd) => {
   const c = cmd as CmdStartRaid;
   const def = getEffectiveRaidDefinition(gs, c.id);
-  if (!gs.unlockedRaids.some(r => r.id === c.id))
-    return;
-
   gs.activeQuests = gs.activeQuests.filter(qid => !gs.completedQuests.includes(qid));
 
   recomputeActiveRaidParams(gs, c.id);
@@ -52,9 +50,12 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
 
   const availableQuestIdsBefore = listAvailableQuestIdsAllRaids();
 
-  const gearCost = Math.floor(gs.selectedGearPrice);
+
+  const startFailureReason = getRaidStartFailureReason(gs, c.id);
+  if (startFailureReason) return;
+
+  const gearCost = getRaidGearCost(gs, c.id);
   if (gearCost > 0) {
-    if (gs.credits < gearCost) return;
     gs.credits -= gearCost;
   }
 

@@ -3,6 +3,48 @@ import { uiState, getGameState } from './UIState';
 import { globalInputQueue } from './Model';
 import { CmdAcknowledgeOutcome, CmdStartRaid } from './input/InputCommands';
 import { formatDurationHM } from './StringUtils';
+import { questIsActive } from './RaidMutation';
+import type { GameState } from './GameState';
+
+export function hasMissingRequiredQuestGear(gs: GameState, raidId: string): boolean {
+  const loadout = gs.loadouts[raidId] ?? [];
+  const equipped = new Set(loadout);
+  let missing = false;
+  gs.lib.quests.forEach((q) => {
+    if (missing) return;
+    if (!q.gearRequired.length) return;
+    if (!questIsActive(gs, q, raidId)) return;
+    for (const gearId of q.gearRequired) {
+      if (!equipped.has(gearId)) {
+        missing = true;
+        return;
+      }
+    }
+  });
+  return missing;
+}
+
+export function getRaidGearCost(gs: GameState, raidId: string): number {
+  const gearIds = gs.loadouts[raidId] ?? [];
+  const seen = new Set<string>();
+  let total = 0;
+  for (const gearId of gearIds) {
+    if (seen.has(gearId)) continue;
+    seen.add(gearId);
+    total += gs.lib.gear.get(gearId)!.price;
+  }
+  return Math.max(0, Math.floor(total));
+}
+
+export function getRaidStartFailureReason(gs: GameState, raidId: string): string {
+  if (!raidId) return 'No raid selected.';
+  const unlocked = gs.unlockedRaids.some(r => r.id === raidId);
+  if (!unlocked) return 'Raid not unlocked.';
+  if (hasMissingRequiredQuestGear(gs, raidId)) return 'Gear required for the selected investigation is not equipped.';
+  const cost = getRaidGearCost(gs, raidId);
+  if (cost > 0 && gs.credits < cost) return `Not enough credits (need ${cost})`;
+  return '';
+}
 
 export function useRaidAgain() {
   const raidId = computed(() => uiState.lastOutcome!.id.trim());
@@ -10,31 +52,48 @@ export function useRaidAgain() {
   const raidGearPrice = computed(() => {
     // to trigger re-calc even if raidId is same as before
     const _tracker = uiState.lastOutcome;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    uiState.raidKey;
 
     const id = raidId.value;
     const gs = getGameState();
-    const gearIds = gs.loadouts[id] ?? [];
-    let total = 0;
-    for (const gearId of gearIds) {
-      total += gs.lib.gear.get(gearId)!.price;
-    }
-    return total;
+    return getRaidGearCost(gs, id);
   });
 
   const questWasCompleted = computed(() => uiState.lastOutcome!.questsCompleted.length > 0);
 
   const canAffordRaidAgain = computed(() => uiState.credits >= raidGearPrice.value);
+  const missingRequiredQuestGear = computed(() => {
+    // Touch reactive keys so recompute happens on gear/quest changes
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    uiState.raidKey;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    uiState.activeQuests.length;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    uiState.lastOutcome;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    uiState.questPrereqsVersion;
+
+    const id = raidId.value;
+    const gs = getGameState();
+    return hasMissingRequiredQuestGear(gs, id);
+  });
 
   const survivalChance = computed(() => Math.max(0, Math.min(100, Math.round(uiState.raidSurvivalPct))));
   const estimatedTime = computed(() => formatDurationHM(Math.max(0, uiState.raidTimeEstimateSec)));
   const raidAgainButtonLabel = computed(() => `Raid Again (~${survivalChance.value}% / ~${estimatedTime.value})`);
 
-  const canRaidAgain = computed(() => /* !questWasCompleted.value && */ canAffordRaidAgain.value);
+  const raidStartFailureReason = computed(() => {
+    const id = raidId.value;
+    const gs = getGameState();
+    return getRaidStartFailureReason(gs, id);
+  });
+
+  const canRaidAgain = computed(() => /* !questWasCompleted.value && */ raidStartFailureReason.value === '');
 
   const raidAgainDisabledReason = computed(() => {
     // if (questWasCompleted.value) return 'Investigation completed - you may need to choose another one';
-    if (!canAffordRaidAgain.value) return `Not enough credits (need ${raidGearPrice.value})`;
-    return '';
+    return raidStartFailureReason.value;
   });
 
   function raidAgain() {
@@ -50,5 +109,6 @@ export function useRaidAgain() {
     raidGearPrice,
     questWasCompleted,
     canAffordRaidAgain,
+    missingRequiredQuestGear,
   };
 }

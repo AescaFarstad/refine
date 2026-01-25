@@ -12,21 +12,21 @@
       </div>
     </div>
     <div v-if="lootCount > 0" class="stat-row">
-      <div v-if="itemsAtlasReady" class="stat-icon" :style="encounterIconStyle('rummaging')" />
+      <div class="stat-icon" :style="encounterIconStyle('rummaging')" />
       <div class="stat-text">
         <span class="section-title">Scavenge sites:</span>
         <span class="stat-value">×{{ lootCount }}</span>
       </div>
     </div>
     <div class="stat-row">
-      <div v-if="itemsAtlasReady" class="stat-icon" :style="encounterIconStyle('winding_road')" />
+      <div class="stat-icon" :style="encounterIconStyle('winding_road')" />
       <div class="stat-text">
         <span class="stat-label">Walking distance</span>
         <span class="stat-value">{{ distanceKm }} km</span>
       </div>
     </div>
     <div v-if="zoneCollapseTime" class="stat-row">
-      <div v-if="itemsAtlasReady" class="stat-icon" :style="encounterIconStyle('desintegration')" />
+      <div class="stat-icon" :style="encounterIconStyle('desintegration')" />
       <div class="stat-text">
         <span class="stat-label">Zone collapse</span>
         <span class="stat-value">{{ zoneCollapseTime }}</span>
@@ -36,42 +36,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed } from 'vue';
 import { getGameLib } from '../logic/UIState';
 import type { RaidDefinition } from '../logic/RaidLib';
 import { formatDurationHM } from '../logic/StringUtils';
 import atlasStorage from '../logic/AtlasStorage';
+import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 
 const props = defineProps<{ raid: RaidDefinition }>();
 
 interface MonsterSummary { id: string; name: string; count: number }
 
-const itemsAtlasSource = ref<HTMLImageElement | null>(atlasStorage.getItemsSource());
-const itemsAtlasReady = ref<boolean>(atlasStorage.isItemsAtlasLoaded());
-onMounted(async () => {
-  if (itemsAtlasReady.value) return;
-  try { await atlasStorage.loadItemsAtlas(); } catch (_e) { /* noop */ }
-  itemsAtlasReady.value = atlasStorage.isItemsAtlasLoaded();
-  itemsAtlasSource.value = atlasStorage.getItemsSource();
-});
+const itemsAtlasSource = atlasStorage.getItemsSource();
 
 function encounterIconStyle(iconKey: string): Record<string, string> {
-  const source = itemsAtlasSource.value!;
   const f = atlasStorage.getItemsFrame(iconKey)!;
-  const atlasW = source.naturalWidth;
-  const atlasH = source.naturalHeight;
-  const containerSize = 22;
-  const scale = Math.min(containerSize / f.w, containerSize / f.h, 1);
-  const displayW = f.w * scale;
-  const displayH = f.h * scale;
-  return {
-    width: displayW + 'px',
-    height: displayH + 'px',
-    backgroundImage: `url(${source.src})`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
-    backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
-  };
+  return atlasSpriteStyle(itemsAtlasSource, f, { size: 22, mode: 'fit', allowUpscale: false });
 }
 
 const monsterSummary = computed<MonsterSummary[]>(() => {

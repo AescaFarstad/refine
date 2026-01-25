@@ -55,7 +55,6 @@ const hintStyle = computed(() => {
 async function ensureLoaded() {
   switch (props.atlas) {
     case 'items':
-      await atlasStorage.loadItemsAtlas();
       break;
     case 'locations':
       await atlasStorage.loadLocationsAtlas();

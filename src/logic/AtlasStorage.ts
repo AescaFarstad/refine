@@ -41,19 +41,17 @@ export class AtlasStorage {
     this.signatureWaferAnchors = new Map();
   }
 
-  /** Load the items atlas if not already loaded. */
+  /** Load the items atlas. Called once at startup (main.ts) - do not call from components. */
   public async loadItemsAtlas(): Promise<void> {
     if (this.itemsAtlasLoaded) return;
     if (this.itemsAtlasLoading) return this.itemsAtlasLoading;
 
     this.itemsAtlasLoading = (async () => {
-      // Use bundled JSON data
       const frames = new Map<string, AtlasFrame>();
       for (const [key, frame] of Object.entries(itemsAtlasFrames)) {
         frames.set(key, frame);
       }
 
-      // Prefer WebP with alpha; fall back to PNG if unavailable.
       const webpUrl = `/images/items.webp`;
       const pngUrl = `/images/items.png`;
 
@@ -82,7 +80,7 @@ export class AtlasStorage {
     return this.itemsAtlasLoaded;
   }
 
-  // Items atlas is preloaded at startup; don't await or lazy-load.
+  // Atlases are preloaded at startup; don't await or lazy-load.
   public getItemsSource(): AtlasSource {
     return this.itemsAtlas.source;
   }

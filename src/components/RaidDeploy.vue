@@ -1,7 +1,10 @@
 <template>
   <div class="deploy" v-if="hasDiscoveredMonsters">
     <div class="deploy-row">
-      <button class="deploy-btn" type="button" :disabled="!canDeploy" @click="deploy" @mouseenter="isDeployHovered = true" @mouseleave="isDeployHovered = false">Deploy</button>
+      <span class="btn-wrap" :class="{ 'has-tooltip': !!deployDisabledReason }">
+        <button class="deploy-btn" type="button" :disabled="!canDeploy" @click="deploy" @mouseenter="isDeployHovered = true" @mouseleave="isDeployHovered = false">Deploy</button>
+        <span class="tooltip" v-if="deployDisabledReason">{{ deployDisabledReason }}</span>
+      </span>
       <div class="stats">
         <div class="cell" :class="{ red: !canAfford }">
           <div class="cell-label tooltip-label" :data-tooltip="TOOLTIP_GEAR_COST">Gear cost</div>
@@ -54,6 +57,7 @@ import type { RaidDefinition } from '../logic/RaidLib';
 import { formatDurationHM } from '../logic/StringUtils';
 import { getResourceSpec } from '../logic/Resources';
 import { DISCOVERY } from '../logic/DiscoveryLib';
+import { getRaidGearCost, getRaidStartFailureReason } from '../logic/useRaidAgain';
 import RaidDeployDamageBreakdownPanel from './RaidDeployDamageBreakdownPanel.vue';
 import RaidDeployTimeBreakdownPanel from './RaidDeployTimeBreakdownPanel.vue';
 
@@ -70,13 +74,32 @@ const TOOLTIP_ZONE_COLLAPSE = 'You have limited time in the zone. Eventually it 
 const activeRaidId = computed(() => uiState.activeRaidId || (uiState.raidOrder[0] || ''));
 const selectedRaid = computed<RaidDefinition | null>(() => uiState.raids.find(r => r.id === activeRaidId.value) || null);
 
-const selectedPrice = computed(() => uiState.selectedGearPrice || 0);
+const selectedPrice = computed(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.raidKey;
+  const gs = getGameState();
+  const raidId = activeRaidId.value;
+  if (!raidId) return 0;
+  return getRaidGearCost(gs, raidId);
+});
 const canAfford = computed(() => uiState.credits >= selectedPrice.value);
-const canDeploy = computed(() => !!selectedRaid.value && !isLocked(selectedRaid.value) && canAfford.value);
+const deployDisabledReason = computed(() => {
+  // Touch reactive keys so recompute happens on gear/quest changes
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.raidKey;
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.activeQuests.length;
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.lastOutcome;
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.questPrereqsVersion;
 
-function isLocked(r: RaidDefinition): boolean {
-  return !uiState.unlockedRaidIds.includes(r.id);
-}
+  const raid = selectedRaid.value;
+  if (!raid) return '';
+  const gs = getGameState();
+  return getRaidStartFailureReason(gs, raid.id);
+});
+const canDeploy = computed(() => !!selectedRaid.value && deployDisabledReason.value === '');
 
 function deploy() {
   const raid = selectedRaid.value;
@@ -175,6 +198,40 @@ const timeEstDesc = computed(() => {
 
 <style scoped>
 .deploy-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.btn-wrap { display: inline-block; position: relative; }
+.btn-wrap .tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  transform: none;
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  background: rgba(10, 14, 20, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  color: #f0c070;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  max-width: min(320px, 90vw);
+  white-space: normal;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 150ms ease;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.btn-wrap .tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 12px;
+  transform: none;
+  border: 6px solid transparent;
+  border-top-color: rgba(10, 14, 20, 0.95);
+}
+.btn-wrap:hover .tooltip { opacity: 1; }
 .stats { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 :deep(.cell) {
   background: var(--raid-panel-bg, rgba(23, 33, 47, 0.92));

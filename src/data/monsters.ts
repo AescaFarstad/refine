@@ -48,7 +48,7 @@ const monsters: Record<string, RawMonsterDefinition> = {
     name: 'Flower Human',
     hp: 25,
     dodge: 20,
-    accuracy: 45,
+    accuracy: 30,
     damage: 2,
     lootItemId: 'flower_remains',
     armor: 1,
@@ -56,13 +56,15 @@ const monsters: Record<string, RawMonsterDefinition> = {
   },
   mortiflower: {
     name: 'Mortiflower Human',
-    hp: 25,
-    dodge: 40,
-    accuracy: 55,
+    hp: 30,
+    dodge: 30,
+    accuracy: 30,
     damage: 2,
     lootItemId: 'flower_remains',
+    features:['retaliates'],
     armor: 2,
-    upgrade: "dendroid"
+    upgrade: "dendroid",
+    strengthMult: 1.2,
   },
   stalker: {
     name: 'Invisible Stalker',

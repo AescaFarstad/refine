@@ -25,8 +25,7 @@
       </div>
       <div v-else class="list">
         <div v-for="k in encounteredEssenceKeys" :key="'cheat-' + k" class="row" :class="{ new: newEssences[k] }">
-          <span v-if="getEssenceFrame(k) && source" class="icon" :style="essenceIconStyle(18, k)" />
-          <span v-else class="letter">{{ essenceLetter(k) }}</span>
+          <span class="icon" :style="essenceIconStyle(18, k)" />
           <span class="name">{{ essenceDisplayName(k) }}</span>
           <span class="sep"></span>
           <span class="desc" v-html="essenceEffectHtml(k)"></span>
@@ -37,11 +36,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
 import { uiState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
 import { CmdMarkEssencesSeen } from '../logic/input/InputCommands';
 import atlasStorage from '../logic/AtlasStorage';
+import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 import {
   CYAN_SUCCESS_BONUS_PCT,
   CYAN_YIELD_BONUS_PCT,
@@ -58,38 +58,11 @@ const pulse = computed(() => props.pulse);
 
 const newEssences = ref<Record<string, true>>({});
 
-const source = ref<HTMLImageElement | null>(atlasStorage.getItemsSource());
-const ready = ref<boolean>(atlasStorage.isItemsAtlasLoaded());
-onMounted(async () => {
-  if (!ready.value) {
-    try { await atlasStorage.loadItemsAtlas(); } catch (_e) { /* noop */ }
-    ready.value = atlasStorage.isItemsAtlasLoaded();
-    source.value = atlasStorage.getItemsSource();
-  }
-});
-
-function getEssenceFrame(k: string) {
-  return atlasStorage.getItemsFrame(k);
-}
+const source = atlasStorage.getItemsSource();
 
 function essenceIconStyle(size: number, k: string): Record<string, string> {
   const f = atlasStorage.getItemsFrame(k)!;
-  const scale = size / Math.max(f.w, f.h);
-  const atlasW = source.value!.naturalWidth;
-  const atlasH = source.value!.naturalHeight;
-  return {
-    width: size + 'px',
-    height: size + 'px',
-    backgroundImage: `url(${source.value!.src})`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
-    backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
-  } as Record<string, string>;
-}
-
-function essenceLetter(k: string): string {
-  const m: Record<string, string> = { red: 'R', green: 'G', blue: 'B', yellow: 'Y' };
-  return m[k] || k?.[0]?.toUpperCase?.() || '?';
+  return atlasSpriteStyle(source, f, { size, mode: 'fixed' });
 }
 
 const encounteredEssenceKeys = computed<string[]>(() => {

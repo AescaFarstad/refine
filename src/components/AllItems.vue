@@ -22,8 +22,7 @@
         @click="onSortBy(k)"
       >
         <span class="row-top">
-          <span v-if="getEssenceFrame(k) && source" class="ess-icon14" :style="essenceIconStyle(14, k)" />
-          <span v-else class="ess-letter14">{{ essenceLetter(k) }}</span>
+          <span class="ess-icon14" :style="essenceIconStyle(14, k)" />
           <span class="sort-arrow" :class="{ active: activeSort === k }">▼</span>
         </span>
         <span class="row-bottom">
@@ -73,6 +72,7 @@ import ItemGrid from './ItemGrid.vue';
 import EssenceCheatSheet from './EssenceCheatSheet.vue';
 import { uiState } from '../logic/UIState';
 import atlasStorage from '../logic/AtlasStorage';
+import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 import type { ItemDefinition } from '../logic/ItemLib';
 
 const props = defineProps<{
@@ -104,30 +104,11 @@ function onMouseLeave() {
 }
 
 // Atlas state for essence icons - pre-loaded at app start
-const source = atlasStorage.getItemsSource()!;
-
-function getEssenceFrame(k: string) {
-  return atlasStorage.getItemsFrame(k);
-}
+const source = atlasStorage.getItemsSource();
 
 function essenceIconStyle(size: number, k: string): Record<string, string> {
   const f = atlasStorage.getItemsFrame(k)!;
-  const scale = size / Math.max(f.w, f.h);
-  const atlasW = source.naturalWidth;
-  const atlasH = source.naturalHeight;
-  return {
-    width: size + 'px',
-    height: size + 'px',
-    backgroundImage: `url(${source.src})`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
-    backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
-  } as Record<string, string>;
-}
-
-function essenceLetter(k: string): string {
-  const m: Record<string, string> = { red: 'R', green: 'G', blue: 'B', yellow: 'Y' };
-  return m[k] || k?.[0]?.toUpperCase?.() || '?';
+  return atlasSpriteStyle(source, f, { size, mode: 'fixed' });
 }
 
 // Total essences present in player's items (full inventory, not just available)

@@ -9,7 +9,17 @@
       <div class="left-panel">
         <div class="left-section">
           <div class="reward-label">Completion grants:</div>
-          <div v-if="rewardsText" class="reward-value">{{ rewardsText }}</div>
+          <div v-if="rewards.length > 0" class="reward-value">
+            <template v-for="(reward, idx) in rewards" :key="idx">
+              <span v-if="reward.type === 'countable_gear'" class="gear-reward">
+                <span class="gear-icon" :style="gearIconStyle(reward.gearId!)" />
+                <span class="gear-name">{{ reward.text }}</span>
+                <span class="gear-count">×{{ reward.amount }}</span>
+              </span>
+              <span v-else>{{ reward.text }}</span>
+              <span v-if="idx < rewards.length - 1"> </span>
+            </template>
+          </div>
           <div v-else class="reward-value dim">No reward</div>
         </div>
         <div class="left-section">
@@ -71,6 +81,8 @@ import type { MazeDefinition } from '../logic/MazeLib';
 import type { Point2 } from '../logic/core/math';
 import { getResourceSpec } from '../logic/Resources';
 import { DISCOVERY } from '../logic/DiscoveryLib';
+import atlasStorage from '../logic/AtlasStorage';
+import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 
 const rootEl = ref<HTMLElement | null>(null);
 const staticCanvasEl = ref<HTMLCanvasElement | null>(null);
@@ -114,26 +126,46 @@ const artefactsTaken = computed(() => {
   return game?.state?.artefacts?.filter((a: any) => a.taken).length || 0;
 });
 
-const rewardsText = computed(() => {
+interface RewardDisplay {
+  type: 'resource' | 'unlock_raid' | 'countable_gear';
+  text: string;
+  gearId?: string;
+  amount?: number;
+}
+
+const rewards = computed((): RewardDisplay[] => {
   const lv = getLevels()[levelIndex.value];
-  if (!lv || !lv.reward || !Array.isArray(lv.reward)) return '';
+  if (!lv || !lv.reward || !Array.isArray(lv.reward)) return [];
   const lib = getGameLib();
   return lv.reward
-    .map(r => {
+    .map((r): RewardDisplay | null => {
       if (r.kind === 'resource') {
         const spec = getResourceSpec(r.resource);
-        return `${r.amount}${spec.glyph}`;
+        return { type: 'resource', text: `${r.amount}${spec.glyph}` };
       }
       if (r.kind === 'unlock_raid') {
         const raidDef = lib?.raids.get(r.raidId);
         const raidName = raidDef?.name || r.raidId;
-        return `New raid location: ${raidName}`;
+        return { type: 'unlock_raid', text: `New raid location: ${raidName}` };
       }
-      return '';
+      if (r.kind === 'countable_gear') {
+        const gearDef = lib?.gear.get(r.gearId);
+        const gearName = gearDef?.name || r.gearId;
+        return { type: 'countable_gear', text: gearName, gearId: r.gearId, amount: r.amount };
+      }
+      return null;
     })
-    .filter(s => s.length > 0)
-    .join(' ');
+    .filter((r): r is RewardDisplay => r !== null);
 });
+
+const atlasSource = atlasStorage.getItemsSource();
+
+function gearIconStyle(gearId: string): Record<string, string> {
+  const lib = getGameLib();
+  const gearDef = lib!.gear.get(gearId);
+  const f = atlasStorage.getItemsFrame(gearDef.image)!;
+  return atlasSpriteStyle(atlasSource, f, { size: 28, mode: 'fixed' });
+}
 
 // Top bar visual representation of keys (updates when visualTakenKeys change)
 const topBarVisualKeys = ref<boolean[]>([]);
@@ -644,7 +676,7 @@ onMounted(() => {
   // Initialize visual key state tracking
   const game = getGameState()?.maze;
   if (game) {
-    lastVisualKeyState = game.visualTakenKeys.join(',') + '|' + 
+    lastVisualKeyState = game.visualTakenKeys.join(',') + '|' +
       game.state.artefacts.map((a: any) => a.taken ? '1' : '0').join('') + '|' +
       (game.cellTimeFluxVersion || 0);
     topBarVisualKeys.value = game.visualTakenKeys.slice();
@@ -713,6 +745,23 @@ onBeforeUnmount(() => {
   color: #fbbf24;
 }
 .reward-value.dim { color: var(--text-secondary); font-size: 18px; }
+.gear-reward {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.gear-icon {
+  display: inline-block;
+  vertical-align: middle;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+}
+.gear-name {
+  color: #c084fc;
+}
+.gear-count {
+  font-weight: 700;
+  color: #c084fc;
+}
 .info-text {
   font-size: 18px;
   color: var(--text-secondary);

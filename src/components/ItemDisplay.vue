@@ -1,8 +1,7 @@
 <template>
   <div class="item-cell-wrap" v-bind="$attrs" ref="wrapRef" @mouseenter="onEnter" @mouseleave="onLeave">
     <div class="item-cell" :class="{ minor, 'has-vol': showVolume }">
-      <div class="sprite" v-if="source && frame" :style="spriteStyle" />
-      <div v-else-if="!source || !frame" class="placeholder">{{ id }}</div>
+      <div class="sprite" :style="spriteStyle" />
 
       <div v-if="showScore && hasFiniteScore" class="score">{{ displayScore }}</div>
       <div v-if="showVolume" class="vol">{{ displayVolume }}</div>
@@ -16,12 +15,7 @@
         >
           <template v-for="(e, idx) in row" :key="e.key">
             <span class="ess-entry">
-              <span
-                v-if="getEssenceFrame(e.key) && source"
-                class="ess-icon"
-                :style="essenceIconStyle(e.key)"
-              />
-              <span v-else class="ess-letter">{{ essenceLetter(e.key) }}</span>
+              <span class="ess-icon" :style="essenceIconStyle(e.key)" />
               <span v-if="e.value !== 1" class="ess-num">{{ e.value }}</span>
             </span>
             <span v-if="idx < row.length - 1" class="sp" />
@@ -66,6 +60,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
 import atlasStorage from '../logic/AtlasStorage';
+import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 import itemsData from '../data/items';
 import type { ItemDefinition } from '../logic/ItemLib';
 
@@ -136,10 +131,10 @@ onBeforeUnmount(() => {
 });
 
 // Atlas state - atlases are pre-loaded at app start
-const source = atlasStorage.getItemsSource()!;
+const source = atlasStorage.getItemsSource();
 const moleculesSource = atlasStorage.getMoleculesSource();
 
-const frame = computed(() => atlasStorage.getItemsFrame(props.id));
+const frame = computed(() => atlasStorage.getItemsFrame(props.id)!);
 const moleculeFrame = computed(() => atlasStorage.getMoleculesFrame(`mol:${props.id}`));
 
 const itemDef = computed<ItemDefinition>(() => (itemsData as Record<string, ItemDefinition>)[props.id]!);
@@ -163,7 +158,7 @@ const displayScore = computed(() => {
 const hasFiniteScore = computed(() => Number.isFinite(itemDef.value.score));
 
 const spriteStyle = computed(() => {
-  const f = frame.value!;
+  const f = frame.value;
   const atlasW = source.naturalWidth;
   const atlasH = source.naturalHeight;
   return {
@@ -217,30 +212,9 @@ const essenceRows = computed(() => {
   return [list];
 });
 
-function essenceLetter(k: string): string {
-  const m: Record<string, string> = { red: 'R', green: 'G', blue: 'B', yellow: 'Y', cyan: 'C' };
-  return m[k] || k[0]?.toUpperCase() || '?';
-}
-
-function getEssenceFrame(k: string) {
-  return atlasStorage.getItemsFrame(k);
-}
-
 function essenceIconStyle(k: string): Record<string, string> {
   const f = atlasStorage.getItemsFrame(k)!;
-  // Scale the entire atlas proportionally so the essence icon fits in 14x14
-  const size = 16;
-  const scale = size / Math.max(f.w, f.h);
-  const atlasW = source.naturalWidth;
-  const atlasH = source.naturalHeight;
-  return {
-    width: size + 'px',
-    height: size + 'px',
-    backgroundImage: `url(${source.src})`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
-    backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
-  } as Record<string, string>;
+  return atlasSpriteStyle(source, f, { size: 16, mode: 'fixed' });
 }
 </script>
 

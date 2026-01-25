@@ -4,6 +4,13 @@
       <div v-if="section.type === 'encounter-line'" class="encounter-line">
         {{ section.text }}
       </div>
+      <div v-else-if="section.type === 'gear-required'" class="gear-required">
+        <div class="gear-required-label">{{ section.label }}</div>
+        <div v-for="(item, j) in section.items" :key="j" class="gear-required-item">
+          <span class="gear-required-icon" :style="gearIconStyle(item.id)" />
+          <span class="gear-required-name">{{ item.name }}</span>
+        </div>
+      </div>
       <div v-else-if="section.type === 'simple'" class="hint-row">
         <span class="hint-label">{{ section.label }}</span>
         <span class="hint-value">{{ section.value }}</span>
@@ -33,6 +40,8 @@ import { describeMutation } from '../logic/RaidMutation';
 import { getResourceSpec, type ResourceKey } from '../logic/Resources';
 import type { Reward } from '../logic/Reward';
 import type { RaidMutation } from '../logic/RaidMutation';
+import atlasStorage from '../logic/AtlasStorage';
+import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 
 const props = defineProps<{
   quest: QuestDefinition;
@@ -46,11 +55,15 @@ function highlightNumbers(text: string): string {
 type ChipStyle = Record<string, string>;
 type HintChip = { text: string; class: string; style?: ChipStyle };
 type HintItem = { text: string; sentiment: 'positive' | 'negative' };
+type GearReqItem = { id: string; name: string };
 type HintSection =
   | { type: 'encounter-line'; text: string }
   | { type: 'simple'; label: string; value: string }
   | { type: 'heading'; heading: string; items: HintItem[]; spaceBefore?: boolean }
-  | { type: 'chips'; label: string; chips: HintChip[] };
+  | { type: 'chips'; label: string; chips: HintChip[] }
+  | { type: 'gear-required'; label: string; items: GearReqItem[] };
+
+const itemsAtlasSource = atlasStorage.getItemsSource();
 
 function chipStyleForResource(key: ResourceKey): ChipStyle {
   const spec = getResourceSpec(key);
@@ -130,6 +143,11 @@ const hintSections = computed<HintSection[]>(() => {
   if (q.description) {
     out.push({ type: 'encounter-line', text: q.description });
   }
+  if (q.gearRequired.length) {
+    const lib = getGameLib();
+    const items = q.gearRequired.map(id => ({ id, name: lib.gear.get(id)!.name || id }));
+    out.push({ type: 'gear-required', label: 'The following gear must be equipped:', items });
+  }
 
   if (q.encounterTimeMin > 0) {
     out.push({ type: 'simple', label: 'Duration:', value: `${q.encounterTimeMin} min` });
@@ -203,6 +221,16 @@ const hintSections = computed<HintSection[]>(() => {
   }
   return out;
 });
+
+function getGearFrame(gearId: string) {
+  const gear = getGameLib().gear.get(gearId)!;
+  return atlasStorage.getItemsFrame(gear.image)!;
+}
+
+function gearIconStyle(gearId: string): Record<string, string> {
+  const f = getGearFrame(gearId);
+  return atlasSpriteStyle(itemsAtlasSource, f, { size: 14, mode: 'fit', allowUpscale: false });
+}
 </script>
 
 <style scoped>
@@ -244,6 +272,30 @@ const hintSections = computed<HintSection[]>(() => {
 .hint-section.space-before {
   margin-top: 8px;
 }
+
+.gear-required {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.gear-required-label {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.gear-required-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 13px;
+  font-weight: 700;
+}
+.gear-required-icon { display: inline-block; }
 
 .section-heading {
   color: rgba(255, 255, 255, 0.5);

@@ -1,11 +1,25 @@
 import type { RawQuestDefinition } from '../../logic/QuestLib';
 
 const quests: Record<string, RawQuestDefinition> = {
+  ozernoye_locate_dyatlovsk: {
+    name: 'Locate Dyatlovsk',
+    description: 'Dyatlovsk has a key portal which opens up the rest of the planet for raiding.',
+    raidRestriction: ['ozernoye'],
+    requiresRaidSuccesses: 1,
+    gearRequired: ['zone_crystal'],
+    encounters: [
+      { kind: 'WalkMutation', count: 8 },
+      { kind: 'AddMonsterMutation', monsterId: 'mortiflower', count: 5 },
+    ],
+    rewards: [
+      { kind: 'unlock_raid', raidId: 'dyatlovsk' },
+    ],
+  },
   ozernoye_explore_fire_station: {
     name: 'Fire station',
     description: 'There is a fire station which could use some actual fire to get rid of its cornivorous inhabitants. Opening it might cause long-term flower trouble, but there must be some useful equipment in there.',
     raidRestriction: ['ozernoye'],
-    requiresRaidSuccesses: 1,
+    requiresRaidSuccesses: 2,
     encounters: [
       { kind: 'WalkMutation', count: 1 },
       { kind: 'AddMonsterMutation', monsterId: 'flower', count: 3 },
@@ -21,7 +35,7 @@ const quests: Record<string, RawQuestDefinition> = {
     name: 'Bus station',
     encounterLine: 'Disturb the carnivorous flora inhabiting the bus station. This will spread the pollen, but you can’t make a salad without cutting some veggies.',
     raidRestriction: ['ozernoye'],
-    requiresRaidSuccesses: 2,
+    requiresRaidSuccesses: 3,
     encounters: [
       { kind: 'WalkMutation', count: 1 },
       { kind: 'AddMonsterMutation', monsterId: 'flower', count: 4 },

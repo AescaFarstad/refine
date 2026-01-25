@@ -21,6 +21,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import atlasStorage from '../../logic/AtlasStorage';
+import { atlasSpriteStyle } from '../../logic/AtlasSpriteStyle';
 import type { Reward } from '../../logic/Reward';
 import { ESSENCE_COLORS } from '../../logic/RenderConstants';
 
@@ -37,24 +38,11 @@ const bonusPct = computed(() => props.params.bonusPct);
 const colorLabel = computed(() => color.value[0].toUpperCase() + color.value.slice(1));
 const accentColor = computed(() => ESSENCE_COLORS[color.value] || '#ffffff');
 
-const source = atlasStorage.getItemsSource()!;
+const source = atlasStorage.getItemsSource();
 
 const essenceStyle = computed(() => {
   const f = atlasStorage.getItemsFrame(color.value)!;
-  const targetSize = 42;
-  const scale = Math.min(targetSize / f.w, targetSize / f.h, 1);
-  const displayW = f.w * scale;
-  const displayH = f.h * scale;
-  const atlasW = source.naturalWidth;
-  const atlasH = source.naturalHeight;
-  return {
-    width: displayW + 'px',
-    height: displayH + 'px',
-    backgroundImage: `url(${source.src})`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
-    backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
-  };
+  return atlasSpriteStyle(source, f, { size: 42, mode: 'fit', allowUpscale: false });
 });
 
 function close() {

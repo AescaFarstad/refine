@@ -81,8 +81,7 @@ const connectionStart = ref<Point2 | null>(null);
 const manualDragging = ref(false);
 
 
-onMounted(async () => {
-  await atlasStorage.loadItemsAtlas();
+onMounted(() => {
   setupCanvases();
   renderGrid();
   renderMolecules();

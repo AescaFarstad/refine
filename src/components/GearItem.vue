@@ -8,7 +8,7 @@
     @click="$emit('toggle')"
   >
     <!-- Gear image sprite -->
-    <div v-if="source && gearFrame" class="g-sprite-wrap">
+    <div class="g-sprite-wrap">
       <div class="g-sprite" :style="spriteStyle" />
     </div>
 
@@ -22,8 +22,7 @@
     <!-- Bottom-right weight label (no special background); hidden when zero -->
     <div class="g-weight" v-if="gear.weight > 0">
       <span class="g-weight-num">{{ gear.weight }}</span>
-      <span v-if="source && weightFrame" class="g-weight-icon" :style="weightIconStyle" aria-hidden="true" />
-      <span v-else class="g-weight-fallback" aria-hidden="true">w</span>
+      <span class="g-weight-icon" :style="weightIconStyle" aria-hidden="true" />
     </div>
 
     <div class="g-count" v-if="count !== undefined">x{{ count }}</div>
@@ -33,9 +32,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, toRefs, ref, onMounted } from 'vue';
+import { computed, toRefs, ref } from 'vue';
 import type { GearDefinition } from '../logic/GearLib';
 import atlasStorage from '../logic/AtlasStorage';
+import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 import GearStatsHint from './GearStatsHint.vue';
 import { getResourceSpec } from '../logic/Resources';
 
@@ -56,63 +56,23 @@ const creditsSpec = getResourceSpec('credits');
 // expose individual props to template for convenience
 const { gear, selected, unaffordable, blocked, price, count, hintRight } = toRefs(props);
 
-// Atlas state for gear images
-const source = ref<HTMLImageElement | null>(atlasStorage.getItemsSource());
-const ready = ref<boolean>(atlasStorage.isItemsAtlasLoaded());
-onMounted(async () => {
-  if (!ready.value) {
-    try {
-      await atlasStorage.loadItemsAtlas();
-    } catch (_e) { /* noop */ }
-    ready.value = atlasStorage.isItemsAtlasLoaded();
-    source.value = atlasStorage.getItemsSource();
-  }
-});
+const source = atlasStorage.getItemsSource();
 
 const gearFrame = computed(() => {
-  if (!ready.value) return null;
   const imageKey = props.gear.image;
-  if (!imageKey) return null;
-  return atlasStorage.getItemsFrame(imageKey);
+  return atlasStorage.getItemsFrame(imageKey)!;
 });
 
-const weightFrame = computed(() => (ready.value ? atlasStorage.getItemsFrame('weight') : null));
+const weightFrame = computed(() => atlasStorage.getItemsFrame('weight')!);
 
 const spriteStyle = computed(() => {
   const f = gearFrame.value!;
-  const atlasW = source.value!.naturalWidth;
-  const atlasH = source.value!.naturalHeight;
-  // Scale to fit within 48x48 container while maintaining aspect ratio
-  const containerSize = 48;
-  const scale = Math.min(containerSize / f.w, containerSize / f.h, 1); // Don't upscale, only downscale
-  const displayW = f.w * scale;
-  const displayH = f.h * scale;
-  return {
-    width: displayW + 'px',
-    height: displayH + 'px',
-    backgroundImage: `url(${source.value!.src})`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
-    backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
-  } as Record<string, string>;
+  return atlasSpriteStyle(source, f, { size: 48, mode: 'fit', allowUpscale: false });
 });
 
 const weightIconStyle = computed(() => {
   const f = weightFrame.value!;
-  const atlasW = source.value!.naturalWidth;
-  const atlasH = source.value!.naturalHeight;
-  const containerSize = 12;
-  const scale = Math.min(containerSize / f.w, containerSize / f.h, 1);
-  const displayW = f.w * scale;
-  const displayH = f.h * scale;
-  return {
-    width: displayW + 'px',
-    height: displayH + 'px',
-    backgroundImage: `url(${source.value!.src})`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
-    backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
-  } as Record<string, string>;
+  return atlasSpriteStyle(source, f, { size: 12, mode: 'fit', allowUpscale: false });
 });
 
 // dynamic edge-aware flipping

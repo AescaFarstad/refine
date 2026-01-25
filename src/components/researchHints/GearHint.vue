@@ -2,9 +2,10 @@
   <div class="hint-root">
     <div class="hint-body">
       <div v-if="gear">
-        <div class="unlock-text">Unlock gear: <span class="gear-name">{{ gear.name }}</span></div>
+        <div v-if="isCountable" class="unlock-text">Gives: <span class="gear-name countable">{{ gear.name }}</span> <span class="countable-amount">x{{ countableAmount }}</span></div>
+        <div v-else class="unlock-text">Unlock gear: <span class="gear-name">{{ gear.name }}</span></div>
         <div class="gear-info">Type: {{ categoryName }}<span v-if="isNewCategory" class="new-category">First of this type!</span></div>
-        <div class="gear-info">Price: <span class="price" :style="{ color: creditsSpec.color }">{{ gear.price }}{{ creditsSpec.glyph }}</span></div>
+        <div v-if="!isCountable" class="gear-info">Price: <span class="price" :style="{ color: creditsSpec.color }">{{ gear.price }}{{ creditsSpec.glyph }}</span></div>
         <div class="gear-info">Weight: {{ gear.weight }}</div>
         <GearStatsHint :gear="gear" class="gear-stats" />
       </div>
@@ -29,10 +30,28 @@ const props = defineProps<{
 
 const creditsSpec = getResourceSpec('credits');
 
+const gearReward = computed(() => {
+  if (!props.archetype) return null;
+  return props.archetype.rewards.find(r => r.kind === 'unlock_gear' || r.kind === 'countable_gear') || null;
+});
+
 const gearId = computed(() => {
-  if (!props.archetype) return '';
-  const reward = props.archetype.rewards.find(r => r.kind === 'unlock_gear');
-  return reward && reward.kind === 'unlock_gear' ? reward.gearId : '';
+  const reward = gearReward.value;
+  if (!reward) return '';
+  if (reward.kind === 'unlock_gear' || reward.kind === 'countable_gear') {
+    return reward.gearId;
+  }
+  return '';
+});
+
+const isCountable = computed(() => {
+  const reward = gearReward.value;
+  return reward?.kind === 'countable_gear';
+});
+
+const countableAmount = computed(() => {
+  const reward = gearReward.value;
+  return reward?.kind === 'countable_gear' ? reward.amount : 0;
 });
 
 const gear = computed(() => {
@@ -76,6 +95,15 @@ const isNewCategory = computed(() => {
 
 .gear-name {
   color: rgba(34, 197, 94, 0.95);
+  font-weight: 700;
+}
+
+.gear-name.countable {
+  color: rgba(96, 165, 250, 0.95);
+}
+
+.countable-amount {
+  color: rgba(96, 165, 250, 0.95);
   font-weight: 700;
 }
 

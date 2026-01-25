@@ -51,7 +51,7 @@ export const mazeDefinitions: Record<string, Omit<MazeDefinition, 'id'>> = {
     artefacts: [],
     description: 'More obstacles for ice-sliding decisions.',
     reward: [
-      { kind: 'unlock_raid', raidId: 'dyatlovsk' },
+      { kind: 'countable_gear', gearId: 'zone_crystal', amount: 5 },
     ],
     useFixedLayout: true,
     spawn: { x: 3, y: 7 },
@@ -97,8 +97,8 @@ export const mazeDefinitions: Record<string, Omit<MazeDefinition, 'id'>> = {
     artefacts: [],
     description: 'Two keys, still no enemies.',
     reward: [
-      { kind: 'resource', resource: 'credits', amount: 400 },
-      { kind: 'resource', resource: 'chronotraces', amount: 20 }
+      { kind: 'resource', resource: 'credits', amount: 1400 },
+      { kind: 'resource', resource: 'chronotraces', amount: 200 }
     ],
   },
   maze_7: {
@@ -112,9 +112,9 @@ export const mazeDefinitions: Record<string, Omit<MazeDefinition, 'id'>> = {
     artefacts: [],
     description: 'One slow-spawning demon.',
     reward: [
-      { kind: 'resource', resource: 'credits', amount: 500 },
-      { kind: 'resource', resource: 'chronotraces', amount: 30 },
-      { kind: 'resource', resource: 'shardDust', amount: 10 }
+      { kind: 'resource', resource: 'credits', amount: 1500 },
+      { kind: 'resource', resource: 'chronotraces', amount: 300 },
+      { kind: 'resource', resource: 'shardDust', amount: 100 }
     ],
   },
   maze_8: {
@@ -128,9 +128,8 @@ export const mazeDefinitions: Record<string, Omit<MazeDefinition, 'id'>> = {
     artefacts: [],
     description: 'Two keys with occasional demons and a freeze.',
     reward: [
-      { kind: 'resource', resource: 'credits', amount: 750 },
-      { kind: 'resource', resource: 'chronotraces', amount: 50 },
-      { kind: 'resource', resource: 'shardDust', amount: 25 }
+      { kind: 'resource', resource: 'credits', amount: 2750 },
+      { kind: 'resource', resource: 'shardDust', amount: 250 }
     ],
   },
   maze_9: {
@@ -144,9 +143,8 @@ export const mazeDefinitions: Record<string, Omit<MazeDefinition, 'id'>> = {
     artefacts: [],
     description: 'Demons and multiple keys for the final challenge.',
     reward: [
-      { kind: 'resource', resource: 'credits', amount: 1000 },
-      { kind: 'resource', resource: 'chronotraces', amount: 100 },
-      { kind: 'resource', resource: 'shardDust', amount: 50 },
+      { kind: 'resource', resource: 'credits', amount: 10000 },
+      { kind: 'resource', resource: 'shardDust', amount: 500 },
       { kind: 'resource', resource: 'skillPoints', amount: 1 }
     ]
   },

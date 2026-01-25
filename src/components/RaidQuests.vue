@@ -15,6 +15,13 @@
           <span class="q-name">{{ q.name }}</span>
           <span class="tag auto" v-if="q.autoaccept">Auto-accepted</span>
         </div>
+        <div v-if="q.gearRequired.length" class="q-req">
+          <span class="q-req-label">Requires:</span>
+          <span v-for="gearId in q.gearRequired" :key="gearId" class="q-req-item">
+            <span class="q-req-icon" :style="gearIconStyle(gearId)" />
+            <span class="q-req-name">{{ getGearName(gearId) }}</span>
+          </span>
+        </div>
         <div class="hint" role="tooltip">
           <QuestHint :quest="q" />
         </div>
@@ -31,8 +38,11 @@ import { globalInputQueue } from '../logic/Model';
 import { CmdToggleQuest } from '../logic/input/InputCommands';
 import { questIsAvailable } from '../logic/RaidMutation';
 import QuestHint from './QuestHint.vue';
+import atlasStorage from '../logic/AtlasStorage';
+import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 
 const activeRaidId = computed(() => uiState.activeRaidId || (uiState.raidOrder[0] || ''));
+const itemsAtlasSource = atlasStorage.getItemsSource();
 
 // All quests for the selected raid (hide completed)
 const quests = computed<QuestDefinition[]>(() => {
@@ -69,6 +79,20 @@ function onQuestClick(q: QuestDefinition): void {
   const next = !isActive(q.id);
   globalInputQueue.push(new CmdToggleQuest({ id: q.id, active: next }));
 }
+
+function getGearName(gearId: string): string {
+  return getGameLib().gear.get(gearId)!.name || gearId;
+}
+
+function getGearFrame(gearId: string) {
+  const gear = getGameLib().gear.get(gearId)!;
+  return atlasStorage.getItemsFrame(gear.image)!;
+}
+
+function gearIconStyle(gearId: string): Record<string, string> {
+  const f = getGearFrame(gearId);
+  return atlasSpriteStyle(itemsAtlasSource, f, { size: 14, mode: 'fit', allowUpscale: false });
+}
 </script>
 
 <style scoped>
@@ -80,15 +104,21 @@ function onQuestClick(q: QuestDefinition): void {
   border-radius: 8px;
   padding: 10px 12px;
   background: var(--raid-item-bg, rgba(255,255,255,0.08));
-  height: 64px; /* fixed size tiles */
+  min-height: 64px;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
   position: relative; /* for tooltip positioning */
 }
 .q-head { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .q-name { font-weight: 900; }
 .tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; border-radius: 4px; padding: 2px 6px; opacity: 0.9; border: none; }
 .tag.auto { color: var(--accent); background: rgba(79, 209, 197, 0.12); }
+.q-req { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 11px; color: rgba(255, 255, 255, 0.7); }
+.q-req-label { text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; color: rgba(255, 255, 255, 0.45); }
+.q-req-item { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: rgba(255, 255, 255, 0.9); }
+.q-req-icon { display: inline-block; }
 .quest.accepted { background: rgba(74, 222, 128, 0.15); }
 .quest.clickable { cursor: pointer; }
 .quest.clickable:not(.accepted):hover { background: rgba(255,255,255,0.12); }

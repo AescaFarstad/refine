@@ -26,7 +26,7 @@
               <div class="enc-time">{{ formatHMS(entry.timeSpentSec) }}</div>
             </div>
             <div class="enc-icon-col">
-              <div v-if="itemsAtlasReady" class="enc-icon" :class="{ dimmed: isSkipped(entry) }" :style="encounterIconStyle(entry)" />
+              <div class="enc-icon" :class="{ dimmed: isSkipped(entry) }" :style="encounterIconStyle(entry)" />
             </div>
           </div>
         </div>
@@ -51,6 +51,7 @@ import type { RaidEventLogEntry, WalkEncounterLogEntry, PreparationEncounterLogE
 import { DEFAULT_SPEED } from '../../logic/GameState';
 import { formatDurationHM } from '../../logic/StringUtils';
 import atlasStorage from '../../logic/AtlasStorage';
+import { atlasSpriteStyle } from '../../logic/AtlasSpriteStyle';
 import WalkEncounterDetails from './WalkEncounterDetails.vue';
 import PreparationEncounterDetails from './PreparationEncounterDetails.vue';
 import LootEncounterDetails from './LootEncounterDetails.vue';
@@ -79,16 +80,7 @@ const timerId = ref<number | null>(null);
 const bodyRef = ref<HTMLElement | null>(null);
 const speedScale = ref(1);
 
-const itemsAtlasSource = ref<HTMLImageElement | null>(atlasStorage.getItemsSource());
-const itemsAtlasReady = ref<boolean>(atlasStorage.isItemsAtlasLoaded());
-onMounted(async () => {
-  if (itemsAtlasReady.value) return;
-  try {
-    await atlasStorage.loadItemsAtlas();
-  } catch (_e) { /* noop */ }
-  itemsAtlasReady.value = atlasStorage.isItemsAtlasLoaded();
-  itemsAtlasSource.value = atlasStorage.getItemsSource();
-});
+const itemsAtlasSource = atlasStorage.getItemsSource();
 
 const timelineReady = ref(false);
 const subShownSteps = ref<Record<number, number>>({});
@@ -333,28 +325,13 @@ const ENCOUNTER_ICON_KEYS: Record<RaidEventLogEntry['kind'], string> = {
 };
 
 function encounterIconStyle(entry: RaidEventLogEntry): Record<string, string> {
-  const source = itemsAtlasSource.value!;
   // For PreparationEncounter, use the gear image if available
   let iconKey = ENCOUNTER_ICON_KEYS[entry.kind];
   if (entry.kind === 'PreparationEncounter' && entry.gearImage) {
     iconKey = entry.gearImage;
   }
-  const f = atlasStorage.getItemsFrame(iconKey);
-  if (!f) return {};
-  const atlasW = source.naturalWidth;
-  const atlasH = source.naturalHeight;
-  const containerSize = 60;
-  const scale = Math.min(containerSize / f.w, containerSize / f.h, 1);
-  const displayW = f.w * scale;
-  const displayH = f.h * scale;
-  return {
-    width: displayW + 'px',
-    height: displayH + 'px',
-    backgroundImage: `url(${source.src})`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
-    backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
-  };
+  const f = atlasStorage.getItemsFrame(iconKey)!;
+  return atlasSpriteStyle(itemsAtlasSource, f, { size: 60, mode: 'fit', allowUpscale: false });
 }
 </script>
 

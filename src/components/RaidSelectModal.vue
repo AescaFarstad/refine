@@ -45,17 +45,17 @@
 
                 <div class="ov ov-left">
                   <div class="ov-row">
-                    <div v-if="itemsAtlasReady" class="ov-icon" :style="encounterIconStyle('winding_road')" />
+                    <div class="ov-icon" :style="encounterIconStyle('winding_road')" />
                     <div class="ov-label">Walking</div>
                     <div class="ov-value">{{ distanceKm }} km</div>
                   </div>
                   <div v-if="lootCount > 0" class="ov-row">
-                    <div v-if="itemsAtlasReady" class="ov-icon" :style="encounterIconStyle('rummaging')" />
+                    <div class="ov-icon" :style="encounterIconStyle('rummaging')" />
                     <div class="ov-label">Scavenge</div>
                     <div class="ov-value">×{{ lootCount }}</div>
                   </div>
                   <div v-if="zoneCollapseTime" class="ov-row">
-                    <div v-if="itemsAtlasReady" class="ov-icon" :style="encounterIconStyle('desintegration')" />
+                    <div class="ov-icon" :style="encounterIconStyle('desintegration')" />
                     <div class="ov-label">Collapse</div>
                     <div class="ov-value">{{ zoneCollapseTime }}</div>
                   </div>
@@ -128,6 +128,7 @@ import { formatDurationHM } from '../logic/StringUtils';
 import ItemGrid from './ItemGrid.vue';
 import ItemDisplay from './ItemDisplay.vue';
 import atlasStorage from '../logic/AtlasStorage';
+import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 import { locationsAtlasFrames, locationsAtlasMeta } from '../data/locationsAtlas';
 
 const props = defineProps<{ visible: boolean }>();
@@ -144,16 +145,10 @@ const previewRaid = computed<RaidDefinition | null>(() => {
   return uiState.raids.find(r => r.id === previewRaidId.value) || null;
 });
 
-const itemsAtlasSource = ref<HTMLImageElement | null>(atlasStorage.getItemsSource());
-const itemsAtlasReady = ref<boolean>(atlasStorage.isItemsAtlasLoaded());
+const itemsAtlasSource = atlasStorage.getItemsSource();
 const locationsAtlasSource = ref<HTMLImageElement | null>(atlasStorage.getLocationsSource());
 const locationsAtlasReady = ref<boolean>(atlasStorage.isLocationsAtlasLoaded());
 onMounted(async () => {
-  if (!itemsAtlasReady.value) {
-    try { await atlasStorage.loadItemsAtlas(); } catch (_e) { /* noop */ }
-    itemsAtlasReady.value = atlasStorage.isItemsAtlasLoaded();
-    itemsAtlasSource.value = atlasStorage.getItemsSource();
-  }
   if (!locationsAtlasReady.value) {
     try { await atlasStorage.loadLocationsAtlas(); } catch (_e) { /* noop */ }
     locationsAtlasReady.value = atlasStorage.isLocationsAtlasLoaded();
@@ -162,22 +157,8 @@ onMounted(async () => {
 });
 
 function encounterIconStyle(iconKey: string): Record<string, string> {
-  const source = itemsAtlasSource.value!;
   const f = atlasStorage.getItemsFrame(iconKey)!;
-  const atlasW = source.naturalWidth;
-  const atlasH = source.naturalHeight;
-  const containerSize = 18;
-  const scale = Math.min(containerSize / f.w, containerSize / f.h, 1);
-  const displayW = f.w * scale;
-  const displayH = f.h * scale;
-  return {
-    width: displayW + 'px',
-    height: displayH + 'px',
-    backgroundImage: `url(${source.src})`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
-    backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
-  };
+  return atlasSpriteStyle(itemsAtlasSource, f, { size: 18, mode: 'fit', allowUpscale: false });
 }
 
 function raidBackgroundStyle(raid: RaidDefinition): Record<string, string> {

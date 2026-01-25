@@ -13,7 +13,7 @@
         <tr v-for="row in timeRows" :key="row.id">
           <td class="tt-label">{{ row.label }}</td>
           <td class="tt-icon-cell">
-            <div v-if="itemsAtlasReady && row.iconKey" class="tt-icon" :style="encounterIconStyle(row.iconKey)" />
+            <div v-if="row.iconKey" class="tt-icon" :style="encounterIconStyle(row.iconKey)" />
           </td>
           <td :class="{ max: isMaxCell(row.successSec, maxSuccessNonTotalSec, raidTimeBreakdownSuccesses, row.ignoreMax) }">
             {{ fmtTime(row.successSec, raidTimeBreakdownSuccesses) }}
@@ -29,21 +29,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed } from 'vue';
 import { uiState } from '../logic/UIState';
 import { formatDurationHM } from '../logic/StringUtils';
 import atlasStorage from '../logic/AtlasStorage';
+import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 
-const itemsAtlasSource = ref<HTMLImageElement | null>(atlasStorage.getItemsSource());
-const itemsAtlasReady = ref<boolean>(atlasStorage.isItemsAtlasLoaded());
-onMounted(async () => {
-  if (itemsAtlasReady.value) return;
-  try {
-    await atlasStorage.loadItemsAtlas();
-  } catch (_e) { /* noop */ }
-  itemsAtlasReady.value = atlasStorage.isItemsAtlasLoaded();
-  itemsAtlasSource.value = atlasStorage.getItemsSource();
-});
+const itemsAtlasSource = atlasStorage.getItemsSource();
 
 const raidTimeBreakdownSuccesses = computed(() => uiState.raidTimeBreakdownSuccesses);
 const raidTimeBreakdownFailures = computed(() => uiState.raidZoneCollapseDeaths);
@@ -98,22 +90,8 @@ function isMaxCell(sec: number, max: number, count: number, ignore: boolean): bo
 }
 
 function encounterIconStyle(iconKey: string): Record<string, string> {
-  const source = itemsAtlasSource.value!;
   const f = atlasStorage.getItemsFrame(iconKey)!;
-  const atlasW = source.naturalWidth;
-  const atlasH = source.naturalHeight;
-  const containerSize = 22;
-  const scale = Math.min(containerSize / f.w, containerSize / f.h, 1);
-  const displayW = f.w * scale;
-  const displayH = f.h * scale;
-  return {
-    width: displayW + 'px',
-    height: displayH + 'px',
-    backgroundImage: `url(${source.src})`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
-    backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
-  };
+  return atlasSpriteStyle(itemsAtlasSource, f, { size: 22, mode: 'fit', allowUpscale: false });
 }
 </script>
 

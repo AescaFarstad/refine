@@ -5,6 +5,7 @@ export interface QuestDefinition {
   id: string;
   name: string;
   raidRestriction: string[];
+  gearRequired: string[];
   autoaccept: boolean;
   requiresRaidSuccesses: number;
   requiresRaidQuestCompletions: number;
@@ -20,6 +21,7 @@ export interface QuestDefinition {
 export interface RawQuestDefinition {
   name?: string;
   raidRestriction?: string[];
+  gearRequired?: string[];
   autoaccept?: boolean;
   requiresRaidSuccesses?: number;
   requiresRaidQuestCompletions?: number;
@@ -37,6 +39,7 @@ export function normalizeQuestDefinition(id: string, raw: RawQuestDefinition): Q
     id,
     name: raw.name ?? id,
     raidRestriction: raw.raidRestriction ?? [],
+    gearRequired: raw.gearRequired ?? [],
     autoaccept: raw.autoaccept ?? false,
     requiresRaidSuccesses: raw.requiresRaidSuccesses ?? 0,
     requiresRaidQuestCompletions: raw.requiresRaidQuestCompletions ?? 0,

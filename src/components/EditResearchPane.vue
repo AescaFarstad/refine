@@ -177,11 +177,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, ref } from 'vue';
 import { uiState, getGameState, getGameLib } from '../logic/UIState';
 import { indexToAxial } from '../logic/Research';
 import { getStatIcon, getResourceGlyph, type ResearchStatIcon } from '../logic/drawResearch';
 import atlasStorage from '../logic/AtlasStorage';
+import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 import { setResearchRevealRadius } from '../logic/Model';
 import { CheatLoadResearchState } from '../logic/cheat/CheatCommands';
 import type { ResearchArchetype } from '../logic/ResearchLib';
@@ -195,18 +196,7 @@ const dragging = ref(false);
 const dragStart = ref<Point | null>(null);
 const dragOrigin = ref<Point | null>(null);
 
-// Atlas state for gear images
-const atlasSource = ref<HTMLImageElement | null>(atlasStorage.getItemsSource());
-const atlasReady = ref<boolean>(atlasStorage.isItemsAtlasLoaded());
-onMounted(async () => {
-  if (!atlasReady.value) {
-    try {
-      await atlasStorage.loadItemsAtlas();
-    } catch (_e) { /* noop */ }
-    atlasReady.value = atlasStorage.isItemsAtlasLoaded();
-    atlasSource.value = atlasStorage.getItemsSource();
-  }
-});
+const atlasSource = atlasStorage.getItemsSource();
 
 // Newly placed research nodes tracking - synced with UIState
 const newlyPlacedNodes = computed({
@@ -564,27 +554,8 @@ function clearNewlyPlaced() {
 }
 
 function getGearSpriteStyle(imageKey: string | undefined): Record<string, string> {
-  if (!atlasSource.value || !atlasReady.value || !imageKey) return {};
-  const frame = atlasStorage.getItemsFrame(imageKey);
-  if (!frame) return {};
-
-  const f = frame;
-  const atlasW = atlasSource.value.naturalWidth;
-  const atlasH = atlasSource.value.naturalHeight;
-  // Scale to fit within 32x32 container while maintaining aspect ratio
-  const containerSize = 32;
-  const scale = Math.min(containerSize / f.w, containerSize / f.h, 1);
-  const displayW = f.w * scale;
-  const displayH = f.h * scale;
-
-  return {
-    width: displayW + 'px',
-    height: displayH + 'px',
-    backgroundImage: `url(${atlasSource.value.src})`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
-    backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
-  };
+  const frame = atlasStorage.getItemsFrame(imageKey!)!;
+  return atlasSpriteStyle(atlasSource, frame, { size: 32, mode: 'fit', allowUpscale: false });
 }
 </script>
 

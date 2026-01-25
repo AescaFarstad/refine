@@ -39,16 +39,14 @@
               <template v-if="preview.signatureYieldBonus > 0 || preview.newSignatureYieldBonus > 0"> </template>
               +{{ preview.cyanYieldBonus }}% {{ cyanEssences }}
               <template v-for="key in cyanEssenceKeys" :key="key">
-                <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
-                <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
+                <span class="ess-icon" :style="essenceIconStyle(key)" />
               </template>
             </template>
             <template v-if="preview.magentaYieldBonus > 0">
               <template v-if="preview.signatureYieldBonus > 0 || preview.newSignatureYieldBonus > 0 || preview.cyanYieldBonus > 0"> </template>
               +{{ preview.magentaYieldBonus }}% from {{ magentaEssences }}
               <template v-for="key in magentaEssenceKeys" :key="key">
-                <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
-                <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
+                <span class="ess-icon" :style="essenceIconStyle(key)" />
               </template>
             </template>
             <template v-if="preview.uniqueItemsYieldBonus > 0">
@@ -63,8 +61,7 @@
           <span class="stat-source" v-if="preview.creditsEssences > 0">
             from {{ preview.creditsEssences }}
             <template v-for="key in creditsEssenceKeys" :key="key">
-              <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
-              <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
+              <span class="ess-icon" :style="essenceIconStyle(key)" />
             </template>
           </span>
         </div>
@@ -75,8 +72,7 @@
           <span class="stat-source" v-if="preview.chronoEssences > 0">
             from {{ preview.chronoEssences }}
             <template v-for="key in chronoEssenceKeys" :key="key">
-              <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
-              <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
+              <span class="ess-icon" :style="essenceIconStyle(key)" />
             </template>
           </span>
         </div>
@@ -87,8 +83,7 @@
           <span class="stat-source" v-if="preview.fluxEssences > 0">
             from {{ preview.fluxEssences }}
             <template v-for="key in fluxEssenceKeys" :key="key">
-              <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
-              <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
+              <span class="ess-icon" :style="essenceIconStyle(key)" />
             </template>
           </span>
         </div>
@@ -96,13 +91,12 @@
         <div v-for="go in preview.gearOutputs" :key="go.gearId" class="stat-row">
           <span class="stat-label">Gear Output:</span>
           <span class="stat-value gear-output">
-            <span v-if="getGearFrame(go.gearId) && source" class="gear-icon" :style="gearIconStyle(go.gearId)" />
+            <span class="gear-icon" :style="gearIconStyle(go.gearId)" />
             <span class="gear-count">×{{ go.count }}</span>
           </span>
           <span class="stat-source">
             from {{ preview.essenceTotals[go.fromEssence] || 0 }}
-            <span v-if="getEssenceFrame(go.fromEssence) && source" class="ess-icon" :style="essenceIconStyle(go.fromEssence)" />
-            <span v-else class="ess-letter">{{ essenceLetter(go.fromEssence) }}</span>
+            <span class="ess-icon" :style="essenceIconStyle(go.fromEssence)" />
           </span>
         </div>
 
@@ -117,16 +111,14 @@
               <template v-if="preview.emptyCells > 0">, </template>
               {{ cyanReduction }}% success from
               <template v-for="key in cyanEssenceKeys" :key="key">
-                <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
-                <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
+                <span class="ess-icon" :style="essenceIconStyle(key)" />
               </template>
             </template>
             <template v-if="magentaEssences > 0">
               <template v-if="preview.emptyCells > 0 || cyanEssences > 0">, </template>
               +{{ magentaPenalty }}% from {{ magentaEssences }}
               <template v-for="key in magentaEssenceKeys" :key="key">
-                <span v-if="getEssenceFrame(key) && source" class="ess-icon" :style="essenceIconStyle(key)" />
-                <span v-else class="ess-letter">{{ essenceLetter(key) }}</span>
+                <span class="ess-icon" :style="essenceIconStyle(key)" />
               </template>
             </template>
           </span>
@@ -139,9 +131,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import Signatures from './Signatures.vue';
 import atlasStorage from '../logic/AtlasStorage';
+import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 import { DISCOVERY } from '../logic/DiscoveryLib';
 import { CmdDiscover } from '../logic/input/InputCommands';
 import { globalInputQueue } from '../logic/Model';
@@ -264,64 +257,18 @@ const failureClass = computed(() => {
   return 'danger';
 });
 
-const source = ref<HTMLImageElement | null>(atlasStorage.getItemsSource());
-onMounted(async () => {
-  if (!atlasStorage.isItemsAtlasLoaded()) {
-    await atlasStorage.loadItemsAtlas();
-    source.value = atlasStorage.getItemsSource();
-  }
-});
-
-function getEssenceFrame(k: string) {
-  return atlasStorage.getItemsFrame(k);
-}
+const source = atlasStorage.getItemsSource();
 
 function essenceIconStyle(k: string): Record<string, string> {
   const f = atlasStorage.getItemsFrame(k)!;
-  const scale = 16 / Math.max(f.w, f.h);
-  const atlasW = source.value!.naturalWidth;
-  const atlasH = source.value!.naturalHeight;
-  return {
-    width: '16px',
-    height: '16px',
-    backgroundImage: `url(${source.value!.src})`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
-    backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
-  } as Record<string, string>;
-}
-
-function essenceLetter(k: string): string {
-  const m: Record<string, string> = { red: 'R', green: 'G', blue: 'B', yellow: 'Y', cyan: 'C', magenta: 'M' };
-  return m[k] || k[0]?.toUpperCase() || '?';
-}
-
-function getGearFrame(gearId: string) {
-  const gs = getGameState();
-  if (!gs) return null;
-  const gearDef = gs.lib.gear.get(gearId);
-  if (!gearDef?.image) return null;
-  return atlasStorage.getItemsFrame(gearDef.image);
+  return atlasSpriteStyle(source, f, { size: 16, mode: 'fixed' });
 }
 
 function gearIconStyle(gearId: string): Record<string, string> {
   const gs = getGameState();
-  if (!gs) return {};
-  const gearDef = gs.lib.gear.get(gearId);
-  if (!gearDef?.image) return {};
-  const f = atlasStorage.getItemsFrame(gearDef.image);
-  if (!f) return {};
-  const scale = 20 / Math.max(f.w, f.h);
-  const atlasW = source.value!.naturalWidth;
-  const atlasH = source.value!.naturalHeight;
-  return {
-    width: '20px',
-    height: '20px',
-    backgroundImage: `url(${source.value!.src})`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
-    backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
-  } as Record<string, string>;
+  const gearDef = gs!.lib.gear.get(gearId);
+  const f = atlasStorage.getItemsFrame(gearDef.image)!;
+  return atlasSpriteStyle(source, f, { size: 20, mode: 'fixed' });
 }
 
 const shouldFlashSignaturesTab = computed(() => {

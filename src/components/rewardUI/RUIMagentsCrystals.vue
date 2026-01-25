@@ -16,8 +16,7 @@
         </div>
         <p class="description-text">
           The sediment from magenta essences crystalizes.<br /> Each refined
-          <span v-if="magentaFrame" class="essence-icon" :style="essenceStyle" />
-          <span v-else class="essence-fallback">magenta</span>
+          <span class="essence-icon" :style="essenceStyle" />
           will now give <span class="highlight">Zone Crystal</span>
         </p>
       </div>
@@ -29,10 +28,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
+import { computed } from 'vue';
 import GearItem from '../GearItem.vue';
 import { uiState } from '../../logic/UIState';
 import atlasStorage from '../../logic/AtlasStorage';
+import { atlasSpriteStyle } from '../../logic/AtlasSpriteStyle';
 import type { Reward } from '../../logic/Reward';
 
 const emit = defineEmits<{
@@ -45,41 +45,15 @@ const zoneCrystalGear = computed(() => {
 
 const zoneCrystalCount = computed(() => uiState.countableGear['zone_crystal'] || 0);
 
-const source = ref<HTMLImageElement | null>(atlasStorage.getItemsSource());
-const ready = ref<boolean>(atlasStorage.isItemsAtlasLoaded());
-
-onMounted(async () => {
-  if (!ready.value) {
-    try {
-      await atlasStorage.loadItemsAtlas();
-    } catch (_e) { /* noop */ }
-    ready.value = atlasStorage.isItemsAtlasLoaded();
-    source.value = atlasStorage.getItemsSource();
-  }
-});
+const source = atlasStorage.getItemsSource();
 
 const magentaFrame = computed(() => {
-  if (!ready.value) return null;
-  return atlasStorage.getItemsFrame('magenta');
+  return atlasStorage.getItemsFrame('magenta')!;
 });
 
 const essenceStyle = computed(() => {
   const f = magentaFrame.value;
-  if (!f || !source.value) return {};
-  const targetSize = 20;
-  const scale = Math.min(targetSize / f.w, targetSize / f.h, 1);
-  const displayW = f.w * scale;
-  const displayH = f.h * scale;
-  const atlasW = source.value.naturalWidth;
-  const atlasH = source.value.naturalHeight;
-  return {
-    width: displayW + 'px',
-    height: displayH + 'px',
-    backgroundImage: `url(${source.value.src})`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
-    backgroundSize: `${atlasW * scale}px ${atlasH * scale}px`,
-  };
+  return atlasSpriteStyle(source, f, { size: 20, mode: 'fit', allowUpscale: false });
 });
 
 function close() {

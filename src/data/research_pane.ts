@@ -62,6 +62,9 @@ export const researchPane: ResearchPlacementInput[] = [
   { archetypeId: 'gear_tactical_visor', cells: { x: 7, y: -17 }, radius: 1 },
   { archetypeId: 'gear_riot_shield', cells: { x: -21, y: 12 }, radius: 1 },
 
+  { archetypeId: 'gear_zone_crystal', cells: [{ x: 9, y: -15 }, { x: 10, y: -16 }, { x: 10, y: -15 }, { x: 9, y: -14 }] },
+  { archetypeId: 'gear_zone_crystal', cells: [{ x: 15, y: 6 }, { x: 14, y: 7 }, { x: 14, y: 8 }, { x: 15, y: 7 }] },
+
   { archetypeId: 'stat_vision', cells: { x: 6, y: 4 } },
   { archetypeId: 'stat_volume', cells: { x: 4, y: 8 } },
   { archetypeId: 'res_shards', cells: { x: 7, y: 6 } },

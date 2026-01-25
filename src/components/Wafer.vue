@@ -466,6 +466,8 @@ function onRotate() {
   }
 }
 
+defineExpose({ rotate: onRotate });
+
 </script>
 
 <style scoped>

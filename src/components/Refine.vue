@@ -1,14 +1,15 @@
 <template>
-  <div class="refine-root">
+  <div class="refine-root" @contextmenu="onContextMenu">
     <div class="main-split">
       <div class="items-bg">
         <AllItems :items="availableItems" @pick-item="onPickItem" @drag-end="onDragEnd" />
       </div>
       <div class="center">
-        <Wafer 
-          :dragging-item="draggingItem" 
-          @refine-start="onRefineStart" 
-          @clear-dragging="clearDragging" 
+        <Wafer
+          ref="waferRef"
+          :dragging-item="draggingItem"
+          @refine-start="onRefineStart"
+          @clear-dragging="clearDragging"
           @pickup-item="onPickupItem"
         />
       </div>
@@ -28,6 +29,7 @@ import { CmdStartRefining } from '../logic/input/InputCommands';
 import { globalInputQueue } from '../logic/Model';
 
 const draggingItem = ref<{ id: string; molecule: Molecule } | null>(null);
+const waferRef = ref<InstanceType<typeof Wafer> | null>(null);
 
 const availableItems = computed(() => {
   return uiState.items.map(it => ({
@@ -62,6 +64,13 @@ function onRefineStart() {
 
 function onPickupItem(item: { id: string; molecule: Molecule }) {
   draggingItem.value = item;
+}
+
+function onContextMenu(e: MouseEvent) {
+  if (draggingItem.value) {
+    e.preventDefault();
+    waferRef.value?.rotate();
+  }
 }
 </script>
 

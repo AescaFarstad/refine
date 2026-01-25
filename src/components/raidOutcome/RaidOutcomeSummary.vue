@@ -45,7 +45,7 @@
   <section class="death-note" v-if="!raidSuccess">
     <div class="zc">You died. The time loop resets.</div>
     <div class="reimbursed" v-if="reimbursedCredits > 0">
-      Insurance Reimbursed: <strong>{{ reimbursedCredits }} CR</strong>
+      Reimbursed: <strong>{{ reimbursedCredits }} CR</strong>
     </div>
   </section>
 </template>

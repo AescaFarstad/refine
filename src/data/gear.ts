@@ -524,6 +524,7 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 2,
     reimbursed: 50,
     image: 'collar',
+    description: 'Part of the equipment cost is reimbursed in case you die in the raid.',
   },
   quad_bike: {
     name: 'Quad Bike',

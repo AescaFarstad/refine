@@ -59,6 +59,8 @@ january 18
   item bans, purple refining, quest notifications about signatures, quest logic, deck of cards, item images
 january 21
   UI tweaks, balancing, testing, refactoring
+january 25
+  goal balancing, tweaks  and fixes, refactoring
 
 
 npx vue-tsc --noEmit 2>&1
@@ -76,28 +78,6 @@ Escape the loop through the maze of time!
 
 
 hands opening a rib cage
-
-
-Firearms check-up
-  +1 damage per firearm,
-  + 30 min
-Pre-apply medicine
-  +2 hp per medicine item
-  + 30 min
-Adjust armor
-  +5% block chance per armor piece
-  +1 hp per armor piece
-  +30 min
-Safer routes
-  doubles walking distance
-No scavaging
-  -1 walking encounter
-  ignore looting encounters (except for harvesting remains)
-
-descriptions for perks
-
-
-better prediction of the collapsing zone
 
 
 Burdock Seeds
@@ -120,36 +100,12 @@ Hedgehog Shell
 
 medical - +hp when you find an item
 
-quest descriptions
-perk descriptions
-
-
-item for cashback in case of failure
-
-
-?sometimes molecule refuses to rotate when picked up
 
 [ ] reimbursed
-[ ] accidentally discover signatures
-[ ] discover signatures through quest for the first time
-[ ] learn a signature in research before discovering signatures
-[ ] learn a signature in research after discovering signatures
-
-
-
-[ ] Quest text in log vs quest description in hint.
-Raid outcode quest results - show in a table
-set signature colors
-
-
-burdok invasion in teh first raid - gates scavenging for later game
-store learned signatures in the corner until signaturs are discovered
-
 
 you've looted a giant item and now you need to refine it
 a way to re-invigurate old zones
 
-[]raid again was available when I didn't have the resources
 
 
 achievements:
@@ -160,49 +116,8 @@ loot 30 distinct items
 refining certain items together creates a combo
 glyphs - drag pattern onto research pane. if it matches, you get new cells for free
 
-
-[]-1 / 17 HP - display something about the health bar
-
-[]+14% from unique items on the next line
-[] study doem should show the outcome - design a device
-
-[]cheaper items, more loot from raids. (an item which raises raid loot chance?
-[]flower human which upgrades distorted - is too much
-
-[]stabilizerbeckon has no description
-
-[]shegolskoe - +1 loot quest with new items
-
-нужен ещё один ресурсный рейд до дятловска и в параллелку с 
-
-This UI should show /public/images/scribbles.webp image and text 'The poet made some scribbles that were clearly ahead of his time.'
-If SIGNATURES 
-
-summarize
-deliniate
-patronize
-formulate
-objectify
-
-
-We need to implement a 'deck of cards' component. It should have limited width. The cards are individual displays which may be created from varying components. The cards need to be show in a row, overlapping each other slightly. (or not so slightly if we're out of space). Hovering the mouse over them should move the cards so that the hovered card is fully visible and if lifted a bit, while the cards to the left and to the right are squeezed tighter. The cards may have custom interactions with click or drag n drop.
-
-Real use case 1:
-Learned signatures are displayed as cards. Cliking them displays a modal window.
-
-use case 2:
-Pattern images are displayed as cards in Research tab. The user can drag such card outside of the deck. When that happens, the card is replaced with the pattern image scaled according to the current Research Pane scale. This image has more custom interactions with reserach pane.
-
-But we should focus on the component itself for now.
-How would you implement it?
-What are possible choices and design decisions yet unspecified?
-
-(Don't edit code yet)
-
-
 permanent raid upgraids
 coloring essence which turns things magenta
-crossing items off from raid
 
 
 Trigger.ts //trigger system. Things may 'subscribe' by adding their conditions to the trigger lists.
@@ -257,9 +172,7 @@ the "refine it!"
 
 10d 19h 38m - dyatlovsk is on
 
-
-zone time upgrade becomes ever more expensive
-
+walking stick
 
 
 new CheatLoadResearchState({

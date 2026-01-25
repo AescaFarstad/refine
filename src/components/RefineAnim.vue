@@ -27,7 +27,7 @@ const SPEED_RATIO_AT_T_DRAG_END = 0.5; // speed should drop by half by t = 0.2
 // Per-unit-t drag base so that v(T_DRAG_END) = SPEED_RATIO_AT_T_DRAG_END * v0
 const DRAG_BASE_PER_T = Math.pow(SPEED_RATIO_AT_T_DRAG_END, 1 / T_DRAG_END);
 
-const INITIAL_IMPULSE_SPEED_PER_HEX = 80; // px per unit t when distance is 1 hex
+const INITIAL_IMPULSE_SPEED_PER_HEX = 20; // px per unit t when distance is 1 hex
 const INITIAL_IMPULSE_SAME_COLOR_MULT = 2;
 const INITIAL_IMPULSE_RANDOMNESS = 0.15;
 

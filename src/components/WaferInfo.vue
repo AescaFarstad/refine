@@ -266,7 +266,7 @@ function essenceIconStyle(k: string): Record<string, string> {
 
 function gearIconStyle(gearId: string): Record<string, string> {
   const gs = getGameState();
-  const gearDef = gs!.lib.gear.get(gearId);
+  const gearDef = gs!.lib.gear.get(gearId)!;
   const f = atlasStorage.getItemsFrame(gearDef.image)!;
   return atlasSpriteStyle(source, f, { size: 20, mode: 'fixed' });
 }

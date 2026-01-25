@@ -187,3 +187,7 @@ export class CmdToggleItemBan implements CmdInput {
     this.banned = args.banned;
   }
 }
+
+export class CmdDismissIntro implements CmdInput {
+  readonly name = 'CmdDismissIntro';
+}

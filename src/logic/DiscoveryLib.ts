@@ -2,6 +2,7 @@
 // Some discoveries are purely visual - they control when UI elements appear.
 // Others behave like unlocks - the bonus/feature is not applied until discovered.
 const ids = [
+  'INTRO_SEEN',
   'UI_GEAR',
   'UI_GEAR_UPGRADE_MODAL_OPENED',
   'UI_SHARDS',

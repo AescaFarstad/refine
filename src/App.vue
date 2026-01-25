@@ -13,6 +13,7 @@
   <SignatureLearnModal />
   <SignaturePlacementDiscoveryModal />
   <RewardUIRouter />
+  <IntroModal />
   <CheatOverlay />
 </template>
 
@@ -29,6 +30,7 @@ import SignatureLearnModal from './components/SignatureLearnModal.vue';
 import SignaturePlacementDiscoveryModal from './components/SignaturePlacementDiscoveryModal.vue';
 import RewardUIRouter from './components/rewardUI/RewardUIRouter.vue';
 import CheatOverlay from './components/CheatOverlay.vue';
+import IntroModal from './components/IntroModal.vue';
 import { uiState } from './logic/UIState';
 
 type TabKey = 'raid' | 'refine' | 'research' | 'maze';

@@ -139,6 +139,9 @@ export const uiState = reactive({
 
   // Queue of UI modal keys to show (from show_ui rewards)
   pendingUIModals: [] as UIModalEntry[],
+
+  // Intro modal
+  showIntroModal: false,
 });
 
 // Formatted time display: "X days, HH:MM"
@@ -362,6 +365,9 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.activeTab = game.activeTab;
 
   uiState.pendingUIModals = [...game.pendingUIModals];
+
+  // Show intro modal if not yet seen
+  uiState.showIntroModal = game.discoveries[DISCOVERY.INTRO_SEEN] !== true;
 }
 
 // Expose current game lib for UI components that need live definitions

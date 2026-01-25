@@ -252,9 +252,6 @@ Project //the started project state in gameState
 New possible reward: start_project projectId, advance
 
 
-
-r menu when dragging
-
 it's possible to miss cyan anomaly if a signature appears
 
 

@@ -1,5 +1,6 @@
 import type { ResearchArchetypeDef } from '../logic/ResearchLib';
 import { DISCOVERY } from '../logic/DiscoveryLib';
+import { CYAN_YIELD_BONUS_PCT, MAGENTA_YIELD_BONUS_PCT } from '../logic/Const';
 
 export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
   hub: { type: 'empty', rewards: [] },
@@ -51,7 +52,13 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     ownedDescription: 'Cyan essence now gives 10% bonus yield.',
     icon: { kind: 'glyph', glyph: '?', scale: 2.2, offset: { x: 0, y: 8 }},
     ownedIcon: { kind: 'itemImage', key: 'cyan', scale: 1.3, offset: { x: 0, y: 4 } },
-    rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.CYAN_YIELD }],
+    rewards: [
+      { kind: 'discovery', discoveryId: DISCOVERY.CYAN_YIELD },
+      {
+        kind: 'show_ui', ui: 'RUIEssenceYieldBonus',
+        params: { bonusPct: CYAN_YIELD_BONUS_PCT, color: 'cyan' },
+      },
+    ],
   },
   disc_essence_anomaly_magenta: {
     type: 'discovery',
@@ -61,7 +68,13 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     ownedDescription: 'Magenta essence now gives 10% bonus yield.',
     icon: { kind: 'glyph', glyph: '?', scale: 2.2, offset: { x: 0, y: 8 }},
     ownedIcon: { kind: 'itemImage', key: 'magenta', scale: 1.3, offset: { x: 0, y: 4 } },
-    rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.MAGENTA_YIELD }],
+    rewards: [
+      { kind: 'discovery', discoveryId: DISCOVERY.MAGENTA_YIELD },
+      {
+        kind: 'show_ui', ui: 'RUIEssenceYieldBonus',
+        params: { bonusPct: MAGENTA_YIELD_BONUS_PCT, color: 'magenta' },
+      },
+    ],
   },
   disc_maze_navigation: {
     type: 'discovery',

@@ -27,10 +27,10 @@ export type AtlasKey = 'items' | 'locations' | 'molecules';
  * Currently loads the items atlas from `/images/items.(png|json)`.
  */
 export class AtlasStorage {
-  private itemsAtlas: AtlasData | null = null;
+  private itemsAtlas!: AtlasData;
   private itemsAtlasLoaded = false;
   private itemsAtlasLoading: Promise<void> | null = null;
-  private locationsAtlas: AtlasData | null = null;
+  private locationsAtlas!: AtlasData;
   private locationsAtlasLoaded = false;
   private locationsAtlasLoading: Promise<void> | null = null;
   private runtimeAtlases: Map<string, AtlasData>;
@@ -82,15 +82,16 @@ export class AtlasStorage {
     return this.itemsAtlasLoaded;
   }
 
-  public getItemsSource(): AtlasSource | null {
-    return this.itemsAtlas?.source || null;
+  // Items atlas is preloaded at startup; don't await or lazy-load.
+  public getItemsSource(): AtlasSource {
+    return this.itemsAtlas.source;
   }
 
-  public getItemsImage(): HTMLImageElement | null { return this.itemsAtlas?.source || null; }
-  public getItemsMeta(): AtlasMeta | null { return this.itemsAtlas?.meta || null; }
+  public getItemsImage(): HTMLImageElement { return this.itemsAtlas.source; }
+  public getItemsMeta(): AtlasMeta | undefined { return this.itemsAtlas.meta; }
 
-  public getItemsFrame(name: string): AtlasFrame | null {
-    return this.itemsAtlas?.frames.get(name) || null;
+  public getItemsFrame(name: string): AtlasFrame | undefined {
+    return this.itemsAtlas.frames.get(name);
   }
 
   /** Load the locations atlas if not already loaded. */
@@ -133,12 +134,12 @@ export class AtlasStorage {
     return this.locationsAtlasLoaded;
   }
 
-  public getLocationsSource(): AtlasSource | null {
-    return this.locationsAtlas?.source || null;
+  public getLocationsSource(): AtlasSource {
+    return this.locationsAtlas.source;
   }
 
-  public getLocationsFrame(name: string): AtlasFrame | null {
-    return this.locationsAtlas?.frames.get(name) || null;
+  public getLocationsFrame(name: string): AtlasFrame | undefined {
+    return this.locationsAtlas.frames.get(name);
   }
 
   public setSignatureWaferAnchor(id: string, anchor: { x: number; y: number }): void {
@@ -153,53 +154,53 @@ export class AtlasStorage {
     this.runtimeAtlases.set(key, data);
   }
 
-  public getRuntimeAtlas(key: AtlasKey): AtlasData | null {
-    return this.runtimeAtlases.get(key) || null;
+  public getRuntimeAtlas(key: AtlasKey): AtlasData {
+    return this.runtimeAtlases.get(key)!;
   }
 
-  public getMoleculesSource(): AtlasSource | null {
-    return this.runtimeAtlases.get('molecules')?.source || null;
+  public getMoleculesSource(): AtlasSource {
+    return this.runtimeAtlases.get('molecules')!.source;
   }
 
-  public getMoleculesMeta(): AtlasMeta | null {
-    return this.runtimeAtlases.get('molecules')?.meta || null;
+  public getMoleculesMeta(): AtlasMeta | undefined {
+    return this.runtimeAtlases.get('molecules')!.meta;
   }
 
-  public getMoleculesFrame(name: string): AtlasFrame | null {
-    return this.runtimeAtlases.get('molecules')?.frames.get(name) || null;
+  public getMoleculesFrame(name: string): AtlasFrame | undefined {
+    return this.runtimeAtlases.get('molecules')!.frames.get(name);
   }
 
   // Generic accessors for dev tooling
-  public getFrames(key: AtlasKey): Map<string, AtlasFrame> | null {
+  public getFrames(key: AtlasKey): Map<string, AtlasFrame> {
     switch (key) {
       case 'items':
-        return this.itemsAtlas?.frames || null;
+        return this.itemsAtlas.frames;
       case 'locations':
-        return this.locationsAtlas?.frames || null;
+        return this.locationsAtlas.frames;
       case 'molecules':
-        return this.runtimeAtlases.get(key)?.frames || null;
+        return this.runtimeAtlases.get(key)!.frames;
     }
   }
 
-  public getSource(key: AtlasKey): HTMLImageElement | null {
+  public getSource(key: AtlasKey): HTMLImageElement {
     switch (key) {
       case 'items':
-        return this.itemsAtlas?.source || null;
+        return this.itemsAtlas.source;
       case 'locations':
-        return this.locationsAtlas?.source || null;
+        return this.locationsAtlas.source;
       case 'molecules':
-        return this.runtimeAtlases.get(key)?.source || null;
+        return this.runtimeAtlases.get(key)!.source;
     }
   }
 
-  public getMeta(key: AtlasKey): AtlasMeta | null {
+  public getMeta(key: AtlasKey): AtlasMeta | undefined {
     switch (key) {
       case 'items':
-        return this.itemsAtlas?.meta || null;
+        return this.itemsAtlas.meta;
       case 'locations':
-        return this.locationsAtlas?.meta || null;
+        return this.locationsAtlas.meta;
       case 'molecules':
-        return this.runtimeAtlases.get(key)?.meta || null;
+        return this.runtimeAtlases.get(key)!.meta;
     }
   }
 

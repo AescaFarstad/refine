@@ -45,7 +45,7 @@ const quests: Record<string, RawQuestDefinition> = {
     raidRestriction: ['dyatlovsk'],
     requiresRaidQuestCompletions: 2,
     encounters: [
-      { kind: 'AddMonsterMutation', monsterId: 'hive', count: 1 },
+      { kind: 'AddMonsterMutation', monsterId: 'hive', count: 2 },
     ],
     rewards: [
       { kind: 'raid_loot_chance', delta: 10 },
@@ -58,7 +58,7 @@ const quests: Record<string, RawQuestDefinition> = {
     requiresQuestIds: ['dyatlovsk_defeat_the_hive'],
     encounters: [
       { kind: 'AddMonsterMutation', monsterId: 'burdock', count: 20 },
-      { kind: 'AddMonsterMutation', monsterId: 'flowewr', count: 10 },
+      { kind: 'AddMonsterMutation', monsterId: 'flower', count: 10 },
       { kind: 'AddMonsterMutation', monsterId: 'mortiflower', count: 5 },
     ],
     rewards: [

@@ -29,6 +29,7 @@ import mazeData from '../data/maze';
 import { ResearchLib } from "./ResearchLib";
 import { researchArchetypes } from '../data/research_archetypes';
 import { researchPane, researchPaneEmptyCells, researchPaneVoidCells } from '../data/research_pane';
+import { verifyLibIntegrity } from './VerifyLib';
 
 export class Lib {
 
@@ -148,10 +149,13 @@ export class Lib {
         this.gear
       );
 
+      verifyLibIntegrity(this);
+
       this.isLoaded = true;
     } catch (error) {
       console.error("Failed to process library definitions:", error);
       this.isLoaded = false;
+      throw error;
     }
   }
 }

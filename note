@@ -60,7 +60,8 @@ january 18
 january 21
   UI tweaks, balancing, testing, refactoring
 january 25
-  goal balancing, tweaks  and fixes, refactoring
+  goal balancing, tweaks  and fixes, refactoring, lib verification.
+  The balance is pretty good now. The game is worth 4 hours of gameplay.
 
 
 npx vue-tsc --noEmit 2>&1
@@ -173,7 +174,28 @@ the "refine it!"
 10d 19h 38m - dyatlovsk is on
 
 walking stick
+in case of failure don't let them pick up teh shards immediately
+locate another zone - 10 min
+forester - more burdock
 
+collect accumulators from abandoned cars
+
+for each usage in this raid
+
+church incriptions should give away 6
+rucksack - more expensive
+nail gun - cheaper
+coloring doesn't affect the outcome
+
+dots and real progress are out of sync
+vodka should have more value
+gained: show the sum of essences
+
+crystals weren't granted from refining magenta
+
+verification of libs
+
+public unlocks: string[] = []; - wtf?
 
 new CheatLoadResearchState({
   ownedCells: [

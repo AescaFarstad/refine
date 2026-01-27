@@ -67,8 +67,13 @@ export function parsePipeline(text: string): PipelineJob {
     const kv = parseKeyValue(rawLine);
     if (!kv) continue;
 
-    if (mode === "settings") {
-      settings[kv.key] = kv.value;
+    if (mode === "settings" || mode === "outside") {
+      // Accumulate duplicate keys with newlines (e.g., multiple alias: lines)
+      if (settings[kv.key]) {
+        settings[kv.key] += '\n' + kv.value;
+      } else {
+        settings[kv.key] = kv.value;
+      }
     } else if (mode === "item") {
       if (!currentItem) currentItem = {};
       currentItem[kv.key] = kv.value;

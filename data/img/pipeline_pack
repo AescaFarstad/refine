@@ -5,3 +5,21 @@
   output_folder:packed
   name:items
 ]
+
+{
+  red: dev_atom_red
+  green: dev_atom_green
+  blue: dev_atom_blue
+  yellow: dev_atom_yellow
+  magenta: dev_atom_magenta
+  indigo: dev_atom_indigo
+  orange: dev_atom_orange
+  lime: dev_atom_lime
+  gray: dev_atom_gray
+  white: dev_atom_white
+  cyan: dev_atom_cyan
+  black: dev_atom_black
+  crimson: dev_atom_crimson
+  emerald: dev_atom_emerald
+  gold: dev_atom_gold
+}

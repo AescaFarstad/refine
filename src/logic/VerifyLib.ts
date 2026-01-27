@@ -7,7 +7,7 @@ import { REWARD_UI_KEYS } from '../components/rewardUI/RewardUIRegistry';
 
 type VerifyErrors = string[];
 
-const DISCOVERY_IDS = new Set(Object.values(DISCOVERY));
+const DISCOVERY_IDS: Set<string> = new Set(Object.values(DISCOVERY));
 const REWARD_UI_KEY_SET = new Set(REWARD_UI_KEYS);
 
 function addMissingRef(errors: VerifyErrors, context: string, kind: string, id: string): void {
@@ -99,7 +99,6 @@ function verifyRewardRefs(reward: Reward, context: string, lib: Lib, errors: Ver
       return;
     case 'resource':
       return;
-    case 'unlock':
     case 'discovery':
       if (!DISCOVERY_IDS.has(reward.discoveryId)) {
         addMissingRef(errors, context, 'discovery', reward.discoveryId);

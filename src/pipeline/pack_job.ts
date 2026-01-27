@@ -224,6 +224,22 @@ export async function runPackJob(job: PipelineJob, baseDir: string): Promise<voi
   // Build and write JSON map with atlas metadata for a single source of truth
   const atlasMap: Record<string, { x: number; y: number; w: number; h: number }> = {};
   for (const r of packed) atlasMap[r.id] = { x: r.x, y: r.y, w: r.width, h: r.height };
+
+  // Process aliases from items: { original: alias1 alias2 ... }
+  for (const item of job.items) {
+    for (const [original, aliasStr] of Object.entries(item)) {
+      const rect = atlasMap[original];
+      if (!rect) {
+        console.warn(`pack: alias original '${original}' not found in atlas, skipping`);
+        continue;
+      }
+      const aliases = aliasStr.split(/\s+/).filter(Boolean);
+      for (const alias of aliases) {
+        atlasMap[alias] = rect;
+      }
+    }
+  }
+
   const sortedKeys = Object.keys(atlasMap).sort((a, b) => a.localeCompare(b));
   const outData: Record<string, any> = {};
   // Place meta first; viewers can prefer these exact dimensions

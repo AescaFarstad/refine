@@ -318,12 +318,34 @@ function draw() {
   }
 }
 
-function drawShard(ctx: CanvasRenderingContext2D, shard: Shard) {
-  const { symbol, color } = getShardDisplay(shard.resource);
-  const fontSize = calculateShardFontSize(shard.amount);
+const ZONE_CRYSTAL_SHARD_SIZE = 32;
 
+function drawShard(ctx: CanvasRenderingContext2D, shard: Shard) {
   const x = origin.x + shard.pos.x;
   const y = origin.y + shard.pos.y;
+  const angle = shard.angle || 0;
+
+  // For zone_crystal, draw the gear image instead of text
+  if (shard.resource === 'zone_crystal') {
+    const source = atlasStorage.getItemsSource();
+    const frame = atlasStorage.getItemsFrame('quartz'); // zone_crystal uses 'quartz' image
+    if (source && frame) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.drawImage(
+        source,
+        frame.x, frame.y, frame.w, frame.h,
+        -ZONE_CRYSTAL_SHARD_SIZE / 2, -ZONE_CRYSTAL_SHARD_SIZE / 2,
+        ZONE_CRYSTAL_SHARD_SIZE, ZONE_CRYSTAL_SHARD_SIZE
+      );
+      ctx.restore();
+    }
+    return;
+  }
+
+  const { symbol, color } = getShardDisplay(shard.resource);
+  const fontSize = calculateShardFontSize(shard.amount);
 
   const cacheKey = `${shard.resource}:${fontSize}`;
   const sprite = getShardSprite(cacheKey, symbol, color, fontSize);
@@ -331,7 +353,6 @@ function drawShard(ctx: CanvasRenderingContext2D, shard: Shard) {
 
   const spriteW = sprite.width;
   const spriteH = sprite.height;
-  const angle = shard.angle || 0;
 
   ctx.save();
   ctx.translate(x, y);
@@ -433,21 +454,37 @@ function createFlyingShardAnimation(shard: Shard, startX: number, startY: number
   const screenX = canvasRect.left + startX;
   const screenY = canvasRect.top + startY;
 
-  const { symbol, color } = getShardDisplay(shard.resource);
-  const fontSize = calculateShardFontSize(shard.amount);
-
   const flyingEl = document.createElement('div');
   flyingEl.style.position = 'fixed';
   flyingEl.style.left = screenX + 'px';
   flyingEl.style.top = screenY + 'px';
   flyingEl.style.pointerEvents = 'none';
   flyingEl.style.zIndex = '10000';
-  flyingEl.style.fontSize = fontSize + 'px';
-  flyingEl.style.fontWeight = 'bold';
   flyingEl.style.transition = 'left 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), top 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
 
-  flyingEl.textContent = symbol;
-  flyingEl.style.color = color;
+  // For zone_crystal, use an image sprite instead of text
+  if (shard.resource === 'zone_crystal') {
+    const source = atlasStorage.getItemsSource();
+    const frame = atlasStorage.getItemsFrame('quartz');
+    if (source && frame) {
+      const spriteEl = document.createElement('div');
+      spriteEl.style.width = ZONE_CRYSTAL_SHARD_SIZE + 'px';
+      spriteEl.style.height = ZONE_CRYSTAL_SHARD_SIZE + 'px';
+      spriteEl.style.backgroundImage = `url(${source.src})`;
+      spriteEl.style.backgroundPosition = `-${frame.x}px -${frame.y}px`;
+      spriteEl.style.backgroundSize = `${source.naturalWidth}px ${source.naturalHeight}px`;
+      spriteEl.style.transform = 'translate(-50%, -50%)';
+      flyingEl.appendChild(spriteEl);
+    }
+  } else {
+    const { symbol, color } = getShardDisplay(shard.resource);
+    const fontSize = calculateShardFontSize(shard.amount);
+    flyingEl.style.fontSize = fontSize + 'px';
+    flyingEl.style.fontWeight = 'bold';
+    flyingEl.textContent = symbol;
+    flyingEl.style.color = color;
+  }
+
   document.body.appendChild(flyingEl);
 
   let targetX = window.innerWidth / 2;

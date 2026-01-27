@@ -328,7 +328,7 @@ export function SyncUIFromGameState(game: GameState): void {
 
   uiState.wafer = game.wafer;
   uiState.waferSize = game.waferSize;
-  uiState.shards = game.shards;
+  uiState.shards = game.shards.filter(s => s !== null);
   uiState.waferUpgradesPurchased = game.waferUpgradesPurchased || 0;
 
   if (game.wafer) {

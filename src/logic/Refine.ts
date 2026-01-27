@@ -71,8 +71,13 @@ export function resolveRefineryDone(gs: GameState): void {
     const magentaCount = preview.essenceTotals['magenta'] || 0;
     if (magentaCount > 0 && !gs.discoveries[DISCOVERY.MAGENTA_CRYSTALS]) {
       applyReward(gs, { kind: 'discovery', discoveryId: DISCOVERY.MAGENTA_CRYSTALS });
-      applyReward(gs, { kind: 'countable_gear', gearId: 'zone_crystal', amount: magentaCount });
       applyReward(gs, { kind: 'show_ui', ui: 'RUIMagentsCrystals' });
+    }
+
+    for (const gearOutput of preview.gearOutputs) {
+      if (gearOutput.count > 0) {
+        createShards(gs, gearOutput.gearId, gearOutput.count);
+      }
     }
 
     if (preview.newlyCompletedSignatureIds.length > 0) {

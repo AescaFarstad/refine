@@ -131,6 +131,11 @@ function updateShards(gs: GameState, dt: number) {
           ensureMazeTabDiscovery(gs);
         } else if (shard.resource === 'shards') {
           gs.shardDust += shard.amount;
+        } else if (shard.resource === 'zone_crystal') {
+          gs.countableGear['zone_crystal'] = (gs.countableGear['zone_crystal'] || 0) + shard.amount;
+          if (!gs.unlockedGear.includes('zone_crystal')) {
+            gs.unlockedGear.push('zone_crystal');
+          }
         }
         gs.shards[i] = null as any;
       }

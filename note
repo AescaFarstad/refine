@@ -191,11 +191,6 @@ dots and real progress are out of sync
 vodka should have more value
 gained: show the sum of essences
 
-crystals weren't granted from refining magenta
-
-verification of libs
-
-public unlocks: string[] = []; - wtf?
 
 new CheatLoadResearchState({
   ownedCells: [

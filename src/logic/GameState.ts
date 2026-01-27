@@ -86,7 +86,6 @@ export class GameState {
 
   public cheats: Array<CheatInput> = [];
 
-  public unlocks: string[] = [];
   public completedQuests: string[] = [];
   public activeQuests: string[] = [];
   public gearLevels: Record<string, number> = {};

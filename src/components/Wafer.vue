@@ -301,14 +301,12 @@ function moleculeOverlapsEnabledCell(w: Wafer, mol: Molecule): boolean {
 
 watch(() => props.draggingItem, (newVal) => {
   if (newVal) {
-    console.log('[Wafer] draggingItem set', { id: newVal.id });
     rotation.value = 0;
     upgradeHoverCells.value = null;
     if (lastHoverPos.value) {
       onHover(lastHoverPos.value);
     }
   } else {
-    console.log('[Wafer] draggingItem cleared');
     ghostMolecule.value = null;
     ghostPosition.value = null;
     rotation.value = 0;
@@ -451,13 +449,10 @@ function clearHighlight() {
 }
 
 function onRotate() {
-  console.log('[Wafer] rotate event', { hasDraggingItem: !!props.draggingItem, rotation: rotation.value });
   if (!props.draggingItem) return;
 
   rotation.value = (rotation.value + 1) % 6;
-  console.log('[Wafer] rotate applied', { rotation: rotation.value });
 
-  // Update the manual drag follower if active
   const rotated = rotateMolecule(props.draggingItem.molecule, rotation.value);
   updateManualDragMolecule(rotated);
 

@@ -17,6 +17,7 @@
           :quantity="it.quantity"
           :minor="minor"
           :show-volume="showVolumes"
+          :no-tooltip="noTooltip"
         />
       </div>
     </div>

@@ -117,7 +117,7 @@ function dismiss(): void {
 .modal.phase-2::after {
   height: 2px;
   background: rgba(180, 190, 210, 0.5);
-  animation: border-fall 1.2s cubic-bezier(0.55, 0, 1, 0.45) forwards;
+  animation: border-fall 1.2s cubic-bezier(0.55, 0, 1, 0.45) 2s forwards;
 }
 
 @keyframes border-fall {

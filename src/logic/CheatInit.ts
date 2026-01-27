@@ -7,7 +7,7 @@ import signatures from '../data/signatures';
 import { recomputeActiveRaidEstimates, recomputeActiveRaidParams } from './Raid';
 
 export function initDebug(gameState: GameState): void {
-  return;
+  // return;
   setIsDebug(true);
 
   uiState.editResearchOpen = true;

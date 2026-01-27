@@ -7,7 +7,6 @@ import { DISCOVERY } from './DiscoveryLib';
 export type Reward =
   | { kind: 'resource'; resource: 'credits' | 'chronotraces' | 'timeFlux' | 'shardDust' | 'skillPoints'; amount: number }
 
-  | { kind: 'unlock'; unlockId: string }
   | { kind: 'unlock_gear'; gearId: string }
   | { kind: 'unlock_raid'; raidId: string }
   | { kind: 'unlock_quest'; questId: string }
@@ -55,11 +54,6 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
       anyGs[reward.stat] = anyGs[reward.stat] + reward.value;
       break;
     }
-
-    case 'unlock':
-      if (!gs.unlocks.includes(reward.unlockId))
-        gs.unlocks.push(reward.unlockId);
-      break;
 
     case 'unlock_gear':
       if (!gs.unlockedGear.includes(reward.gearId))

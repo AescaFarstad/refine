@@ -7,7 +7,7 @@
       :disabled="uiState.timeActive"
       type="button"
     >
-      <span class="tab-title">Raids</span>
+      <span class="tab-title" data-resource-display="zone_crystal">Raids</span>
       <span class="tab-sub" :class="{ 'resource-animate': animatingCredits }"><span class="tab-label">{{ creditsSpec.name }}</span><span class="tab-value" data-resource-display="credits" :style="{ color: creditsSpec.color }">{{ creditsDisplay }}</span></span>
     </button>
     <button

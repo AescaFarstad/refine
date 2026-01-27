@@ -559,12 +559,34 @@ defineExpose({ rotate: onRotate });
 }
 
 .refine-fail-note {
-  padding: 4px 0;
+  padding: 4px 12px;
   color: var(--text-secondary);
   font-size: 16px;
   font-weight: 600;
   letter-spacing: 0.02em;
   text-align: center;
+  background-image: linear-gradient(
+    -45deg,
+    rgba(220, 38, 38, 0.35) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(220, 38, 38, 0.35) 50%,
+    rgba(220, 38, 38, 0.35) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 20px 20px;
+  animation: stripe-move 0.7s linear infinite;
+  border-radius: 4px;
+}
+
+@keyframes stripe-move {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 20px 0;
+  }
 }
 
 .refine-fail-word {

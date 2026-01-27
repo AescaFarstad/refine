@@ -106,6 +106,10 @@ function updateShards(gs: GameState, dt: number) {
   const halfH = gs.waferSize.y / 2;
   const mouse = gs.waferMouseCoords;
 
+  if (gs.shardPickupGraceSec > 0) {
+    gs.shardPickupGraceSec = Math.max(0, gs.shardPickupGraceSec - dt);
+  }
+
   if (halfW === 0 || halfH === 0) {
     return;
   }
@@ -179,7 +183,7 @@ function updateShards(gs: GameState, dt: number) {
         );
       }
 
-      if (pickupDistance < pickupRadius) {
+      if (pickupDistance < pickupRadius && gs.shardPickupGraceSec <= 0) {
         shard.triggered = true;
         shard.pickupDelaySec = SHARD_PICKUP_DELAY_SEC;
         shard.vel.x = 0;

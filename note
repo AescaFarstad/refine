@@ -174,23 +174,13 @@ the "refine it!"
 10d 19h 38m - dyatlovsk is on
 
 walking stick
-in case of failure don't let them pick up teh shards immediately
-locate another zone - 10 min
-forester - more burdock
-
-collect accumulators from abandoned cars
-
-for each usage in this raid
-
-church incriptions should give away 6
-rucksack - more expensive
-nail gun - cheaper
 coloring doesn't affect the outcome
 
 dots and real progress are out of sync
-vodka should have more value
 gained: show the sum of essences
 
+readonly gs in vue
+get rid of math.random
 
 new CheatLoadResearchState({
   ownedCells: [

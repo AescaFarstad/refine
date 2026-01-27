@@ -63,6 +63,7 @@ export class GameState {
   public nextEvt: Evt | null = null;
   public lastRaidOutcome: RaidOutcome | null = null;
   public lastRefineryOutcome: RefineryOutcome | null = null;
+  public shardPickupGraceSec: number = 0;
 
   public items: Array<Item> = [];
   public encounteredEssences: Record<string, true> = {};

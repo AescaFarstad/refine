@@ -47,7 +47,7 @@ const emit = defineEmits<{
   close: [rewards?: Reward[]]
 }>();
 
-const MAX_SIGNATURES = 8;
+const MAX_SIGNATURES = 6;
 
 const showSignatures = computed(() => {
   return uiState.hasDiscoveredSignatures;

@@ -116,15 +116,16 @@ export function resolveRefineryDone(gs: GameState): void {
       Math.max(0, preview.expectedChrono || 0) +
       Math.max(0, preview.expectedFlux || 0);
     if (shardAmount > 0) {
-      createShards(gs, 'shards', shardAmount);
+      createShards(gs, 'shards', shardAmount, 2);
     }
+    gs.shardPickupGraceSec = 1.2;
   }
 
   gs.lastRefineryOutcome = outcome;
   clearWafer(gs.wafer);
 }
 
-function createShards(gs: GameState, resource: string, amount: number): void {
+function createShards(gs: GameState, resource: string, amount: number, speedMult: number = 1): void {
   if (amount <= 0) return;
   const representation = getHypRepresentation(amount);
 
@@ -134,7 +135,7 @@ function createShards(gs: GameState, resource: string, amount: number): void {
     const value = i + 1;
     for (let j = 0; j < count; j++) {
       const angle = gs.random.get_in_range(0, Math.PI * 2);
-      const speed = gs.random.get_in_range(SHARD_LAUNCH_SPEED.x, SHARD_LAUNCH_SPEED.y);
+      const speed = gs.random.get_in_range(SHARD_LAUNCH_SPEED.x, SHARD_LAUNCH_SPEED.y) * speedMult;
       const speedNorm = (speed - SHARD_LAUNCH_SPEED.x) / (SHARD_LAUNCH_SPEED.y - SHARD_LAUNCH_SPEED.x || 1);
       const clampedSpeedNorm = Math.max(0, Math.min(1, speedNorm));
       const omegaBase = gs.random.get();

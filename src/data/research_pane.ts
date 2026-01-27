@@ -38,7 +38,7 @@ export const researchPane: ResearchPlacementInput[] = [
   { archetypeId: 'gear_shotgun', cells: { x: -13, y: 0 }, radius: 1 },
   { archetypeId: 'gear_flash_grenade', cells: { x: 12, y: -4 }, radius: 1 },
   { archetypeId: 'gear_bandage', cells: { x: 5, y: -12 }, radius: 1 },
-  { archetypeId: 'gear_ruksack', cells: { x: -2, y: -10 }, radius: 1 },
+  { archetypeId: 'gear_rucksack', cells: { x: -2, y: -10 }, radius: 1 },
   { archetypeId: 'gear_safer_routes', cells: { x: 17, y: -7 }, radius: 1 },
   { archetypeId: 'gear_armor_plates', cells: { x: -12, y: -5 }, radius: 1 },
   { archetypeId: 'gear_adjust_armor', cells: { x: 14, y: -13 }, radius: 1 },

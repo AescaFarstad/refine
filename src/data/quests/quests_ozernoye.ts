@@ -64,7 +64,7 @@ const quests: Record<string, RawQuestDefinition> = {
   ozernoye_raise_the_dome: {
     name: 'Raise the zone\'s dome',
     encounterLine: 'Hooking up the batteries...',
-    description: 'Collect accumulators from the abandoned cars and focus their power to push away the zone boundary via magnetic induction.',
+    description: 'Collect accumulators from abandoned cars and focus their power to push away the zone boundary via magnetic induction.',
     raidRestriction: ['ozernoye'],
     requiresRaidSuccesses: 4,
     encounterTimeMin: 80,

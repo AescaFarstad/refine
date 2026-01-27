@@ -63,7 +63,7 @@ export function processItemDefinitions(
   defs: Record<string, RawItemDefinition>
 ): Record<string, ItemDefinition & { devOnly?: boolean }> {
   const extraEssenceScores: Record<string, number> = {
-    magenta: -3,
+    magenta: 1,
     red: 1,
     blue: 1,
     green: 1,

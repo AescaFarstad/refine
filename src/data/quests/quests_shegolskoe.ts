@@ -55,7 +55,7 @@ const quests: Record<string, RawQuestDefinition> = {
     encounterLine: 'There is a larger settlement nearby - Ozernoye.',
     requiresRaidQuestCompletions: 3,
     raidRestriction: ['shegolskoe'],
-    encounterTimeMin: 50,
+    encounterTimeMin: 40,
     encounters: [
       { kind: 'WalkMutation', count: 5 },
       { kind: 'AddMonsterMutation', monsterId: 'spikder', count: 1 },

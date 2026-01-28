@@ -1,4 +1,4 @@
-import type { Wafer } from './Wafer';
+import type { Wafer, ReadonlyWafer } from './Wafer';
 import { getCell } from './Wafer';
 import type { SignatureDefinition, SignatureMolecule } from './SignatureLib';
 import type { Point2 } from './ItemLib';
@@ -20,7 +20,7 @@ function essenceMatchesForSignature(essence: string, targetColor: string): boole
   return essenceEquivalents[essence] === targetColor;
 }
 
-function signatureMatchesAtOffset(wafer: Wafer, molecule: SignatureMolecule, offset: { x: number; y: number }): boolean {
+function signatureMatchesAtOffset(wafer: ReadonlyWafer, molecule: SignatureMolecule, offset: { x: number; y: number }): boolean {
   for (const atom of molecule.atoms) {
     const cell = getCell(wafer, { x: atom.x + offset.x, y: atom.y + offset.y });
     if (!cell || !cell.enabled) return false;
@@ -31,7 +31,7 @@ function signatureMatchesAtOffset(wafer: Wafer, molecule: SignatureMolecule, off
 }
 
 export function scanWaferForNewSignatures(
-  wafer: Wafer,
+  wafer: ReadonlyWafer,
   signatureDefs: SignatureDefinition[],
   completedSignatureIds: Set<string>
 ): WaferSignatureScanResult {

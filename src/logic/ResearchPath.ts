@@ -1,5 +1,6 @@
 import type { GameState, ResearchCell } from './GameState';
 import { RESEARCH_PANE_SIZE } from './Const';
+import { ReadonlyGameState } from './UIState';
 
 const SIZE = RESEARCH_PANE_SIZE;
 const TOTAL_CELLS = SIZE * SIZE;
@@ -196,7 +197,7 @@ function heapPopMin(): number {
 }
 
 export function calculateResearchPath(
-  gs: GameState,
+  gs: ReadonlyGameState,
   targetRow: number,
   targetCol: number
 ): ResearchPathResult {

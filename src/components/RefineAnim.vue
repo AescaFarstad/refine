@@ -18,8 +18,16 @@ import { uiState, getGameState } from '../logic/UIState';
 import { WAFER_CANVAS_WIDTH, WAFER_CANVAS_HEIGHT, HEX_SIZE, ESSENCE_SIZE, eventToCanvasPixel } from '../logic/RefineUIBehaviour';
 import { axialToPixel } from '../logic/HexMath';
 import atlasStorage from '../logic/AtlasStorage';
-import { getShardDisplay, calculateShardFontSize } from '../utils/ShardDisplay';
 import { computeRefinePreviewChem } from '../logic/RefinePreview';
+import { 
+  ensureShardPhysics, 
+  updateShardPhysics, 
+  checkShardPickups, 
+  updateShardPickupAnimations, 
+  drawShard, 
+  updateMouseCoords, 
+  resetMouseCoords 
+} from '../logic/refiningShards';
 
 // Animation tuning constants (t is 0..1 over refiningDuration)
 const T_DRAG_END = 0.2;
@@ -73,12 +81,10 @@ let lastShardCountForFlash = 0;
 const activeRefinery = computed(() => uiState.refinery);
 const isRefining = computed(() => activeRefinery.value && activeRefinery.value.timeRemainingSec !== undefined && activeRefinery.value.timeRemainingSec > 0);
 
+
 // Don't use computed for shards - read directly from GameState each frame
 
 const origin = { x: WAFER_CANVAS_WIDTH / 2, y: WAFER_CANVAS_HEIGHT / 2 };
-
-// Track which shards have already spawned a flying animation
-const animatedShardIds = new Set<string>();
 
 onMounted(() => {
   if (canvas.value) {
@@ -97,10 +103,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   cancelAnimationFrame(animFrameId);
-  const gs = getGameState();
-  if (gs) {
-    gs.waferMouseCoords = null;
-  }
 });
 
 watch(isRefining, (newVal, oldVal) => {
@@ -114,13 +116,7 @@ function initAtoms() {
   const newAtoms: AnimAtom[] = [];
 
   const gs = getGameState()!;
-  const preview = computeRefinePreviewChem(props.wafer, {
-    signatures: gs.lib.signatures,
-    signatureLevel: gs.signatureLevel,
-    completedSignatureIds: gs.completedSignatureIds,
-    discoveries: gs.discoveries,
-    refinedUniqueItemIds: gs.refinedUniqueItemIds,
-  });
+  const preview = computeRefinePreviewChem(gs);
   const cellEffectiveCounts = preview.cellEffectiveCounts || {};
 
   for (const item of props.wafer.items) {
@@ -263,7 +259,14 @@ function update(deltaTimeSec: number) {
     }
     lastT.value = currentT;
   }
-  updateShardPickupAnimations();
+
+  // Shard physics (runs independently of refining)
+  ensureShardPhysics();
+  updateShardPhysics(deltaTimeSec);
+  checkShardPickups();
+  if (canvas.value) {
+    updateShardPickupAnimations(canvas.value);
+  }
 }
 
 function draw() {
@@ -318,193 +321,14 @@ function draw() {
   }
 }
 
-const ZONE_CRYSTAL_SHARD_SIZE = 32;
-
-function drawShard(ctx: CanvasRenderingContext2D, shard: Shard) {
-  const x = origin.x + shard.pos.x;
-  const y = origin.y + shard.pos.y;
-  const angle = shard.angle || 0;
-
-  // For zone_crystal, draw the gear image instead of text
-  if (shard.resource === 'zone_crystal') {
-    const source = atlasStorage.getItemsSource();
-    const frame = atlasStorage.getItemsFrame('quartz'); // zone_crystal uses 'quartz' image
-    if (source && frame) {
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(angle);
-      ctx.drawImage(
-        source,
-        frame.x, frame.y, frame.w, frame.h,
-        -ZONE_CRYSTAL_SHARD_SIZE / 2, -ZONE_CRYSTAL_SHARD_SIZE / 2,
-        ZONE_CRYSTAL_SHARD_SIZE, ZONE_CRYSTAL_SHARD_SIZE
-      );
-      ctx.restore();
-    }
-    return;
-  }
-
-  const { symbol, color } = getShardDisplay(shard.resource);
-  const fontSize = calculateShardFontSize(shard.amount);
-
-  const cacheKey = `${shard.resource}:${fontSize}`;
-  const sprite = getShardSprite(cacheKey, symbol, color, fontSize);
-  if (!sprite) return;
-
-  const spriteW = sprite.width;
-  const spriteH = sprite.height;
-
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(angle);
-  ctx.drawImage(sprite, -spriteW / 2, -spriteH / 2);
-  ctx.restore();
-}
-
-const shardSpriteCache = new Map<string, HTMLCanvasElement>();
-
-function getShardSprite(
-  key: string,
-  symbol: string,
-  color: string,
-  fontSize: number,
-): HTMLCanvasElement | null {
-  const existing = shardSpriteCache.get(key);
-  if (existing) return existing;
-
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return null;
-
-  ctx.font = `bold ${fontSize}px sans-serif`;
-  const metrics = ctx.measureText(symbol);
-  const textWidth = metrics.width;
-  const padding = 4;
-  const width = Math.ceil(textWidth + padding * 2);
-  const height = Math.ceil(fontSize + padding * 2);
-
-  canvas.width = width;
-  canvas.height = height;
-
-  const ctx2 = canvas.getContext('2d');
-  if (!ctx2) return null;
-
-  ctx2.font = `bold ${fontSize}px sans-serif`;
-  ctx2.textAlign = 'center';
-  ctx2.textBaseline = 'middle';
-  ctx2.fillStyle = color;
-  ctx2.fillText(symbol, width / 2, height / 2);
-
-  shardSpriteCache.set(key, canvas);
-  return canvas;
-}
-
 function onMouseMove(event: MouseEvent) {
   if (!canvas.value) return;
   const { x, y } = eventToCanvasPixel(event, canvas.value);
-  // Update GameState with mouse position in shard/wafer space (0,0 = center)
-  const gs = getGameState();
-  if (gs) {
-    gs.waferMouseCoords = {
-      x: x - origin.x,
-      y: y - origin.y,
-    };
-  }
+  updateMouseCoords(x, y);
 }
 
 function onMouseLeave() {
-  const gs = getGameState();
-  if (gs) {
-    gs.waferMouseCoords = null;
-  }
-}
-
-function updateShardPickupAnimations() {
-  const gs = getGameState();
-  const gameShards = gs?.shards || [];
-
-  // Trigger flying animations for shards that have just been picked up (triggered in the model)
-  for (const shard of gameShards) {
-    if (!shard) continue;
-    if (!shard.triggered) continue;
-    if (animatedShardIds.has(shard.id)) continue;
-
-    const x = origin.x + shard.pos.x;
-    const y = origin.y + shard.pos.y;
-    createFlyingShardAnimation(shard, x, y);
-    animatedShardIds.add(shard.id);
-  }
-
-  const existingIds = new Set<string>();
-  for (const shard of gameShards) {
-    if (!shard) continue;
-    existingIds.add(shard.id);
-  }
-  for (const id of Array.from(animatedShardIds)) {
-    if (!existingIds.has(id)) {
-      animatedShardIds.delete(id);
-    }
-  }
-}
-
-function createFlyingShardAnimation(shard: Shard, startX: number, startY: number) {
-  if (!canvas.value) return;
-
-  const canvasRect = canvas.value.getBoundingClientRect();
-  const screenX = canvasRect.left + startX;
-  const screenY = canvasRect.top + startY;
-
-  const flyingEl = document.createElement('div');
-  flyingEl.style.position = 'fixed';
-  flyingEl.style.left = screenX + 'px';
-  flyingEl.style.top = screenY + 'px';
-  flyingEl.style.pointerEvents = 'none';
-  flyingEl.style.zIndex = '10000';
-  flyingEl.style.transition = 'left 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), top 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-
-  // For zone_crystal, use an image sprite instead of text
-  if (shard.resource === 'zone_crystal') {
-    const source = atlasStorage.getItemsSource();
-    const frame = atlasStorage.getItemsFrame('quartz');
-    if (source && frame) {
-      const spriteEl = document.createElement('div');
-      spriteEl.style.width = ZONE_CRYSTAL_SHARD_SIZE + 'px';
-      spriteEl.style.height = ZONE_CRYSTAL_SHARD_SIZE + 'px';
-      spriteEl.style.backgroundImage = `url(${source.src})`;
-      spriteEl.style.backgroundPosition = `-${frame.x}px -${frame.y}px`;
-      spriteEl.style.backgroundSize = `${source.naturalWidth}px ${source.naturalHeight}px`;
-      spriteEl.style.transform = 'translate(-50%, -50%)';
-      flyingEl.appendChild(spriteEl);
-    }
-  } else {
-    const { symbol, color } = getShardDisplay(shard.resource);
-    const fontSize = calculateShardFontSize(shard.amount);
-    flyingEl.style.fontSize = fontSize + 'px';
-    flyingEl.style.fontWeight = 'bold';
-    flyingEl.textContent = symbol;
-    flyingEl.style.color = color;
-  }
-
-  document.body.appendChild(flyingEl);
-
-  let targetX = window.innerWidth / 2;
-  let targetY = 20;
-
-  const targetEl = document.querySelector(`[data-resource-display="${shard.resource}"]`) as HTMLElement | null;
-  if (targetEl) {
-    const rect = targetEl.getBoundingClientRect();
-    targetX = rect.left + rect.width / 2;
-    targetY = rect.top + rect.height / 2;
-  }
-
-  setTimeout(() => {
-    flyingEl.style.left = `${targetX}px`;
-    flyingEl.style.top = `${targetY}px`;
-  }, 10);
-
-  setTimeout(() => {
-    document.body.removeChild(flyingEl);
-  }, 650);
+  resetMouseCoords();
 }
 
 </script>

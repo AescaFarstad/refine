@@ -11,7 +11,7 @@ export type Reward =
   | { kind: 'unlock_raid'; raidId: string }
   | { kind: 'unlock_quest'; questId: string }
   | { kind: 'discovery'; discoveryId: string }
-  | { kind: 'learn_signatures'; signatureIds: string[] }
+  | { kind: 'learn_signatures'; signatureIds: readonly string[] }
   | { kind: 'learn_n_signatures'; count: number }
   | { kind: 'countable_gear'; gearId: string; amount: number }
 
@@ -22,7 +22,7 @@ export type Reward =
   | { kind: 'raid_mutation'; mutation: RaidMutation; targetRaidId?: string; sentiment?: 'positive' | 'negative' }
   | { kind: 'raid_loot_chance'; delta: number; targetRaidId?: string; sentiment?: 'positive' | 'negative' }
   | { kind: 'raid_rarity_buff'; delta: number; targetRaidId?: string; sentiment?: 'positive' | 'negative' }
-  | { kind: 'raid_add_item'; itemIds: string[]; targetRaidId?: string; sentiment?: 'positive' | 'negative' }
+  | { kind: 'raid_add_item'; itemIds: readonly string[]; targetRaidId?: string; sentiment?: 'positive' | 'negative' }
 
   // UI interactions
   | { kind: 'show_ui'; ui: string; params?: Record<string, unknown> }

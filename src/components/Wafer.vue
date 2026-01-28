@@ -198,18 +198,8 @@ watch(showWaferUpgrades, (enabled) => {
   if (!enabled) upgradeHoverCells.value = null;
 });
 
-onMounted(() => {
-  const gs = getGameState();
-  if (gs && gs.waferSize) {
-    gs.waferSize.x = WAFER_CANVAS_WIDTH;
-    gs.waferSize.y = WAFER_CANVAS_HEIGHT;
-  }
-});
-
 const preview = computed(() => {
-  // Touch waferVersion for reactivity
   waferVersion.value;
-  // Touch discoveryCounter to react to discovery changes
   const _dep = uiState.discoveryCounter;
 
   const gs = getGameState();
@@ -237,13 +227,7 @@ const preview = computed(() => {
     };
   }
 
-  const basePreview = computeRefinePreviewChem(wafer.value, {
-    signatures: uiState.lib!.signatures,
-    signatureLevel: uiState.signatureLevel,
-    completedSignatureIds: uiState.completedSignatureIds,
-    discoveries: gs.discoveries,
-    refinedUniqueItemIds: gs.refinedUniqueItemIds,
-  });
+  const basePreview = computeRefinePreviewChem(gs);
 
   // Calculate essence counts for each resource type
   const essenceTotals = basePreview.essenceTotals || {};

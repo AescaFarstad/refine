@@ -34,14 +34,14 @@ export class IceMaze {
 
   // Current animations
   private playerAnim: ActorAnimation | null = null;
-  private demonAnims: Map<Actor, ActorAnimation> = new Map();
+  private demonAnims: Map<number, ActorAnimation> = new Map();
 
   // Hold solved state as "animating" to delay auto-advance
   private solveHoldUntil: number = 0;
 
   // Visual positions (computed, exposed directly)
   public playerVisualPos: Point2 = { x: 0, y: 0 };
-  public demonVisualPos: Map<Actor, Point2> = new Map();
+  public demonVisualPos: Map<number, Point2> = new Map();
 
   // Visual key state (keys disappear when animation completes, not instantly)
   public visualTakenKeys: Array<boolean> = [];
@@ -110,9 +110,15 @@ export class IceMaze {
 
     // Update demon animations and visual positions
     for (const [actor, anim] of this.demonAnims.entries()) {
+      // Note: we can't easily get the actor object back from ID here if we needed it for logic,
+      // but for visual interpolation we usually just need start/end.
+      // However, we need to know if the actor is still valid?
+      // Actually, we iterate the animations map, so we just process the animation.
+      // But we need to update demonVisualPos using the ID.
       const elapsed = this.currentTime - anim.startTime;
       if (elapsed >= anim.duration) {
-        this.demonVisualPos.set(actor, { x: actor.cell.x, y: actor.cell.y });
+        // Snap to end
+        this.demonVisualPos.set(actor, anim.endPos);
         this.demonAnims.delete(actor);
       } else {
         const t = elapsed / anim.duration;
@@ -197,9 +203,9 @@ export class IceMaze {
     }
 
     const playerPrev = this.state.player.cell;
-    const demonPrevPositions = new Map<Actor, Point2>();
+    const demonPrevPositions = new Map<number, Point2>();
     this.state.demons.forEach((d) => {
-      demonPrevPositions.set(d, { x: d.cell.x, y: d.cell.y });
+      demonPrevPositions.set(d.id, { x: d.cell.x, y: d.cell.y });
     });
 
     const moved = Chase.move(this.state, direction);
@@ -224,11 +230,11 @@ export class IceMaze {
       // Start demon animations
       this.demonAnims.clear();
       this.state.demons.forEach((demon) => {
-        const prevPos = demonPrevPositions.get(demon);
+        const prevPos = demonPrevPositions.get(demon.id);
         if (prevPos && (prevPos.x !== demon.cell.x || prevPos.y !== demon.cell.y)) {
           const dist = Math.abs(demon.cell.x - prevPos.x) + Math.abs(demon.cell.y - prevPos.y);
           const animSpeed = this.animationSpeed - PER_CELL_DISCOUNT * dist;
-          this.demonAnims.set(demon, {
+          this.demonAnims.set(demon.id, {
             startPos: prevPos,
             endPos: { x: demon.cell.x, y: demon.cell.y },
             startTime: this.currentTime,

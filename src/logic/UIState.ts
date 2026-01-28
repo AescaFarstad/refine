@@ -10,6 +10,13 @@ import type { Point2 } from './ItemLib';
 import { DISCOVERY } from './DiscoveryLib';
 import type { UIModalEntry } from './Reward';
 
+export interface ShardPhysics {
+  pos: Point2;
+  vel: Point2;
+  angle: number;
+  omega: number;
+}
+
 export interface UIRaidDef extends RaidDefinition { }
 
 export interface UIRefinery {
@@ -118,8 +125,8 @@ export const uiState = reactive({
   signatureLearnQueue: [] as string[],
   waferUpgradesPurchased: 0,
   wafer: createWafer(2) as Wafer,
-  waferSize: { x: 0, y: 0 } as Point2,
   shards: [] as Shard[],
+  shardPhysics: new Map<string, ShardPhysics>(),
   waferVersion: 0,
 
   mazeLevelIndex: 0,
@@ -140,7 +147,6 @@ export const uiState = reactive({
   // Queue of UI modal keys to show (from show_ui rewards)
   pendingUIModals: [] as UIModalEntry[],
 
-  // Intro modal
   showIntroModal: false,
 });
 
@@ -268,13 +274,7 @@ export function SyncUIFromGameState(game: GameState): void {
   const hasWafer = !!game.wafer;
   const refinery: UIRefinery = {};
   if (hasWafer && game.nextEvt?.name === 'EvtRefineryDone') {
-    const preview = computeRefinePreviewChem(game.wafer!, {
-      signatures: game.lib.signatures,
-      signatureLevel: game.signatureLevel,
-      completedSignatureIds: game.completedSignatureIds,
-      discoveries: game.discoveries,
-      refinedUniqueItemIds: game.refinedUniqueItemIds,
-    });
+    const preview = computeRefinePreviewChem(game as ReadonlyGameState);
     const duration = Math.max(0, game.refiningDuration || preview.timeSec || 0);
     const startedAt = (game.nextEvt.at || 0) - duration;
 
@@ -327,7 +327,6 @@ export function SyncUIFromGameState(game: GameState): void {
     (game.waferUpgradesPurchased > 0);
 
   uiState.wafer = game.wafer;
-  uiState.waferSize = game.waferSize;
   uiState.shards = game.shards.filter(s => s !== null);
   uiState.waferUpgradesPurchased = game.waferUpgradesPurchased || 0;
 
@@ -366,7 +365,6 @@ export function SyncUIFromGameState(game: GameState): void {
 
   uiState.pendingUIModals = [...game.pendingUIModals];
 
-  // Show intro modal if not yet seen
   uiState.showIntroModal = game.discoveries[DISCOVERY.INTRO_SEEN] !== true;
 }
 
@@ -375,7 +373,23 @@ export function getGameLib(): Lib {
   return gameRef!.lib;
 }
 
-// Provide read-only access to the current GameState (for UI components that need live instances)
-export function getGameState(): GameState {
+
+export type DeepReadonly<T> =
+  T extends (...args: unknown[]) => unknown ? T :
+  T extends Map<infer K, infer V> ? ReadonlyMap<K, DeepReadonly<V>> :
+  T extends Set<infer U> ? ReadonlySet<DeepReadonly<U>> :
+  T extends (infer U)[] ? readonly DeepReadonly<U>[] :
+  T extends object ? { readonly [K in keyof T]: DeepReadonly<T[K]> } :
+  T;
+
+export type ReadonlyGameState = DeepReadonly<GameState>;
+
+
+export function getGameState(): ReadonlyGameState {
+  return gameRef!;
+}
+
+// Mutable access for dev/cheat tools only - bypasses readonly protection
+export function getGameStateMutable(): GameState {
   return gameRef!;
 }

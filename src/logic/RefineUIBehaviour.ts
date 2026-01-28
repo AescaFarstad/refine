@@ -1,6 +1,7 @@
 import type { Molecule, Point2 } from './ItemLib';
 import { createMoleculeCanvasWithAnchor } from './DrawMolecule';
-import { DRAG_RADIUS_MULTIPLIER, ESSENCE_SIZE, HEX_SIZE, WAFER_CANVAS_HEIGHT, WAFER_CANVAS_WIDTH } from './RenderConstants';
+import { DRAG_RADIUS_MULTIPLIER, ESSENCE_SIZE, HEX_SIZE } from './RenderConstants';
+import { WAFER_CANVAS_HEIGHT, WAFER_CANVAS_WIDTH } from './Const';
 
 // Render/display constants
 export { DRAG_RADIUS_MULTIPLIER, ESSENCE_SIZE, HEX_SIZE, WAFER_CANVAS_HEIGHT, WAFER_CANVAS_WIDTH };

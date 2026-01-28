@@ -17,6 +17,8 @@ export const SIGNATURE_YIELD_BONUS_PCT = 20
 export const WAFER_HEIGHT = 12;
 export const WAFER_WIDTH = 20;
 export const WAFER_UPGRADE_BASE_COST = 100;
+export const WAFER_CANVAS_WIDTH = 800;
+export const WAFER_CANVAS_HEIGHT = 400;
 
 export const RESEARCH_PANE_SIZE = 100;
 export const RESEARCH_OBSTACLE_PRICE = 5;

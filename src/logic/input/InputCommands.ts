@@ -191,3 +191,12 @@ export class CmdToggleItemBan implements CmdInput {
 export class CmdDismissIntro implements CmdInput {
   readonly name = 'CmdDismissIntro';
 }
+
+export class CmdPickupShard implements CmdInput {
+  readonly name = 'CmdPickupShard';
+  readonly shardId: string;
+  constructor(args: { shardId: string }) {
+    this.shardId = args.shardId;
+  }
+}
+

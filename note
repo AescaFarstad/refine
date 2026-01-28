@@ -63,9 +63,10 @@ january 25
   goal balancing, tweaks  and fixes, refactoring, lib verification.
   The balance is pretty good now. The game is worth 4 hours of gameplay.
 
+npx tsc --noEmit
+npx vue-tsc --noEmit
+npm run build
 
-npx vue-tsc --noEmit 2>&1
-npx tsc --noEmit --skipLibCheck src/logic/Research.ts 2>&1
 
 
 Once you were full of regret.
@@ -175,7 +176,6 @@ the "refine it!"
 
 walking stick
 
-dots and real progress are out of sync
 gained: show the sum of essences
 
 readonly gs in vue

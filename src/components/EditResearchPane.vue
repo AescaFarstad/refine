@@ -178,7 +178,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue';
-import { uiState, getGameState, getGameLib } from '../logic/UIState';
+import { uiState, getGameState, getGameLib, getGameStateMutable } from '../logic/UIState';
 import { indexToAxial } from '../logic/Research';
 import { getStatIcon, getResourceGlyph, type ResearchStatIcon } from '../logic/drawResearch';
 import atlasStorage from '../logic/AtlasStorage';
@@ -375,7 +375,7 @@ onBeforeUnmount(() => {
 });
 
 function revealAllResearch() {
-  const gs = getGameState();
+  const gs = getGameStateMutable();
   if (!gs) return;
   // Use the proper function that updates reveal radius and recalculates visibility
   setResearchRevealRadius(gs, 1000);
@@ -544,7 +544,7 @@ const HARD_CODED_OWNED_CELLS: Array<{ x: number; y: number }> = [
 ];
 
 function runHardcodedResearchStateCheat() {
-  const gs = getGameState();
+  const gs = getGameStateMutable();
   gs.cheats.push(new CheatLoadResearchState({ ownedCells: HARD_CODED_OWNED_CELLS }));
 }
 

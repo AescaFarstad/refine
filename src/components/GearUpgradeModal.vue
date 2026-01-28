@@ -51,7 +51,7 @@ import { getResourceSpec } from '../logic/Resources';
 const visible = computed(() => uiState.gearUpgradeModalOpen);
 
 const skillPoints = computed(() => {
-  return Math.max(0, uiState.skillPoints || 0);
+  return uiState.skillPoints;
 });
 
 const skillPointsSpec = getResourceSpec('skillPoints');
@@ -71,7 +71,7 @@ const visibleCategories = computed<CategoryInfo[]>(() => {
 
   const list = (uiState.unlockedGear && uiState.unlockedGear.length > 0)
     ? uiState.unlockedGear
-    : (gs?.unlockedGear || []);
+    : (gs?.unlockedGear);
   const unlocked = new Set<string>(list);
 
   const hasUnlockedItems = new Set<string>();

@@ -62,7 +62,7 @@ function discoverGear(): void {
   globalInputQueue.push(new CmdDiscover({ discoveryId: DISCOVERY.UI_GEAR }));
 }
 
-function loadout(): string[] {
+function loadout(): readonly string[] {
   const gs = getGameState();
   const id = activeRaidId.value;
   if (!gs || !id) return [];

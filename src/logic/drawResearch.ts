@@ -10,6 +10,7 @@ import type { Point2 } from './ItemLib';
 import atlasStorage from './AtlasStorage';
 import { computeMaxSquareForHexNode, type MaxSquareResult } from './MaxSquareInHexNode';
 import { getResourceSpecByAnyKey } from './Resources';
+import { ReadonlyGameState } from './UIState';
 
 const RESEARCH_COLOR_OWNED_BG = 'rgb(50, 140, 80)';
 const RESEARCH_COLOR_UNOWNED_BG = 'rgb(35, 45, 70)';
@@ -80,7 +81,7 @@ export interface ResearchCellInfo {
 
 export function renderResearchBaseLayer(
   ctx: CanvasRenderingContext2D,
-  game: GameState,
+  game: ReadonlyGameState,
   lib: Lib,
   origin: Point2,
   hexSize: number,

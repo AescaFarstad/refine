@@ -1,5 +1,6 @@
 import type { EncounterDef, FightEncounterDef, LootEncounterDef, MonsterLootEncounterDef, QuestEncounterDef, RaidDefinition, WalkEncounterDef } from './RaidLib';
 import type { GameState } from './GameState';
+import type { ReadonlyGameState } from './UIState';
 import type { QuestDefinition } from './QuestLib';
 import { ENABLE_QUEST_PREREQS } from './Const';
 
@@ -156,13 +157,13 @@ export function applyMonsterMutation(raid: RaidDefinition, monsterId: string, co
   applyRaidMutation(raid, { kind: 'AddMonsterMutation', monsterId, count });
 }
 
-export function questIsActive(gs: GameState, q: QuestDefinition, raidId: string): boolean {
+export function questIsActive(gs: ReadonlyGameState, q: QuestDefinition, raidId: string): boolean {
   if (!questIsAvailable(gs, q, raidId)) return false;
   if (q.autoaccept) return true;
   return gs.activeQuests.includes(q.id);
 }
 
-export function questMeetsRaidRequirements(gs: GameState, q: QuestDefinition, raidId: string): boolean {
+export function questMeetsRaidRequirements(gs: ReadonlyGameState, q: QuestDefinition, raidId: string): boolean {
   if (!ENABLE_QUEST_PREREQS) return true;
 
   const restricted = q.raidRestriction.length > 0 ? new Set(q.raidRestriction) : null;
@@ -185,7 +186,7 @@ export function questMeetsRaidRequirements(gs: GameState, q: QuestDefinition, ra
   return true;
 }
 
-export function questIsAvailable(gs: GameState, q: QuestDefinition, raidId: string): boolean {
+export function questIsAvailable(gs: ReadonlyGameState, q: QuestDefinition, raidId: string): boolean {
   const applies = q.raidRestriction.length === 0 || q.raidRestriction.includes(raidId);
   if (!applies) return false;
   if (gs.completedQuests.includes(q.id)) return false;
@@ -382,7 +383,7 @@ export interface MutationDescription {
   value: string;
 }
 
-export function describeMutation(gs: GameState, mutation: RaidMutation): MutationDescription {
+export function describeMutation(gs: ReadonlyGameState, mutation: RaidMutation): MutationDescription {
   const sign = (n: number) => (n >= 0 ? '+' : '-');
   switch (mutation.kind) {
     case 'LootMutation': {

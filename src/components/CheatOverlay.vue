@@ -125,7 +125,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { uiState, getGameState } from '../logic/UIState';
+import { uiState, getGameStateMutable } from '../logic/UIState';
 import DevAtlasView from './DevAtlasView.vue';
 import DevMoleculeEditor from './DevMoleculeEditor.vue';
 import { listAtlasKeys, type AtlasKey } from '../logic/AtlasStorage';
@@ -169,7 +169,7 @@ function signatureEntryClass(id: string): Record<string, boolean> {
 }
 
 function cycleSignatureState(id: string): void {
-  const gs = getGameState();
+  const gs = getGameStateMutable();
   const learnedIdx = gs.learnedSignatureIds.indexOf(id);
   const completedIdx = gs.completedSignatureIds.indexOf(id);
   const isLearned = learnedIdx !== -1;
@@ -189,7 +189,7 @@ function cycleSignatureState(id: string): void {
 }
 
 function cycleAllSignatures(): void {
-  const gs = getGameState();
+  const gs = getGameStateMutable();
   const ids = allSignatures.value.map(s => s.id);
   const allLearned = ids.every(id => gs.learnedSignatureIds.includes(id));
   const allCompleted = ids.every(id => gs.completedSignatureIds.includes(id));
@@ -270,22 +270,22 @@ const otherDiscoveryIds = computed<DiscoveryId[]>(() =>
 );
 
 function grantResource(key: ResourceKey, amount: number) {
-  getGameState()[key] += amount;
+  getGameStateMutable()[key] += amount;
 }
 
 function setResource(key: ResourceKey, amount: number) {
-  getGameState()[key] = amount;
+  getGameStateMutable()[key] = amount;
 }
 
 function isDiscovered(id: DiscoveryId): boolean {
   // Touch discoveryCounter to react to discovery changes
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   uiState.discoveryCounter;
-  return getGameState().discoveries[id] === true;
+  return getGameStateMutable().discoveries[id] === true;
 }
 
 function toggleDiscovery(id: DiscoveryId): void {
-  const gs = getGameState();
+  const gs = getGameStateMutable();
   if (gs.discoveries[id] === true) {
     delete gs.discoveries[id];
     gs.discoveryCounter++;
@@ -320,7 +320,7 @@ function openEditResearchPane() {
 }
 
 function triggerUIModal(uiKey: string) {
-  const gs = getGameState();
+  const gs = getGameStateMutable();
   if (!gs.pendingUIModals.some(m => m.ui === uiKey)) {
     gs.pendingUIModals.push({ ui: uiKey });
   }
@@ -336,7 +336,7 @@ const mazeLevelIndex = computed(() => uiState.mazeLevelIndex);
 const mazeLevelCount = computed(() => uiState.lib?.mazeLevels.length ?? 0);
 
 function changeMazeLevel(delta: number): void {
-  const gs = getGameState();
+  const gs = getGameStateMutable();
   const newIndex = gs.mazeLevelIndex + delta;
   gs.cheats.push(new CheatSetMazeLevel({ levelIndex: newIndex }));
 }

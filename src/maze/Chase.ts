@@ -33,6 +33,7 @@ export class Actor {
   public previousCell: Cell | null = null;
   public closeIn: number = -1;
   public target: Cell | null = null;
+  public id: number = 0;
 }
 
 export enum ArtefactType {
@@ -63,6 +64,7 @@ export class ChaseState {
   public numEyes: number = 0;
   public freezeLeft: number = 0;
   public artefacts: Array<Artefact> = [];
+  public nextActorId: number = 1;
 }
 
 const UP: Point2 = { x: 0, y: -1 };
@@ -150,6 +152,7 @@ export namespace Chase {
     const player = new Actor();
     player.type = ActorType.PLAYER;
     player.cell = cell;
+    player.id = state.nextActorId++;
     state.player = player;
   }
   function spawnDemon(state: ChaseState) {
@@ -165,6 +168,7 @@ export namespace Chase {
     let cell: Cell | null = null;
     while (!cell || bannedCells.indexOf(cell) != -1) cell = randomChoice(state.random, state.navigatable);
     demon.cell = cell;
+    demon.id = state.nextActorId++;
     state.demons.push(demon);
   }
   export function isSolved(state: ChaseState) {

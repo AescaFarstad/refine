@@ -2,6 +2,7 @@ import type { Point2, Molecule } from './ItemLib';
 import { axialNeighbors } from './HexMath';
 import { getMoleculeEssences } from './MoleculeUtils';
 import { WAFER_HEIGHT, WAFER_WIDTH, WAFER_UPGRADE_BASE_COST } from './Const';
+import type { DeepReadonly } from './UIState';
 
 export interface WaferCell {
   x: number; // axial q
@@ -42,16 +43,13 @@ export interface Wafer {
   signatures: Signature[];
 }
 
+export type ReadonlyWafer = DeepReadonly<Wafer>;
+
 const WAFER_ORIGIN_HEIGHT = Math.floor(WAFER_HEIGHT / 2);
 const WAFER_ORIGIN_WIDTH = Math.floor(WAFER_WIDTH / 2);
 
 function cellKey(x: number, y: number): string {
   return `${x},${y}`;
-}
-
-function parseKey(key: string): Point2 {
-  const [x, y] = key.split(',').map(Number);
-  return { x, y };
 }
 
 export function createWafer(initialRadius: number = 3): Wafer {
@@ -92,7 +90,9 @@ export function createWafer(initialRadius: number = 3): Wafer {
   return wafer;
 }
 
-export function getCell(wafer: Wafer, pos: Point2): WaferCell | undefined {
+export function getCell(wafer: Wafer, pos: Point2): WaferCell | undefined;
+export function getCell(wafer: ReadonlyWafer, pos: Point2): DeepReadonly<WaferCell> | undefined;
+export function getCell(wafer: Wafer | ReadonlyWafer, pos: Point2): WaferCell | DeepReadonly<WaferCell> | undefined {
   return wafer.cells.get(cellKey(pos.x, pos.y));
 }
 

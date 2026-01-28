@@ -1,12 +1,12 @@
 import { computed } from 'vue';
-import { uiState, getGameState } from './UIState';
+import { uiState, getGameState, ReadonlyGameState } from './UIState';
 import { globalInputQueue } from './Model';
 import { CmdAcknowledgeOutcome, CmdStartRaid } from './input/InputCommands';
 import { formatDurationHM } from './StringUtils';
 import { questIsActive } from './RaidMutation';
 import type { GameState } from './GameState';
 
-export function hasMissingRequiredQuestGear(gs: GameState, raidId: string): boolean {
+export function hasMissingRequiredQuestGear(gs: ReadonlyGameState, raidId: string): boolean {
   const loadout = gs.loadouts[raidId] ?? [];
   const equipped = new Set(loadout);
   let missing = false;
@@ -24,7 +24,7 @@ export function hasMissingRequiredQuestGear(gs: GameState, raidId: string): bool
   return missing;
 }
 
-export function getRaidGearCost(gs: GameState, raidId: string): number {
+export function getRaidGearCost(gs: ReadonlyGameState, raidId: string): number {
   const gearIds = gs.loadouts[raidId] ?? [];
   const raidEntry = gs.unlockedRaids.find(r => r.id === raidId);
   const seen = new Set<string>();
@@ -39,7 +39,7 @@ export function getRaidGearCost(gs: GameState, raidId: string): number {
   return Math.max(0, Math.floor(total));
 }
 
-export function getRaidStartFailureReason(gs: GameState, raidId: string): string {
+export function getRaidStartFailureReason(gs: ReadonlyGameState, raidId: string): string {
   if (!raidId) return 'No raid selected.';
   const unlocked = gs.unlockedRaids.some(r => r.id === raidId);
   if (!unlocked) return 'Raid not unlocked.';
@@ -77,9 +77,7 @@ export function useRaidAgain() {
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     uiState.questPrereqsVersion;
 
-    const id = raidId.value;
-    const gs = getGameState();
-    return hasMissingRequiredQuestGear(gs, id);
+    return hasMissingRequiredQuestGear(getGameState(), raidId.value);
   });
 
   const survivalChance = computed(() => Math.max(0, Math.min(100, Math.round(uiState.raidSurvivalPct))));
@@ -87,9 +85,7 @@ export function useRaidAgain() {
   const raidAgainButtonLabel = computed(() => `Raid Again (~${survivalChance.value}% / ~${estimatedTime.value})`);
 
   const raidStartFailureReason = computed(() => {
-    const id = raidId.value;
-    const gs = getGameState();
-    return getRaidStartFailureReason(gs, id);
+    return getRaidStartFailureReason(getGameState(), raidId.value);
   });
 
   const canRaidAgain = computed(() => /* !questWasCompleted.value && */ raidStartFailureReason.value === '');

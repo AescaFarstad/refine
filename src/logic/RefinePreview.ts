@@ -1,4 +1,4 @@
-import type { Wafer } from './Wafer';
+import type { Wafer, ReadonlyWafer } from './Wafer';
 import { getCell } from './Wafer';
 import { axialNeighbors } from './HexMath';
 import {
@@ -18,6 +18,7 @@ import { getWaferBuffAt } from './waferLayout';
 import { scanWaferForNewSignatures } from './Signatures';
 import type { SignatureDefinition } from './SignatureLib';
 import { DISCOVERY } from './DiscoveryLib';
+import type { ReadonlyGameState } from './UIState';
 
 export interface GearOutput {
     gearId: string;
@@ -58,18 +59,6 @@ export interface RefinePreviewChem {
     gearOutputs: GearOutput[];
 }
 
-export interface SignatureContext {
-    signatures: Map<string, SignatureDefinition>;
-    signatureLevel: number;
-    completedSignatureIds: string[];
-}
-
-export interface RefineContext extends SignatureContext {
-    /** Player's discoveries - used to determine which yield bonuses are unlocked */
-    discoveries: Record<string, boolean>;
-    /** Map of item IDs that have been refined before (for unique items yield calculation) */
-    refinedUniqueItemIds: Record<string, true>;
-}
 
 // Color-changing essences and their target colors.
 const COLOR_CHANGER_TARGET: Record<string, string> = {
@@ -82,8 +71,8 @@ const COLOR_CHANGER_TARGET: Record<string, string> = {
 const BUFFABLE_ESSENCES = new Set(['red', 'green', 'blue', 'cyan', 'magenta']);
 
 export function computeUniqueItemsYieldBonusPct(
-    refinedUniqueItemIds: Record<string, true>,
-    waferItems: Array<{ id: string } | null>
+    refinedUniqueItemIds: Readonly<Record<string, true>>,
+    waferItems: readonly ({ id: string } | null)[]
 ): number {
     const baseUniqueCount = Object.keys(refinedUniqueItemIds).length;
     const newlyCounted = new Set<string>();
@@ -259,13 +248,10 @@ export function computeEffectiveEssences(wafer: Wafer): void {
     }
 }
 
-function computeEffectiveEssenceTotals(wafer: Wafer): {
+function computeEffectiveEssenceTotals(wafer: ReadonlyWafer): {
     essenceTotals: Record<string, number>;
     cellEffectiveCounts: Record<string, number>;
 } {
-    // First compute and write effective essences into wafer cells.
-    computeEffectiveEssences(wafer);
-
     const effectiveTotals: Record<string, number> = {};
     const cellEffectiveCounts: Record<string, number> = {};
 
@@ -328,37 +314,41 @@ function computeEffectiveEssenceTotals(wafer: Wafer): {
     };
 }
 
-export function computeRefinePreviewChem(wafer: Wafer, ctx: RefineContext): RefinePreviewChem {
+export function computeRefinePreviewChem(gs: ReadonlyGameState): RefinePreviewChem {
 
-    const { essenceTotals, cellEffectiveCounts } = computeEffectiveEssenceTotals(wafer);
+    const { essenceTotals, cellEffectiveCounts } = computeEffectiveEssenceTotals(gs.wafer);
 
     const cyanCount = essenceTotals['cyan'] || 0;
     const cyanReduction = cyanCount * CYAN_SUCCESS_BONUS_PCT;
     const magentaCount = essenceTotals['magenta'] || 0;
     const magentaPenalty = magentaCount * MAGENTA_SUCCESS_PENALTY_PCT;
 
-    const baseFailureChance = wafer.emptyCount * FAILURE_PER_EMPTY_CELL;
+    const baseFailureChance = gs.wafer.emptyCount * FAILURE_PER_EMPTY_CELL;
     const failureChancePct = Math.min(100, Math.max(0, baseFailureChance + magentaPenalty - cyanReduction));
 
     const baseYieldPct = 100;
 
-    const completedIdSet = new Set(ctx.completedSignatureIds);
-    const signatureDefsForLevel = Array.from(ctx.signatures.values()).filter(s => s.level === ctx.signatureLevel);
-    const { newlyCompletedSignatureIds, newSignatureMatches } = scanWaferForNewSignatures(wafer, signatureDefsForLevel, completedIdSet);
+    const completedIdSet = new Set(gs.completedSignatureIds);
+    const signatureDefsForLevel = Array.from(gs.lib.signatures.values()).filter(s => s.level === gs.signatureLevel);
+    const { newlyCompletedSignatureIds, newSignatureMatches } = scanWaferForNewSignatures(
+        gs.wafer,
+        signatureDefsForLevel as SignatureDefinition[],
+        completedIdSet
+    );
 
-    const signatureYieldBonus = ctx.completedSignatureIds.length * SIGNATURE_YIELD_BONUS_PCT;
+    const signatureYieldBonus = gs.completedSignatureIds.length * SIGNATURE_YIELD_BONUS_PCT;
     const newSignatureYieldBonus = newlyCompletedSignatureIds.length * SIGNATURE_YIELD_BONUS_PCT;
     const signatureSpeedBonus = 0;
 
     // Yield bonuses that require discovery to be unlocked
-    const cyanYieldBonus = ctx.discoveries[DISCOVERY.CYAN_YIELD]
+    const cyanYieldBonus = gs.discoveries[DISCOVERY.CYAN_YIELD]
         ? cyanCount * CYAN_YIELD_BONUS_PCT
         : 0;
-    const magentaYieldBonus = ctx.discoveries[DISCOVERY.MAGENTA_YIELD]
+    const magentaYieldBonus = gs.discoveries[DISCOVERY.MAGENTA_YIELD]
         ? magentaCount * MAGENTA_YIELD_BONUS_PCT
         : 0;
-    const uniqueItemsYieldBonus = ctx.discoveries[DISCOVERY.UNIQUE_ITEMS_YIELD]
-        ? computeUniqueItemsYieldBonusPct(ctx.refinedUniqueItemIds, wafer.items)
+    const uniqueItemsYieldBonus = gs.discoveries[DISCOVERY.UNIQUE_ITEMS_YIELD]
+        ? computeUniqueItemsYieldBonusPct(gs.refinedUniqueItemIds, gs.wafer.items)
         : 0;
 
     const totalYieldPct = baseYieldPct + signatureYieldBonus + newSignatureYieldBonus + cyanYieldBonus + magentaYieldBonus + uniqueItemsYieldBonus;
@@ -374,7 +364,7 @@ export function computeRefinePreviewChem(wafer: Wafer, ctx: RefineContext): Refi
 
     const gearOutputs: GearOutput[] = [];
 
-    if (ctx.discoveries[DISCOVERY.MAGENTA_CRYSTALS] && magentaCount > 0) {
+    if (gs.discoveries[DISCOVERY.MAGENTA_CRYSTALS] && magentaCount > 0) {
         const crystalCount = Math.floor(magentaCount * MAGENTA_CRYSTAL_YIELD_PER_ESSENCE * yieldMultiplier);
         if (crystalCount > 0) {
             gearOutputs.push({
@@ -401,8 +391,8 @@ export function computeRefinePreviewChem(wafer: Wafer, ctx: RefineContext): Refi
         expectedFlux,
         essenceTotals,
         cellEffectiveCounts,
-        emptyCount: wafer.emptyCount,
-        enabledCount: wafer.enabledCount,
+        emptyCount: gs.wafer.emptyCount,
+        enabledCount: gs.wafer.enabledCount,
         newlyCompletedSignatureIds,
         newSignatureMatches,
         gearOutputs,
@@ -422,9 +412,4 @@ export function calculateOutputs(
         chrono: preview.expectedChrono,
         flux: preview.expectedFlux,
     };
-}
-
-export function rollSuccess(failureChancePct: number): boolean {
-    const roll = Math.random() * 100;
-    return roll >= failureChancePct;
 }

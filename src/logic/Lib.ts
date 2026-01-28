@@ -80,7 +80,7 @@ export class Lib {
         if (reward.kind !== 'raid_add_item') continue;
 
         // Determine which raids this reward applies to
-        const targetRaidIds: string[] = reward.targetRaidId
+        const targetRaidIds: readonly string[] = reward.targetRaidId
           ? [reward.targetRaidId]
           : quest.raidRestriction;
 

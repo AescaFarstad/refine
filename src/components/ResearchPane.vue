@@ -15,7 +15,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
-import { uiState, getGameState, getGameLib } from '../logic/UIState';
+import { uiState, getGameState, getGameLib, getGameStateMutable } from '../logic/UIState';
 import { clearCanvas, drawHexagon } from '../logic/DrawHex';
 import type { Point2 } from '../logic/ItemLib';
 import { pixelToAxial, axialToPixel } from '../logic/HexMath';
@@ -460,7 +460,7 @@ function applyEditModeAt(axial: Point2): void {
   const mode = (uiState as any).researchEditMode as string | undefined;
   if (!mode) return;
 
-  const gs = getGameState();
+  const gs = getGameStateMutable();
   const idx = axialToIndex(axial.x, axial.y);
   if (idx === -1) return;
   const cell = gs.researchCells[idx];

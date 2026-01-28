@@ -1,7 +1,8 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro } from './InputCommands';
+import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro, CmdPickupShard } from './InputCommands';
+import { SHARD_PICKUP_DELAY_SEC } from '../Model';
 import { discover, discoverRefineTab, ensureSignatureDiscoveryFromWafer } from '../Discover';
 import { DISCOVERY } from '../DiscoveryLib';
 import { computeEffectiveEssences } from '../RefinePreview';
@@ -441,6 +442,16 @@ handlersByName.set('CmdToggleItemBan', (gs, cmd) => {
 
 handlersByName.set('CmdDismissIntro', (gs) => {
   gs.discoveries[DISCOVERY.INTRO_SEEN] = true;
+});
+
+handlersByName.set('CmdPickupShard', (gs, cmd) => {
+  const c = cmd as CmdPickupShard;
+  if (gs.shardPickupGraceSec > 0) return;
+  const shard = gs.shards.find(s => s && s.id === c.shardId);
+  if (!shard || shard.triggered) return;
+  shard.triggered = true;
+  shard.pickupDelaySec = SHARD_PICKUP_DELAY_SEC;
+  // Physics (vel) is managed in UIState.shardPhysics, not here
 });
 
 export function processInputs(gameState: GameState): void {

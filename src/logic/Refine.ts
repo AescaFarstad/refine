@@ -2,10 +2,9 @@ import type { Lib } from './Lib';
 import type { Essence } from './ItemLib';
 import type { GameState } from './GameState';
 import { RefineryOutcome } from './GameState';
-import { calculateOutputs, computeRefinePreviewChem, rollSuccess } from './RefinePreview';
+import { calculateOutputs, computeRefinePreviewChem } from './RefinePreview';
 import { clearWafer } from './Wafer';
 import { getHypRepresentation } from './HypNumbers';
-import { SHARD_LAUNCH_SPEED, SHARD_MAX_OMEGA, SHARD_MIN_OMEGA, SHARD_OMEGA_POWER } from './Model';
 import { calculateShardFontSize } from '../utils/ShardDisplay';
 import { EvtRefineryDone } from './evt/Evt';
 import { discover } from './Discover';
@@ -33,13 +32,7 @@ export function startRefining(gs: GameState): void {
   }
   if (!hasAny) return;
 
-  const preview = computeRefinePreviewChem(gs.wafer, {
-    signatures: gs.lib.signatures,
-    signatureLevel: gs.signatureLevel,
-    completedSignatureIds: gs.completedSignatureIds,
-    discoveries: gs.discoveries,
-    refinedUniqueItemIds: gs.refinedUniqueItemIds,
-  });
+  const preview = computeRefinePreviewChem(gs);
   gs.refiningDuration = Math.max(0, Math.round(preview.timeSec));
 
   const duration = gs.refiningDuration;
@@ -50,14 +43,8 @@ export function startRefining(gs: GameState): void {
 export function resolveRefineryDone(gs: GameState): void {
   const wafer = gs.wafer;
 
-  const preview = computeRefinePreviewChem(wafer, {
-    signatures: gs.lib.signatures,
-    signatureLevel: gs.signatureLevel,
-    completedSignatureIds: gs.completedSignatureIds,
-    discoveries: gs.discoveries,
-    refinedUniqueItemIds: gs.refinedUniqueItemIds,
-  });
-  const succeeded = rollSuccess(preview.failureChancePct);
+  const preview = computeRefinePreviewChem(gs);
+  const succeeded = gs.random.get() < preview.failureChancePct;
 
   const outcome = new RefineryOutcome();
   outcome.success = succeeded;
@@ -116,7 +103,7 @@ export function resolveRefineryDone(gs: GameState): void {
       Math.max(0, preview.expectedChrono || 0) +
       Math.max(0, preview.expectedFlux || 0);
     if (shardAmount > 0) {
-      createShards(gs, 'shards', shardAmount, 2);
+      createShards(gs, 'shards', shardAmount);
     }
     gs.shardPickupGraceSec = 1.2;
   }
@@ -125,7 +112,9 @@ export function resolveRefineryDone(gs: GameState): void {
   clearWafer(gs.wafer);
 }
 
-function createShards(gs: GameState, resource: string, amount: number, speedMult: number = 1): void {
+// Physics (pos, vel, angle, omega) is initialized in UI layer (RefineAnim.vue)
+// when it detects a new shard without physics state.
+function createShards(gs: GameState, resource: string, amount: number): void {
   if (amount <= 0) return;
   const representation = getHypRepresentation(amount);
 
@@ -134,25 +123,10 @@ function createShards(gs: GameState, resource: string, amount: number, speedMult
     const count = representation[i];
     const value = i + 1;
     for (let j = 0; j < count; j++) {
-      const angle = gs.random.get_in_range(0, Math.PI * 2);
-      const speed = gs.random.get_in_range(SHARD_LAUNCH_SPEED.x, SHARD_LAUNCH_SPEED.y) * speedMult;
-      const speedNorm = (speed - SHARD_LAUNCH_SPEED.x) / (SHARD_LAUNCH_SPEED.y - SHARD_LAUNCH_SPEED.x || 1);
-      const clampedSpeedNorm = Math.max(0, Math.min(1, speedNorm));
-      const omegaBase = gs.random.get();
-      const omegaBias = Math.pow(omegaBase, SHARD_OMEGA_POWER);
-      const omegaT = clampedSpeedNorm + (1 - clampedSpeedNorm) * omegaBias;
-      const omegaMagnitude = SHARD_MIN_OMEGA + (SHARD_MAX_OMEGA - SHARD_MIN_OMEGA) * omegaT;
-      const omegaSign = gs.random.get() < 0.5 ? -1 : 1;
-      const omega = omegaSign * omegaMagnitude;
-      const initialAngle = gs.random.get_in_range(0, Math.PI * 2);
       gs.shards.push({
-        id: Math.random().toString(36).substr(2, 9),
+        id: gs.random.get().toString(36).substring(2, 11),
         resource,
         amount: value,
-        pos: { x: 0, y: 0 }, // Spawn in middle (will be relative to wafer center in UI, but here 0,0)
-        vel: { x: Math.cos(angle) * speed, y: Math.sin(angle) * speed },
-        angle: initialAngle,
-        omega,
         triggered: false,
         pickupDelaySec: 0,
         size: calculateShardFontSize(value),

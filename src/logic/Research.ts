@@ -4,6 +4,7 @@ import { applyReward } from './Reward';
 import { calculateResearchDistances, calculateResearchPath, type ResearchPathResult } from './ResearchPath';
 import { RESEARCH_OBSTACLES_REQUIRED_FOR_SIGNATURE_LEARN, RESEARCH_PANE_SIZE, RESEARCH_OBSTACLE_PRICE, RESEARCH_OBSTACLE_PRICE_GROWTH } from './Const';
 import { axialNeighbors } from './HexMath';
+import { ReadonlyGameState } from './UIState';
 
 // Offset to convert axial coordinates to array indices
 // Center of the grid (0,0 in axial) maps to (OFFSET, OFFSET) in the array
@@ -193,7 +194,7 @@ export function calculateVisibility(gs: GameState, lib: ResearchLib): void {
   }
 }
 
-export function calculateResearchNodePrice(gs: GameState, pathCost: number): number {
+export function calculateResearchNodePrice(gs: ReadonlyGameState, pathCost: number): number {
   if (pathCost <= 0) return 0;
 
   const base = RESEARCH_OBSTACLE_PRICE;
@@ -211,7 +212,7 @@ export function calculateResearchNodePrice(gs: GameState, pathCost: number): num
 }
 
 
-export function findCheapestPath(gs: GameState, targetX: number, targetY: number): ResearchPathResult {
+export function findCheapestPath(gs: ReadonlyGameState, targetX: number, targetY: number): ResearchPathResult {
   const idx = axialToIndex(targetX, targetY);
   if (idx === -1) {
     return {

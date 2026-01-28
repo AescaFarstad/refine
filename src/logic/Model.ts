@@ -5,10 +5,8 @@ import { processCheats } from './cheat/CheatProcessor';
 import { IS_DEBUG } from './Const';
 // IceMaze instance is persisted on GameState
 import { IceMaze } from "../maze/IceMaze";
-import { distancePointToSegment } from "./core/math";
 import { ArtefactType, Chase } from "../maze/Chase";
 import generateIceMaze from "../maze/IceMazeGen";
-import { clearWafer } from "./Wafer";
 import { calculateVisibility } from "./Research";
 import { ensureShardDiscovery, ensureResearchTabDiscovery, ensureMazeTabDiscovery } from "./Discover";
 import { applyReward } from "./Reward";
@@ -16,12 +14,6 @@ import { applyReward } from "./Reward";
 const TIME_SPEED_MAX = 3800;
 const TIME_SPEED_MIN = 300;
 const TIME_SPEED_RAMP_SEC = 1;
-
-export const SHARD_MIN_OMEGA = 0.1;
-export const SHARD_MAX_OMEGA = 20;
-export const SHARD_OMEGA_POWER = 5;
-export const SHARD_OMEGA_TO_SPEED_K = 4;
-export const SHARD_OMEGA_TRANSFER_FRACTION = 0.5;
 
 export const globalInputQueue: CmdInput[] = [];
 
@@ -32,15 +24,6 @@ export function setResearchRevealRadius(gs: GameState, radius: number): void {
   gs.researchRevealRadius = radius;
   calculateVisibility(gs, gs.lib.research);
 }
-
-const SHARD_ATTRACTION_RANGE_PX = 250;
-const SHARD_BASE_GRAV_ACCEL = 180;
-const SHARD_ATTRACTION_BASE_AMOUNT = 5;
-const SHARD_DRAG_STRENGTH_PER_SEC = 0.05;
-const SHARD_RADIUS_MULT = 1.2
-export const SHARD_LAUNCH_SPEED = { x: 20, y: 100 }
-
-let lastWaferMouse: { x: number; y: number } | null = null;
 
 // deltaTime is in seconds
 export function update(gs: GameState, deltaTime: number): void {
@@ -91,6 +74,8 @@ export function update(gs: GameState, deltaTime: number): void {
   }
 }
 
+// Shard physics (position, velocity, bouncing) is handled in UI (RefineAnim.vue).
+// Model only handles: grace period, triggered shard resource granting, cleanup.
 function updateShards(gs: GameState, dt: number) {
   // If there are no shards but we still have a refinery
   // outcome, treat the outcome as fully resolved so that
@@ -102,159 +87,35 @@ function updateShards(gs: GameState, dt: number) {
     return;
   }
 
-  const halfW = gs.waferSize.x / 2;
-  const halfH = gs.waferSize.y / 2;
-  const mouse = gs.waferMouseCoords;
-
   if (gs.shardPickupGraceSec > 0) {
     gs.shardPickupGraceSec = Math.max(0, gs.shardPickupGraceSec - dt);
   }
 
-  if (halfW === 0 || halfH === 0) {
-    return;
-  }
-
-  // Shards use real time seconds, so we use dt directly
+  // Process triggered shards (picked up in UI)
   for (let i = 0; i < gs.shards.length; i++) {
     const shard = gs.shards[i];
-    if (!shard) continue;
+    if (!shard || !shard.triggered) continue;
 
-    // When a shard is triggered (picked up in UI), we stop physics and
-    // run a real-time delay before granting resources.
-    if (shard.triggered) {
-      const remaining = shard.pickupDelaySec - dt;
-      shard.pickupDelaySec = remaining;
-      if (remaining <= 0) {
-        if (shard.resource === 'credits') {
-          gs.credits += shard.amount;
-        } else if (shard.resource === 'chronotraces') {
-          gs.chronotraces += shard.amount;
-          ensureResearchTabDiscovery(gs);
-        } else if (shard.resource === 'timeFlux') {
-          gs.timeFlux += shard.amount;
-          ensureMazeTabDiscovery(gs);
-        } else if (shard.resource === 'shards') {
-          gs.shardDust += shard.amount;
-        } else if (shard.resource === 'zone_crystal') {
-          gs.countableGear['zone_crystal'] = (gs.countableGear['zone_crystal'] || 0) + shard.amount;
-          if (!gs.unlockedGear.includes('zone_crystal')) {
-            gs.unlockedGear.push('zone_crystal');
-          }
+    const remaining = shard.pickupDelaySec - dt;
+    shard.pickupDelaySec = remaining;
+    if (remaining <= 0) {
+      if (shard.resource === 'credits') {
+        gs.credits += shard.amount;
+      } else if (shard.resource === 'chronotraces') {
+        gs.chronotraces += shard.amount;
+        ensureResearchTabDiscovery(gs);
+      } else if (shard.resource === 'timeFlux') {
+        gs.timeFlux += shard.amount;
+        ensureMazeTabDiscovery(gs);
+      } else if (shard.resource === 'shards') {
+        gs.shardDust += shard.amount;
+      } else if (shard.resource === 'zone_crystal') {
+        gs.countableGear['zone_crystal'] = (gs.countableGear['zone_crystal'] || 0) + shard.amount;
+        if (!gs.unlockedGear.includes('zone_crystal')) {
+          gs.unlockedGear.push('zone_crystal');
         }
-        gs.shards[i] = null as any;
       }
-      continue;
-    }
-
-    // Attraction towards mouse when hovering wafer
-    if (mouse) {
-      const dxMouse = mouse.x - shard.pos.x;
-      const dyMouse = mouse.y - shard.pos.y;
-      const distMouse = Math.sqrt(dxMouse * dxMouse + dyMouse * dyMouse);
-
-      if (distMouse > 0.0001 && distMouse < SHARD_ATTRACTION_RANGE_PX) {
-        // Attraction strength fades linearly to 0 at the edge of the range
-        const rangeT = 1 - (distMouse / SHARD_ATTRACTION_RANGE_PX);
-        const falloff = Math.max(0, rangeT);
-
-        let resourceFactor = 1;
-        if (shard.resource === 'chronotraces') {
-          resourceFactor = 0.66;
-        } else if (shard.resource === 'timeFlux') {
-          resourceFactor = 0.33;
-        }
-
-        const sizeFactor = SHARD_ATTRACTION_BASE_AMOUNT / Math.max(1, shard.amount);
-        const gravAccel = SHARD_BASE_GRAV_ACCEL * resourceFactor * falloff * sizeFactor;
-        const nx = dxMouse / distMouse;
-        const ny = dyMouse / distMouse;
-        shard.vel.x += nx * gravAccel * dt;
-        shard.vel.y += ny * gravAccel * dt;
-      }
-
-      const pickupRadius = shard.size * SHARD_RADIUS_MULT;
-
-      let pickupDistance = distMouse;
-      if (lastWaferMouse) {
-        pickupDistance = distancePointToSegment(
-          shard.pos,
-          lastWaferMouse,
-          mouse,
-        );
-      }
-
-      if (pickupDistance < pickupRadius && gs.shardPickupGraceSec <= 0) {
-        shard.triggered = true;
-        shard.pickupDelaySec = SHARD_PICKUP_DELAY_SEC;
-        shard.vel.x = 0;
-        shard.vel.y = 0;
-        continue;
-      }
-    }
-
-    if (SHARD_DRAG_STRENGTH_PER_SEC > 0 && dt > 0) {
-      const drag = Math.exp(-SHARD_DRAG_STRENGTH_PER_SEC * dt);
-      shard.vel.x *= drag;
-      shard.vel.y *= drag;
-      shard.omega *= drag;
-    }
-
-    shard.pos.x += shard.vel.x * dt;
-    shard.pos.y += shard.vel.y * dt;
-    shard.angle += shard.omega * dt;
-
-    const margin = shard.size * 0.5;
-
-    if (shard.pos.x < -halfW + margin) {
-      shard.pos.x = -halfW + margin;
-      shard.vel.x *= -1;
-
-      const omegaMag = Math.abs(shard.omega);
-      if (omegaMag > 0) {
-        const omegaSign = shard.omega > 0 ? 1 : -1;
-        const transferredOmega = omegaMag * SHARD_OMEGA_TRANSFER_FRACTION;
-        const deltaSpeed = transferredOmega * SHARD_OMEGA_TO_SPEED_K;
-        shard.vel.y += omegaSign * deltaSpeed;
-        shard.omega -= omegaSign * transferredOmega;
-      }
-    } else if (shard.pos.x > halfW - margin) {
-      shard.pos.x = halfW - margin;
-      shard.vel.x *= -1;
-
-      const omegaMag = Math.abs(shard.omega);
-      if (omegaMag > 0) {
-        const omegaSign = shard.omega > 0 ? 1 : -1;
-        const transferredOmega = omegaMag * SHARD_OMEGA_TRANSFER_FRACTION;
-        const deltaSpeed = transferredOmega * SHARD_OMEGA_TO_SPEED_K;
-        shard.vel.y += omegaSign * deltaSpeed;
-        shard.omega -= omegaSign * transferredOmega;
-      }
-    }
-
-    if (shard.pos.y < -halfH + margin) {
-      shard.pos.y = -halfH + margin;
-      shard.vel.y *= -1;
-
-      const omegaMag = Math.abs(shard.omega);
-      if (omegaMag > 0) {
-        const omegaSign = shard.omega > 0 ? 1 : -1;
-        const transferredOmega = omegaMag * SHARD_OMEGA_TRANSFER_FRACTION;
-        const deltaSpeed = transferredOmega * SHARD_OMEGA_TO_SPEED_K;
-        shard.vel.x += omegaSign * deltaSpeed;
-        shard.omega -= omegaSign * transferredOmega;
-      }
-    } else if (shard.pos.y > halfH - margin) {
-      shard.pos.y = halfH - margin;
-      shard.vel.y *= -1;
-
-      const omegaMag = Math.abs(shard.omega);
-      if (omegaMag > 0) {
-        const omegaSign = shard.omega > 0 ? 1 : -1;
-        const transferredOmega = omegaMag * SHARD_OMEGA_TRANSFER_FRACTION;
-        const deltaSpeed = transferredOmega * SHARD_OMEGA_TO_SPEED_K;
-        shard.vel.x += omegaSign * deltaSpeed;
-        shard.omega -= omegaSign * transferredOmega;
-      }
+      gs.shards[i] = null as any;
     }
   }
 
@@ -262,12 +123,6 @@ function updateShards(gs: GameState, dt: number) {
   if (!hasAnyShards) {
     gs.shards.length = 0;
     gs.lastRefineryOutcome = null;
-  }
-
-  if (mouse) {
-    lastWaferMouse = { x: mouse.x, y: mouse.y };
-  } else {
-    lastWaferMouse = null;
   }
 }
 

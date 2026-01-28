@@ -4,17 +4,17 @@ import type { Reward } from './Reward';
 export interface QuestDefinition {
   id: string;
   name: string;
-  raidRestriction: string[];
-  gearRequired: string[];
+  readonly raidRestriction: readonly string[];
+  readonly gearRequired: readonly string[];
   autoaccept: boolean;
   requiresRaidSuccesses: number;
   requiresRaidQuestCompletions: number;
-  requiresQuestIds: string[];
-  rewards: Reward[];
+  readonly requiresQuestIds: readonly string[];
+  readonly rewards: readonly Reward[];
   encounterLine: string;
   description: string;
   encounterTimeMin: number;
-  encounters: RaidMutation[];
+  readonly encounters: readonly RaidMutation[];
   showAddedItems: boolean;
 }
 

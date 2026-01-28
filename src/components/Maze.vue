@@ -597,7 +597,7 @@ function drawDynamic() {
 
   // Demons (use visual positions)
   for (const d of game.state.demons) {
-    const pos = game.demonVisualPos.get(d) || d.cell;
+    const pos = game.demonVisualPos.get(d.id) || d.cell;
     const cx = ox + (pos.x + 0.5) * tile;
     const cy = oy + (pos.y + 0.5) * tile;
     const r = Math.max(4, Math.floor(tile * 0.26));

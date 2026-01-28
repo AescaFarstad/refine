@@ -31,14 +31,14 @@ export interface LootEncounterDef {
 
 export interface MonsterLootEncounterDef {
   type: 'MonsterLootEncounter';
-  // Source monster definition (its lootItemId is used)
   monsterId: string;
+  injected?: boolean;
 }
 
 export interface FightEncounterDef {
   type: 'FightEncounter';
   monsterId: string;
-  summoned?: boolean; // true if this fight was summoned by another monster (default false)
+  injected?: boolean;
 }
 
 export interface QuestEncounterDef {

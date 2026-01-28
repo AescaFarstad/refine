@@ -9,6 +9,7 @@ export interface RaidLogEntryBase {
   currentMaxHp: number;
   bagsUsed: number;
   bagsCapacity: number;
+  injected: boolean;
 }
 
 export interface PreparationEncounterLogEntry extends RaidLogEntryBase {
@@ -151,6 +152,7 @@ export function createPreparationEncounterLogEntry(init: Partial<PreparationEnco
     currentMaxHp: 0,
     bagsUsed: 0,
     bagsCapacity: 0,
+    injected: false,
     tacticNames: [],
     damageBefore: 0,
     damageAfter: 0,
@@ -176,6 +178,7 @@ export function createWalkEncounterLogEntry(init: Partial<WalkEncounterLogEntry>
     currentMaxHp: 0,
     bagsUsed: 0,
     bagsCapacity: 0,
+    injected: false,
     hpBefore: 0,
     hpAfter: 0,
     speedKmH: 0,
@@ -197,6 +200,7 @@ export function createQuestEncounterLogEntry(init: Partial<QuestEncounterLogEntr
     currentMaxHp: 0,
     bagsUsed: 0,
     bagsCapacity: 0,
+    injected: false,
     questId: '',
     success: false,
     ...rest,
@@ -240,6 +244,7 @@ export function createFightEncounterLogEntry(init: Partial<FightEncounterLogEntr
     currentMaxHp: 0,
     bagsUsed: 0,
     bagsCapacity: 0,
+    injected: false,
     dieFromOvertime: false,
     fightLog: [],
     monsterId: '',
@@ -264,6 +269,7 @@ export function createLootEncounterLogEntry(init: Partial<LootEncounterLogEntry>
     currentMaxHp: 0,
     bagsUsed: 0,
     bagsCapacity: 0,
+    injected: false,
     skipped: false,
     skipReason: '',
     myRoll: 0,
@@ -294,6 +300,7 @@ export function createMonsterLootEncounterLogEntry(init: Partial<MonsterLootEnco
     currentMaxHp: 0,
     bagsUsed: 0,
     bagsCapacity: 0,
+    injected: false,
     skipped: false,
     skipReason: '',
     myRoll: 0,
@@ -323,6 +330,7 @@ export function createZoneCollapseLogEntry(init: Partial<ZoneCollapseLogEntry> =
     currentMaxHp: 0,
     bagsUsed: 0,
     bagsCapacity: 0,
+    injected: false,
     timeLimit: 0,
     elapsedTime: 0,
     ...rest,

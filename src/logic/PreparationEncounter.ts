@@ -52,6 +52,7 @@ export function handlePreparationEncounter(_r: ActiveRaid, enc: PreparationEncou
     currentMaxHp: 0,
     bagsUsed: 0,
     bagsCapacity: 0,
+    injected: false,
     tacticNames: Array.isArray(enc.tacticNames) ? [...enc.tacticNames] : [],
     damageBefore: 0,
     damageAfter: damageBonus,

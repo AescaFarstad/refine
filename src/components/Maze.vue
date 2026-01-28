@@ -149,9 +149,8 @@ const rewards = computed((): RewardDisplay[] => {
         return { type: 'unlock_raid', text: `New raid location: ${raidName}` };
       }
       if (r.kind === 'countable_gear') {
-        const gearDef = lib?.gear.get(r.gearId);
-        const gearName = gearDef?.name || r.gearId;
-        return { type: 'countable_gear', text: gearName, gearId: r.gearId, amount: r.amount };
+        const gearDef = lib?.gear.get(r.gearId)!;
+        return { type: 'countable_gear', text: gearDef.name, gearId: r.gearId, amount: r.amount };
       }
       return null;
     })
@@ -162,7 +161,7 @@ const atlasSource = atlasStorage.getItemsSource();
 
 function gearIconStyle(gearId: string): Record<string, string> {
   const lib = getGameLib();
-  const gearDef = lib!.gear.get(gearId);
+  const gearDef = lib.gear.get(gearId)!;
   const f = atlasStorage.getItemsFrame(gearDef.image)!;
   return atlasSpriteStyle(atlasSource, f, { size: 28, mode: 'fixed' });
 }

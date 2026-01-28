@@ -1,4 +1,4 @@
-import type { EncounterDef, FightEncounterDef, LootEncounterDef, MonsterLootEncounterDef, PreparationEncounterDef, QuestEncounterDef, RaidDefinition, WalkEncounterDef } from './RaidLib';
+import type { EncounterDef, FightEncounterDef, LootEncounterDef, MonsterLootEncounterDef, QuestEncounterDef, RaidDefinition, WalkEncounterDef } from './RaidLib';
 import type { GameState } from './GameState';
 import type { QuestDefinition } from './QuestLib';
 import { ENABLE_QUEST_PREREQS } from './Const';
@@ -156,56 +156,6 @@ export function applyMonsterMutation(raid: RaidDefinition, monsterId: string, co
   applyRaidMutation(raid, { kind: 'AddMonsterMutation', monsterId, count });
 }
 
-export function cloneEncounter(enc: EncounterDef): EncounterDef {
-  switch (enc.type) {
-    case 'PreparationEncounter': {
-      const p = enc as PreparationEncounterDef;
-      return {
-        type: 'PreparationEncounter',
-        timeSpentSec: p.timeSpentSec,
-        damageBonus: p.damageBonus,
-        hpBonus: p.hpBonus,
-        blockChanceBonus: p.blockChanceBonus,
-        tacticNames: [...p.tacticNames],
-        gearId: p.gearId,
-        gearImage: p.gearImage,
-      };
-    }
-    case 'WalkEncounter':
-      return { type: 'WalkEncounter' };
-    case 'LootEncounter':
-      return { type: 'LootEncounter' };
-    case 'MonsterLootEncounter':
-      return { type: 'MonsterLootEncounter', monsterId: (enc as MonsterLootEncounterDef).monsterId };
-    case 'FightEncounter': {
-      const f = enc as FightEncounterDef;
-      const cloned: FightEncounterDef = { type: 'FightEncounter', monsterId: f.monsterId };
-      if (f.summoned) cloned.summoned = true;
-      return cloned;
-    }
-    case 'QuestEncounter':
-      return { type: 'QuestEncounter', questId: (enc as QuestEncounterDef).questId };
-  }
-}
-
-export function cloneRaid(def: RaidDefinition): RaidDefinition {
-  return {
-    id: def.id,
-    name: def.name,
-    locationImageId: def.locationImageId,
-    description: def.description,
-    baseLootChance: def.baseLootChance,
-    items: [...def.items],
-    itemPoolsByRarity: def.itemPoolsByRarity,
-    allPotentialItems: [...def.allPotentialItems],
-    encounters: def.encounters.map(step => ({ count: step.count | 0, encounter: cloneEncounter(step.encounter) })),
-    order: def.order,
-    zoneCollapseSec: def.zoneCollapseSec,
-    zoneCollapseStepPerMutation: def.zoneCollapseStepPerMutation,
-    initialMutations: [...def.initialMutations],
-  };
-}
-
 export function questIsActive(gs: GameState, q: QuestDefinition, raidId: string): boolean {
   if (!questIsAvailable(gs, q, raidId)) return false;
   if (q.autoaccept) return true;
@@ -213,7 +163,6 @@ export function questIsActive(gs: GameState, q: QuestDefinition, raidId: string)
 }
 
 export function questMeetsRaidRequirements(gs: GameState, q: QuestDefinition, raidId: string): boolean {
-  // If quest prerequisites are disabled, skip all checks
   if (!ENABLE_QUEST_PREREQS) return true;
 
   const restricted = q.raidRestriction.length > 0 ? new Set(q.raidRestriction) : null;

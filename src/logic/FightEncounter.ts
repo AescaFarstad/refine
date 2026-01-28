@@ -7,18 +7,18 @@ function clamp(v: number, lo: number, hi: number): number { return Math.max(lo, 
 
 export interface FightEncounterContext {
   monsterId: string;
-  summoned: boolean;
+  injected: boolean;
 }
 
 export interface FightEncounterResult {
   entry: FightEncounterLogEntry & { monsterId: string; monsterName: string; timeSpentSec: number };
   timeSpentSec: number;
   extras: Array<LootEncounterLogEntry>;
-  summonedMonsterId: string | null; // If non-null, another fight with this monster should be queued
+  summonedMonsterId: string | null;
 }
 
 export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEncounterContext): FightEncounterResult {
-  const { monsterId, summoned } = ctx;
+  const { monsterId, injected } = ctx;
   const m = gs.lib.monsters.get(monsterId)!;
   const monsterName = m.name;
   let monsterHp = m.hp;
@@ -241,7 +241,7 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
     monsterName,
     timeSpentSec: totalTime,
     selfDestructed: monsterSelfDestructed,
-    summoned,
+    injected,
   });
 
   const extras: LootEncounterLogEntry[] = [];

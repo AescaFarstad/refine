@@ -119,7 +119,7 @@ const shownNonSummonedCount = computed(() => {
   const entries = logEntries.value.slice(0, shownCount.value);
   let count = 0;
   for (const e of entries) {
-    if (e.kind === 'FightEncounter' && e.summoned) continue;
+    if (e.injected) continue;
     count++;
   }
   return count;

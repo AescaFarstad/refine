@@ -1,5 +1,5 @@
 import { createRaidDamageBreakdown, createRaidTimeBreakdownSec, type GameState, type ActiveRaid, type RaidDamageBreakdown, type RaidTimeBreakdownSec } from './GameState';
-import type { RaidDefinition, EncounterDef, FightEncounterDef, QuestEncounterDef } from './RaidLib';
+import type { RaidDefinition, EncounterDef, FightEncounterDef, QuestEncounterDef, MonsterLootEncounterDef } from './RaidLib';
 import type { GearDefinition } from './GearLib';
 import { createFightEncounterLogEntry, createLootEncounterLogEntry, createMonsterLootEncounterLogEntry, createQuestEncounterLogEntry, createZoneCollapseLogEntry, type LootEncounterLogEntry, type MonsterLootEncounterLogEntry, type RaidEventLog, type RaidEventLogEntry } from './RaidLog';
 import { handleWalkEncounter } from './WalkEncounter';
@@ -7,7 +7,7 @@ import { handleLootLikeEncounter, handleMonsterLootEncounter } from './LootEncou
 import { handleFightEncounter } from './FightEncounter';
 import { handlePreparationEncounter, createPreparationEncounter, type GearPreparationPlan } from './PreparationEncounter';
 import SeededRandom from './core/SeededRandom';
-import { cloneRaid, applyRaidMutation, questIsActive, type RaidMutation } from './RaidMutation';
+import { applyRaidMutation, questIsActive, type RaidMutation } from './RaidMutation';
 import type { Reward } from './Reward';
 import { Perks } from './Perks';
 
@@ -439,7 +439,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
       }
       case 'FightEncounter': {
         const monsterId = enc.monsterId;
-        const summoned = (enc as FightEncounterDef).summoned || false;
+        const injected = (enc as FightEncounterDef).injected ?? false;
         // Safer Routes: skip first fight after a walk
         if (justWalked) {
           justWalked = false;
@@ -448,13 +448,13 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
             monsterId,
             monsterName: monster.name,
             skipped: true,
-            summoned,
+            injected,
             elapsedTotalSec: timeSpentSec,
           });
           log.entries.push(stampEntry(skippedEntry, raid));
           break;
         }
-        const fight = handleFightEncounter(gsForRun, raid, { monsterId, summoned });
+        const fight = handleFightEncounter(gsForRun, raid, { monsterId, injected });
         let t = timeSpentSec;
         for (const ev of fight.entry.fightLog) {
           t += ev.timeSpentSec;
@@ -464,15 +464,14 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         timeBreakdownSec.totalSec += fight.timeSpentSec;
         timeBreakdownSec.fightingSec += fight.timeSpentSec;
         fight.entry.elapsedTotalSec = timeSpentSec;
+        fight.entry.injected = injected;
         log.entries.push(stampEntry(fight.entry, raid));
-        // biopsy
         const lastEv = fight.entry.fightLog[fight.entry.fightLog.length - 1];
         if (lastEv?.biopsyTriggered) {
-          queue.unshift({ type: 'MonsterLootEncounter', monsterId });
+          queue.unshift({ type: 'MonsterLootEncounter', monsterId, injected: true });
         }
-        // monster summoned
         if (fight.summonedMonsterId) {
-          queue.unshift({ type: 'FightEncounter', monsterId: fight.summonedMonsterId, summoned: true });
+          queue.unshift({ type: 'FightEncounter', monsterId: fight.summonedMonsterId, injected: true });
         }
         if (raid.hp <= 0) {
           const reimbursedCredits = Math.floor(gs.selectedGearPrice * raid.reimbursedPct / 100);
@@ -507,12 +506,14 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
       }
       case 'MonsterLootEncounter': {
         const mid = enc.monsterId;
+        const injected = (enc as MonsterLootEncounterDef).injected;
         const m = gsForRun.lib.monsters.get(mid)!;
         const entry = handleMonsterLootEncounter(gsForRun, raid, m.lootItemId, raid.biopsyChance, bagItemCounts, discardedItemCounts);
         timeSpentSec += entry.timeSpentSec;
         timeBreakdownSec.totalSec += entry.timeSpentSec;
         timeBreakdownSec.dissectingSec += entry.timeSpentSec;
         entry.elapsedTotalSec = timeSpentSec;
+        entry.injected = injected ?? false;
         log.entries.push(stampEntry(entry, raid));
         break;
       }
@@ -632,7 +633,7 @@ export function dryRunRaid(gs: GameState, raidDef: RaidDefinition): RaidRunResul
 }
 
 export function getEffectiveRaidDefinition(gs: GameState, raidId: string): RaidDefinition {
-  const def = cloneRaid(gs.lib.raids.get(raidId)!);
+  const def = structuredClone(gs.lib.raids.get(raidId)!)
   gs.lib.quests.forEach((q) => {
     if (!questIsActive(gs, q, raidId)) return;
     if (q.encounterTimeMin > 0) {

@@ -44,6 +44,7 @@
                 <span class="resource-glyph">{{ res.glyph }}</span>
                 {{ res.name }}
               </span>
+              <button class="btn" @click="setResource(res.key, 0)">0</button>
               <button class="btn" @click="grantResource(res.key, 10)">+10</button>
               <button class="btn" @click="grantResource(res.key, 1000)">+1k</button>
               <button class="btn" @click="grantResource(res.key, 100000)">+100k</button>
@@ -270,6 +271,10 @@ const otherDiscoveryIds = computed<DiscoveryId[]>(() =>
 
 function grantResource(key: ResourceKey, amount: number) {
   getGameState()[key] += amount;
+}
+
+function setResource(key: ResourceKey, amount: number) {
+  getGameState()[key] = amount;
 }
 
 function isDiscovered(id: DiscoveryId): boolean {

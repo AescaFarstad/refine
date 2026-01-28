@@ -13,6 +13,7 @@ import {
     MAGENTA_SUCCESS_PENALTY_PCT,
     REFINE_TIME,
     SIGNATURE_YIELD_BONUS_PCT,
+    UNIQUE_ITEMS_YIELD_BONUS_PCT,
 } from './Const';
 import { getWaferBuffAt } from './waferLayout';
 import { scanWaferForNewSignatures } from './Signatures';
@@ -86,7 +87,7 @@ export function computeUniqueItemsYieldBonusPct(
         uniqueCount++;
     }
 
-    return uniqueCount;
+    return uniqueCount * UNIQUE_ITEMS_YIELD_BONUS_PCT;
 }
 
 export function computeEffectiveEssences(wafer: Wafer): void {

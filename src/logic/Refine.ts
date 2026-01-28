@@ -44,7 +44,7 @@ export function resolveRefineryDone(gs: GameState): void {
   const wafer = gs.wafer;
 
   const preview = computeRefinePreviewChem(gs);
-  const succeeded = gs.random.get() < preview.failureChancePct;
+  const succeeded = gs.random.get() > preview.failureChancePct;
 
   const outcome = new RefineryOutcome();
   outcome.success = succeeded;

@@ -136,6 +136,18 @@
         "${workspaceFolder}/.vscode/mount-and-notify.sh"
       ],
       "problemMatcher": []
+    },
+    {
+      "label": "Vercel",
+      "type": "shell",
+      "command": "npm run build && cd dist && vercel --yes --prod",
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always"
+      }
     }
   ]
 }

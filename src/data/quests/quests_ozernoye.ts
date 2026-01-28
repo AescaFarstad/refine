@@ -81,7 +81,7 @@ const quests: Record<string, RawQuestDefinition> = {
     description: 'Experiment with electricity and design a device that would prolong the zone\'s stability.',
     raidRestriction: ['ozernoye'],
     requiresQuestIds: ['ozernoye_raise_the_dome'],
-    encounterTimeMin: 80,
+    encounterTimeMin: 140,
     encounters: [
     ],
     rewards: [

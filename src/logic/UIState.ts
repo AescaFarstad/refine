@@ -55,6 +55,7 @@ export const uiState = reactive({
   unlockedGearCategories: [] as string[],
   countableGear: {} as Record<string, number>,
   activeQuests: [] as string[],
+  reviewedQuestIds: [] as string[],
   questProgressById: {} as Record<string, number>,
   raidFoundItemIdsByRaidId: {} as Record<string, string[]>,
   bannedItemIdsByRaidId: {} as Record<string, string[]>,
@@ -219,6 +220,7 @@ export function SyncUIFromGameState(game: GameState): void {
   }
   uiState.countableGear = { ...game.countableGear };
   uiState.activeQuests = Array.isArray(game.activeQuests) ? [...game.activeQuests] : [];
+  uiState.reviewedQuestIds = Array.isArray(game.reviewedQuestIds) ? [...game.reviewedQuestIds] : [];
   const progress: Record<string, number> = {};
   game.unlockedRaids.forEach(r => { progress[r.id] = r.questProgress; });
   uiState.questProgressById = progress;

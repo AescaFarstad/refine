@@ -1,6 +1,7 @@
 <template>
   <div>
     <div v-if="blocked" class="blocked-warning">No spare slots in this category</div>
+    <div v-if="blocked" class="blocked-warning">(Use ◌ skill points to unlock more slots)</div>
     <div class="hint-row" v-for="(row, i) in hintRows" :key="i">
       <span class="hint-label">{{ row.label }}</span>
       <span class="hint-value">{{ row.value }}</span>

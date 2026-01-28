@@ -12,7 +12,7 @@
         <div class="weight-bar">
           <div class="bar">
             <div class="fill" :class="{ over: overweight }" :style="{ width: weightPct + '%' }" />
-            <div class="wlabel">{{ weight }}/{{ maxWeight }} weight</div>
+            <div class="wlabel"><span :class="{ 'val-flash': weightChanged }">{{ weight }}</span>/<span :class="{ 'val-flash': maxWeightChanged }">{{ maxWeight }}</span> weight</div>
           </div>
         </div>
         <div class="speed">{{ speedKmH.toFixed(2) }} km/h</div>
@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { uiState, getGameState, getGameLib } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
 import { CmdDiscover } from '../logic/input/InputCommands';
@@ -57,7 +57,17 @@ const speedBonusPct = computed(() => { uiState.raidKey; return getGameState().ra
 const speedBonusFlat = computed(() => { uiState.raidKey; return getGameState().raid.speedBonusFlat; });
 const regenPerKm = computed(() => { uiState.raidKey; return getGameState().raid.regenPerKm; });
 const weight = computed(() => { uiState.raidKey; return getGameState().raid.weight; });
+const weightChanged = ref(false);
+watch(weight, () => {
+  weightChanged.value = true;
+  setTimeout(() => { weightChanged.value = false; }, 300);
+});
 const maxWeight = computed(() => { uiState.raidKey; return Math.max(1, getGameState().raid.maxWeight); });
+const maxWeightChanged = ref(false);
+watch(maxWeight, () => {
+  maxWeightChanged.value = true;
+  setTimeout(() => { maxWeightChanged.value = false; }, 300);
+});
 const hp = computed(() => {
   uiState.raidKey;
   const gs = getGameState();
@@ -125,7 +135,7 @@ const walkingTime = computed(() => {
 .dist, .speed, .time { font-weight: 700; white-space: nowrap; }
 .weight-bar { display: flex; align-items: center; flex: 1 1 320px; }
 .weight-bar .bar { position: relative; width: 100%; height: 14px; border: 1px solid var(--panel-border); border-radius: 3px; background: var(--raid-item-bg, rgba(255,255,255,0.08)); overflow: hidden; }
-.weight-bar .fill { height: 100%; background: var(--accent-warm); }
+.weight-bar .fill { height: 100%; background: var(--accent-warm); transition: width 0.3s ease-out; }
 .weight-bar .fill.over { background: #ef4444; }
 .overweight-warning { position: relative; color: #ef4444; font-weight: 800; margin-top: 6px; }
 .overweight-warning:hover { z-index: 2000; }
@@ -177,6 +187,15 @@ const walkingTime = computed(() => {
     1px 1px 0 rgba(0, 0, 0, 0.85),
     0 1px 2px rgba(0, 0, 0, 0.6);
   pointer-events: none;
+}
+.val-flash {
+  display: inline-block;
+  animation: val-pulse 0.3s ease-out;
+}
+@keyframes val-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); color: #fbbf24; }
+  100% { transform: scale(1); }
 }
 
 .discover-container {

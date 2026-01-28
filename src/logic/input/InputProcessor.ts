@@ -1,7 +1,7 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro, CmdPickupShard } from './InputCommands';
+import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdReviewQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro, CmdPickupShard, CmdSpeedUpRefining, CmdClearShardPickupGrace } from './InputCommands';
 import { SHARD_PICKUP_DELAY_SEC } from '../Model';
 import { discover, discoverRefineTab, ensureSignatureDiscoveryFromWafer } from '../Discover';
 import { DISCOVERY } from '../DiscoveryLib';
@@ -297,6 +297,13 @@ handlersByName.set('CmdToggleQuest', (gs, cmd) => {
   recomputeActiveRaidEstimates(gs, 100);
 });
 
+handlersByName.set('CmdReviewQuest', (gs, cmd) => {
+  const c = cmd as CmdReviewQuest;
+  if (!gs.reviewedQuestIds.includes(c.id)) {
+    gs.reviewedQuestIds.push(c.id);
+  }
+});
+
 handlersByName.set('CmdPlaceMolecule', (gs, cmd) => {
   const c = cmd as CmdPlaceMolecule;
   const itemId = c.itemId;
@@ -452,6 +459,16 @@ handlersByName.set('CmdPickupShard', (gs, cmd) => {
   shard.triggered = true;
   shard.pickupDelaySec = SHARD_PICKUP_DELAY_SEC;
   // Physics (vel) is managed in UIState.shardPhysics, not here
+});
+
+handlersByName.set('CmdSpeedUpRefining', (gs) => {
+  if (!gs.nextEvt || gs.nextEvt.name !== 'EvtRefineryDone') return;
+  gs.timeSpeed = (gs.timeSpeed || 1) * 2;
+  gs.timeSpeedMaxBoost = (gs.timeSpeedMaxBoost || 1) * 1.2;
+});
+
+handlersByName.set('CmdClearShardPickupGrace', (gs) => {
+  gs.shardPickupGraceSec = 0;
 });
 
 export function processInputs(gameState: GameState): void {

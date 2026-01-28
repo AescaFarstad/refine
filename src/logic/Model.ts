@@ -66,11 +66,13 @@ export function update(gs: GameState, deltaTime: number): void {
     gs.gameTime += dt * Math.max(1, gs.timeSpeed || 1);
 
     // exponential ramp: multiply by MAX^(dt/T)
-    const growth = Math.pow(TIME_SPEED_MAX, Math.min(1, dt / TIME_SPEED_RAMP_SEC));
+    const effectiveMax = TIME_SPEED_MAX * (gs.timeSpeedMaxBoost || 1);
+    const growth = Math.pow(effectiveMax, Math.min(1, dt / TIME_SPEED_RAMP_SEC));
     const nextSpeed = (gs.timeSpeed || 1) * growth;
-    gs.timeSpeed = Math.min(TIME_SPEED_MAX, nextSpeed);
+    gs.timeSpeed = Math.min(effectiveMax, nextSpeed);
   } else {
     gs.timeSpeed = TIME_SPEED_MIN;
+    gs.timeSpeedMaxBoost = 1;
   }
 }
 

@@ -103,6 +103,15 @@ export class CmdToggleQuest implements CmdInput {
   }
 }
 
+// Mark a quest as reviewed (user hovered over it)
+export class CmdReviewQuest implements CmdInput {
+  readonly name = 'CmdReviewQuest';
+  readonly id: string;
+  constructor(args: { id: string }) {
+    this.id = args.id;
+  }
+}
+
 // Wafer manipulation commands
 
 export class CmdPlaceMolecule implements CmdInput {
@@ -198,5 +207,13 @@ export class CmdPickupShard implements CmdInput {
   constructor(args: { shardId: string }) {
     this.shardId = args.shardId;
   }
+}
+
+export class CmdSpeedUpRefining implements CmdInput {
+  readonly name = 'CmdSpeedUpRefining';
+}
+
+export class CmdClearShardPickupGrace implements CmdInput {
+  readonly name = 'CmdClearShardPickupGrace';
 }
 

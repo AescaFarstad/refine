@@ -8,8 +8,9 @@
         v-for="q in quests"
         :key="q.id"
         class="quest"
-        :class="{ clickable: !q.autoaccept, accepted: q.autoaccept || isActive(q.id) }"
+        :class="{ clickable: !q.autoaccept, accepted: q.autoaccept || isActive(q.id), unreviewed: !isReviewed(q.id) }"
         @click="onQuestClick(q)"
+        @mouseenter="onQuestHover(q)"
       >
         <div class="q-head">
           <span class="q-name">{{ q.name }}</span>
@@ -35,7 +36,7 @@ import { computed } from 'vue';
 import { uiState, getGameLib, getGameState } from '../logic/UIState';
 import type { QuestDefinition } from '../logic/QuestLib';
 import { globalInputQueue } from '../logic/Model';
-import { CmdToggleQuest } from '../logic/input/InputCommands';
+import { CmdToggleQuest, CmdReviewQuest } from '../logic/input/InputCommands';
 import { questIsAvailable } from '../logic/RaidMutation';
 import QuestHint from './QuestHint.vue';
 import atlasStorage from '../logic/AtlasStorage';
@@ -74,6 +75,16 @@ function isActive(id: string): boolean {
   return uiState.activeQuests.includes(id);
 }
 
+function isReviewed(id: string): boolean {
+  return uiState.reviewedQuestIds.includes(id);
+}
+
+function onQuestHover(q: QuestDefinition): void {
+  if (!isReviewed(q.id)) {
+    globalInputQueue.push(new CmdReviewQuest({ id: q.id }));
+  }
+}
+
 function onQuestClick(q: QuestDefinition): void {
   if (q.autoaccept) return; // clicking does nothing
   const next = !isActive(q.id);
@@ -100,7 +111,7 @@ function gearIconStyle(gearId: string): Record<string, string> {
 .section-divider { border: none; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 0 0 12px 0; }
 .quest-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
 .quest {
-  border: none; /* no border around quest */
+  border: 1px solid transparent; /* reserve space for animated border */
   border-radius: 8px;
   padding: 10px 12px;
   background: var(--raid-item-bg, rgba(255,255,255,0.08));
@@ -122,6 +133,11 @@ function gearIconStyle(gearId: string): Record<string, string> {
 .quest.accepted { background: rgba(74, 222, 128, 0.15); }
 .quest.clickable { cursor: pointer; }
 .quest.clickable:not(.accepted):hover { background: rgba(255,255,255,0.12); }
+.quest.unreviewed { animation: quest-glow 1.5s ease-in-out infinite; }
+@keyframes quest-glow {
+  0%, 100% { border-color: rgba(79, 209, 197, 0.2); background: var(--raid-item-bg, rgba(255,255,255,0.08)); }
+  50% { border-color: rgba(79, 209, 197, 0.7); background: rgba(79, 209, 197, 0.12); }
+}
 
 /* Styled tooltip shown instantly on hover */
 .hint {

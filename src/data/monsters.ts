@@ -102,7 +102,7 @@ const monsters: Record<string, RawMonsterDefinition> = {
   lightning: {
     name: 'Lightning Zealot',
     hp: 10,
-    dodge: 45,
+    dodge: 55,
     accuracy: 70,
     damage: 7,
     lootItemId: 'lightning_remains',
@@ -111,8 +111,8 @@ const monsters: Record<string, RawMonsterDefinition> = {
   dendroid: {
     name: 'Dendroid',
     hp: 25,
-    dodge: 45,
-    accuracy: 60,
+    dodge: 55,
+    accuracy: 50,
     damage: 3,
     lootItemId: 'dendroid_remains',
     features:['retaliates'],
@@ -146,7 +146,7 @@ const monsters: Record<string, RawMonsterDefinition> = {
   hive: {
     name: 'The Hive',
     hp: 20,
-    dodge: 45,
+    dodge: 50,
     accuracy: 60,
     damage: 2,
     lootItemId: 'hive_remains',

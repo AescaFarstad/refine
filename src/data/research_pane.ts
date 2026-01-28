@@ -23,7 +23,7 @@ export const researchPane: ResearchPlacementInput[] = [
 
   { archetypeId: 'gear_machete', cells: { x: 1, y: 5 }, radius: 1 },
   // { archetypeId: 'gear_backpack', cells: { x: -5, y: -1 }, radius: 1 },
-  { archetypeId: 'gear_kevlar_helmet', cells: { x: 6, y: 0 }, radius: 1 },
+  { archetypeId: 'gear_scout_binoculars', cells: { x: 6, y: 0 }, radius: 1 },
   { archetypeId: 'gear_bone_saw', cells: { x: -6, y: 5 }, radius: 1 },
   { archetypeId: 'gear_boots_basic', cells: { x: 0, y: -6 }, radius: 1 },
   { archetypeId: 'gear_nail_gun', cells: { x: 6, y: -5 }, radius: 1 },
@@ -43,7 +43,7 @@ export const researchPane: ResearchPlacementInput[] = [
   { archetypeId: 'gear_armor_plates', cells: { x: -12, y: -5 }, radius: 1 },
   { archetypeId: 'gear_adjust_armor', cells: { x: 14, y: -13 }, radius: 1 },
   { archetypeId: 'gear_medkit_basic', cells: { x: 15, y: -2 }, radius: 1 },
-  { archetypeId: 'gear_scout_binoculars', cells: { x: -17, y: 5 }, radius: 1 },
+  { archetypeId: 'gear_kevlar_helmet', cells: { x: -17, y: 5 }, radius: 1 },
   { archetypeId: 'gear_preapply_medicine', cells: { x: -11, y: 16 }, radius: 1 },
   { archetypeId: 'gear_scope', cells: { x: 12, y: 5 }, radius: 1 },
   { archetypeId: 'gear_uzi', cells: { x: 2, y: -13 }, radius: 1 },

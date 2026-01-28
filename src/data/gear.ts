@@ -99,7 +99,7 @@ const gear: Record<string, RawGearDefinition> = {
   backpack: {
     name: 'Backpack',
     category: 'bags',
-    volume: 20,
+    volume: 18,
     price: 60,
     weight: 2,
     image: 'backpack',
@@ -117,8 +117,8 @@ const gear: Record<string, RawGearDefinition> = {
     name: 'Cargo Harness',
     category: 'bags',
     volume: 20,
-    maxWeight: 8,
-    price: 150,
+    maxWeight: 9,
+    price: 180,
     weight: 3,
     image: 'cargo_harness',
   },
@@ -347,6 +347,7 @@ const gear: Record<string, RawGearDefinition> = {
     price: 300,
     weight: 0,
     image: 'robodog',
+    description: 'Part of the equipment cost is reimbursed in case you die in the raid.',
   },
   needle_drone: {
     name: 'Needle Drone',
@@ -397,8 +398,8 @@ const gear: Record<string, RawGearDefinition> = {
     category: 'ranged_weapons',
     damage: 4,
     chanceToHit: 5,
-    price: 120,
-    weight: 3,
+    price: 110,
+    weight: 2,
     image: 'uzi2',
   },
   sniper_rifle: {

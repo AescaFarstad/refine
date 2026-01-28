@@ -1,10 +1,11 @@
 <template>
   <div class="refine-anim-container">
-    <canvas 
-      ref="canvas" 
+    <canvas
+      ref="canvas"
       class="anim-canvas"
       @mousemove="onMouseMove"
       @mouseleave="onMouseLeave"
+      @click="onClick"
     ></canvas>
   </div>
 </template>
@@ -15,6 +16,8 @@ import type { Wafer } from '../logic/Wafer';
 import { getCell } from '../logic/Wafer';
 import type { Shard } from '../logic/GameState';
 import { uiState, getGameState } from '../logic/UIState';
+import { globalInputQueue } from '../logic/Model';
+import { CmdSpeedUpRefining, CmdClearShardPickupGrace } from '../logic/input/InputCommands';
 import { WAFER_CANVAS_WIDTH, WAFER_CANVAS_HEIGHT, HEX_SIZE, ESSENCE_SIZE, eventToCanvasPixel } from '../logic/RefineUIBehaviour';
 import { axialToPixel } from '../logic/HexMath';
 import atlasStorage from '../logic/AtlasStorage';
@@ -329,6 +332,14 @@ function onMouseMove(event: MouseEvent) {
 
 function onMouseLeave() {
   resetMouseCoords();
+}
+
+function onClick() {
+  if (isRefining.value) {
+    globalInputQueue.push(new CmdSpeedUpRefining());
+  } else {
+    globalInputQueue.push(new CmdClearShardPickupGrace());
+  }
 }
 
 </script>

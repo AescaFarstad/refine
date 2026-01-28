@@ -24,6 +24,7 @@ export class GameState {
 
   public timeActive: boolean = false;
   public timeSpeed: number = 1;
+  public timeSpeedMaxBoost: number = 1;
 
   public random: SeededRandom = new SeededRandom();
 
@@ -32,7 +33,7 @@ export class GameState {
   public connections: any = null;
 
 
-  public credits: number = 1500;
+  public credits: number = 1000;
   public chronotraces: number = 0;
   public timeFlux: number = 0;
   public shardDust: number = 0;
@@ -87,6 +88,7 @@ export class GameState {
 
   public completedQuests: string[] = [];
   public activeQuests: string[] = [];
+  public reviewedQuestIds: string[] = [];
   public gearLevels: Record<string, number> = {};
   public skillPoints: number = 0;
   public unlockedGear: string[] = [

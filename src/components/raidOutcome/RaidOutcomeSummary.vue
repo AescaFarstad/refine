@@ -31,7 +31,7 @@
       </div>
     </section>
     <section class="barely-in-time" v-if="raidSuccess && barelyInTime">
-      <div class="bt">You have barely escaped the collapsing zone.</div>
+      <div class="bt">You barely escaped the collapsing zone.</div>
     </section>
     <section class="new-quests" v-if="raidSuccess && newQuests.length">
       <div class="nq" v-for="(quest, i) in newQuests" :key="i">

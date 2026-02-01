@@ -37,7 +37,7 @@
           <LootEncounterDetails v-else-if="entry.kind === 'LootEncounter' || entry.kind === 'MonsterLootEncounter'" :entry="entry" :shown-step="subShownSteps[idx] || 0" />
           <FightEncounterDetails v-else-if="entry.kind === 'FightEncounter'" :entry="entry" :shown-step="subShownSteps[idx] || 0" />
           <QuestEncounterDetails v-else-if="entry.kind === 'QuestEncounter'" :entry="entry" />
-          <div class="note-row zone-collapse-msg" v-else-if="entry.kind === 'ZoneCollapse'">The zone caught up to you and you were disintegrated</div>
+          <div class="note-row zone-collapse-msg" v-else-if="entry.kind === 'ZoneCollapse'">The collapsing zone caught up with you, and you were disintegrated.</div>
           <div class="note-row" v-else>Encounter</div>
         </div>
       </li>

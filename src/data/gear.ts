@@ -129,7 +129,7 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 1,
     image: 'aspirator_probe',
     biopsyChance: 30,
-    description: 'Allows to extract monster remains.',
+    description: 'Allows extracting monster remains.',
   },
   bone_saw: {
     name: 'Bone Saw',
@@ -138,7 +138,7 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 1,
     image: 'bone_saw',
     biopsyChance: 20,
-    description: 'Allows to extract monster remains.',
+    description: 'Allows extracting monster remains.',
   },
   metal_detector: {
     name: 'Metal Detector',
@@ -271,7 +271,7 @@ const gear: Record<string, RawGearDefinition> = {
     price: 0,
     weight: 0,
     image: 'wall',
-    description: 'Damaged received is dealt to the enemy. Missed hits don\'t cost time',
+    description: 'Damage received is dealt to the enemy. Missed hits don\'t cost time.',
   },
   firearms_checkup: {
     name: 'Firearms Check-up',

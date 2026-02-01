@@ -17,7 +17,7 @@ const quests: Record<string, RawQuestDefinition> = {
   },
   ozernoye_explore_fire_station: {
     name: 'Fire station',
-    description: 'There is a fire station which could use some actual fire to get rid of its cornivorous inhabitants. Opening it might cause long-term flower trouble, but there must be some useful equipment in there.',
+    description: 'There is a fire station which could use some actual fire to get rid of its carnivorous inhabitants. Opening it might cause long-term flower trouble, but there must be some useful equipment in there.',
     raidRestriction: ['ozernoye'],
     requiresRaidSuccesses: 2,
     encounters: [

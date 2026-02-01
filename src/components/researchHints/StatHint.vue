@@ -24,7 +24,7 @@ const props = defineProps<{
 const statInfo: Record<string, { name: string; description: string }> = {
   damage: { name: 'Damage', description: '' },
   health: { name: 'Health', description: '' },
-  volume: { name: 'Bags Volume', description: '' },
+  volume: { name: 'Bag Volume', description: '' },
   baseMaxWeight: { name: 'Max Carry Weight', description: '' },
   researchRevealRadius: { name: 'Research Vision Radius', description: '' },
   skillPoints: { name: 'Skill Points', description: '' },
@@ -33,7 +33,7 @@ const statInfo: Record<string, { name: string; description: string }> = {
   speed: { name: 'Speed', description: '' },
   chanceToHit: { name: 'Chance to Hit', description: '' },
   chanceToBlock: { name: 'Chance to Block', description: '' },
-  itemBans: { name: 'Max blocked items', description: 'Exclude items from possible drops. (Raid selection window)' },
+  itemBans: { name: 'Max Blocked Items', description: 'Exclude items from possible drops (visit Raid Selection window)' },
 };
 
 const statReward = computed(() => {

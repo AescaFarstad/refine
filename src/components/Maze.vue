@@ -27,7 +27,7 @@
           <button class="btn btn-large" @click="reset()">Reset</button>
         </div>
         <div class="left-section info-section">
-          <div class="info-text">Resetting and restarting returns the time flux spent.</div>
+          <div class="info-text">Resetting and restarting return the time flux spent.</div>
           <div class="info-text">Beating the maze consumes ALL remaining time flux.</div>
           <div class="info-text">Use WASD or click to move. R to reset.</div>
           <div v-if="moveError" class="info-text error">{{ moveError }}</div>

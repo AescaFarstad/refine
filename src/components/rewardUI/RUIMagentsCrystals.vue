@@ -15,9 +15,9 @@
           />
         </div>
         <p class="description-text">
-          The sediment from magenta essences crystalizes.<br /> Each refined
+          The sediment from magenta essences crystallizes.<br /> Each refined
           <span class="essence-icon" :style="essenceStyle" />
-          will now give <span class="highlight">Zone Crystal</span>
+          will now give a <span class="highlight">Zone Crystal</span>
         </p>
       </div>
       <footer class="modal-actions">

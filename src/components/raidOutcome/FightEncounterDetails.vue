@@ -73,7 +73,7 @@ function hpChange(who: 'their' | 'your', before: number, after: number, _terse =
 
 function reflectLine(ev: FightEvent): string {
   const on = ev.blocked ? 'miss' : 'hit';
-  return `They receive damage reflection on ${on}. ${hpChange('their', ev.theirHpBefore, ev.theirHpAfter, true)}`;
+  return `They take reflected damage on ${on}. ${hpChange('their', ev.theirHpBefore, ev.theirHpAfter, true)}`;
 }
 
 function stunLine(ev: FightEvent): string {

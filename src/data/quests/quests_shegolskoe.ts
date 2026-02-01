@@ -3,7 +3,7 @@ import type { RawQuestDefinition } from '../../logic/QuestLib';
 const quests: Record<string, RawQuestDefinition> = {
   shegolskoe_explore_loot_locations: {
     name: 'Explore new loot locations',
-    description: 'A number of buildings in Shegolskoe attract zone inhabitants. Preliminary scouting will show what awaits inside and who might we ran into along the way.',
+    description: 'A number of buildings in Shegolskoe attract zone inhabitants. Preliminary scouting will show what awaits inside and who we might run into along the way.',
     raidRestriction: ['shegolskoe'],
     requiresRaidSuccesses: 1,
     encounters: [
@@ -26,7 +26,7 @@ const quests: Record<string, RawQuestDefinition> = {
   },
   shegolskoe_break_flower: {
     name: 'Well',
-    description: 'There is a giant flower in the form of a human, growing around the village well. It blocks the way to a two-story dacha and a picknick spot. Weed them out and claim the territory.',
+    description: 'There is a giant flower in the form of a human, growing around the village well. It blocks the way to a two-story dacha and a picnic spot. Weed them out and claim the territory.',
     requiresRaidQuestCompletions: 1,
     raidRestriction: ['shegolskoe'],
     encounters: [
@@ -68,7 +68,7 @@ const quests: Record<string, RawQuestDefinition> = {
   },
   shegolskoe_forest: {
     name: 'Forester\'s house',
-    description: 'The forest consumed this one before the burdok could.',
+    description: 'The forest consumed this one before the burdock could.',
     requiresRaidQuestCompletions: 3,
     requiresRaidSuccesses: 18,
     raidRestriction: ['shegolskoe'],

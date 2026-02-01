@@ -271,6 +271,14 @@ handlersByName.set('CmdSelectRaid', (gs, cmd) => {
   if (!gs.lib.raids.has(c.id)) throw new Error(`CmdSelectRaid: unknown raid id "${c.id}"`);
   if (!gs.unlockedRaids.some(r => r.id === c.id)) return;
   discover(gs, DISCOVERY.UI_RAID_SELECTION);
+
+  // Show "You Won" popup when switching to the fourth raid for the first time
+  const raidIndex = gs.unlockedRaids.findIndex(r => r.id === c.id);
+  if (raidIndex === 3 && !gs.discoveries[DISCOVERY.YOU_WON_SEEN]) {
+    gs.discoveries[DISCOVERY.YOU_WON_SEEN] = true;
+    gs.pendingUIModals.push({ ui: 'you_won' });
+  }
+
   recomputeActiveRaidParams(gs, c.id);
   recomputeActiveRaidEstimates(gs, 100);
 });

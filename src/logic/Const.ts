@@ -28,6 +28,8 @@ export const RESEARCH_OBSTACLES_REQUIRED_FOR_SIGNATURE_LEARN: number[] = [11, 13
 
 export const TMP_LOOT_BUFF_PER_FULL_BAGS_SKIP_PCT = 1;
 
+export const REGEN_INTERVAL_SEC = 600;
+
 
 
 

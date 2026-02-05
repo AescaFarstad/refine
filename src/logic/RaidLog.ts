@@ -10,6 +10,9 @@ export interface RaidLogEntryBase {
   bagsUsed: number;
   bagsCapacity: number;
   injected: boolean;
+  timeRegenHpBefore: number;
+  timeRegenHpAfter: number;
+  timeRegenDurationSec: number; // duration over which regen was accumulated
 }
 
 export interface PreparationEncounterLogEntry extends RaidLogEntryBase {
@@ -68,6 +71,10 @@ export interface FightEvent {
   hitChanceAfter: number;   // hit chance after stun bonus
   summonTriggered: boolean; // true when monster summons another of its kind
   selfDestructed: boolean;  // true when monster self-destructs on successful attack
+  timeRegenHealed: number;  // HP healed by time-based regen after this round (0 if none)
+  timeRegenHpBefore: number;  // HP before time-based regen this round
+  timeRegenHpAfter: number;   // HP after time-based regen this round
+  timeRegenDurationSec: number; // Total elapsed time when regen triggered
 }
 
 export interface FightEncounterLogEntry extends RaidLogEntryBase {
@@ -153,6 +160,9 @@ export function createPreparationEncounterLogEntry(init: Partial<PreparationEnco
     bagsUsed: 0,
     bagsCapacity: 0,
     injected: false,
+    timeRegenHpBefore: 0,
+    timeRegenHpAfter: 0,
+    timeRegenDurationSec: 0,
     tacticNames: [],
     damageBefore: 0,
     damageAfter: 0,
@@ -179,6 +189,9 @@ export function createWalkEncounterLogEntry(init: Partial<WalkEncounterLogEntry>
     bagsUsed: 0,
     bagsCapacity: 0,
     injected: false,
+    timeRegenHpBefore: 0,
+    timeRegenHpAfter: 0,
+    timeRegenDurationSec: 0,
     hpBefore: 0,
     hpAfter: 0,
     speedKmH: 0,
@@ -201,6 +214,9 @@ export function createQuestEncounterLogEntry(init: Partial<QuestEncounterLogEntr
     bagsUsed: 0,
     bagsCapacity: 0,
     injected: false,
+    timeRegenHpBefore: 0,
+    timeRegenHpAfter: 0,
+    timeRegenDurationSec: 0,
     questId: '',
     success: false,
     ...rest,
@@ -230,6 +246,10 @@ export function createFightEvent(init: Partial<FightEvent> = {}): FightEvent {
     hitChanceAfter: 0,
     summonTriggered: false,
     selfDestructed: false,
+    timeRegenHealed: 0,
+    timeRegenHpBefore: 0,
+    timeRegenHpAfter: 0,
+    timeRegenDurationSec: 0,
     ...init,
   };
 }
@@ -245,6 +265,9 @@ export function createFightEncounterLogEntry(init: Partial<FightEncounterLogEntr
     bagsUsed: 0,
     bagsCapacity: 0,
     injected: false,
+    timeRegenHpBefore: 0,
+    timeRegenHpAfter: 0,
+    timeRegenDurationSec: 0,
     dieFromOvertime: false,
     fightLog: [],
     monsterId: '',
@@ -270,6 +293,9 @@ export function createLootEncounterLogEntry(init: Partial<LootEncounterLogEntry>
     bagsUsed: 0,
     bagsCapacity: 0,
     injected: false,
+    timeRegenHpBefore: 0,
+    timeRegenHpAfter: 0,
+    timeRegenDurationSec: 0,
     skipped: false,
     skipReason: '',
     myRoll: 0,
@@ -301,6 +327,9 @@ export function createMonsterLootEncounterLogEntry(init: Partial<MonsterLootEnco
     bagsUsed: 0,
     bagsCapacity: 0,
     injected: false,
+    timeRegenHpBefore: 0,
+    timeRegenHpAfter: 0,
+    timeRegenDurationSec: 0,
     skipped: false,
     skipReason: '',
     myRoll: 0,
@@ -331,6 +360,9 @@ export function createZoneCollapseLogEntry(init: Partial<ZoneCollapseLogEntry> =
     bagsUsed: 0,
     bagsCapacity: 0,
     injected: false,
+    timeRegenHpBefore: 0,
+    timeRegenHpAfter: 0,
+    timeRegenDurationSec: 0,
     timeLimit: 0,
     elapsedTime: 0,
     ...rest,

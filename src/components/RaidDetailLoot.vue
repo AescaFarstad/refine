@@ -53,7 +53,7 @@ import { CmdDiscover } from '../logic/input/InputCommands';
 import { DISCOVERY } from '../logic/DiscoveryLib';
 import type { RaidDefinition } from '../logic/RaidLib';
 import ItemDisplay from './ItemDisplay.vue';
-import { computeLootRarityWeights } from '../logic/LootEncounter';
+import { computeLootRarityWeights, computeEffectiveRarityBuff } from '../logic/LootEncounter';
 
 const props = defineProps<{
   raid: RaidDefinition;
@@ -94,9 +94,7 @@ const lootRarityProbabilities = computed<RarityProbability[]>(() => {
   const raidValue = raid.value;
   const gs = getGameState();
   const raidEntry = gs.unlockedRaids.find(rr => rr.id === raidValue.id)!;
-  const effLootChance = gs.raid.lootChanceBonus
-    + raidEntry.lootingRarityBuff
-    + gs.raid.rarityBuff;
+  const effRarityBuff = computeEffectiveRarityBuff(gs.raid.lootChanceBonus, raidEntry.lootingRarityBuff, gs.raid.rarityBuff);
 
   const bannedSet = new Set(raidEntry.bannedItemIds);
   const hasBans = bannedSet.size > 0;
@@ -115,7 +113,7 @@ const lootRarityProbabilities = computed<RarityProbability[]>(() => {
       : raidValue.itemPoolsByRarity.legendary.length,
   };
 
-  const weights = computeLootRarityWeights(poolSizes, effLootChance);
+  const weights = computeLootRarityWeights(poolSizes, effRarityBuff);
 
   const total = weights.common + weights.uncommon + weights.rare + weights.legendary;
   if (total <= 0) return [];

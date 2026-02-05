@@ -511,7 +511,7 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
     molecule: {
       atoms: [
         { color: 'gray', x: 0, y: -2 },
-        { color: 'red', x: 1, y: -2 },
+        { color: 'yellow', x: 1, y: -2 },
         { color: 'gray', x: 2, y: -2 },
         { color: 'gray', x: 0, y: -1 },
         { color: 'gray', x: 1, y: -1 },

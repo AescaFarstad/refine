@@ -2,12 +2,59 @@ import type { ActiveRaid, GameState } from './GameState';
 import { createFightEncounterLogEntry, type FightEncounterLogEntry, type FightEvent, type LootEncounterLogEntry } from './RaidLog';
 import Perks from './Perks';
 import { FEATURE_SUMMON, FEATURE_SUMMON2, FEATURE_SELF_DESTRUCT, FEATURE_RETALIATES, SUMMON_CHANCE_PER_ROUND, SUMMON_CHANCE_PER_ROUND2 } from './MonsterFeatures';
+import { REGEN_INTERVAL_SEC } from './Const';
 
 function clamp(v: number, lo: number, hi: number): number { return Math.max(lo, Math.min(hi, v)); }
+
+interface RegenResult {
+  healed: number;
+  hpBefore: number;
+  hpAfter: number;
+  ticksCrossed: number;
+  nextRegenThresholdSec: number;
+}
+
+function applyTimeRegen(
+  r: ActiveRaid,
+  regenPer10Minutes: number,
+  totalElapsedAfterRound: number,
+  nextRegenThresholdSec: number
+): RegenResult {
+  let healed = 0;
+  let hpBefore = 0;
+  let hpAfter = 0;
+  let ticksCrossed = 0;
+
+  if (regenPer10Minutes > 0 && r.hp > 0) {
+    if (nextRegenThresholdSec === 0 && r.hp < r.maxHp) {
+      nextRegenThresholdSec = totalElapsedAfterRound + REGEN_INTERVAL_SEC;
+    }
+    while (nextRegenThresholdSec > 0 && nextRegenThresholdSec <= totalElapsedAfterRound) {
+      if (r.hp < r.maxHp) {
+        if (healed === 0) {
+          hpBefore = r.hp;
+        }
+        const missing = r.maxHp - r.hp;
+        const healAmount = Math.min(regenPer10Minutes, missing);
+        r.hp += healAmount;
+        healed += healAmount;
+        hpAfter = r.hp;
+        ticksCrossed++;
+      }
+      nextRegenThresholdSec += REGEN_INTERVAL_SEC;
+    }
+  }
+
+  return { healed, hpBefore, hpAfter, ticksCrossed, nextRegenThresholdSec };
+}
 
 export interface FightEncounterContext {
   monsterId: string;
   injected: boolean;
+  regenPer10Minutes: number;
+  elapsedTimeBeforeFight: number;
+  /** Next time threshold (in seconds) at which regen should tick */
+  nextRegenThresholdSec: number;
 }
 
 export interface FightEncounterResult {
@@ -15,10 +62,12 @@ export interface FightEncounterResult {
   timeSpentSec: number;
   extras: Array<LootEncounterLogEntry>;
   summonedMonsterId: string | null;
+  /** Updated next regen threshold (advanced past any thresholds crossed during fight) */
+  nextRegenThresholdSec: number;
 }
 
 export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEncounterContext): FightEncounterResult {
-  const { monsterId, injected } = ctx;
+  const { monsterId, injected, regenPer10Minutes, elapsedTimeBeforeFight, nextRegenThresholdSec: inputNextThreshold } = ctx;
   const m = gs.lib.monsters.get(monsterId)!;
   const monsterName = m.name;
   let monsterHp = m.hp;
@@ -31,7 +80,6 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
   const theirDamage = m.damage;
 
   const roundTime = 60 + (r.perks.includes(Perks.CAREFUL_MANEUVERING) ? 60 : 0);
-  const immovable = r.perks.includes(Perks.IMMOVABLE_WALL);
   const hasStun = r.perks.includes(Perks.STUN);
   const canSummon = m.features.includes(FEATURE_SUMMON);
   const canSummon2 = m.features.includes(FEATURE_SUMMON2);
@@ -50,6 +98,8 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
   const hasDecoy = r.perks.includes(Perks.DECOY);
   let decoyUsed = false;
 
+  let fightTimeSec = 0; // Time elapsed during this fight only
+  let nextRegenThresholdSec = inputNextThreshold;
   // Up to 100 rounds
   for (let round = 0; round < 100; round++) {
     const myHpBefore = r.hp;
@@ -105,6 +155,9 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         summonedMonsterId = monsterId;
         summonJustTriggered = true;
       }
+      const totalElapsedAfterRound = elapsedTimeBeforeFight + fightTimeSec + roundTime;
+      const regen = applyTimeRegen(r, regenPer10Minutes, totalElapsedAfterRound, nextRegenThresholdSec);
+      nextRegenThresholdSec = regen.nextRegenThresholdSec;
       const ev: FightEvent = {
         myHitRoll: myRoll,
         theirDodgeValue: hitCheck,
@@ -119,7 +172,7 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         theirHpBefore,
         theirHpAfter,
         myHpBefore,
-        myHpAfter,
+        myHpAfter: r.hp, // Use updated HP after regen
         blocked,
         hitLanded: true,
         stunTriggered: stunJustTriggered,
@@ -127,9 +180,14 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         hitChanceAfter,
         summonTriggered: summonJustTriggered,
         selfDestructed: false,
+        timeRegenHealed: regen.healed,
+        timeRegenHpBefore: regen.hpBefore,
+        timeRegenHpAfter: regen.hpAfter,
+        timeRegenDurationSec: regen.ticksCrossed * REGEN_INTERVAL_SEC,
       };
       fightLog.push(ev);
       totalTime += roundTime;
+      fightTimeSec += roundTime;
       monsterHp = theirHpAfter;
       if (r.hp <= 0) {
         // Defeat from counterattack
@@ -189,13 +247,17 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         summonedMonsterId = monsterId;
         summonJustTriggered = true;
       }
+      r.hp = myHpAfter;
+      const totalElapsedAfterRound = elapsedTimeBeforeFight + fightTimeSec + roundTime;
+      const regen = applyTimeRegen(r, regenPer10Minutes, totalElapsedAfterRound, nextRegenThresholdSec);
+      nextRegenThresholdSec = regen.nextRegenThresholdSec;
       const ev: FightEvent = {
         myHitRoll: myRoll,
         theirDodgeValue: hitCheck,
         // Player missed this round; any outgoing damage is reflection and logged separately
         damageDealt: 0,
         reflectedDamage: reflect,
-        timeSpentSec: immovable ? 0 : roundTime,
+        timeSpentSec: roundTime,
         elapsedTotalSec: 0,
         biopsyTriggered: false,
         theirHitValue: theirHit,
@@ -204,7 +266,7 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         theirHpBefore,
         theirHpAfter: theirHpFinal,
         myHpBefore,
-        myHpAfter,
+        myHpAfter: r.hp, // Use updated HP after regen
         blocked,
         hitLanded: false,
         stunTriggered: false,
@@ -212,10 +274,14 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         hitChanceAfter: 0,
         summonTriggered: summonJustTriggered,
         selfDestructed: selfDestructTriggered,
+        timeRegenHealed: regen.healed,
+        timeRegenHpBefore: regen.hpBefore,
+        timeRegenHpAfter: regen.hpAfter,
+        timeRegenDurationSec: regen.ticksCrossed * REGEN_INTERVAL_SEC,
       };
       fightLog.push(ev);
-      totalTime += ev.timeSpentSec;
-      r.hp = myHpAfter;
+      totalTime += roundTime;
+      fightTimeSec += roundTime;
       if (r.hp <= 0) {
         // Defeat
         break;
@@ -233,7 +299,7 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
     dieFromOvertime = true;
   }
 
-  // Prepare entry
+  // Prepare entry - time regen is tracked per-round in fightLog, not as a summary
   const entry: FightEncounterLogEntry & { monsterId: string; monsterName: string; timeSpentSec: number } = createFightEncounterLogEntry({
     dieFromOvertime,
     fightLog,
@@ -242,6 +308,10 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
     timeSpentSec: totalTime,
     selfDestructed: monsterSelfDestructed,
     injected,
+    // Time regen is shown per-round now, not as a fight summary
+    timeRegenHpBefore: 0,
+    timeRegenHpAfter: 0,
+    timeRegenDurationSec: 0,
   });
 
   const extras: LootEncounterLogEntry[] = [];
@@ -252,5 +322,5 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
     // Here we only signal that it should happen; actual loot logic will be executed in Raid.ts after this entry.
   }
 
-  return { entry, timeSpentSec: totalTime, extras, summonedMonsterId };
+  return { entry, timeSpentSec: totalTime, extras, summonedMonsterId, nextRegenThresholdSec };
 }

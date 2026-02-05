@@ -7,6 +7,7 @@ export interface GearDefinition {
   speedFlat: number;       // flat km/h added after percent
   regenPerKm: number;      // HP per km walked
   regenAfterCombat: number; // HP after each encounter
+  regenPer10Minutes: number;
   weight: number;
   maxWeight: number;
   hp: number;
@@ -69,6 +70,7 @@ export function parseGearDefinitions(raw: Record<string, RawGearDefinition>): Ma
       speedFlat: d.speedFlat ?? 0,
       regenPerKm: d.regenPerKm ?? 0,
       regenAfterCombat: d.regenAfterCombat ?? 0,
+      regenPer10Minutes: d.regenPer10Minutes ?? 0,
       weight: d.weight ?? 0,
       maxWeight: d.maxWeight ?? 0,
       hp: d.hp ?? 0,

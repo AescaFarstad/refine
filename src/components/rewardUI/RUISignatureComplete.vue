@@ -2,10 +2,12 @@
   <div class="modal-backdrop">
     <div class="modal">
       <div class="modal-body">
-        <div v-for="sig in completedSignatures" :key="sig.id" class="signature-display">
-          <div class="sig-wafer" :style="sigWaferStyle(sig.id)" />
-          <div class="sig-info">
-            <span class="sig-name">{{ sig.name }}</span>
+        <div class="signatures-grid" :class="gridClass">
+          <div v-for="sig in completedSignatures" :key="sig.id" class="signature-display">
+            <div class="sig-wafer" :style="sigWaferStyle(sig.id)" />
+            <div class="sig-info">
+              <span class="sig-name">{{ sig.name }}</span>
+            </div>
           </div>
         </div>
         <p class="completion-text">
@@ -42,6 +44,14 @@ const completedSignatures = computed(() => {
   return ids
     .map(id => uiState.lib!.signatures.get(id))
     .filter(Boolean) as { id: string; name: string }[];
+});
+
+const gridClass = computed(() => {
+  const count = completedSignatures.value.length;
+  if (count <= 1) return 'grid-1';
+  if (count <= 2) return 'grid-2';
+  if (count <= 4) return 'grid-2x2';
+  return 'grid-3';
 });
 
 function sigWaferStyle(id: string): Record<string, string> {
@@ -95,6 +105,28 @@ function close() {
   flex-direction: column;
   align-items: center;
   gap: 16px;
+}
+
+.signatures-grid {
+  display: grid;
+  gap: 16px;
+  justify-items: center;
+}
+
+.signatures-grid.grid-1 {
+  grid-template-columns: 1fr;
+}
+
+.signatures-grid.grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.signatures-grid.grid-2x2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.signatures-grid.grid-3 {
+  grid-template-columns: repeat(3, 1fr);
 }
 
 .signature-display {

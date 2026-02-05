@@ -201,6 +201,8 @@ function buildTimeline() {
       let step = rounds;
       const hasRegen = e.hpAfterRegen > e.hpBeforeRegen;
       if (hasRegen) timeline.push({ kind: 'fight_sub', index: i, step: ++step });
+      const hasTimeRegen = (e.timeRegenHpAfter || 0) > (e.timeRegenHpBefore || 0);
+      if (hasTimeRegen) timeline.push({ kind: 'fight_sub', index: i, step: ++step });
       if (e.dieFromOvertime) timeline.push({ kind: 'fight_sub', index: i, step: ++step });
       const hasBiopsy = !!(e.fightLog || []).find((ev: any) => !!ev.biopsyTriggered);
       if (hasBiopsy) timeline.push({ kind: 'fight_sub', index: i, step: ++step });

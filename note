@@ -62,6 +62,9 @@ january 21
 january 25
   goal balancing, tweaks  and fixes, refactoring, lib verification.
   The balance is pretty good now. The game is worth 4 hours of gameplay.
+february 1
+  regen per 10 minutes
+february 6 bugs and tweaks
 
 npx tsc --noEmit
 npx vue-tsc --noEmit
@@ -184,3 +187,27 @@ dyatlovsk hospital should be more interesting
 11d
 
 https://dist-delta-drab.vercel.app
+
+
+a single crate
+entrance
+evacuation
+
+
+
+schematics
+
++20 credits income per hour
++1000 max credits accumulated
+replenishes your health when you visit the base
+adds/removes items from raid drops
+(shows accumulated resources)
+add tactics "gather accumulated resources"
+
+
+item credits (1 volume)
+
+
+signature effects:
+adds bonuses to wafer 
+refining time -5% (multiplicative)

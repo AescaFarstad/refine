@@ -125,6 +125,7 @@ export class ActiveRaid {
   public speedBonusFlat: number = 0;
   public regenPerKm: number = 0;
   public regenAfterCombat: number = 0;
+  public regenPer10Minutes: number = 0;
   public weight: number = 0;
   public maxWeight: number = 10;
   public bagsVolume: number = 10;
@@ -142,7 +143,6 @@ export class ActiveRaid {
   public reimbursedPct: number = 0;     // % of gear price reimbursed on combat death
   public rarityBuff: number = 0;        // bonus to loot rarity from gear
 }
-
 
 export class Raid {
   constructor(id: string) {
@@ -260,6 +260,7 @@ export interface RaidDamageBreakdown {
   damageReceivedByMonsterId: Record<string, number>;
   hpGeneratedAfterCombat: number;
   hpGeneratedWalking: number;
+  hpGeneratedTimeBased: number;
 }
 
 export function createRaidDamageBreakdown(): RaidDamageBreakdown {
@@ -268,6 +269,7 @@ export function createRaidDamageBreakdown(): RaidDamageBreakdown {
     damageReceivedByMonsterId: {},
     hpGeneratedAfterCombat: 0,
     hpGeneratedWalking: 0,
+    hpGeneratedTimeBased: 0,
   };
 }
 

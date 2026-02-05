@@ -11,7 +11,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     name: 'Delineate',
     group: 'starter',
     layout: 'up_triangle',
-    colors: ['green'],
+    colors: ['gray'],
   },
   s3: {
     name: 'Summarize',
@@ -84,7 +84,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
   s14: {
     name: 'Downgrade',
     group: 'starter',
-    layout: 'down_blunt_triangle',
+    layout: 'arrow',
     colors: ['blue'],
   },
   s15: {

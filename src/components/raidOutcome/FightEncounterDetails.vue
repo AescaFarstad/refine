@@ -31,6 +31,7 @@
         </template>
 
         <div class="note-row summon-note" v-if="ev.summonTriggered"><b>Another {{ entry.monsterName }} joins the fray!</b></div>
+        <div class="note-row time-regen-note" v-if="ev.timeRegenHealed > 0">Regenerated {{ ev.timeRegenHealed }} hp {{ ev.timeRegenHpBefore }} → <b>{{ ev.timeRegenHpAfter }}</b> over the last {{ formatDuration(ev.timeRegenDurationSec) }}</div>
       </template>
     </template>
   </div>
@@ -85,4 +86,15 @@ function stunLine(ev: FightEvent): string {
 function biopsyUsed(entry: FightEncounterLogEntry): boolean {
   return !!(entry?.fightLog || []).find((ev: FightEvent) => !!ev.biopsyTriggered);
 }
+
+function formatDuration(sec: number): string {
+  const m = Math.floor(sec / 60);
+  if (m < 1) return `${sec} seconds`;
+  if (m === 1) return '1 minute';
+  return `${m} minutes`;
+}
 </script>
+
+<style scoped>
+.time-regen-note { margin-top: 8px; }
+</style>

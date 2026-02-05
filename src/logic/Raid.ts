@@ -40,6 +40,56 @@ function stampEntry<T extends RaidEventLogEntry>(entry: T, raid: ActiveRaid): T 
   return entry;
 }
 
+/**
+ * Applies time-based regen using threshold approach.
+ * Regen timer starts when HP first drops below maximum.
+ * Regen ticks every 600 seconds after the timer starts.
+ * If HP is full when threshold is crossed, regen is wasted (threshold still advances).
+ * Returns the new nextRegenThresholdSec value to be tracked across encounters.
+ * A value of 0 means the timer hasn't started yet (HP never dropped below max).
+ */
+function applyTimeBasedRegen<T extends RaidEventLogEntry>(
+  entry: T,
+  raid: ActiveRaid,
+  totalElapsedSec: number,
+  nextRegenThresholdSec: number
+): number {
+  if (raid.regenPer10Minutes <= 0 || totalElapsedSec <= 0) return nextRegenThresholdSec;
+
+  // If timer hasn't started yet (0), check if HP is below max to activate it
+  if (nextRegenThresholdSec === 0) {
+    if (raid.hp < raid.maxHp) {
+      // Start the timer - first tick will be 600 seconds from now
+      nextRegenThresholdSec = totalElapsedSec + 600;
+    }
+    return nextRegenThresholdSec;
+  }
+
+  let totalHealed = 0;
+  let ticksCrossed = 0;
+  const hpBefore = raid.hp;
+
+  while (nextRegenThresholdSec <= totalElapsedSec) {
+    // Threshold crossed - heal if HP is missing, otherwise wasted
+    if (raid.hp < raid.maxHp) {
+      const missing = raid.maxHp - raid.hp;
+      const healed = Math.min(raid.regenPer10Minutes, missing);
+      raid.hp += healed;
+      totalHealed += healed;
+      ticksCrossed++;
+    }
+    nextRegenThresholdSec += 600;
+  }
+
+  if (totalHealed > 0) {
+    entry.timeRegenHpBefore = hpBefore;
+    entry.timeRegenHpAfter = raid.hp;
+    entry.timeRegenDurationSec = ticksCrossed * 600;
+  }
+
+  return nextRegenThresholdSec;
+}
+
 function loadoutGear(gs: GameState, raidId: string): GearDefinition[] {
   const ids: string[] = gs.loadouts[raidId] ?? [];
   return ids.map(id => gs.lib.gear.get(id)!);
@@ -228,36 +278,8 @@ function setCount(def: RaidDefinition, type: string, newCount: number): void {
 }
 
 
-function cloneActiveRaidState(r: ActiveRaid): ActiveRaid {
-  return {
-    id: r.id,
-    hp: r.hp,
-    maxHp: r.maxHp,
-    baseSpeed: r.baseSpeed,
-    speedBonusPct: r.speedBonusPct,
-    speedBonusFlat: r.speedBonusFlat,
-    regenPerKm: r.regenPerKm,
-    regenAfterCombat: r.regenAfterCombat,
-    weight: r.weight,
-    maxWeight: r.maxWeight,
-    bagsVolume: r.bagsVolume,
-    usedVolume: r.usedVolume,
-    damage: r.damage,
-    perks: [...r.perks],
-    lootChanceBonus: r.lootChanceBonus,
-    tmpLootBuffAppliedPct: r.tmpLootBuffAppliedPct,
-    tmpLootBuffNextRaidPct: r.tmpLootBuffNextRaidPct,
-    hitChance: r.hitChance,
-    blockChance: r.blockChance,
-    reflectOnHitPct: r.reflectOnHitPct,
-    reflectOnBlockPct: r.reflectOnBlockPct,
-    biopsyChance: r.biopsyChance,
-    reimbursedPct: r.reimbursedPct,
-  } as ActiveRaid;
-}
-
 export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean = false): RaidRunResult {
-  const raid = dryRun ? cloneActiveRaidState(gs.raid) : gs.raid;
+  const raid = dryRun ? structuredClone(gs.raid) : gs.raid;
   raid.tmpLootBuffNextRaidPct = 0;
   // When running for real, use the game state's random generator (affects game state)
   // When doing a dry run/simulation, create a temporary random that doesn't affect game state
@@ -270,6 +292,8 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
   const discardedItemCounts: Record<string, number> = {};
   // Elapsed time since the beginning of the raid
   let timeSpentSec = 0;
+  // Next time threshold (in seconds) at which regen should tick (600, 1200, 1800, etc.)
+  let nextRegenThresholdSec = 0; // 0 means timer not started yet (starts when HP first drops below max)
   const timeBreakdownSec: RaidTimeBreakdownSec = createRaidTimeBreakdownSec();
   let barelyInTime = false;
   let diedToZoneCollapse = false;
@@ -398,6 +422,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         timeBreakdownSec.totalSec += entry.timeSpentSec;
         timeBreakdownSec.preparingSec += entry.timeSpentSec;
         entry.elapsedTotalSec = timeSpentSec;
+        nextRegenThresholdSec = applyTimeBasedRegen(entry, raid, timeSpentSec, nextRegenThresholdSec);
         log.entries.push(stampEntry(entry, raid));
         break;
       }
@@ -407,6 +432,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         timeBreakdownSec.totalSec += entry.timeSpentSec;
         timeBreakdownSec.walkingSec += entry.timeSpentSec;
         entry.elapsedTotalSec = timeSpentSec;
+        nextRegenThresholdSec = applyTimeBasedRegen(entry, raid, timeSpentSec, nextRegenThresholdSec);
         log.entries.push(stampEntry(entry, raid));
         if (hasSaferRoutes) justWalked = true;
         break;
@@ -419,6 +445,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         timeBreakdownSec.totalSec += entry.timeSpentSec;
         timeBreakdownSec.investigatingSec += entry.timeSpentSec;
         entry.elapsedTotalSec = timeSpentSec;
+        nextRegenThresholdSec = applyTimeBasedRegen(entry, raid, timeSpentSec, nextRegenThresholdSec);
         log.entries.push(stampEntry(entry, raid));
         break;
       }
@@ -434,6 +461,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         timeBreakdownSec.totalSec += entry.timeSpentSec;
         timeBreakdownSec.scavengingSec += entry.timeSpentSec;
         entry.elapsedTotalSec = timeSpentSec;
+        nextRegenThresholdSec = applyTimeBasedRegen(entry, raid, timeSpentSec, nextRegenThresholdSec);
         log.entries.push(stampEntry(entry, raid));
         break;
       }
@@ -454,7 +482,14 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
           log.entries.push(stampEntry(skippedEntry, raid));
           break;
         }
-        const fight = handleFightEncounter(gsForRun, raid, { monsterId, injected });
+        const fight = handleFightEncounter(gsForRun, raid, {
+          monsterId,
+          injected,
+          regenPer10Minutes: raid.regenPer10Minutes,
+          elapsedTimeBeforeFight: timeSpentSec,
+          nextRegenThresholdSec,
+        });
+        nextRegenThresholdSec = fight.nextRegenThresholdSec;
         let t = timeSpentSec;
         for (const ev of fight.entry.fightLog) {
           t += ev.timeSpentSec;
@@ -502,6 +537,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
           fight.entry.hpBeforeRegen = hpBefore;
           fight.entry.hpAfterRegen = hpAfter;
         }
+        // Time-based regen is applied during the fight itself in handleFightEncounter
         break;
       }
       case 'MonsterLootEncounter': {
@@ -514,6 +550,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         timeBreakdownSec.dissectingSec += entry.timeSpentSec;
         entry.elapsedTotalSec = timeSpentSec;
         entry.injected = injected ?? false;
+        nextRegenThresholdSec = applyTimeBasedRegen(entry, raid, timeSpentSec, nextRegenThresholdSec);
         log.entries.push(stampEntry(entry, raid));
         break;
       }
@@ -697,6 +734,7 @@ export function recomputeActiveRaidEstimates(gs: GameState, simulations = 100): 
     dst.totalDamageReceived += src.totalDamageReceived;
     dst.hpGeneratedAfterCombat += src.hpGeneratedAfterCombat;
     dst.hpGeneratedWalking += src.hpGeneratedWalking;
+    dst.hpGeneratedTimeBased += src.hpGeneratedTimeBased;
     for (const [id, dmg] of Object.entries(src.damageReceivedByMonsterId)) {
       dst.damageReceivedByMonsterId[id] = (dst.damageReceivedByMonsterId[id] || 0) + dmg;
     }
@@ -724,11 +762,13 @@ export function recomputeActiveRaidEstimates(gs: GameState, simulations = 100): 
       damageReceivedByMonsterId: byMonster,
       hpGeneratedAfterCombat: Math.round(sum.hpGeneratedAfterCombat / n),
       hpGeneratedWalking: Math.round(sum.hpGeneratedWalking / n),
+      hpGeneratedTimeBased: Math.round(sum.hpGeneratedTimeBased / n),
     };
   };
   const computeDamageForRun = (log: RaidEventLog): RaidDamageBreakdown => {
     const out: RaidDamageBreakdown = createRaidDamageBreakdown();
     for (const e of log.entries) {
+      out.hpGeneratedTimeBased += Math.max(0, (e.timeRegenHpAfter || 0) - (e.timeRegenHpBefore || 0));
       if (e.kind === 'WalkEncounter') {
         out.hpGeneratedWalking += e.hpHealed;
         continue;
@@ -816,6 +856,7 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
   gs.raid.speedBonusFlat = 0;
   gs.raid.regenPerKm = 0;
   gs.raid.regenAfterCombat = 0;
+  gs.raid.regenPer10Minutes = 0;
   gs.raid.weight = 0;
   gs.raid.maxWeight = gs.baseMaxWeight;
   gs.raid.bagsVolume = gs.volume;
@@ -849,6 +890,7 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
     gs.raid.speedBonusFlat += g.speedFlat;
     gs.raid.regenPerKm += g.regenPerKm;
     gs.raid.regenAfterCombat += g.regenAfterCombat;
+    gs.raid.regenPer10Minutes += g.regenPer10Minutes;
     gs.raid.weight += g.weight;
     gs.raid.maxWeight += g.maxWeight;
     gs.raid.hp += g.hp;

@@ -69,6 +69,14 @@ export interface LootEncounterContext {
 
 export type LootRarityWeights = Record<LootRarity, number>;
 
+export function computeEffectiveRarityBuff(
+  lootChanceBonus: number,
+  lootingRarityBuff: number,
+  rarityBuff: number
+): number {
+  return lootChanceBonus * 0.5 + (lootingRarityBuff + rarityBuff) * 2;
+}
+
 export function computeLootRarityWeights(
   poolSizes: Record<LootRarity, number>,
   effLootChance: number
@@ -144,8 +152,8 @@ export function handleLootLikeEncounter(
   };
 
   const raidEntry = gs.unlockedRaids.find(rr => rr.id === r.id)!;
-  const effLootChance = r.lootChanceBonus * 0.5 + (raidEntry.lootingRarityBuff + r.rarityBuff) * 2;
-  const weights = computeLootRarityWeights(poolSizes, effLootChance);
+  const effRarityBuff = computeEffectiveRarityBuff(r.lootChanceBonus, raidEntry.lootingRarityBuff, r.rarityBuff);
+  const weights = computeLootRarityWeights(poolSizes, effRarityBuff);
 
   const entries: Array<[LootRarity, number]> = ([
     ['common', weights.common],

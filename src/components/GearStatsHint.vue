@@ -38,6 +38,7 @@ const hintRows = computed((): Array<{ label: string; value: string }> => {
   if (g.walkDelta !== 0) rows.push({ label: 'Walk distance', value: `${fmtSigned(g.walkDelta)} km` });
   if (g.regenPerKm) rows.push({ label: 'Regen', value: `${fmtSigned(g.regenPerKm)} hp/km` });
   if (g.regenAfterCombat) rows.push({ label: 'Regen after combat', value: `${fmtSigned(g.regenAfterCombat)} hp` });
+  if (g.regenPer10Minutes) rows.push({ label: 'Regen per 10 min', value: `${fmtSigned(g.regenPer10Minutes)} hp` });
 
   if (g.prepTimeMin) rows.push({ label: 'Prep time', value: `${g.prepTimeMin} min` });
 

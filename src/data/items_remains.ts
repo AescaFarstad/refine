@@ -66,7 +66,7 @@ const remainsDefinitions: Record<string, { name: string; volume: number; rarity?
     molecule: {
       atoms: [
         { color: 'green', x: 0, y: 0 },
-        { color: 'green', x: 1, y: 0 },
+        { color: 'orange', x: 1, y: 0 },
         { color: 'green', x: 2, y: 0 },
       ],
       connections: [

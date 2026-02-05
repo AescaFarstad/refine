@@ -65,6 +65,9 @@
         </div>
       </div>
     </template>
+    <div class="note-row time-regen" v-if="hasTimeRegen">
+      Regenerated {{ timeRegenAmount }} hp: {{ entry.timeRegenHpBefore }} → <b>{{ entry.timeRegenHpAfter }}</b> over the last {{ formatDuration(entry.timeRegenDurationSec) }}
+    </div>
   </template>
 </template>
 
@@ -93,4 +96,18 @@ function itemVolume(id?: string): number {
   if (!itemId) return 0;
   return getGameLib().getItem(itemId).volume;
 }
+
+const hasTimeRegen = computed(() => (props.entry.timeRegenHpAfter || 0) > (props.entry.timeRegenHpBefore || 0));
+const timeRegenAmount = computed(() => (props.entry.timeRegenHpAfter || 0) - (props.entry.timeRegenHpBefore || 0));
+
+function formatDuration(sec: number): string {
+  const m = Math.floor(sec / 60);
+  if (m < 1) return `${sec} seconds`;
+  if (m === 1) return '1 minute';
+  return `${m} minutes`;
+}
 </script>
+
+<style scoped>
+.time-regen { margin-top: 8px; }
+</style>

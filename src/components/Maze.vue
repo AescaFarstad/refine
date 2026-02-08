@@ -1,5 +1,5 @@
 <template>
-  <div class="lab-root panel" ref="rootEl">
+  <div class="lab-root panel">
     <div v-if="!hasMazeNavigation" class="maze-locked">
       <div class="locked-text">This is the Maze of Time.</div>
       <div class="locked-text">You will have to navigate it to return home.</div>
@@ -25,20 +25,18 @@
         </div>
         <div class="left-section">
           <button class="btn btn-large" @click="restart()">Restart</button>
-          <button class="btn btn-large" @click="reset()">Reset</button>
+          <button class="btn btn-large" @click="reset()">Regenerate</button>
         </div>
         <div class="left-section info-section">
-          <div class="info-text">Resetting and restarting return the time flux spent.</div>
-          <div class="info-text">Beating the maze consumes ALL remaining time flux.</div>
           <div class="info-text">Use WASD or click to move. R to reset.</div>
           <div v-if="moveError" class="info-text error">{{ moveError }}</div>
         </div>
       </div>
-      <div class="main-area">
-        <div class="canvas-container">
+      <div class="main-area" ref="mainAreaEl">
+        <div class="canvas-container" ref="canvasContainerEl">
           <div class="topbar" ref="topbarEl">
             <div class="stats">
-              <span>{{ timeFluxSpec.name }} remains: {{ timeFluxRemaining }}{{ timeFluxSpec.glyph }}</span>
+              <span>Will require: {{ transcendCost }}{{ timeFluxSpec.glyph }}</span>
               <span v-if="totalKeys > 0" class="arrows-of-time">
                 <span class="arrows-label">Arrows of time:</span>
                 <span class="arrows">
@@ -65,7 +63,24 @@
           </div>
           <canvas ref="staticCanvasEl" class="canvas canvas-static"></canvas>
           <canvas ref="dynamicCanvasEl" class="canvas canvas-dynamic"></canvas>
-          <div v-if="solved" class="overlay-message solved-overlay">Transcended!</div>
+          <div v-if="solved && !mazeAnimating" class="solve-overlay">
+            <div class="transcend-panel">
+              <div class="overlay-message solved-overlay">Path found</div>
+              <button class="btn transcend-btn" :disabled="!canTranscend || mazeAnimating" @click="transcend()">
+                Transcend {{ transcendCost }}{{ timeFluxSpec.glyph }}
+              </button>
+              <div v-if="!canTranscend" class="transcend-error">
+                Need {{ transcendCost - timeFluxRemaining }}{{ timeFluxSpec.glyph }} more
+              </div>
+              <div class="transcend-note">
+                Transcending consumes all remaining {{ timeFluxSpec.name }}.
+              </div>
+              <div class="transcend-actions">
+                <button class="btn transcend-action-btn" @click="reset()">Regenerate</button>
+                <button class="btn transcend-action-btn" @click="restart()">Restart</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -77,7 +92,7 @@
 import { onBeforeUnmount, onMounted, ref, computed, watch } from 'vue';
 import { getGameLib, getGameState, uiState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
-import { CmdMazeMove, CmdMazeReset, CmdMazeRestart } from '../logic/input/InputCommands';
+import { CmdMazeMove, CmdMazeReset, CmdMazeRestart, CmdMazeTranscend } from '../logic/input/InputCommands';
 import type { MazeDefinition } from '../logic/MazeLib';
 import type { Point2 } from '../logic/core/math';
 import { getResourceSpec } from '../logic/Resources';
@@ -85,20 +100,19 @@ import { DISCOVERY } from '../logic/DiscoveryLib';
 import atlasStorage from '../logic/AtlasStorage';
 import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 
-const rootEl = ref<HTMLElement | null>(null);
+const mainAreaEl = ref<HTMLElement | null>(null);
+const canvasContainerEl = ref<HTMLElement | null>(null);
 const staticCanvasEl = ref<HTMLCanvasElement | null>(null);
 const dynamicCanvasEl = ref<HTMLCanvasElement | null>(null);
 const topbarEl = ref<HTMLElement | null>(null);
 
-const dpr = Math.max(1, window.devicePixelRatio || 1);
+const TOPBAR_HEIGHT = 40;
+const BOARD_PADDING = 12;
+const MAIN_AREA_PADDING = 8;
+const MAX_TILE_SIZE_DP = 198;
 
-// Mouse hover state for move preview
 let hoverCell: { x: number; y: number } | null = null;
-
-// Track when static canvas needs redraw
 let needsStaticRedraw = true;
-
-// Track visual key state for change detection
 let lastVisualKeyState: string = '';
 
 function getLevels(): Array<MazeDefinition> { return getGameLib()?.mazeLevels || []; }
@@ -116,6 +130,9 @@ const solved = computed(() => uiState.mazeSolved);
 
 const timeFluxSpec = getResourceSpec('timeFlux');
 const moveError = ref('');
+const transcendCost = ref(0);
+const canTranscend = ref(false);
+const mazeAnimating = ref(false);
 
 const hasMazeNavigation = computed(() => {
   const _dep = uiState.discoveryCounter;
@@ -180,7 +197,6 @@ function gearIconStyle(gearId: string): Record<string, string> {
   return atlasSpriteStyle(atlasSource, f, { size: 28, mode: 'fixed' });
 }
 
-// Top bar visual representation of keys (updates when visualTakenKeys change)
 const topBarVisualKeys = ref<boolean[]>([]);
 const arrowIconSize = 18;
 // Upward arrow path (head + shaft), styled to resemble maze arrows
@@ -193,14 +209,16 @@ const arrowSlots = computed(() => {
   return out;
 });
 
-// Watch for changes that require static redraw
 watch(levelIndex, () => {
   needsStaticRedraw = true;
-  lastVisualKeyState = ''; // Force recheck when level changes
+  lastVisualKeyState = '';
   topBarVisualKeys.value = [];
+  layoutCanvas();
 });
 
 let rafId = 0;
+let resizeObserver: ResizeObserver | null = null;
+let lastLayoutSignature = '';
 
 function onKeydown(ev: KeyboardEvent) {
   if (ev.altKey || ev.ctrlKey || ev.metaKey) return;
@@ -213,6 +231,7 @@ function onKeydown(ev: KeyboardEvent) {
 
   const game = getGameState()?.maze || null;
   if (!game) return;
+  if (solved.value && !game.isAnimating()) return;
 
   switch (code) {
     case 'KeyW':
@@ -250,6 +269,7 @@ function screenToCell(clientX: number, clientY: number): { x: number; y: number 
   const canvas = dynamicCanvasEl.value;
   const game = getGameState()?.maze;
   if (!canvas || !game) return null;
+  const dpr = getDpr();
 
   const rect = canvas.getBoundingClientRect();
   const x = clientX - rect.left;
@@ -319,6 +339,11 @@ function getHoverMovePreview(game: any, mouseCell: { x: number; y: number }): {
 }
 
 function onCanvasMouseMove(ev: MouseEvent) {
+  const game = getGameState()?.maze;
+  if (game && solved.value && !game.isAnimating()) {
+    hoverCell = null;
+    return;
+  }
   hoverCell = screenToCell(ev.clientX, ev.clientY);
 }
 
@@ -332,6 +357,7 @@ function onCanvasClick(ev: MouseEvent) {
 
   const game = getGameState()?.maze;
   if (!game) return;
+  if (solved.value && !game.isAnimating()) return;
 
   const preview = getHoverMovePreview(game, cell);
   if (!preview) return;
@@ -350,34 +376,82 @@ function restart() {
   lastVisualKeyState = ''; // Force recheck of visual state
 }
 
+function transcend() {
+  globalInputQueue.push(new CmdMazeTranscend());
+}
+
 // No nextLevel() here — handled by Model when solved
 
+function getMazeLayoutDimensions() {
+  const game = getGameState()?.maze;
+  if (game) return { cols: game.dimensions.x, rows: game.dimensions.y };
+  const level = getLevels()[levelIndex.value]!;
+  return { cols: level.x, rows: level.y };
+}
+
+function getDpr() {
+  return Math.max(1, window.devicePixelRatio || 1);
+}
+
+function getScaleAwareMaxTileSize() {
+  return MAX_TILE_SIZE_DP / getDpr();
+}
+
+function getLayoutSignatureFor(cols: number, rows: number) {
+  return `${levelIndex.value}:${cols}x${rows}@${getDpr().toFixed(3)}`;
+}
+
+function getLayoutSignature() {
+  const { cols, rows } = getMazeLayoutDimensions();
+  return getLayoutSignatureFor(cols, rows);
+}
+
+function computeCanvasCssSize(availWidth: number, availHeight: number, cols: number, rows: number) {
+  const maxTileSize = getScaleAwareMaxTileSize();
+  const tileFromWidth = (availWidth - BOARD_PADDING * 2) / cols;
+  const tileFromHeight = (availHeight - TOPBAR_HEIGHT - BOARD_PADDING * 2) / rows;
+  const tile = Math.max(1, Math.floor(Math.min(tileFromWidth, tileFromHeight, maxTileSize)));
+  const boardW = tile * cols;
+  const boardH = tile * rows;
+  return {
+    width: boardW + BOARD_PADDING * 2,
+    height: TOPBAR_HEIGHT + boardH + BOARD_PADDING * 2,
+  };
+}
+
 function layoutCanvas() {
-  const root = rootEl.value;
+  const mainArea = mainAreaEl.value;
+  const canvasContainer = canvasContainerEl.value;
   const staticCanvas = staticCanvasEl.value;
   const dynamicCanvas = dynamicCanvasEl.value;
-  if (!root || !staticCanvas || !dynamicCanvas) return;
+  if (!mainArea || !canvasContainer || !staticCanvas || !dynamicCanvas) return;
 
-  const cw = Math.max(1, root.clientWidth);
-  const ch = Math.max(300, root.clientHeight - 52); // reserve a bit for topbar
+  const availWidth = Math.max(1, mainArea.clientWidth - MAIN_AREA_PADDING * 2);
+  const viewportHeight = Math.max(1, window.innerHeight - mainArea.getBoundingClientRect().top - MAIN_AREA_PADDING);
+  const availHeight = Math.max(1, Math.min(mainArea.clientHeight, viewportHeight) - MAIN_AREA_PADDING * 2);
+  const { cols, rows } = getMazeLayoutDimensions();
+  const { width, height } = computeCanvasCssSize(availWidth, availHeight, cols, rows);
+  const dpr = getDpr();
+
+  canvasContainer.style.width = width + 'px';
+  canvasContainer.style.height = height + 'px';
 
   // Set both canvases to same size
   for (const canvas of [staticCanvas, dynamicCanvas]) {
-    canvas.width = Math.floor(cw * dpr);
-    canvas.height = Math.floor(ch * dpr);
-    canvas.style.width = cw + 'px';
-    canvas.style.height = ch + 'px';
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
   }
 
+  lastLayoutSignature = getLayoutSignature();
   needsStaticRedraw = true;
 }
-
-const TOPBAR_HEIGHT = 40;
 
 function getBoardMetrics(game: any, w: number, h: number) {
   const cols = game.dimensions.x;
   const rows = game.dimensions.y;
-  const pad = 12;
+  const pad = BOARD_PADDING;
   const availH = h - TOPBAR_HEIGHT; // Reserve space for topbar
   const tile = Math.floor(Math.max(1, Math.min((w - pad * 2) / cols, (availH - pad * 2) / rows)));
   const boardW = tile * cols;
@@ -393,6 +467,7 @@ function drawStatic() {
   if (!canvas || !game) return;
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
+  const dpr = getDpr();
 
   const w = Math.floor(canvas.width / dpr);
   const h = Math.floor(canvas.height / dpr);
@@ -557,6 +632,7 @@ function drawDynamic() {
   if (!canvas || !game) return;
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
+  const dpr = getDpr();
 
   const w = Math.floor(canvas.width / dpr);
   const h = Math.floor(canvas.height / dpr);
@@ -637,11 +713,19 @@ function frameLoop(ts: number) {
 
   const game = getGameState()?.maze;
   if (!game) {
+    transcendCost.value = 0;
+    canTranscend.value = false;
+    mazeAnimating.value = false;
     rafId = requestAnimationFrame(frameLoop);
     return;
   }
 
   moveError.value = game.lastMoveError || '';
+  transcendCost.value = game.movesMade | 0;
+  canTranscend.value = timeFluxRemaining.value >= transcendCost.value;
+  mazeAnimating.value = game.isAnimating();
+  const layoutSignature = getLayoutSignatureFor(game.dimensions.x, game.dimensions.y);
+  if (layoutSignature !== lastLayoutSignature) layoutCanvas();
 
   // Check if visual key state or artifacts have changed
   // (these change asynchronously after animations, so watchers won't catch them)
@@ -668,6 +752,7 @@ function frameLoop(ts: number) {
   const canvas = staticCanvasEl.value;
   const topbar = topbarEl.value;
   if (canvas && topbar) {
+    const dpr = getDpr();
     const w = Math.floor(canvas.width / dpr);
     const h = Math.floor(canvas.height / dpr);
     const { boardW, ox } = getBoardMetrics(game, w, h);
@@ -693,9 +778,16 @@ onMounted(() => {
       game.state.artefacts.map((a: any) => a.taken ? '1' : '0').join('') + '|' +
       (game.cellTimeFluxVersion || 0);
     topBarVisualKeys.value = game.visualTakenKeys.slice();
+    transcendCost.value = game.movesMade | 0;
+    canTranscend.value = timeFluxRemaining.value >= transcendCost.value;
+    mazeAnimating.value = game.isAnimating();
   }
 
   layoutCanvas();
+  resizeObserver = new ResizeObserver(() => {
+    layoutCanvas();
+  });
+  if (mainAreaEl.value) resizeObserver.observe(mainAreaEl.value);
   window.addEventListener('resize', layoutCanvas);
   window.addEventListener('keydown', onKeydown);
 
@@ -712,6 +804,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   cancelAnimationFrame(rafId);
+  resizeObserver?.disconnect();
+  resizeObserver = null;
   window.removeEventListener('resize', layoutCanvas);
   window.removeEventListener('keydown', onKeydown);
 
@@ -726,12 +820,12 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.lab-root { display: flex; flex-direction: column; height: 100%; max-height: 800px; }
+.lab-root { display: flex; flex-direction: column; height: 100%; min-height: 0; box-sizing: border-box; }
 .maze-locked {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   height: 100%;
   gap: 24px;
 }
@@ -782,7 +876,17 @@ onBeforeUnmount(() => {
   margin-bottom: 12px;
 }
 .info-text.error { color: #ef4444; font-weight: 700; }
-.main-area { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.main-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  padding: 8px;
+}
 .topbar { position: absolute; top: 0; z-index: 3; text-align: center; }
 .stats { display: inline-flex; align-items: center; gap: 16px; font-size: 28px; color: var(--text-secondary); }
 .stats .arrows-of-time { display: inline-flex; align-items: center; gap: 8px; }
@@ -805,27 +909,103 @@ onBeforeUnmount(() => {
   font-weight: 600;
   width: 100%;
 }
-.canvas-container { position: relative; flex: 1; min-height: 300px; max-height: 720px; width: 100%; }
+.canvas-container { position: relative; flex: 0 0 auto; }
 .canvas { width: 100%; height: 100%; display: block; position: absolute; top: 0; left: 0; }
 .canvas-static { z-index: 1; }
 .canvas-dynamic { z-index: 2; }
-.overlay-message {
+.solve-overlay {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  inset: 0;
   z-index: 10;
-  font-size: 48px;
-  font-weight: 700;
-  padding: 16px 32px;
-  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+.transcend-panel {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 24px;
+  border-radius: 12px;
+  background: rgba(10, 16, 28, 0.96);
+  border: 1px solid rgba(52, 211, 153, 0.5);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.overlay-message {
+  font-size: 42px;
+  font-weight: 800;
+  line-height: 1.1;
   text-align: center;
   pointer-events: none;
 }
 .solved-overlay {
+  color: #6ee7b7;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  text-shadow: 0 0 14px rgba(52, 211, 153, 0.35);
+}
+.transcend-btn {
+  pointer-events: auto;
+  min-width: 240px;
+  padding: 14px 20px;
+  font-size: 22px;
+  font-weight: 700;
+  border-color: #34d399;
+  background: rgba(20, 50, 38, 0.95);
   color: #34d399;
-  background: rgba(14, 20, 32, 0.9);
-  border: 2px solid #34d399;
-  text-shadow: 0 0 20px rgba(52, 211, 153, 0.5);
+}
+.transcend-btn:hover:enabled {
+  background: rgba(26, 72, 52, 0.95);
+}
+.transcend-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.transcend-error {
+  pointer-events: none;
+  color: #ef4444;
+  font-size: 20px;
+  font-weight: 700;
+}
+.transcend-note {
+  pointer-events: none;
+  color: var(--text-secondary);
+  font-size: 16px;
+  text-align: center;
+}
+.transcend-actions {
+  display: flex;
+  gap: 10px;
+}
+.transcend-action-btn {
+  pointer-events: auto;
+  min-width: 140px;
+  padding: 10px 14px;
+  font-size: 18px;
+  font-weight: 600;
+}
+@media (max-width: 1200px) {
+  .maze-layout {
+    flex-direction: column;
+    overflow: auto;
+  }
+  .left-panel {
+    width: 100%;
+    gap: 16px;
+    padding: 0;
+  }
+}
+@media (max-width: 900px) {
+  .stats {
+    font-size: 22px;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
 }
 </style>

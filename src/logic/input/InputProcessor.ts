@@ -1,7 +1,7 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdReviewQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro, CmdPickupShard, CmdSpeedUpRefining, CmdClearShardPickupGrace } from './InputCommands';
+import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdMazeMove, CmdMazeReset, type MazeDir, CmdMazeRestart, CmdMazeTranscend, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdReviewQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro, CmdPickupShard, CmdSpeedUpRefining, CmdClearShardPickupGrace } from './InputCommands';
 import { SHARD_PICKUP_DELAY_SEC } from '../Model';
 import { discover, discoverRefineTab, ensureSignatureDiscoveryFromWafer } from '../Discover';
 import { DISCOVERY } from '../DiscoveryLib';
@@ -250,21 +250,23 @@ handlersByName.set('CmdMazeMove', (gs, cmd) => {
     right: { x: 1, y: 0 },
   };
   const maze = gs.maze!;
-  maze.timeFluxAvailable = Math.floor(gs.timeFlux);
   maze.tryMove(deltaByDir[c.dir], c.dir);
-  gs.timeFlux = maze.timeFluxAvailable;
 });
 
 handlersByName.set('CmdMazeReset', (gs, cmd) => {
   gs.labirinthResetRequested = true;
+  gs.labirinthTranscendRequested = false;
 });
 
 handlersByName.set('CmdMazeRestart', (gs, cmd) => {
   // Restart current level without regenerating layout (same seed/settings)
   const maze = gs.maze!;
-  gs.timeFlux += maze.movesMade;
-  maze.timeFluxAvailable = Math.floor(gs.timeFlux);
+  gs.labirinthTranscendRequested = false;
   maze.reset();
+});
+
+handlersByName.set('CmdMazeTranscend', (gs, cmd) => {
+  gs.labirinthTranscendRequested = true;
 });
 
 handlersByName.set('CmdSelectRaid', (gs, cmd) => {

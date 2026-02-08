@@ -61,6 +61,10 @@ export class CmdMazeRestart implements CmdInput {
   readonly name = 'CmdMazeRestart';
 }
 
+export class CmdMazeTranscend implements CmdInput {
+  readonly name = 'CmdMazeTranscend';
+}
+
 
 export class CmdResearchNode implements CmdInput {
   readonly name = 'CmdResearchNode';
@@ -216,4 +220,3 @@ export class CmdSpeedUpRefining implements CmdInput {
 export class CmdClearShardPickupGrace implements CmdInput {
   readonly name = 'CmdClearShardPickupGrace';
 }
-

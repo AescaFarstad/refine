@@ -32,9 +32,6 @@ export function update(gs: GameState, deltaTime: number): void {
     gs.maze.timeFluxAvailable = Math.floor(gs.timeFlux);
   }
   gs.maze?.update(deltaTime);
-  if (gs.maze) {
-    gs.timeFlux = gs.maze.timeFluxAvailable;
-  }
 
   if (IS_DEBUG && gs.cheats && gs.cheats.length > 0) {
     processCheats(gs);
@@ -137,9 +134,7 @@ function initOrAdvanceMaze(gs: GameState) {
   // Reset requested by input
   if (gs.labirinthResetRequested) {
     gs.labirinthResetRequested = false;
-    if (gs.maze) {
-      gs.timeFlux += gs.maze.movesMade;
-    }
+    gs.labirinthTranscendRequested = false;
     const idx = clampIndex(gs.mazeLevelIndex);
     const def = levels[idx];
     const seed = Math.floor(gs.random.get_in_range(1, 0x7fffffff));
@@ -162,15 +157,20 @@ function initOrAdvanceMaze(gs: GameState) {
     return;
   }
 
-  // Auto-advance when solved (wait for animations to finish)
+  // Advance only after explicit transcend action.
   const solved = Chase.isSolved(gs.maze.state);
-  if (solved && !gs.maze.isAnimating()) {
+  if (!solved) {
+    gs.labirinthTranscendRequested = false;
+  }
+  if (gs.labirinthTranscendRequested && solved && !gs.maze.isAnimating()) {
+    gs.labirinthTranscendRequested = false;
+
+    const transcendCost = gs.maze.movesMade;
+    if (transcendCost > gs.timeFlux) return;
+    gs.timeFlux = 0;
 
     const currentLevelIdx = clampIndex(gs.mazeLevelIndex);
     const currentDef = levels[currentLevelIdx];
-
-    gs.timeFlux = 0;
-
     if (currentDef && currentDef.reward && Array.isArray(currentDef.reward)) {
       for (const r of currentDef.reward) {
         applyReward(gs, r);
@@ -179,7 +179,6 @@ function initOrAdvanceMaze(gs: GameState) {
 
     const next = clampIndex(gs.mazeLevelIndex + 1);
     gs.mazeLevelIndex = next;
-    // Rebuild immediately at next level
     const def = levels[next];
     const seed = Math.floor(gs.random.get_in_range(1, 0x7fffffff));
     const moves = gs.timeFlux;

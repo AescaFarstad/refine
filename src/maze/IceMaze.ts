@@ -175,10 +175,9 @@ export class IceMaze {
   }
 
   tryMove(direction: Point2, label?: string): boolean {
-    const moveLabel = label ?? this.labelForDirection(direction);
     // Store input as pending if animating
     if (this.isAnimating()) {
-      this.pendingMove = { dir: { x: direction.x, y: direction.y }, label: moveLabel };
+      this.pendingMove = { dir: { x: direction.x, y: direction.y }, label: label ?? this.labelForDirection(direction) };
       return false;
     }
 
@@ -193,13 +192,6 @@ export class IceMaze {
     for (let i = 0; i < pathCells.length; i++) {
       const c = pathCells[i]!;
       if (!this.cellTimeFlux[c.x]![c.y]) missingWithIndex.push({ cell: c, index: i });
-    }
-    const missing = missingWithIndex.length;
-    if (missing > this.timeFluxAvailable) {
-      const deficit = missing - this.timeFluxAvailable;
-      this.lastMoveError = `Can't move ${moveLabel}, need ${deficit} more time flux`;
-      this.lastMoveErrorUntil = this.currentTime + 2.5;
-      return false;
     }
 
     const playerPrev = this.state.player.cell;
@@ -284,7 +276,6 @@ export class IceMaze {
       this.cellTimeFlux[c.x]![c.y] = true;
       this.cellTimeFluxVersion++;
       this.movesMade += 1;
-      this.timeFluxAvailable -= 1;
     }
     if (this.pendingTimeFluxNext >= this.pendingTimeFlux.length) {
       this.pendingTimeFlux = [];

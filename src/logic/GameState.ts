@@ -82,6 +82,7 @@ export class GameState {
   public maze: IceMaze | null = null;
   public mazeLevelIndex: number = 0;
   public labirinthResetRequested: boolean = false;
+  public labirinthTranscendRequested: boolean = false;
 
   public activeTab: 'raid' | 'refine' | 'research' | 'maze' = 'raid';
 

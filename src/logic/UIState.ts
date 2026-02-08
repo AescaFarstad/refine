@@ -131,6 +131,7 @@ export const uiState = reactive({
   waferUpgradesPurchased: 0,
   wafer: createWafer(2) as Wafer,
   shards: [] as Shard[],
+  shardPickupGraceSec: 0,
   shardPhysics: new Map<string, ShardPhysics>(),
   waferVersion: 0,
 
@@ -372,6 +373,7 @@ export function SyncUIFromGameState(game: GameState): void {
 
   uiState.wafer = game.wafer;
   uiState.shards = game.shards.filter(s => s !== null);
+  uiState.shardPickupGraceSec = game.shardPickupGraceSec || 0;
   uiState.waferUpgradesPurchased = game.waferUpgradesPurchased || 0;
 
   if (game.wafer) {

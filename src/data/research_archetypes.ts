@@ -19,9 +19,9 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
   stat_hp: { type: 'stat', rewards: [{ kind: 'stat', stat: 'health', value: 1 }] },
   stat_volume: { type: 'stat', rewards: [{ kind: 'stat', stat: 'volume', value: 1 }] },
   stat_weight: { type: 'stat', rewards: [{ kind: 'stat', stat: 'baseMaxWeight', value: 1 }] },
-  stat_vision: { type: 'stat', rewards: [{ kind: 'stat', stat: 'researchRevealRadius', value: 1 }] },
   stat_speed: { type: 'stat', rewards: [{ kind: 'stat', stat: 'speed', value: 1 }] },
   stat_itemBans: { type: 'stat', rewards: [{ kind: 'stat', stat: 'itemBans', value: 1 }] },
+  stat_vision: { type: 'stat', rewards: [{ kind: 'stat', stat: 'researchRevealRadius', value: 1 }] },
 
   disc_damage_breakdown: {
     type: 'discovery',

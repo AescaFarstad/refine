@@ -12,6 +12,7 @@ import type { Shard } from './GameState';
 // Shard physics constants
 const SHARD_RADIUS_MULT = 1.2;
 const SHARD_LAUNCH_SPEED = { x: 20, y: 100 };
+const SHARD_FLY_TO_UI_DURATION_SEC = 0.6;
 const SHARD_MIN_OMEGA = 0.1;
 const SHARD_MAX_OMEGA = 20;
 const SHARD_OMEGA_POWER = 5;
@@ -44,10 +45,12 @@ export function resetMouseCoords() {
 }
 
 // Initialize physics for a new shard (or re-initialize after save/load)
-function initShardPhysics(_shard: Shard): ShardPhysics {
+function initShardPhysics(shard: Shard): ShardPhysics {
   const angle = Math.random() * Math.PI * 2;
-  const speed = SHARD_LAUNCH_SPEED.x + Math.random() * (SHARD_LAUNCH_SPEED.y - SHARD_LAUNCH_SPEED.x);
-  const speedNorm = (speed - SHARD_LAUNCH_SPEED.x) / (SHARD_LAUNCH_SPEED.y - SHARD_LAUNCH_SPEED.x || 1);
+  const speedMin = SHARD_LAUNCH_SPEED.x * shard.launchSpeedMultiplier;
+  const speedMax = SHARD_LAUNCH_SPEED.y * shard.launchSpeedMultiplier;
+  const speed = speedMin + Math.random() * (speedMax - speedMin);
+  const speedNorm = (speed - speedMin) / (speedMax - speedMin || 1);
   const clampedSpeedNorm = Math.max(0, Math.min(1, speedNorm));
   const omegaBase = Math.random();
   const omegaBias = Math.pow(omegaBase, SHARD_OMEGA_POWER);
@@ -225,16 +228,20 @@ export function checkShardPickups() {
     const dy = localMouseCoords.y - physics.pos.y;
     const distMouse = Math.sqrt(dx * dx + dy * dy);
 
-    let pickupDistance = distMouse;
+    const withinMousePickupRadius = distMouse < pickupRadius;
+    let intersectsMouseSweep = false;
     if (lastLocalMouseCoords) {
-      pickupDistance = distancePointToSegment(
+      const sweepLineWidth = pickupRadius * 2;
+      const sweepHalfWidth = sweepLineWidth * 0.5;
+      const sweepDistance = distancePointToSegment(
         physics.pos,
         lastLocalMouseCoords,
         localMouseCoords,
       );
+      intersectsMouseSweep = sweepDistance < sweepHalfWidth;
     }
 
-    if (pickupDistance < pickupRadius) {
+    if (withinMousePickupRadius || intersectsMouseSweep) {
       globalInputQueue.push(new CmdPickupShard({ shardId: shard.id }));
     }
   }
@@ -285,7 +292,8 @@ function createFlyingShardAnimation(shard: Shard, startX: number, startY: number
   flyingEl.style.top = screenY + 'px';
   flyingEl.style.pointerEvents = 'none';
   flyingEl.style.zIndex = '10000';
-  flyingEl.style.transition = 'left 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), top 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+  const transitionDurationMs = Math.round(SHARD_FLY_TO_UI_DURATION_SEC * 1000);
+  flyingEl.style.transition = `left ${transitionDurationMs}ms cubic-bezier(0.25, 0.46, 0.45, 0.94), top ${transitionDurationMs}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
 
   // For zone_crystal, use an image sprite instead of text
   if (shard.resource === 'zone_crystal') {
@@ -329,7 +337,7 @@ function createFlyingShardAnimation(shard: Shard, startX: number, startY: number
 
   setTimeout(() => {
     document.body.removeChild(flyingEl);
-  }, 650);
+  }, transitionDurationMs + 50);
 }
 
 export function drawShard(ctx: CanvasRenderingContext2D, shard: Shard) {

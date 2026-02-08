@@ -1,5 +1,9 @@
 <template>
-  <div class="wafer-view" ref="container">
+  <div
+    class="wafer-view"
+    :class="{ 'failure-backdrop': failureBackdrop, 'failure-backdrop-soft': failureBackdropSoft }"
+    ref="container"
+  >
     <canvas ref="gridCanvas" class="layer"></canvas>
     <canvas ref="moleculesCanvas" class="layer"></canvas>
     <canvas 
@@ -63,6 +67,8 @@ const props = defineProps<{
   showUpgradeHints?: boolean;
   // Dev-only: when true, mouse drag over atoms draws connections instead of moving molecules.
   connectMode?: boolean;
+  failureBackdrop?: boolean;
+  failureBackdropSoft?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -590,8 +596,37 @@ function onManualDragMove(e: CustomEvent) {
   background: var(--bg-0);
   border: 2px solid var(--panel-border);
   border-radius: 6px;
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4),
               0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.wafer-view.failure-backdrop {
+  background: radial-gradient(
+    circle at 50% 45%,
+    rgba(248, 113, 113, 0.32) 0%,
+    rgba(185, 28, 28, 0.38) 48%,
+    rgba(69, 10, 10, 0.95) 100%
+  );
+  border-color: rgba(248, 113, 113, 0.78);
+  box-shadow: inset 0 2px 16px rgba(248, 113, 113, 0.32),
+              inset 0 0 70px rgba(127, 29, 29, 0.45),
+              0 0 14px rgba(248, 113, 113, 0.26),
+              0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.wafer-view.failure-backdrop.failure-backdrop-soft {
+  background: radial-gradient(
+    circle at 50% 45%,
+    rgba(248, 113, 113, 0.12) 0%,
+    rgba(153, 27, 27, 0.18) 48%,
+    rgba(32, 13, 13, 0.88) 100%
+  );
+  border-color: rgba(248, 113, 113, 0.42);
+  box-shadow: inset 0 2px 12px rgba(248, 113, 113, 0.16),
+              inset 0 0 50px rgba(127, 29, 29, 0.24),
+              0 0 8px rgba(248, 113, 113, 0.12),
+              0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
 .layer {

@@ -24,6 +24,7 @@ import { findCheapestPath, indexToAxial, axialToIndex, calculateVisibility, calc
 import { globalInputQueue } from '../logic/Model';
 import { CmdResearchNode } from '../logic/input/InputCommands';
 import { getResourceSpec } from '../logic/Resources';
+import type { ResearchHighlightHover } from '../logic/ResearchHighlightHover';
 
 const container = ref<HTMLDivElement | null>(null);
 const baseCanvas = ref<HTMLCanvasElement | null>(null);
@@ -63,6 +64,12 @@ const isMouseDown = ref(false);
 const lastPanClient = ref<Point2 | null>(null);
 const hoverAxial = ref<Point2 | null>(null);
 
+const props = withDefaults(defineProps<{
+  panelHighlight: ResearchHighlightHover | null;
+}>(), {
+  panelHighlight: null,
+});
+
 const emit = defineEmits<{
   (e: 'hover-cell', cell: Point2 | null): void;
 }>();
@@ -77,6 +84,23 @@ defineExpose({
 
 const chronotracesSpec = getResourceSpec('chronotraces');
 const RESEARCH_PATH_OBSTACLE_ICON_COLOR = chronotracesSpec.color;
+const RESEARCH_PANEL_HIGHLIGHT_STYLE: Record<ResearchHighlightHover['kind'], { fillColor: string; strokeColor: string; innerStrokeColor: string }> = {
+  resource: {
+    fillColor: 'rgba(45, 212, 191, 0.32)',
+    strokeColor: 'rgba(153, 246, 228, 1)',
+    innerStrokeColor: 'rgba(240, 253, 250, 0.95)',
+  },
+  stat: {
+    fillColor: 'rgba(250, 204, 21, 0.34)',
+    strokeColor: 'rgba(254, 240, 138, 1)',
+    innerStrokeColor: 'rgba(255, 251, 235, 0.95)',
+  },
+  discovery: {
+    fillColor: 'rgba(147, 197, 253, 0.34)',
+    strokeColor: 'rgba(219, 234, 254, 1)',
+    innerStrokeColor: 'rgba(248, 250, 252, 0.95)',
+  },
+};
 
 onMounted(() => {
   setupCanvases();
@@ -102,6 +126,13 @@ watch(
   () => [uiState.researchOwnedCount, uiState.researchRevealRadius, uiState.discoveryCounter],
   () => {
     scheduleRender({ base: true, highlight: true });
+  }
+);
+
+watch(
+  () => props.panelHighlight,
+  () => {
+    scheduleRender({ highlight: true });
   }
 );
 
@@ -271,63 +302,111 @@ function renderHighlightLayer() {
   }
 
   const axial = hoverAxial.value;
-  if (!axial) return;
-
   const gs = getGameState();
-  const idx = axialToIndex(axial.x, axial.y);
-  if (idx === -1) return;
-  const cell = gs.researchCells[idx];
-  if (!cell || !cell.revealed || cell.owned) return;
-
-  const path = findCheapestPath(gs, axial.x, axial.y);
-  if (!path.reachable || path.pathLength === 0) return;
-
-  // Calculate the price and check affordability
-  const pathCost = path.cost;
-  const price = calculateResearchNodePrice(gs, pathCost);
-  const canAfford = pathCost === 0 || gs.chronotraces >= price;
-
-  // Apply camera transform
   const z = zoom.value || 1;
   const off = offset.value;
-  ctx.setTransform(z, 0, 0, z, off.x, off.y);
-
   const o = origin.value;
 
-  // Choose colors based on affordability
-  const fillColor = canAfford
-    ? 'rgba(56, 189, 248, 0.22)'    // cyan/blue for affordable
-    : 'rgba(239, 68, 68, 0.22)';     // red for unaffordable
-  const strokeColor = canAfford
-    ? 'rgba(56, 189, 248, 0.9)'     // cyan/blue for affordable
-    : 'rgba(239, 68, 68, 0.9)';      // red for unaffordable
+  if (axial) {
+    const idx = axialToIndex(axial.x, axial.y);
+    if (idx !== -1) {
+      const cell = gs.researchCells[idx]!;
+      if (cell.revealed && !cell.owned) {
+        const path = findCheapestPath(gs, axial.x, axial.y);
+        if (path.reachable && path.pathLength > 0) {
+          // Calculate the price and check affordability
+          const pathCost = path.cost;
+          const price = calculateResearchNodePrice(gs, pathCost);
+          const canAfford = pathCost === 0 || gs.chronotraces >= price;
 
-  // Highlight all cells that will be converted
-  const pathCells = path.pathCells;
-  const len = path.pathLength;
+          // Apply camera transform
+          ctx.setTransform(z, 0, 0, z, off.x, off.y);
 
-  for (let i = 0; i < len; i++) {
-    const cellIdx = pathCells[i];
-     const cellData = gs.researchCells[cellIdx];
-     const a = indexToAxial(cellIdx);
-     const center = axialToPixel({ x: a.x, y: a.y }, HEX_SIZE, o);
-     drawHexagon(ctx, center, HEX_SIZE * 0.9, {
-       fillColor,
-       strokeColor,
-       lineWidth: 2,
-     });
+          // Choose colors based on affordability
+          const fillColor = canAfford
+            ? 'rgba(56, 189, 248, 0.22)'    // cyan/blue for affordable
+            : 'rgba(239, 68, 68, 0.22)';     // red for unaffordable
+          const strokeColor = canAfford
+            ? 'rgba(56, 189, 248, 0.9)'     // cyan/blue for affordable
+            : 'rgba(239, 68, 68, 0.9)';      // red for unaffordable
 
-     // Draw resource icon for obstacle cells that will be destroyed (cost > 0)
-     if (cellData && cellData.cost > 0) {
-       ctx.save();
-       ctx.fillStyle = RESEARCH_PATH_OBSTACLE_ICON_COLOR;
-       ctx.textAlign = 'center';
-       ctx.textBaseline = 'middle';
-       ctx.font = `bold ${HEX_SIZE * 1.2}px system-ui, -apple-system, Segoe UI, sans-serif`;
-       ctx.fillText(chronotracesSpec.glyph, center.x, center.y);
-       ctx.restore();
-     }
+          // Highlight all cells that will be converted
+          const pathCells = path.pathCells;
+          const len = path.pathLength;
+
+          for (let i = 0; i < len; i++) {
+            const cellIdx = pathCells[i];
+            const cellData = gs.researchCells[cellIdx]!;
+            const a = indexToAxial(cellIdx);
+            const center = axialToPixel({ x: a.x, y: a.y }, HEX_SIZE, o);
+            drawHexagon(ctx, center, HEX_SIZE * 0.9, {
+              fillColor,
+              strokeColor,
+              lineWidth: 2,
+            });
+
+            // Draw resource icon for obstacle cells that will be destroyed (cost > 0)
+            if (cellData.cost > 0) {
+              ctx.save();
+              ctx.fillStyle = RESEARCH_PATH_OBSTACLE_ICON_COLOR;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.font = `bold ${HEX_SIZE * 1.2}px system-ui, -apple-system, Segoe UI, sans-serif`;
+              ctx.fillText(chronotracesSpec.glyph, center.x, center.y);
+              ctx.restore();
+            }
+          }
+        }
+      }
+    }
   }
+
+  if (props.panelHighlight) {
+    ctx.setTransform(z, 0, 0, z, off.x, off.y);
+    drawPanelHighlightLayer(ctx, gs, props.panelHighlight, o);
+  }
+}
+
+function drawPanelHighlightLayer(
+  ctx: CanvasRenderingContext2D,
+  gs: ReturnType<typeof getGameState>,
+  highlight: ResearchHighlightHover,
+  originPoint: Point2
+): void {
+  const style = RESEARCH_PANEL_HIGHLIGHT_STYLE[highlight.kind];
+  const lib = getGameLib();
+
+  ctx.save();
+  ctx.shadowColor = style.strokeColor;
+  ctx.shadowBlur = 14;
+
+  for (let idx = 0; idx < gs.researchCells.length; idx++) {
+    const cell = gs.researchCells[idx]!;
+    if (!cell.revealed || cell.owned || cell.blocked) continue;
+
+    const archetype = lib.research.archetypes.get(cell.archetypeId)!;
+    const matches = highlight.kind === 'discovery'
+      ? archetype.type === 'discovery'
+      : cell.archetypeId === highlight.archetypeId;
+    if (!matches) continue;
+
+    const axial = indexToAxial(idx);
+    const center = axialToPixel({ x: axial.x, y: axial.y }, HEX_SIZE, originPoint);
+
+    drawHexagon(ctx, center, HEX_SIZE * 0.96, {
+      fillColor: style.fillColor,
+      strokeColor: style.strokeColor,
+      lineWidth: 3,
+    });
+
+    drawHexagon(ctx, center, HEX_SIZE * 0.62, {
+      fillColor: 'rgba(0, 0, 0, 0)',
+      strokeColor: style.innerStrokeColor,
+      lineWidth: 2,
+    });
+  }
+
+  ctx.restore();
 }
 
 function onWheel(event: WheelEvent) {

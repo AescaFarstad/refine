@@ -16,6 +16,8 @@
         :use-effective-essence="!draggingItem"
         :show-buff-overlays="true"
         :show-upgrade-hints="showWaferUpgrades"
+        :failure-backdrop="failedRefineWithShards"
+        :failure-backdrop-soft="failedRefineBackdropSoft"
         @hover="onHover"
         @click="onClick"
         @pickup="onPickup"
@@ -269,6 +271,10 @@ const failedRefineWithShards = computed(() => {
   const hasFailure = !!outcome && !outcome.success;
   const hasShards = uiState.shards && uiState.shards.length > 0;
   return hasFailure && hasShards;
+});
+
+const failedRefineBackdropSoft = computed(() => {
+  return failedRefineWithShards.value && uiState.shardPickupGraceSec <= 0;
 });
 
 	const canRefine = computed(() => {

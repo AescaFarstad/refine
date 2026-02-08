@@ -1,7 +1,8 @@
 <template>
   <div class="research-tab" ref="researchTab">
     <ResearchParallax :offset="parallaxOffset" :zoom="parallaxZoom" />
-    <ResearchPane ref="researchPane" @hover-cell="onHoverCell" />
+    <ResearchPane ref="researchPane" :panel-highlight="hoveredHighlight" @hover-cell="onHoverCell" />
+    <ResearchHighlight @entry-hover="onHighlightEntryHover" />
     <EditResearchPane v-if="editResearchOpen" />
     <div
       v-if="hoverPreview && hoverPreview.reachable && !hoverPreview.alreadyOwned"
@@ -34,7 +35,12 @@
     <div class="left-info-panel info-panel">
       <div>Obstacles cleared: {{ uiState.researchOwnedCount }}</div>
       <div>
-        Next clear obstacle cost:
+        Cost grows by <span class="resource-price" :style="{ color: chronoColor }">
+          {{ RESEARCH_OBSTACLE_PRICE_GROWTH }}{{ chronotracesSpec.glyph }}
+        </span> per obstacle
+      </div>
+      <div>
+        Next:
         <span class="resource-price" :style="{ color: chronoColor }">
           {{ nextClearCost }}{{ chronotracesSpec.glyph }}
         </span>
@@ -99,10 +105,13 @@ import { getResourceSpec } from '../logic/Resources';
 import CardDeck from './CardDeck.vue';
 import SignatureCard from './SignatureCard.vue';
 import { useResearchNodeHintPlacement } from '../logic/useResearchNodeHintPlacement';
+import ResearchHighlight from './ResearchHighlight.vue';
+import type { ResearchHighlightHover } from '../logic/ResearchHighlightHover';
 
 const hoverCell = ref<Point2 | null>(null);
 const researchPane = ref<InstanceType<typeof ResearchPane> | null>(null);
 const researchTab = ref<HTMLElement | null>(null);
+const hoveredHighlight = ref<ResearchHighlightHover | null>(null);
 
 const editResearchOpen = computed(() => uiState.editResearchOpen);
 
@@ -124,6 +133,10 @@ const parallaxZoom = computed(() => {
 
 function onHoverCell(cell: Point2 | null): void {
   hoverCell.value = cell;
+}
+
+function onHighlightEntryHover(hover: ResearchHighlightHover | null): void {
+  hoveredHighlight.value = hover;
 }
 
 const chronotracesSpec = getResourceSpec('chronotraces');

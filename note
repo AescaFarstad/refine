@@ -69,7 +69,7 @@ february 6
 february 7
   playtest
 february 8
-  processing feedback, mostly UI tweaks
+  processing feedback, mostly UI tweaks, research nodes highlighting
 
 
 npx tsc --noEmit

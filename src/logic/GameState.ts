@@ -223,6 +223,7 @@ export interface Shard {
   triggered: boolean;
   pickupDelaySec: number;
   size: number;
+  launchSpeedMultiplier: number;
 }
 
 export interface ResearchCell {

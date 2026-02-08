@@ -11,6 +11,8 @@ import { discover } from './Discover';
 import { DISCOVERY } from './DiscoveryLib';
 import { applyReward } from './Reward';
 
+const FAILED_SHARD_PICKUP_GRACE_SEC = 2.4;
+
 export function computeLoadedEssencesFromItems(lib: Lib, items: Array<{ id: string; quantity: number }>): Essence {
   const totals: Essence = {};
   for (const it of items) {
@@ -64,7 +66,7 @@ export function resolveRefineryDone(gs: GameState): void {
 
     for (const gearOutput of preview.gearOutputs) {
       if (gearOutput.count > 0) {
-        createShards(gs, gearOutput.gearId, gearOutput.count);
+        createShards(gs, gearOutput.gearId, gearOutput.count, 1);
       }
     }
 
@@ -91,9 +93,9 @@ export function resolveRefineryDone(gs: GameState): void {
     }
 
     const outputs = calculateOutputs(preview, succeeded);
-    createShards(gs, 'credits', outputs.credits);
-    createShards(gs, 'chronotraces', outputs.chrono);
-    createShards(gs, 'timeFlux', outputs.flux);
+    createShards(gs, 'credits', outputs.credits, 1);
+    createShards(gs, 'chronotraces', outputs.chrono, 1);
+    createShards(gs, 'timeFlux', outputs.flux, 1);
 
     outcome.creditsGained = outputs.credits;
     outcome.chronotracesGained = outputs.chrono;
@@ -104,9 +106,9 @@ export function resolveRefineryDone(gs: GameState): void {
       Math.max(0, preview.expectedChrono || 0) +
       Math.max(0, preview.expectedFlux || 0);
     if (shardAmount > 0) {
-      createShards(gs, 'shards', shardAmount);
+      createShards(gs, 'shards', shardAmount, 2);
     }
-    gs.shardPickupGraceSec = 1.2;
+    gs.shardPickupGraceSec = FAILED_SHARD_PICKUP_GRACE_SEC;
   }
 
   gs.lastRefineryOutcome = outcome;
@@ -115,7 +117,7 @@ export function resolveRefineryDone(gs: GameState): void {
 
 // Physics (pos, vel, angle, omega) is initialized in UI layer (RefineAnim.vue)
 // when it detects a new shard without physics state.
-function createShards(gs: GameState, resource: string, amount: number): void {
+function createShards(gs: GameState, resource: string, amount: number, launchSpeedMultiplier: number): void {
   if (amount <= 0) return;
   const representation = getHypRepresentation(amount);
 
@@ -131,6 +133,7 @@ function createShards(gs: GameState, resource: string, amount: number): void {
         triggered: false,
         pickupDelaySec: 0,
         size: calculateShardFontSize(value),
+        launchSpeedMultiplier,
       });
     }
   }

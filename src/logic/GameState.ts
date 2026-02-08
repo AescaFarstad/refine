@@ -61,6 +61,7 @@ export class GameState {
 
   public nextEvt: Evt | null = null;
   public lastRaidOutcome: RaidOutcome | null = null;
+  public acknowledgedRaidOutcome: RaidOutcome | null = null;
   public lastRefineryOutcome: RefineryOutcome | null = null;
   public shardPickupGraceSec: number = 0;
 

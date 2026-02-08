@@ -205,6 +205,7 @@ handlersByName.set('CmdAcknowledgeOutcome', (gs, cmd) => {
     }
     outcome.rewardsConsumed = true;
   }
+  gs.acknowledgedRaidOutcome = gs.lastRaidOutcome;
   gs.lastRaidOutcome = null;
 });
 

@@ -8,7 +8,14 @@
       <Maze v-else-if="activeTab === 'maze'" />
     </section>
   </main>
-  <RaidOutcomeModal v-if="uiState.lastOutcome" />
+  <RaidOutcomeModal v-if="uiState.lastOutcome" key="live-outcome" />
+  <RaidOutcomeModal
+    v-else-if="uiState.showAcknowledgedOutcome && uiState.acknowledgedOutcome"
+    key="acknowledged-outcome"
+    :outcome="uiState.acknowledgedOutcome"
+    :readonly-view="true"
+    @close="closeAcknowledgedOutcome"
+  />
   <GearUpgradeModal />
   <SignatureLearnModal />
   <SignaturePlacementDiscoveryModal />
@@ -35,6 +42,10 @@ import { uiState } from './logic/UIState';
 
 type TabKey = 'raid' | 'refine' | 'research' | 'maze';
 const activeTab = computed<TabKey>(() => uiState.activeTab);
+
+function closeAcknowledgedOutcome() {
+  uiState.showAcknowledgedOutcome = false;
+}
 
 const seq = ['q', 'w', 'e', 'd'];
 let seqIndex = 0;

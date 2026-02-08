@@ -1,7 +1,7 @@
 <template>
   <div class="hint-root">
     <div class="hint-body">
-      <div v-if="statDescription">Increase {{ statDescription }} by {{ statIncrease }}</div>
+      <div v-if="statDescription">Increase {{ statDescription }} by {{ statIncreaseDisplay }}</div>
       <div v-if="statLongDescription" class="stat-desc">{{ statLongDescription }}</div>
       <div v-if="currentValue !== null" class="stat-values">{{ currentValue }} → <span class="new-value">{{ newValue }}</span></div>
       <div v-else class="stat-error">Unknown stat</div>
@@ -44,6 +44,11 @@ const statReward = computed(() => {
 
 const statId = computed(() => statReward.value?.stat || '');
 const statIncrease = computed(() => statReward.value?.value || 0);
+
+const statIncreaseDisplay = computed(() => {
+  if (statId.value === 'speed') return `${statIncrease.value} km/h`;
+  return `${statIncrease.value}`;
+});
 
 const statDescription = computed(() => {
   const id = statId.value;

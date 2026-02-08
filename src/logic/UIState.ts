@@ -84,6 +84,8 @@ export const uiState = reactive({
   raidDamageBreakdownFailure: createRaidDamageBreakdown() as RaidDamageBreakdown,
 
   lastOutcome: null as RaidOutcome | null,
+  acknowledgedOutcome: null as RaidOutcome | null,
+  showAcknowledgedOutcome: false,
   lastRefineryOutcome: null as RefineryOutcome | null,
 
   activeTab: 'raid' as 'raid' | 'refine' | 'research' | 'maze',
@@ -271,6 +273,10 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.raidDamageBreakdownFailure = sim.damageBreakdownFailure;
 
   uiState.lastOutcome = game.lastRaidOutcome;
+  uiState.acknowledgedOutcome = game.acknowledgedRaidOutcome;
+  if (!uiState.acknowledgedOutcome) {
+    uiState.showAcknowledgedOutcome = false;
+  }
   uiState.lastRefineryOutcome = game.lastRefineryOutcome;
 
   const hasWafer = !!game.wafer;

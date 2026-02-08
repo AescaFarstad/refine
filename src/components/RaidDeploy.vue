@@ -5,6 +5,7 @@
         <button class="deploy-btn" type="button" :disabled="!canDeploy" @click="deploy" @mouseenter="isDeployHovered = true" @mouseleave="isDeployHovered = false">Deploy</button>
         <span class="tooltip" v-if="deployDisabledReason">{{ deployDisabledReason }}</span>
       </span>
+      <button v-if="canViewPrevious" class="deploy-btn secondary" type="button" @click="viewPrevious">View Last</button>
       <div class="stats">
         <div class="cell" :class="{ red: !canAfford }">
           <div class="cell-label tooltip-label" :data-tooltip="TOOLTIP_GEAR_COST">Gear cost</div>
@@ -100,12 +101,18 @@ const deployDisabledReason = computed(() => {
   return getRaidStartFailureReason(gs, raid.id);
 });
 const canDeploy = computed(() => !!selectedRaid.value && deployDisabledReason.value === '');
+const canViewPrevious = computed(() => !!uiState.acknowledgedOutcome);
 
 function deploy() {
   const raid = selectedRaid.value;
   if (!raid) return;
   if (!canDeploy.value) return;
   globalInputQueue.push(new CmdStartRaid({ id: raid.id }));
+}
+
+function viewPrevious() {
+  if (!uiState.acknowledgedOutcome) return;
+  uiState.showAcknowledgedOutcome = true;
 }
 
 const hasDamageBreakdown = computed(() => {
@@ -409,6 +416,14 @@ const timeEstDesc = computed(() => {
   border-color: rgba(34,197,94,0.22);
 }
 .deploy-btn:disabled:hover { background: rgba(34,197,94,0.10); }
+.deploy-btn.secondary {
+  border-color: rgba(79, 209, 197, 0.45);
+  background: rgba(79, 209, 197, 0.2);
+  color: #99f6e4;
+}
+.deploy-btn.secondary:hover {
+  background: rgba(79, 209, 197, 0.3);
+}
 
 /* Flash red animation for low survival warning */
 @keyframes flash-red {

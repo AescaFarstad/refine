@@ -63,7 +63,7 @@ january 25
   goal balancing, tweaks  and fixes, refactoring, lib verification.
   The balance is pretty good now. The game is worth 4 hours of gameplay.
 february 1
-  regen per 10 minutes
+  regen per 10 minutes, spelling, you won window
 february 6 bugs and tweaks
 
 npx tsc --noEmit

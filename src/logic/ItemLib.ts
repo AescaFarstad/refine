@@ -67,7 +67,7 @@ export function processItemDefinitions(
     red: 1,
     blue: 1,
     green: 1,
-    cyan: 1,
+    cyan: 3,
     indigo: 2,
     crimson: 2,
     emerald: 2,

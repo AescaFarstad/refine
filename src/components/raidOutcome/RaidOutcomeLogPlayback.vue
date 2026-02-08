@@ -58,9 +58,12 @@ import LootEncounterDetails from './LootEncounterDetails.vue';
 import FightEncounterDetails from './FightEncounterDetails.vue';
 import QuestEncounterDetails from './QuestEncounterDetails.vue';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   entries: RaidEventLogEntry[];
-}>();
+  instant?: boolean;
+}>(), {
+  instant: false,
+});
 
 const emit = defineEmits<{
   (e: 'update:shownCount', value: number): void;
@@ -210,6 +213,17 @@ function buildTimeline() {
   }
 }
 
+function buildFinalSubShownSteps(): Record<number, number> {
+  const out: Record<number, number> = {};
+  for (const token of timeline) {
+    if (token.kind === 'loot_sub' || token.kind === 'fight_sub') {
+      const prev = out[token.index] || 0;
+      if (token.step > prev) out[token.index] = token.step;
+    }
+  }
+  return out;
+}
+
 function scheduleNextTick() {
   clearMainTimer();
   if (timelinePos.value >= timeline.length) return;
@@ -239,6 +253,16 @@ function resetAndStartAnimation() {
   subShownSteps.value = {};
   timelineReady.value = false;
   buildTimeline();
+  if (props.instant) {
+    shownCount.value = (props.entries || []).length;
+    subShownSteps.value = buildFinalSubShownSteps();
+    timelinePos.value = timeline.length;
+    timelineReady.value = true;
+    emitInitialValuesReady();
+    const { scrollable, atBottom } = getScrollState();
+    stickToBottomAfterUpdate(scrollable, atBottom);
+    return;
+  }
   emitInitialValuesReady();
   timelineReady.value = true;
   scheduleNextTick();

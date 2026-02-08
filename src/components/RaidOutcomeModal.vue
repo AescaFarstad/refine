@@ -1,5 +1,5 @@
 <template>
-  <div class="modal-backdrop">
+  <div class="modal-backdrop" @click.self="closeModal">
     <div class="modal">
       <header class="modal-header">
         <div class="header-top">
@@ -21,7 +21,7 @@
             <div class="bar-label">{{ currentHp }} / {{ currentMaxHp }} HP</div>
           </div>
           <div class="bar-panel bags-bar" :style="{ '--bar-pct': bagsBarPct + '%' }">
-            <div class="bar-label">{{ currentBagsUsed }} / {{ currentBagsCapacity }} Bags</div>
+            <div class="bar-label">{{ currentBagsCapacity - currentBagsUsed }} / {{ currentBagsCapacity }} free volume</div>
           </div>
         </div>
       </header>
@@ -29,6 +29,7 @@
       <RaidOutcomeLogPlayback
         ref="playbackRef"
         :entries="logEntries"
+        :instant="readonlyView"
         @update:shownCount="onShownCount"
         @update:timelineComplete="onTimelineComplete"
         @update:displayedTimeSec="onDisplayedTimeSec"
@@ -42,7 +43,10 @@
       <RaidOutcomeSummary v-if="timelineComplete" :outcome="outcome" />
 
       <footer class="modal-actions">
-        <button v-if="!timelineComplete" class="btn" @click="fastForward">Fast-forward</button>
+        <template v-if="readonlyView">
+          <button class="btn primary" @click="closeModal">Close</button>
+        </template>
+        <button v-else-if="!timelineComplete" class="btn primary" @click="fastForward">Fast-forward</button>
         <template v-else>
           <span class="btn-wrap" :class="{ 'has-tooltip': !canRaidAgain }">
             <button
@@ -53,7 +57,7 @@
             >{{ raidAgainButtonLabel }}</button>
             <span class="tooltip" v-if="!canRaidAgain">{{ raidAgainDisabledReason }}</span>
           </span>
-          <button class="btn primary" @click="changeSetup">{{ newQuestsAvailableCount > 0 ? 'Review unlocked investigations' : 'Change Setup' }}</button>
+          <button class="btn primary" @click="closeModal">{{ newQuestsAvailableCount > 0 ? 'Review unlocked investigations' : 'Change Setup' }}</button>
           <button v-if="gainedItemsCount > 0 && uiState.hasDiscoveredRefineTab" class="btn primary" @click="goRefine">Refine</button>
         </template>
       </footer>
@@ -70,10 +74,24 @@ import { CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdSwitchTab } from '.
 import { formatDurationHM } from '../logic/StringUtils';
 import { useRaidAgain } from '../logic/useRaidAgain';
 import type { RaidEventLogEntry } from '../logic/RaidLog';
+import type { RaidOutcome } from '../logic/GameState';
 import RaidOutcomeLogPlayback from './raidOutcome/RaidOutcomeLogPlayback.vue';
 import RaidOutcomeSummary from './raidOutcome/RaidOutcomeSummary.vue';
 
-const outcome = computed(() => uiState.lastOutcome!);
+const props = withDefaults(defineProps<{
+  outcome?: RaidOutcome | null;
+  readonlyView?: boolean;
+}>(), {
+  outcome: null,
+  readonlyView: false,
+});
+
+const emit = defineEmits<{
+  (e: 'close'): void;
+}>();
+
+const readonlyView = computed(() => props.readonlyView);
+const outcome = computed(() => props.outcome ?? uiState.lastOutcome!);
 const logEntries = computed<RaidEventLogEntry[]>(() => outcome.value.log.entries);
 
 const shownCount = ref(0);
@@ -91,7 +109,7 @@ function onTimelineComplete(v: boolean) { timelineComplete.value = v; }
 function onDisplayedTimeSec(v: number) { displayedTimeSec.value = v; }
 
 watch(timelineComplete, (complete) => {
-  if (complete) {
+  if (complete && !readonlyView.value) {
     globalInputQueue.push(new CmdConsumeOutcomeRewards());
   }
 });
@@ -211,8 +229,8 @@ function clearFlashTimeouts() {
   timeBarFlashing.value = false;
 }
 
-// Watch the outcome object itself to catch new raids starting
-watch(() => uiState.lastOutcome, (newOutcome) => {
+// Watch the outcome object itself to catch modal open/close/reset
+watch(() => outcome.value, (newOutcome) => {
   if (newOutcome) {
     document.body.style.overflow = 'hidden';
     // Suppress bar transitions so initial values appear instantly
@@ -248,9 +266,19 @@ function fastForward() {
   playbackRef.value!.fastForward!();
 }
 
-const { raidAgain, canRaidAgain, raidAgainButtonLabel, raidAgainDisabledReason } = useRaidAgain();
+const raidAgainApi = props.readonlyView ? null : useRaidAgain();
+const raidAgain = () => {
+  raidAgainApi!.raidAgain();
+};
+const canRaidAgain = computed(() => raidAgainApi?.canRaidAgain.value ?? false);
+const raidAgainButtonLabel = computed(() => raidAgainApi?.raidAgainButtonLabel.value ?? '');
+const raidAgainDisabledReason = computed(() => raidAgainApi?.raidAgainDisabledReason.value ?? '');
 
-function changeSetup() {
+function closeModal() {
+  if (readonlyView.value) {
+    emit('close');
+    return;
+  }
   globalInputQueue.push(new CmdAcknowledgeOutcome());
 }
 

@@ -1,3 +1,4 @@
+import type { Molecule } from './ItemLib';
 import type { Wafer, ReadonlyWafer } from './Wafer';
 import { getCell } from './Wafer';
 import { axialNeighbors } from './HexMath';
@@ -62,7 +63,7 @@ export interface RefinePreviewChem {
 
 
 // Color-changing essences and their target colors.
-const COLOR_CHANGER_TARGET: Record<string, string> = {
+export const COLOR_CHANGER_TARGET: Record<string, string> = {
     indigo: 'blue',
     crimson: 'red',
     emerald: 'green',
@@ -71,26 +72,16 @@ const COLOR_CHANGER_TARGET: Record<string, string> = {
 
 const BUFFABLE_ESSENCES = new Set(['red', 'green', 'blue', 'cyan', 'magenta']);
 
-export function computeUniqueItemsYieldBonusPct(
-    refinedUniqueItemIds: Readonly<Record<string, true>>,
-    waferItems: readonly ({ id: string } | null)[]
-): number {
-    const baseUniqueCount = Object.keys(refinedUniqueItemIds).length;
-    const newlyCounted = new Set<string>();
-    let uniqueCount = baseUniqueCount;
-
-    for (const it of waferItems) {
-        if (!it) continue;
-        if (refinedUniqueItemIds[it.id]) continue;
-        if (newlyCounted.has(it.id)) continue;
-        newlyCounted.add(it.id);
-        uniqueCount++;
-    }
-
-    return uniqueCount * UNIQUE_ITEMS_YIELD_BONUS_PCT;
+export interface ColorChangeAffectedCell {
+    x: number;
+    y: number;
+    essence: string;
 }
 
-export function computeEffectiveEssences(wafer: Wafer): void {
+function buildBaseEssenceContext(wafer: ReadonlyWafer): {
+    baseEssenceByKey: Record<string, string>;
+    enabledKeys: Set<string>;
+} {
     const baseEssenceByKey: Record<string, string> = {};
     const enabledKeys = new Set<string>();
 
@@ -103,9 +94,35 @@ export function computeEffectiveEssences(wafer: Wafer): void {
         }
     }
 
-    // Helper to flood-fill a cluster of the same base essence.
+    return { baseEssenceByKey, enabledKeys };
+}
+
+function applyPlacementToBaseEssence(
+    baseEssenceByKey: Record<string, string>,
+    enabledKeys: Set<string>,
+    placement: Molecule
+): Set<string> {
+    const placementChangerKeys = new Set<string>();
+
+    for (const atom of placement.atoms) {
+        const key = `${atom.x},${atom.y}`;
+        if (!enabledKeys.has(key)) continue;
+        baseEssenceByKey[key] = atom.color;
+        if (COLOR_CHANGER_TARGET[atom.color]) {
+            placementChangerKeys.add(key);
+        }
+    }
+
+    return placementChangerKeys;
+}
+
+function createClusterResolver(
+    baseEssenceByKey: Record<string, string>,
+    enabledKeys: Set<string>
+): (startKey: string, essence: string) => string[] {
     const clusterCache = new Map<string, string[]>();
-    function getCluster(startKey: string, essence: string): string[] {
+
+    return function getCluster(startKey: string, essence: string): string[] {
         const cacheKey = `${essence}|${startKey}`;
         const cached = clusterCache.get(cacheKey);
         if (cached) return cached;
@@ -144,21 +161,26 @@ export function computeEffectiveEssences(wafer: Wafer): void {
         }
 
         return result;
-    }
+    };
+}
 
-    // First pass: detect color-changing atoms that are directly "touching"
-    // atoms with a different target color. Those pairs both become gray and
-    // stop affecting other cells.
+function computeDisarmedColorChangerKeys(
+    baseEssenceByKey: Record<string, string>,
+    enabledKeys: Set<string>,
+    onDisarmPair?: (key: string, neighborKey: string) => void
+): Set<string> {
     const disarmedKeys = new Set<string>();
-    for (const cell of wafer.cells.values()) {
-        if (!cell.enabled || !cell.essence) continue;
-        const baseEssence = cell.essence;
+
+    for (const [key, baseEssence] of Object.entries(baseEssenceByKey)) {
         const target = COLOR_CHANGER_TARGET[baseEssence];
         if (!target) continue;
 
-        const cellKeyStr = `${cell.x},${cell.y}`;
-        const pos = { x: cell.x, y: cell.y };
-        for (const n of axialNeighbors(pos)) {
+        const [sx, sy] = key.split(',');
+        const x = Number(sx);
+        const y = Number(sy);
+        if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+
+        for (const n of axialNeighbors({ x, y })) {
             const neighborKey = `${n.x},${n.y}`;
             if (!enabledKeys.has(neighborKey)) continue;
             const neighborEssence = baseEssenceByKey[neighborKey];
@@ -166,40 +188,55 @@ export function computeEffectiveEssences(wafer: Wafer): void {
             const neighborTarget = COLOR_CHANGER_TARGET[neighborEssence];
             if (!neighborTarget) continue;
             if (neighborTarget !== target) {
-                disarmedKeys.add(cellKeyStr);
+                disarmedKeys.add(key);
                 disarmedKeys.add(neighborKey);
+                onDisarmPair?.(key, neighborKey);
             }
         }
     }
 
+    return disarmedKeys;
+}
+
+function computeEffectiveEssenceByKey(
+    baseEssenceByKey: Record<string, string>,
+    enabledKeys: Set<string>
+): Record<string, string> {
+    const getCluster = createClusterResolver(baseEssenceByKey, enabledKeys);
+
+    // First pass: detect color-changing atoms that are directly "touching"
+    // atoms with a different target color. Those pairs both become gray and
+    // stop affecting other cells.
+    const disarmedKeys = computeDisarmedColorChangerKeys(baseEssenceByKey, enabledKeys);
+
     // Accumulate desired target colors for each cell based on *active* color-changers.
     const desiredTargetsByKey: Record<string, string[]> = {};
 
-    for (const cell of wafer.cells.values()) {
-        if (!cell.enabled || !cell.essence) continue;
-        const changerEssence = cell.essence;
+    for (const [key, changerEssence] of Object.entries(baseEssenceByKey)) {
         const target = COLOR_CHANGER_TARGET[changerEssence];
         if (!target) continue;
+        if (disarmedKeys.has(key)) continue;
 
-        const cellKeyStr = `${cell.x},${cell.y}`;
-        if (disarmedKeys.has(cellKeyStr)) continue;
+        const [sx, sy] = key.split(',');
+        const x = Number(sx);
+        const y = Number(sy);
+        if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
 
-        const pos = { x: cell.x, y: cell.y };
-        for (const n of axialNeighbors(pos)) {
+        for (const n of axialNeighbors({ x, y })) {
             const neighborKey = `${n.x},${n.y}`;
             if (!enabledKeys.has(neighborKey)) continue;
             const neighborBaseEssence = baseEssenceByKey[neighborKey];
             if (!neighborBaseEssence) continue;
+
             // These atoms affect all colors (including ones already equal to their
             // target color) so that overlapping influences of different colors can
             // correctly resolve to gray.
-
             const cluster = getCluster(neighborKey, neighborBaseEssence);
-            for (const key of cluster) {
-                if (!desiredTargetsByKey[key]) {
-                    desiredTargetsByKey[key] = [target];
+            for (const clusterKey of cluster) {
+                if (!desiredTargetsByKey[clusterKey]) {
+                    desiredTargetsByKey[clusterKey] = [target];
                 } else {
-                    desiredTargetsByKey[key].push(target);
+                    desiredTargetsByKey[clusterKey].push(target);
                 }
             }
         }
@@ -226,12 +263,107 @@ export function computeEffectiveEssences(wafer: Wafer): void {
 
         const uniqueTargets = Array.from(new Set(desired));
         if (uniqueTargets.length === 1) {
-            effectiveEssenceByCell[key] = uniqueTargets[0];
+            effectiveEssenceByCell[key] = uniqueTargets[0]!;
         } else {
             // Conflicting target colors: result is gray.
             effectiveEssenceByCell[key] = 'gray';
         }
     }
+
+    return effectiveEssenceByCell;
+}
+
+export function computeEffectiveEssenceByCellForPlacement(
+    wafer: ReadonlyWafer,
+    placement: Molecule
+): Record<string, string> {
+    const { baseEssenceByKey, enabledKeys } = buildBaseEssenceContext(wafer);
+    applyPlacementToBaseEssence(baseEssenceByKey, enabledKeys, placement);
+    return computeEffectiveEssenceByKey(baseEssenceByKey, enabledKeys);
+}
+
+export function computeColorChangeAffectedCellsForPlacement(
+    wafer: ReadonlyWafer,
+    placement: Molecule
+): ColorChangeAffectedCell[] {
+    const { baseEssenceByKey, enabledKeys } = buildBaseEssenceContext(wafer);
+    const placementChangerKeys = applyPlacementToBaseEssence(baseEssenceByKey, enabledKeys, placement);
+
+    if (placementChangerKeys.size === 0) return [];
+
+    const disarmedPreviewKeys = new Set<string>();
+    const disarmedKeys = computeDisarmedColorChangerKeys(
+        baseEssenceByKey,
+        enabledKeys,
+        (key, neighborKey) => {
+            if (placementChangerKeys.has(key) || placementChangerKeys.has(neighborKey)) {
+                disarmedPreviewKeys.add(key);
+                disarmedPreviewKeys.add(neighborKey);
+            }
+        }
+    );
+    const getCluster = createClusterResolver(baseEssenceByKey, enabledKeys);
+
+    const affectedByKey: Record<string, string> = {};
+    for (const changerKey of placementChangerKeys) {
+        if (disarmedKeys.has(changerKey)) continue;
+
+        const [sx, sy] = changerKey.split(',');
+        const x = Number(sx);
+        const y = Number(sy);
+        if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+
+        for (const n of axialNeighbors({ x, y })) {
+            const neighborKey = `${n.x},${n.y}`;
+            if (!enabledKeys.has(neighborKey)) continue;
+            const neighborEssence = baseEssenceByKey[neighborKey];
+            if (!neighborEssence) continue;
+
+            const cluster = getCluster(neighborKey, neighborEssence);
+            for (const key of cluster) {
+                affectedByKey[key] = baseEssenceByKey[key]!;
+            }
+        }
+    }
+
+    const out: ColorChangeAffectedCell[] = [];
+    for (const key of disarmedPreviewKeys) {
+        const essence = baseEssenceByKey[key];
+        if (!essence) continue;
+        affectedByKey[key] = essence;
+    }
+    for (const [key, essence] of Object.entries(affectedByKey)) {
+        const [sx, sy] = key.split(',');
+        const x = Number(sx);
+        const y = Number(sy);
+        if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+        out.push({ x, y, essence });
+    }
+    return out;
+}
+
+export function computeUniqueItemsYieldBonusPct(
+    refinedUniqueItemIds: Readonly<Record<string, true>>,
+    waferItems: readonly ({ id: string } | null)[]
+): number {
+    const baseUniqueCount = Object.keys(refinedUniqueItemIds).length;
+    const newlyCounted = new Set<string>();
+    let uniqueCount = baseUniqueCount;
+
+    for (const it of waferItems) {
+        if (!it) continue;
+        if (refinedUniqueItemIds[it.id]) continue;
+        if (newlyCounted.has(it.id)) continue;
+        newlyCounted.add(it.id);
+        uniqueCount++;
+    }
+
+    return uniqueCount * UNIQUE_ITEMS_YIELD_BONUS_PCT;
+}
+
+export function computeEffectiveEssences(wafer: Wafer): void {
+    const { baseEssenceByKey, enabledKeys } = buildBaseEssenceContext(wafer);
+    const effectiveEssenceByCell = computeEffectiveEssenceByKey(baseEssenceByKey, enabledKeys);
 
     // Copy result into wafer cells so it can be used by rendering and other logic.
     for (const cell of wafer.cells.values()) {

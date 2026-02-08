@@ -606,7 +606,7 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
   lucky_coin: {
     name: 'Coin',
     volume: 1,
-    rarity: 3,
+    rarity: 4,
     molecule: {
       atoms: [
         { color: 'indigo', x: 0, y: 0 },

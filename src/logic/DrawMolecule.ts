@@ -166,7 +166,10 @@ export function drawGhostMolecule(
   valid: boolean,
   hexSize: number = 18,
   origin: { x: number; y: number } = { x: 0, y: 0 },
-  essenceSize: number = 28
+  essenceSize: number = 28,
+  opts?: {
+    getColor?: (atom: { x: number; y: number; color: string }) => string;
+  }
 ): void {
   const bondStroke = valid ? 'rgba(200, 255, 245, 0.7)' : 'rgba(255, 200, 200, 0.7)';
   drawMolecule(ctx, molecule, hexSize, origin, {
@@ -174,6 +177,7 @@ export function drawGhostMolecule(
     bondWidth: 3,
     essenceSize,
     radiusMultiplier: DRAG_RADIUS_MULTIPLIER,
+    getColor: opts?.getColor,
   });
 }
 

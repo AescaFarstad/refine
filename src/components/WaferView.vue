@@ -32,6 +32,10 @@ import { HEX_SIZE, ESSENCE_SIZE, WAFER_CANVAS_WIDTH, WAFER_CANVAS_HEIGHT, eventT
 import { waferBuffCells } from '../logic/waferLayout';
 import itemsData from '../data/items';
 import { ManualDragEvents, setManualDragFollowerVisible, startManualDrag } from '../logic/ManualDrag';
+import { ESSENCE_COLORS } from '../logic/RenderConstants';
+import {
+  computeColorChangeAffectedCellsForPlacement,
+} from '../logic/RefinePreview';
 import {
   drawHexAt,
   drawGrid,
@@ -111,6 +115,41 @@ watch(() => props.highlightItemIdx, () => {
   renderOverlay();
 });
 
+function lightenColor(color: string, amount: number): string {
+  const clamp = (value: number) => Math.min(255, Math.max(0, Math.round(value)));
+  const blend = (channel: number) => clamp(channel + (255 - channel) * amount);
+
+  if (color.startsWith('#')) {
+    const hex = color.slice(1);
+    const normalized = hex.length === 3
+      ? `${hex[0]}${hex[0]}${hex[1]}${hex[1]}${hex[2]}${hex[2]}`
+      : hex;
+    if (normalized.length === 6) {
+      const r = parseInt(normalized.slice(0, 2), 16);
+      const g = parseInt(normalized.slice(2, 4), 16);
+      const b = parseInt(normalized.slice(4, 6), 16);
+      return `rgb(${blend(r)}, ${blend(g)}, ${blend(b)})`;
+    }
+  }
+
+  const rgbaMatch = color.match(/^rgba?\(([^)]+)\)$/i);
+  if (rgbaMatch) {
+    const parts = rgbaMatch[1].split(',').map((part) => part.trim());
+    const r = Number(parts[0]);
+    const g = Number(parts[1]);
+    const b = Number(parts[2]);
+    const a = parts[3];
+    if (Number.isFinite(r) && Number.isFinite(g) && Number.isFinite(b)) {
+      const lr = blend(r);
+      const lg = blend(g);
+      const lb = blend(b);
+      return a != null ? `rgba(${lr}, ${lg}, ${lb}, ${a})` : `rgb(${lr}, ${lg}, ${lb})`;
+    }
+  }
+
+  return color;
+}
+
 function setupCanvases() {
   const canvases = [gridCanvas.value, moleculesCanvas.value, overlayCanvas.value];
   canvases.forEach(canvas => {
@@ -186,6 +225,9 @@ function renderOverlay() {
 
   const showBuffOverlays = props.showBuffOverlays !== false;
   const showUpgradeHints = props.showUpgradeHints !== false;
+  const ghostAffectedCells = (!props.hideMolecules && props.wafer && props.ghostMolecule && props.ghostValid)
+    ? computeColorChangeAffectedCellsForPlacement(props.wafer, props.ghostMolecule)
+    : [];
 
   if (!props.hideMolecules && (props.newSignatureMatches?.length || 0) > 0) {
     const sigSource = atlasStorage.getMoleculesSource()!;
@@ -327,6 +369,22 @@ function renderOverlay() {
     }
 
     drawGhostMolecule(ctx, props.ghostMolecule, !!props.ghostValid, HEX_SIZE, origin, ESSENCE_SIZE);
+  }
+
+  for (const affected of ghostAffectedCells) {
+    const color = ESSENCE_COLORS[affected.essence] || affected.essence || '#888888';
+    const strokeColor = lightenColor(color, 0.6);
+    const center = axialToPixel({ x: affected.x, y: affected.y }, HEX_SIZE, origin);
+    ctx.save();
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 7;
+    drawHexagon(ctx, center, HEX_SIZE * 0.62, {
+      fillColor: color,
+      strokeColor,
+      lineWidth: 1.6,
+      alpha: 0.95,
+    });
+    ctx.restore();
   }
 
   // Draw highlight after ghost overlay to ensure visibility

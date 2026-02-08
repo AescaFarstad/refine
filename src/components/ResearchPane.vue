@@ -99,7 +99,7 @@ onUnmounted(() => {
 });
 
 watch(
-  () => [uiState.researchOwnedCount, uiState.researchRevealRadius],
+  () => [uiState.researchOwnedCount, uiState.researchRevealRadius, uiState.discoveryCounter],
   () => {
     scheduleRender({ base: true, highlight: true });
   }

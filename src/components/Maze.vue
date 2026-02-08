@@ -12,10 +12,11 @@
           <div v-if="rewards.length > 0" class="reward-value">
             <template v-for="(reward, idx) in rewards" :key="idx">
               <span v-if="reward.type === 'countable_gear'" class="gear-reward">
-                <span class="gear-icon" :style="gearIconStyle(reward.gearId!)" />
+                <span class="gear-icon" :style="gearIconStyle(reward.gearId)" />
                 <span class="gear-name">{{ reward.text }}</span>
                 <span class="gear-count">×{{ reward.amount }}</span>
               </span>
+              <span v-else-if="reward.type === 'resource'" :style="{ color: reward.color }">{{ reward.text }}</span>
               <span v-else>{{ reward.text }}</span>
               <span v-if="idx < rewards.length - 1"> </span>
             </template>
@@ -127,21 +128,34 @@ const artefactsTaken = computed(() => {
 });
 
 interface RewardDisplay {
-  type: 'resource' | 'unlock_raid' | 'countable_gear';
+  type: 'resource';
   text: string;
-  gearId?: string;
-  amount?: number;
+  color: string;
 }
 
-const rewards = computed((): RewardDisplay[] => {
+interface UnlockRaidRewardDisplay {
+  type: 'unlock_raid';
+  text: string;
+}
+
+interface CountableGearRewardDisplay {
+  type: 'countable_gear';
+  text: string;
+  gearId: string;
+  amount: number;
+}
+
+type MazeRewardDisplay = RewardDisplay | UnlockRaidRewardDisplay | CountableGearRewardDisplay;
+
+const rewards = computed((): MazeRewardDisplay[] => {
   const lv = getLevels()[levelIndex.value];
   if (!lv || !lv.reward || !Array.isArray(lv.reward)) return [];
   const lib = getGameLib();
   return lv.reward
-    .map((r): RewardDisplay | null => {
+    .map((r): MazeRewardDisplay | null => {
       if (r.kind === 'resource') {
         const spec = getResourceSpec(r.resource);
-        return { type: 'resource', text: `${r.amount}${spec.glyph}` };
+        return { type: 'resource', text: `${r.amount}${spec.glyph}`, color: spec.color };
       }
       if (r.kind === 'unlock_raid') {
         const raidDef = lib?.raids.get(r.raidId);
@@ -154,7 +168,7 @@ const rewards = computed((): RewardDisplay[] => {
       }
       return null;
     })
-    .filter((r): r is RewardDisplay => r !== null);
+    .filter((r): r is MazeRewardDisplay => r !== null);
 });
 
 const atlasSource = atlasStorage.getItemsSource();

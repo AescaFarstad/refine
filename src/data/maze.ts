@@ -19,7 +19,7 @@ export const mazeDefinitions: Record<string, Omit<MazeDefinition, 'id'>> = {
     artefacts: [],
     description: 'Open grid. One finish key. No demons, no eyes.',
     reward: [
-      { kind: 'resource', resource: 'chronotraces', amount: 30 }
+      { kind: 'resource', resource: 'chronotraces', amount: 50 }
     ],
   },
   maze_2: {
@@ -33,7 +33,7 @@ export const mazeDefinitions: Record<string, Omit<MazeDefinition, 'id'>> = {
     artefacts: [],
     description: 'Some random walls. Still safe.',
     reward: [
-      { kind: 'resource', resource: 'chronotraces', amount: 70 }
+      { kind: 'resource', resource: 'credits', amount: 700 }
     ],
     useFixedLayout: true,
     spawn: { x: 1, y: 3 },
@@ -114,7 +114,7 @@ export const mazeDefinitions: Record<string, Omit<MazeDefinition, 'id'>> = {
     reward: [
       { kind: 'resource', resource: 'credits', amount: 1500 },
       { kind: 'resource', resource: 'chronotraces', amount: 300 },
-      { kind: 'resource', resource: 'shardDust', amount: 100 }
+      { kind: 'resource', resource: 'shardDust', amount: 200 }
     ],
   },
   maze_8: {

@@ -2,12 +2,13 @@
   <div class="item-cell-wrap" v-bind="$attrs" ref="wrapRef" @mouseenter="onEnter" @mouseleave="onLeave">
     <div class="item-cell" :class="{ minor, 'has-vol': showVolume }">
       <div class="sprite" :style="spriteStyle" />
+      <div v-if="showNewBand" class="new-band">New</div>
 
       <div v-if="showScore && hasFiniteScore" class="score">{{ displayScore }}</div>
       <div v-if="showVolume" class="vol">{{ displayVolume }}</div>
       <div v-if="quantity > 1" class="qty">x{{ quantity }}</div>
 
-      <div class="essences" v-if="!minor && essencesToShow.length">
+      <div class="essences" v-if="showEssences && !minor && essencesToShow.length">
         <div
           v-for="(row, rowIndex) in essenceRows"
           :key="rowIndex"
@@ -63,15 +64,18 @@ import atlasStorage from '../logic/AtlasStorage';
 import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 import itemsData from '../data/items';
 import type { ItemDefinition } from '../logic/ItemLib';
+import { uiState } from '../logic/UIState';
 
 defineOptions({ inheritAttrs: false });
 
-const props = defineProps<{ id: string; quantity?: number; minor?: boolean; noTooltip?: boolean; showScore?: boolean; showVolume?: boolean }>();
+const props = defineProps<{ id: string; quantity?: number; minor?: boolean; noTooltip?: boolean; showScore?: boolean; showVolume?: boolean; showEssences?: boolean }>();
 
 const quantity = computed(() => Math.max(1, props.quantity ?? 1));
 const minor = computed(() => !!props.minor);
 const showScore = computed(() => !!props.showScore);
 const showVolume = computed(() => !!props.showVolume);
+const showEssences = computed(() => props.showEssences !== false);
+const showNewBand = computed(() => !!uiState.unrefinedOwnedItemIdMap[props.id]);
 
 const wrapRef = ref<HTMLElement | null>(null);
 const tooltipRef = ref<HTMLElement | null>(null);
@@ -252,6 +256,30 @@ function essenceIconStyle(k: string): Record<string, string> {
 .item-cell.minor .sprite {
   transform: translate(-50%, -50%) scale(0.5);
 }
+.new-band {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 52px;
+  padding: 2px 0;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+  color: #fff;
+  background: linear-gradient(180deg, #ef4444, #b91c1c);
+  transform: translate(-14px, 5px) rotate(-45deg);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  z-index: 12;
+}
+.item-cell.minor .new-band {
+  width: 38px;
+  padding: 1px 0;
+  font-size: 7px;
+  transform: translate(-11px, 3px) rotate(-45deg);
+}
 .placeholder {
   position: absolute;
   inset: 0;
@@ -262,24 +290,19 @@ function essenceIconStyle(k: string): Record<string, string> {
 }
 .qty {
   position: absolute;
-  top: 3px;
-  right: 3px;
-  padding: 1px 4px;
+  right: 0;
+  top: 0;
+  padding: 0px 2px;
   font-weight: 800;
-  font-size: 16px;
+  font-size: 18px;
+  line-height: 1;
   background: rgba(0,0,0,0.55);
-  border-radius: 3px;
+  border-radius: 0 0 0 4px;
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
-.item-cell.has-vol .qty {
-  top: 23px;
-}
 .item-cell.minor .qty {
-  font-size: 12px;
-  padding: 0px 3px;
-}
-.item-cell.minor.has-vol .qty {
-  top: 20px;
+  font-size: 14px;
+  padding: 0px 4px;
 }
 .score {
   position: absolute;

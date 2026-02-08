@@ -17,10 +17,12 @@ export function discover(gs: GameState, id: DiscoveryId): boolean {
 
   if (id === DISCOVERY.CYAN_YIELD) {
     delete gs.seenEssences['cyan'];
+    discover(gs, DISCOVERY.ESSENCE_RESEARCH_KNOWLEDGE);
   }
 
   if (id === DISCOVERY.MAGENTA_YIELD) {
     delete gs.seenEssences['magenta'];
+    discover(gs, DISCOVERY.ESSENCE_RESEARCH_KNOWLEDGE);
   }
 
   if (id === DISCOVERY.MAZE_NAVIGATION) {

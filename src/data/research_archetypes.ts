@@ -49,9 +49,13 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     title: 'Essence anomaly',
     description: 'A mysterious essence mutation of unclear nature.',
     ownedTitle: 'Cyan anomaly',
-    ownedDescription: 'Cyan essence now gives 10% bonus yield.',
+    ownedDescription: `Cyan essence now gives ${CYAN_YIELD_BONUS_PCT}% bonus yield.`,
+    revealingDiscovery: DISCOVERY.ESSENCE_RESEARCH_KNOWLEDGE,
+    revealedTitle: 'Cyan anomaly',
+    revealedDescription: `Cyan essence will give ${CYAN_YIELD_BONUS_PCT}% bonus yield.`,
     icon: { kind: 'glyph', glyph: '?', scale: 2.2, offset: { x: 0, y: 8 }},
     ownedIcon: { kind: 'itemImage', key: 'cyan', scale: 1.3, offset: { x: 0, y: 4 } },
+    revealedIcon: { kind: 'itemImage', key: 'cyan', scale: 1.3, offset: { x: 0, y: 4 } },
     rewards: [
       { kind: 'discovery', discoveryId: DISCOVERY.CYAN_YIELD },
       {
@@ -65,9 +69,13 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     title: 'Essence anomaly',
     description: 'A mysterious essence mutation of unclear nature.',
     ownedTitle: 'Magenta anomaly',
-    ownedDescription: 'Magenta essence now gives 10% bonus yield.',
+    ownedDescription: `Magenta essence now gives ${MAGENTA_YIELD_BONUS_PCT}% bonus yield.`,
+    revealingDiscovery: DISCOVERY.ESSENCE_RESEARCH_KNOWLEDGE,
+    revealedTitle: 'Magenta anomaly',
+    revealedDescription: `Magenta essence will give ${MAGENTA_YIELD_BONUS_PCT}% bonus yield.`,
     icon: { kind: 'glyph', glyph: '?', scale: 2.2, offset: { x: 0, y: 8 }},
     ownedIcon: { kind: 'itemImage', key: 'magenta', scale: 1.3, offset: { x: 0, y: 4 } },
+    revealedIcon: { kind: 'itemImage', key: 'magenta', scale: 1.3, offset: { x: 0, y: 4 } },
     rewards: [
       { kind: 'discovery', discoveryId: DISCOVERY.MAGENTA_YIELD },
       {

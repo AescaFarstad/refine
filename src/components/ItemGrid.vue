@@ -17,6 +17,7 @@
           :quantity="it.quantity"
           :minor="minor"
           :show-volume="showVolumes"
+          :show-essences="showEssences"
           :no-tooltip="noTooltip"
         />
       </div>
@@ -50,6 +51,7 @@ const props = defineProps<{
   rarityLabels?: Record<string, string>;
   showScores?: boolean;
   showVolumes?: boolean;
+  showEssences?: boolean;
 }>();
 
 const emit = defineEmits<{

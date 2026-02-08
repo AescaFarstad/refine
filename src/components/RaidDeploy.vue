@@ -3,17 +3,59 @@
     <div class="deploy-row">
       <span class="btn-wrap" :class="{ 'has-tooltip': !!deployDisabledReason }">
         <button class="deploy-btn" type="button" :disabled="!canDeploy" @click="deploy" @mouseenter="isDeployHovered = true" @mouseleave="isDeployHovered = false">Deploy</button>
-        <span class="tooltip" v-if="deployDisabledReason">{{ deployDisabledReason }}</span>
+        <span class="tooltip" v-if="deployDisabledReason">
+          <div class="hint-section">
+            <div class="section-heading">Cannot Deploy</div>
+            <div class="hint-item">
+              <span class="item-text item-text--pre">{{ deployDisabledReason }}</span>
+            </div>
+          </div>
+        </span>
       </span>
       <button v-if="canViewPrevious" class="deploy-btn secondary" type="button" @click="viewPrevious">View Last</button>
       <div class="stats">
         <div class="cell" :class="{ red: !canAfford }">
-          <div class="cell-label tooltip-label" :data-tooltip="TOOLTIP_GEAR_COST">Gear cost</div>
+          <div class="cell-label tooltip-label">
+            Gear cost
+            <div class="tooltip-panel">
+              <div class="hint-row">
+                <span class="hint-value">Gear is consumed</span>
+              </div>
+              <div class="hint-section">
+                <div class="hint-item">
+                  <span class="item-text">All gear will be lost regardless of the raid outcome.</span>
+                </div>
+                <div class="hint-item">
+                  <span class="item-text">Take only what you need.</span>
+                </div>
+              </div>
+            </div>
+          </div>
           <span class="cell-value cost-value" :style="{ color: creditsSpec.color }">{{ selectedPrice.toLocaleString() }}{{ creditsSpec.glyph }}</span>
         </div>
         <div class="cell-stack">
           <div class="cell" :class="{ reddish: survivalChance < 50 && survivalChance >= 25, red: survivalChance < 25, 'flash-red': shouldFlashSurvival }">
-            <div class="cell-label tooltip-label" :data-tooltip="survivalBreakdownTooltip">Survival</div>
+            <div class="cell-label tooltip-label">
+              Survival
+              <div class="tooltip-panel">
+                <div v-if="survivalMonsterDeathPct > 0" class="hint-row">
+                  <span class="hint-label">Death from monsters:</span>
+                  <span class="hint-value">{{ survivalMonsterDeathPct }}%</span>
+                </div>
+                <div v-if="survivalZoneDeathPct > 0" class="hint-row">
+                  <span class="hint-label">Death from zone collapse:</span>
+                  <span class="hint-value">{{ survivalZoneDeathPct }}%</span>
+                </div>
+                <div class="hint-section">
+                  <div class="hint-item">
+                    <span class="item-text">Estimated based on {{ survivalSampleCount }} virtual attempts.</span>
+                  </div>
+                  <div class="hint-item">
+                    <span class="item-text">Results may vary from simulation to simulation.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
             <span class="cell-value">~{{ survivalChance }}%</span>
           </div>
           <div v-if="hasDamageBreakdown" class="cell-stack-panel cell-stack-panel--right">
@@ -25,8 +67,23 @@
             <div class="cell-label tooltip-label">
               Time
               <div class="tooltip-panel">
-                <div class="font-mono">{{ timeEstValues }}</div>
-                <div class="tooltip-desc">{{ timeEstDesc }}</div>
+                <div class="hint-row">
+                  <span class="hint-label">Range:</span>
+                  <span class="hint-value">{{ timeEstRangeMin }} <span class="hint-muted">-</span> {{ timeEstRangeMax }}</span>
+                </div>
+                <div class="hint-row">
+                  <span class="hint-label">Mean:</span>
+                  <span class="hint-value">{{ timeEstMean }} <span class="hint-muted">σ:</span> {{ timeEstStdDev }}</span>
+                </div>
+                <div class="hint-section">
+                  <div class="section-heading">Info</div>
+                  <div class="hint-item">
+                    <span class="item-text">Estimated based on {{ timeEstSampleCount }} virtual attempts.</span>
+                  </div>
+                  <div class="hint-item">
+                    <span class="item-text">Results may vary from simulation to simulation.</span>
+                  </div>
+                </div>
               </div>
             </div>
             <span class="cell-value">{{ hasTimeData ? '~' : '' }}{{ estimatedTime }}</span>
@@ -36,7 +93,23 @@
           </div>
         </div>
         <div v-if="zoneCollapseTime" class="cell cell-zone-collapse" :class="{ reddish: isCollapseWarning, red: isCollapseDanger, 'has-death-pct': zoneCollapseDeathPct > 0 }">
-          <div class="cell-label tooltip-label" :data-tooltip="TOOLTIP_ZONE_COLLAPSE">Zone collapse</div>
+          <div class="cell-label tooltip-label">
+            Zone collapse
+            <div class="tooltip-panel">
+              <div v-if="zoneCollapseDeathPct > 0" class="hint-row">
+                <span class="hint-label">Failed runs:</span>
+                <span class="hint-value">{{ zoneCollapseDeathPct }}%</span>
+              </div>
+              <div class="hint-section">
+                <div class="hint-item">
+                  <span class="item-text">You have limited time in the zone.</span>
+                </div>
+                <div class="hint-item">
+                  <span class="item-text">When it collapses, you are disintegrated.</span>
+                </div>
+              </div>
+            </div>
+          </div>
           <span class="cell-value">
             {{ zoneCollapseTime }}
             <span v-if="zoneCollapseDeathPct > 0" style="font-size: 11px; opacity: 0.85;">
@@ -68,9 +141,6 @@ const hasDiscoveredMonsters = computed(() => uiState.hasDiscoveredRaidMonsters);
 
 const isDeployHovered = ref(false);
 const shouldFlashSurvival = computed(() => isDeployHovered.value && survivalChance.value < 20);
-
-const TOOLTIP_GEAR_COST = 'All gear will be lost regardless of the raid outcome.\nTake only what you need.';
-const TOOLTIP_ZONE_COLLAPSE = 'You have limited time in the zone. Eventually it will collapse and disintegrate you.';
 
 const activeRaidId = computed(() => uiState.activeRaidId || (uiState.raidOrder[0] || ''));
 const selectedRaid = computed<RaidDefinition | null>(() => uiState.raids.find(r => r.id === activeRaidId.value) || null);
@@ -160,28 +230,9 @@ const isCollapseDanger = computed(() => {
 const zoneCollapseDeathPct = computed(() => Math.max(0, Math.min(100, Math.round(uiState.raidZoneCollapseDeathPct || 0))));
 
 const survivalChance = computed(() => Math.max(0, Math.min(100, Math.round(uiState.raidSurvivalPct || 0))));
-const survivalBreakdownTooltip = computed(() => {
-  const count = uiState.raidTimeBreakdownSimulations;
-  const monsterDeaths = uiState.raidMonsterDeaths;
-  const zoneCollapseDeaths = uiState.raidZoneCollapseDeaths;
-  const monsterDeathPct = Math.round((monsterDeaths / count) * 100);
-  const zoneCollapseDeathPct = Math.round((zoneCollapseDeaths / count) * 100);
-
-  let tooltip = '';
-  if (monsterDeathPct > 0) {
-    tooltip += `Deaths from monsters: ${monsterDeathPct}%\n`;
-  }
-  if (zoneCollapseDeathPct > 0) {
-    tooltip += `Deaths from zone collapse: ${zoneCollapseDeathPct}%\n`;
-  }
-  if (tooltip) {
-    tooltip += '\n';
-  }
-  tooltip += `Estimated based on ${count} virtual attempts.`;
-  tooltip += `\nResults may vary from simulation to simulation.`;
-
-  return tooltip;
-});
+const survivalSampleCount = computed(() => uiState.raidTimeBreakdownSimulations);
+const survivalMonsterDeathPct = computed(() => Math.round((uiState.raidMonsterDeaths / survivalSampleCount.value) * 100));
+const survivalZoneDeathPct = computed(() => Math.round((uiState.raidZoneCollapseDeaths / survivalSampleCount.value) * 100));
 
 const estimatedTime = computed(() => {
   const sec = uiState.raidTimeEstimateSec;
@@ -190,36 +241,34 @@ const estimatedTime = computed(() => {
   return formatDurationHM(sec);
 });
 const timeInHours = computed(() => (uiState.raidTimeEstimateSec || 0) / 3600);
-const timeEstValues = computed(() => {
-  const min = formatDurationHM(uiState.raidTimeEstimateMinSec || 0);
-  const max = formatDurationHM(uiState.raidTimeEstimateMaxSec || 0);
-  const stdDev = formatDurationHM(uiState.raidTimeEstimateStdDevSec || 0);
-  return `${min} - ${max}, σ:${stdDev}`;
-});
-
-const timeEstDesc = computed(() => {
-  const count = uiState.raidTimeBreakdownSimulations;
-  return `Estimated based on ${count} virtual attempts.\nResults may vary from simulation to simulation.`;
-});
+const timeEstRangeMin = computed(() => formatDurationHM(uiState.raidTimeEstimateMinSec || 0));
+const timeEstRangeMax = computed(() => formatDurationHM(uiState.raidTimeEstimateMaxSec || 0));
+const timeEstMean = computed(() => formatDurationHM(uiState.raidTimeEstimateSec || 0));
+const timeEstStdDev = computed(() => formatDurationHM(uiState.raidTimeEstimateStdDevSec || 0));
+const timeEstSampleCount = computed(() => uiState.raidTimeBreakdownSimulations);
 </script>
 
 <style scoped>
 .deploy-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .btn-wrap { display: inline-block; position: relative; }
 .btn-wrap .tooltip {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   position: absolute;
   bottom: 100%;
   left: 0;
   transform: none;
   margin-bottom: 8px;
-  padding: 8px 12px;
-  background: rgba(10, 14, 20, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 10px 12px;
+  background: var(--hint-bg, rgba(10, 14, 20, 0.95));
+  border: 1px solid var(--hint-border, rgba(255, 255, 255, 0.15));
   border-radius: 4px;
-  color: #f0c070;
+  color: var(--text-primary, #e0e0e0);
   font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.01em;
+  letter-spacing: normal;
+  line-height: 1.35;
   text-transform: none;
   max-width: min(320px, 90vw);
   white-space: normal;
@@ -236,9 +285,10 @@ const timeEstDesc = computed(() => {
   left: 12px;
   transform: none;
   border: 6px solid transparent;
-  border-top-color: rgba(10, 14, 20, 0.95);
+  border-top-color: var(--hint-bg, rgba(10, 14, 20, 0.95));
 }
 .btn-wrap:hover .tooltip { opacity: 1; }
+.btn-wrap .tooltip .hint-section { margin-top: 0; }
 .stats { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 :deep(.cell) {
   background: var(--raid-panel-bg, rgba(23, 33, 47, 0.92));
@@ -270,59 +320,15 @@ const timeEstDesc = computed(() => {
   display: inline-block;
   cursor: default;
 }
-:deep(.tooltip-label[data-tooltip])::after,
-.tooltip-trigger[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 8px 12px;
-  background: var(--hint-bg, rgba(10, 14, 20, 0.95));
-  border: 1px solid var(--hint-border, rgba(255, 255, 255, 0.15));
-  border-radius: 4px;
-  color: var(--text-primary, #e0e0e0);
-  font-size: 13px;
-  font-weight: 500;
-  text-transform: none;
-  letter-spacing: normal;
-  white-space: pre-line;
-  line-height: 1.25;
-  width: max-content;
-  max-width: 360px;
-  text-align: left;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 150ms ease;
-  z-index: 1000;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-}
-:deep(.tooltip-label[data-tooltip])::before,
-.tooltip-trigger[data-tooltip]::before {
-  content: '';
-  position: absolute;
-  bottom: calc(100% + 2px);
-  left: 50%;
-  transform: translateX(-50%);
-  border: 6px solid transparent;
-  border-top-color: var(--hint-bg, rgba(10, 14, 20, 0.95));
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 150ms ease;
-  z-index: 1001;
-}
-:deep(.tooltip-label[data-tooltip]:hover)::after,
-:deep(.tooltip-label[data-tooltip]:hover)::before,
-.tooltip-trigger[data-tooltip]:hover::after,
-.tooltip-trigger[data-tooltip]:hover::before {
-  opacity: 1;
-}
 :deep(.tooltip-panel) {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   position: absolute;
   bottom: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%);
-  padding: 8px 12px;
+  padding: 10px 12px;
   background: var(--hint-bg, rgba(10, 14, 20, 0.95));
   border: 1px solid var(--hint-border, rgba(255, 255, 255, 0.15));
   border-radius: 4px;
@@ -441,16 +447,60 @@ const timeEstDesc = computed(() => {
   animation: flash-red 0.5s ease-in-out infinite;
 }
 
-
-.font-mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-weight: 700;
-  margin-bottom: 8px;
+.hint-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
 }
 
-.tooltip-desc {
+.hint-label {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.hint-value {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.hint-muted {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.hint-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.section-heading {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.hint-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 4px;
+}
+
+.item-text {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.item-text--pre {
   white-space: pre-line;
-  font-weight: 400;
-  opacity: 0.9;
 }
 </style>

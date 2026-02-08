@@ -1,5 +1,6 @@
 import type { Point2 } from './core/math';
 import type { Reward } from './Reward';
+import type { DiscoveryId } from './DiscoveryLib';
 
 export type ResearchNodeType = 'obstacle' | 'empty' | 'stat' | 'gear' | 'resource' | 'discovery' | 'void';
 
@@ -15,8 +16,12 @@ export interface ResearchArchetypeDef {
   description?: string;
   ownedTitle?: string;
   ownedDescription?: string;
+  revealingDiscovery?: DiscoveryId;
+  revealedTitle?: string;
+  revealedDescription?: string;
   icon?: ResearchArchetypeIcon;
   ownedIcon?: ResearchArchetypeIcon;
+  revealedIcon?: ResearchArchetypeIcon;
   rewards: Reward[];
 }
 
@@ -46,9 +51,20 @@ export interface ResearchArchetype {
   description: string;
   ownedTitle: string;
   ownedDescription: string;
+  revealingDiscovery: DiscoveryId | '';
+  revealedTitle: string;
+  revealedDescription: string;
   icon: ResearchArchetypeIcon;
   ownedIcon: ResearchArchetypeIcon | null;
+  revealedIcon: ResearchArchetypeIcon;
   rewards: Reward[];
+}
+
+export function isResearchArchetypeRevealedByDiscovery(
+  archetype: ResearchArchetype,
+  discoveries: Readonly<Record<string, true>>,
+): boolean {
+  return archetype.revealingDiscovery !== '' && discoveries[archetype.revealingDiscovery] === true;
 }
 
 
@@ -124,8 +140,12 @@ export class ResearchLib {
         description: input.description ?? '',
         ownedTitle: input.ownedTitle ?? '',
         ownedDescription: input.ownedDescription ?? '',
+        revealingDiscovery: input.revealingDiscovery ?? '',
+        revealedTitle: input.revealedTitle ?? '',
+        revealedDescription: input.revealedDescription ?? '',
         icon: input.icon ?? { kind: 'none' },
         ownedIcon: input.ownedIcon ?? null,
+        revealedIcon: input.revealedIcon ?? { kind: 'none' },
         rewards: input.rewards,
       };
       this.archetypes.set(arch.id, arch);
@@ -145,8 +165,12 @@ export class ResearchLib {
             description: '',
             ownedTitle: '',
             ownedDescription: '',
+            revealingDiscovery: '',
+            revealedTitle: '',
+            revealedDescription: '',
             icon: { kind: 'none' },
             ownedIcon: null,
+            revealedIcon: { kind: 'none' },
             rewards: [{ kind: 'unlock_gear', gearId: gearId }],
           };
           this.archetypes.set(arch.id, arch);

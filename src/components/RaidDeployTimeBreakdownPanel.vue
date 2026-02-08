@@ -1,12 +1,12 @@
 <template>
   <div class="breakdown-panel">
-    <table class="tooltip-table time-breakdown-table">
+    <table class="time-breakdown-table">
       <thead>
         <tr>
           <th>Time spent</th>
           <th class="tt-icon-head"></th>
           <th>Survived</th>
-          <th><span class="tooltip-label" data-tooltip="Only zone collapse counts">Failed</span></th>
+          <th>Collapsed</th>
         </tr>
       </thead>
       <tbody>
@@ -221,56 +221,4 @@ function encounterIconStyle(iconKey: string): Record<string, string> {
   padding-right: 18px;
 }
 
-/* Tooltip styles - consistent with RaidDeploy.vue */
-.tooltip-label {
-  text-decoration: underline;
-  text-decoration-style: dashed;
-  text-underline-offset: 3px;
-  position: relative;
-  cursor: default;
-}
-
-.tooltip-label[data-tooltip]::after {
-  content: attr(data-tooltip);
-  display: block;
-  box-sizing: content-box;
-  position: absolute;
-  bottom: calc(100% + 12px);
-  right: 0;
-  width: max-content;
-  min-height: 1em;
-  padding: 8px 12px;
-  background: rgb(10, 14, 20);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
-  color: #e0e0e0;
-  font-size: 13px;
-  font-weight: 500;
-  text-transform: none;
-  letter-spacing: normal;
-  white-space: nowrap;
-  line-height: 1.4;
-  text-align: left;
-  pointer-events: none;
-  visibility: hidden;
-  z-index: 3000;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-}
-
-.tooltip-label[data-tooltip]::before {
-  content: '';
-  position: absolute;
-  bottom: calc(100% + 6px);
-  right: 8px;
-  border: 6px solid transparent;
-  border-top-color: rgb(10, 14, 20);
-  pointer-events: none;
-  visibility: hidden;
-  z-index: 3001;
-}
-
-.tooltip-label[data-tooltip]:hover::after,
-.tooltip-label[data-tooltip]:hover::before {
-  visibility: visible;
-}
 </style>

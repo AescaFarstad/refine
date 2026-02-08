@@ -2,12 +2,12 @@
   <div class="breakdown-panel">
 
 
-    <table class="tooltip-table damage-breakdown-table">
+    <table class="damage-breakdown-table">
       <thead>
         <tr>
           <th>Damage from</th>
           <th>Survived</th>
-          <th><span class="tooltip-label" data-tooltip="Only deaths from monsters count">Failed</span></th>
+          <th>Killed</th>
         </tr>
       </thead>
       <tbody>
@@ -158,57 +158,4 @@ const damageByMonsterRows = computed<DamageByMonsterRow[]>(() => {
   padding-right: 18px;
 }
 
-/* Tooltip styles - consistent with RaidDeploy.vue */
-.tooltip-label {
-  text-decoration: underline;
-  text-decoration-style: dashed;
-  text-underline-offset: 3px;
-  position: relative;
-  cursor: default;
-}
-
-.tooltip-label[data-tooltip]::after {
-  content: attr(data-tooltip);
-  display: block;
-  box-sizing: content-box;
-  position: absolute;
-  bottom: calc(100% + 12px);
-  right: 0;
-  width: max-content;
-  min-height: 1em;
-  padding: 8px 12px;
-  /* Ensure fully opaque background while respecting theme variable */
-  background: linear-gradient(0deg, var(--hint-bg, rgb(10, 14, 20)), var(--hint-bg, rgb(10, 14, 20))), rgb(10, 14, 20) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
-  color: #e0e0e0;
-  font-size: 13px;
-  font-weight: 500;
-  text-transform: none;
-  letter-spacing: normal;
-  white-space: nowrap;
-  line-height: 1.4;
-  text-align: left;
-  pointer-events: none;
-  visibility: hidden;
-  z-index: 10000 !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-}
-
-.tooltip-label[data-tooltip]::before {
-  content: '';
-  position: absolute;
-  bottom: calc(100% + 6px);
-  right: 8px;
-  border: 6px solid transparent;
-  border-top-color: rgb(10, 14, 20);
-  pointer-events: none;
-  visibility: hidden;
-  z-index: 10001 !important;
-}
-
-.tooltip-label[data-tooltip]:hover::after,
-.tooltip-label[data-tooltip]:hover::before {
-  visibility: visible;
-}
 </style>

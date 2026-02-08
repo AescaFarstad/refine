@@ -1,5 +1,4 @@
-import type { GameState } from './GameState';
-import type { ResearchArchetype } from './ResearchLib';
+import { isResearchArchetypeRevealedByDiscovery, type ResearchArchetype } from './ResearchLib';
 import type { Lib } from './Lib';
 import type { GearDefinition } from './GearLib';
 import { RESEARCH_PANE_SIZE } from './Const';
@@ -136,9 +135,9 @@ export function renderResearchBaseLayer(
     const gearDef = getGearDefinitionForArchetype(lib, archetype);
 
     if (group.length > 1) {
-      drawMergedNode(ctx, group, archetype, isOwned, origin, hexSize, backgroundHexSize, gearDef);
+      drawMergedNode(ctx, game, group, archetype, isOwned, origin, hexSize, backgroundHexSize, gearDef);
     } else {
-      drawSingleCell(ctx, group[0], archetype, isOwned, origin, hexSize, backgroundHexSize, gearDef);
+      drawSingleCell(ctx, game, group[0], archetype, isOwned, origin, hexSize, backgroundHexSize, gearDef);
     }
   });
 
@@ -148,7 +147,7 @@ export function renderResearchBaseLayer(
       continue;
     }
     const gearDef = getGearDefinitionForArchetype(lib, archetype);
-    drawSingleCell(ctx, info, archetype, info.owned, origin, hexSize, backgroundHexSize, gearDef);
+    drawSingleCell(ctx, game, info, archetype, info.owned, origin, hexSize, backgroundHexSize, gearDef);
   }
 }
 
@@ -183,6 +182,7 @@ function getVisualStyle(archetype: ResearchArchetype | null, owned: boolean): {
 
 function drawMergedNode(
   ctx: CanvasRenderingContext2D,
+  game: ReadonlyGameState,
   cells: ResearchCellInfo[],
   archetype: ResearchArchetype | null,
   owned: boolean,
@@ -215,11 +215,12 @@ function drawMergedNode(
   ctx.fill();
   ctx.restore();
 
-  drawNodeOverlay(ctx, cells, archetype, owned, origin, hexSize, gearDef);
+  drawNodeOverlay(ctx, game, cells, archetype, owned, origin, hexSize, gearDef);
 }
 
 function drawSingleCell(
   ctx: CanvasRenderingContext2D,
+  game: ReadonlyGameState,
   info: ResearchCellInfo,
   archetype: ResearchArchetype | null,
   owned: boolean,
@@ -237,11 +238,12 @@ function drawSingleCell(
     lineWidth: 0,
   });
 
-  drawNodeOverlay(ctx, [info], archetype, owned, origin, hexSize, gearDef);
+  drawNodeOverlay(ctx, game, [info], archetype, owned, origin, hexSize, gearDef);
 }
 
 function drawNodeOverlay(
   ctx: CanvasRenderingContext2D,
+  game: ReadonlyGameState,
   cells: ResearchCellInfo[],
   archetype: ResearchArchetype | null,
   owned: boolean,
@@ -262,7 +264,7 @@ function drawNodeOverlay(
   }
 
   if (!covert && archetype.icon.kind !== 'none') {
-    drawArchetypeIconForNode(ctx, cells, archetype, owned, origin, hexSize);
+    drawArchetypeIconForNode(ctx, game, cells, archetype, owned, origin, hexSize);
     return;
   }
 
@@ -298,6 +300,7 @@ function drawNodeOverlay(
 
 function drawArchetypeIconForNode(
   ctx: CanvasRenderingContext2D,
+  game: ReadonlyGameState,
   cells: ResearchCellInfo[],
   archetype: ResearchArchetype,
   owned: boolean,
@@ -306,7 +309,12 @@ function drawArchetypeIconForNode(
 ): void {
   if (!cells.length) return;
 
-  const icon = (owned && archetype.ownedIcon) ? archetype.ownedIcon : archetype.icon;
+  const isRevealedByDiscovery = isResearchArchetypeRevealedByDiscovery(archetype, game.discoveries);
+  const icon = (owned && archetype.ownedIcon)
+      ? archetype.ownedIcon
+      : isRevealedByDiscovery
+        ? archetype.revealedIcon
+      : archetype.icon;
   if (icon.kind === 'none') return;
 
   const nodeId = cells[0].nodeId;

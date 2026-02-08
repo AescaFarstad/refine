@@ -50,12 +50,12 @@ export function resolveRefineryDone(gs: GameState): void {
   const outcome = new RefineryOutcome();
   outcome.success = succeeded;
 
-  for (const item of wafer.items) {
-    if (!item) continue;
-    gs.refinedUniqueItemIds[item.id] = true;
-  }
-
   if (succeeded) {
+    for (const item of wafer.items) {
+      if (!item) continue;
+      gs.refinedUniqueItemIds[item.id] = true;
+    }
+
     const magentaCount = preview.essenceTotals['magenta'] || 0;
     if (magentaCount > 0 && !gs.discoveries[DISCOVERY.MAGENTA_CRYSTALS]) {
       applyReward(gs, { kind: 'discovery', discoveryId: DISCOVERY.MAGENTA_CRYSTALS });

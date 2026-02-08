@@ -103,6 +103,8 @@ export const uiState = reactive({
 
   refinery: null as UIRefinery | null,
   items: [] as Array<{ id: string; quantity: number }>,
+  unrefinedOwnedItemIds: [] as string[],
+  unrefinedOwnedItemIdMap: {} as Record<string, true>,
   encounteredEssences: [] as string[],
   seenEssences: [] as string[],
   discoveryCounter: 0,
@@ -169,6 +171,9 @@ let lastWaferItemCount = 0;
 let lastWaferEnabledCount = 0;
 let lastRaidFoundItemsVersion = -1;
 let lastUnlockedRaidIdsKey = '';
+let lastInventoryItemCount = -1;
+let lastRefinedUniqueCount = -1;
+let lastHasUniqueItemsYield = false;
 
 
 export function SyncUIFromGameState(game: GameState): void {
@@ -303,7 +308,38 @@ export function SyncUIFromGameState(game: GameState): void {
     refinery.failureChancePct = preview.failureChancePct;
   }
   uiState.refinery = refinery;
-  uiState.items = (game.items || []).map(it => ({ id: it.id, quantity: it.quantity }));
+  uiState.items = game.items.map(it => ({ id: it.id, quantity: it.quantity }));
+  {
+    const hasUniqueItemsYield = game.discoveries[DISCOVERY.UNIQUE_ITEMS_YIELD] === true;
+    const inventoryItemCount = game.items.reduce((sum, it) => sum + it.quantity, 0);
+    const refinedUniqueCount = Object.keys(game.refinedUniqueItemIds).length;
+    if (!hasUniqueItemsYield) {
+      if (uiState.unrefinedOwnedItemIds.length > 0) {
+        uiState.unrefinedOwnedItemIds = [];
+        uiState.unrefinedOwnedItemIdMap = {};
+      }
+      lastInventoryItemCount = inventoryItemCount;
+      lastRefinedUniqueCount = refinedUniqueCount;
+      lastHasUniqueItemsYield = false;
+    } else if (
+      !lastHasUniqueItemsYield ||
+      inventoryItemCount !== lastInventoryItemCount ||
+      refinedUniqueCount !== lastRefinedUniqueCount
+    ) {
+      const ids: string[] = [];
+      const idMap: Record<string, true> = {};
+      for (const it of game.items) {
+        if (game.refinedUniqueItemIds[it.id]) continue;
+        ids.push(it.id);
+        idMap[it.id] = true;
+      }
+      uiState.unrefinedOwnedItemIds = ids;
+      uiState.unrefinedOwnedItemIdMap = idMap;
+      lastInventoryItemCount = inventoryItemCount;
+      lastRefinedUniqueCount = refinedUniqueCount;
+      lastHasUniqueItemsYield = true;
+    }
+  }
   uiState.encounteredEssences = Object.keys(game.encounteredEssences);
   uiState.seenEssences = Object.keys(game.seenEssences);
   uiState.discoveryCounter = game.discoveryCounter;

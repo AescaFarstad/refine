@@ -54,6 +54,7 @@
         :rarity-labels="rarityLabelsMap"
         :show-scores="showScores"
         :show-volumes="showVolumes"
+        :show-essences="false"
         clickable
         draggable
         no-tooltip

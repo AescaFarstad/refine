@@ -13,7 +13,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { ResearchCell } from '../../logic/GameState';
-import type { ResearchArchetype, ResearchNodeInstance } from '../../logic/ResearchLib';
+import { getGameState, uiState } from '../../logic/UIState';
+import { isResearchArchetypeRevealedByDiscovery, type ResearchArchetype, type ResearchNodeInstance } from '../../logic/ResearchLib';
 
 const props = defineProps<{
   cell: ResearchCell;
@@ -21,13 +22,23 @@ const props = defineProps<{
   archetype: ResearchArchetype | null;
 }>();
 
+const isRevealedByDiscovery = computed(() => {
+  uiState.discoveryCounter;
+  const arch = props.archetype!;
+  return isResearchArchetypeRevealedByDiscovery(arch, getGameState().discoveries);
+});
+
 const title = computed(() => {
   const arch = props.archetype!;
-  return (props.cell.owned && arch.ownedTitle) ? arch.ownedTitle : arch.title;
+  if (props.cell.owned && arch.ownedTitle) return arch.ownedTitle;
+  if (isRevealedByDiscovery.value) return arch.revealedTitle;
+  return arch.title;
 });
 const description = computed(() => {
   const arch = props.archetype!;
-  return (props.cell.owned && arch.ownedDescription) ? arch.ownedDescription : arch.description;
+  if (props.cell.owned && arch.ownedDescription) return arch.ownedDescription;
+  if (isRevealedByDiscovery.value) return arch.revealedDescription;
+  return arch.description;
 });
 </script>
 

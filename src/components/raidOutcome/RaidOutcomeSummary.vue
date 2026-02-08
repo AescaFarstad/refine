@@ -35,7 +35,7 @@
     </section>
     <section class="new-quests" v-if="raidSuccess && newQuests.length">
       <div class="nq" v-for="(quest, i) in newQuests" :key="i">
-        <span class="nq-text">New investigation available: <strong class="nq-quest-name">{{ quest.name }}</strong></span>
+        <span class="nq-text">New objective available: <strong class="nq-quest-name">{{ quest.name }}</strong></span>
         <div class="nq-hint" role="tooltip">
           <QuestHint :quest="quest" />
         </div>

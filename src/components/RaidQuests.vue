@@ -1,6 +1,6 @@
 <template>
   <div v-if="quests.length > 0">
-    <div class="section-title">Investigations</div>
+    <div class="section-title">Additional objectives</div>
     <hr class="section-divider" />
 
     <ul class="quest-list">

@@ -12,7 +12,7 @@
     <div v-if="showDropdown" class="raid-dropdown">
       <div class="raid-table-head">
         <div class="cell name"></div>
-        <div class="cell investigations">Investigations</div>
+        <div class="cell objectives">Objectives</div>
         <div class="cell strength">Monster strength</div>
         <div class="cell loot">Loot prospects</div>
       </div>
@@ -31,7 +31,7 @@
             :style="raidBackgroundStyle(row.raid)"
           />
           <div class="cell name">{{ row.raid.name }}</div>
-          <div class="cell investigations">{{ row.investigations }}</div>
+          <div class="cell objectives">{{ row.objectives }}</div>
           <div class="cell strength">{{ formatNumber(row.monsterStrength) }}</div>
           <div class="cell loot">{{ formatNumber(row.lootProspects) }}</div>
         </button>
@@ -105,7 +105,7 @@ onBeforeUnmount(() => {
 
 interface RaidRow {
   raid: UIRaidDef;
-  investigations: number;
+  objectives: number;
   monsterStrength: number;
   lootProspects: number;
   isActive: boolean;
@@ -131,7 +131,7 @@ const raidRows = computed<RaidRow[]>(() => {
     const raid = raidById.get(id)!;
     rows.push({
       raid,
-      investigations: countAvailableInvestigations(gs, lib, id),
+      objectives: countAvailableObjectives(gs, lib, id),
       monsterStrength: Math.floor(computeMonsterStrength(lib, raid) / 1000),
       lootProspects: Math.floor(computeLootProspects(raid) / 10),
       isActive: uiState.activeRaidId === raid.id,
@@ -140,7 +140,7 @@ const raidRows = computed<RaidRow[]>(() => {
   return rows;
 });
 
-function countAvailableInvestigations(gs: ReturnType<typeof getGameState>, lib: ReturnType<typeof getGameLib>, raidId: string): number {
+function countAvailableObjectives(gs: ReturnType<typeof getGameState>, lib: ReturnType<typeof getGameLib>, raidId: string): number {
   let count = 0;
   lib.quests.forEach((q) => {
     if (questIsAvailable(gs, q, raidId)) count += 1;
@@ -322,7 +322,7 @@ function formatNumber(value: number): string {
 }
 .cell.strength,
 .cell.loot,
-.cell.investigations {
+.cell.objectives {
   text-align: center;
 }
 @media (max-width: 900px) {

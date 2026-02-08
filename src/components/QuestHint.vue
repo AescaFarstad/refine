@@ -168,7 +168,7 @@ const hintSections = computed<HintSection[]>(() => {
       }
     }
     if (items.length > 0) {
-      out.push({ type: 'heading', heading: 'Active effects', items });
+      out.push({ type: 'heading', heading: 'One-time effects', items });
     }
   }
 

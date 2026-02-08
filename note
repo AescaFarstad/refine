@@ -64,7 +64,13 @@ january 25
   The balance is pretty good now. The game is worth 4 hours of gameplay.
 february 1
   regen per 10 minutes, spelling, you won window
-february 6 bugs and tweaks
+february 6 
+  bugs and tweaks
+february 7
+  playtest
+february 8
+  processing feedback, mostly UI tweaks
+
 
 npx tsc --noEmit
 npx vue-tsc --noEmit

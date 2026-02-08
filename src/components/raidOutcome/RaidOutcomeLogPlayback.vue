@@ -19,7 +19,7 @@
                   <div class="enc-type">Fighting</div>
                   <div class="enc-monster">{{ entry.monsterName }}</div>
                 </template>
-                <template v-else-if="entry.kind === 'QuestEncounter'">Investigation</template>
+                <template v-else-if="entry.kind === 'QuestEncounter'">Objective</template>
                 <template v-else-if="entry.kind === 'ZoneCollapse'">Zone collapsing</template>
                 <template v-else>Encounter</template>
               </div>

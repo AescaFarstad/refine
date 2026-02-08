@@ -21,12 +21,11 @@
       </div>
     </div>
     <div
-      v-if="showHintPanel && hoveredNode && hoverNodePosition"
+      v-if="showHintPanel && hoveredNode && hintStyle"
+      ref="hintRef"
       class="hover-hint hover-panel"
-      :style="{
-        left: `${hoverNodePosition.x}px`,
-        top: `${hoverNodePosition.y}px`
-      }"
+      :class="hintBelow ? 'hover-hint-below' : 'hover-hint-above'"
+      :style="hintStyle"
     >
       <ResearchNodeHint :cell="hoveredNode.cell" :node="hoveredNode.node" :archetype="hoveredNode.archetype" />
     </div>
@@ -99,9 +98,11 @@ import { RESEARCH_OBSTACLE_PRICE, RESEARCH_OBSTACLE_PRICE_GROWTH } from '../logi
 import { getResourceSpec } from '../logic/Resources';
 import CardDeck from './CardDeck.vue';
 import SignatureCard from './SignatureCard.vue';
+import { useResearchNodeHintPlacement } from '../logic/useResearchNodeHintPlacement';
 
 const hoverCell = ref<Point2 | null>(null);
 const researchPane = ref<InstanceType<typeof ResearchPane> | null>(null);
+const researchTab = ref<HTMLElement | null>(null);
 
 const editResearchOpen = computed(() => uiState.editResearchOpen);
 
@@ -235,8 +236,14 @@ const hoverNodePosition = computed<Point2 | null>(() => {
 
   return {
     x: screenX,
-    y: screenY - 40,
+    y: screenY,
   };
+});
+
+const { hintRef, hintBelow, hintStyle } = useResearchNodeHintPlacement({
+  anchor: hoverNodePosition,
+  container: researchTab,
+  visible: showHintPanel,
 });
 
 const nextClearCost = computed(() => {
@@ -275,11 +282,17 @@ const nextClearCost = computed(() => {
 
 .hover-hint {
   position: absolute;
-  transform: translate(-50%, -100%);
-  margin-bottom: 8px;
   pointer-events: none;
   user-select: none;
   z-index: 25;
+}
+
+.hover-hint-above {
+  transform: translate(-50%, -100%);
+}
+
+.hover-hint-below {
+  transform: translate(-50%, 0%);
 }
 
 .hover-panel {

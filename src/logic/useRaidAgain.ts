@@ -43,7 +43,7 @@ export function getRaidStartFailureReason(gs: ReadonlyGameState, raidId: string)
   if (!raidId) return 'No raid selected.';
   const unlocked = gs.unlockedRaids.some(r => r.id === raidId);
   if (!unlocked) return 'Raid not unlocked.';
-  if (hasMissingRequiredQuestGear(gs, raidId)) return 'Gear required for the selected investigation is not equipped.';
+  if (hasMissingRequiredQuestGear(gs, raidId)) return 'Gear required for the selected objective is not equipped.';
   const cost = getRaidGearCost(gs, raidId);
   if (cost > 0 && gs.credits < cost) return `Not enough credits (need ${cost})`;
   return '';
@@ -91,7 +91,6 @@ export function useRaidAgain() {
   const canRaidAgain = computed(() => /* !questWasCompleted.value && */ raidStartFailureReason.value === '');
 
   const raidAgainDisabledReason = computed(() => {
-    // if (questWasCompleted.value) return 'Investigation completed - you may need to choose another one';
     return raidStartFailureReason.value;
   });
 

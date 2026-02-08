@@ -12,7 +12,7 @@ const quests: Record<string, RawQuestDefinition> = {
   },
   shegolskoe_break_spikder: {
     name: 'Artist\'s dacha',
-    description: 'A powerful spikder is crawling around a spacious dacha of a famous artist. Weed them out and claim the territory.',
+    description: 'A powerful spikder is crawling around a spacious dacha of a famous artist.',
     requiresRaidQuestCompletions: 1,
     raidRestriction: ['shegolskoe'],
     encounters: [
@@ -26,7 +26,7 @@ const quests: Record<string, RawQuestDefinition> = {
   },
   shegolskoe_break_flower: {
     name: 'Well',
-    description: 'There is a giant flower in the form of a human, growing around the village well. It blocks the way to a two-story dacha and a picnic spot. Weed them out and claim the territory.',
+    description: 'There is a giant flower in the form of a human, growing around the village well. It blocks the way to a two-story dacha and a picnic spot.',
     requiresRaidQuestCompletions: 1,
     raidRestriction: ['shegolskoe'],
     encounters: [
@@ -38,7 +38,7 @@ const quests: Record<string, RawQuestDefinition> = {
   },
   shegolskoe_break_distorted_pack: {
     name: 'Shop',
-    description: 'A pack of distorted humanoids are sleeping next to the village shop entrance. Weed them out and gain access to the shop\'s contents.',
+    description: 'A pack of distorted humanoids are sleeping next to the village shop entrance.',
     requiresRaidQuestCompletions: 1,
     raidRestriction: ['shegolskoe'],
     encounters: [

@@ -10,6 +10,7 @@ import generateIceMaze from "../maze/IceMazeGen";
 import { calculateVisibility } from "./Research";
 import { ensureShardDiscovery, ensureResearchTabDiscovery, ensureMazeTabDiscovery } from "./Discover";
 import { applyReward } from "./Reward";
+import { saveAutosave } from "./SaveLoad";
 
 const TIME_SPEED_MAX = 3800;
 const TIME_SPEED_MIN = 300;
@@ -27,11 +28,16 @@ export function setResearchRevealRadius(gs: GameState, radius: number): void {
 
 // deltaTime is in seconds
 export function update(gs: GameState, deltaTime: number): void {
+  const mazeMoveCompletionsBefore = gs.maze?.moveCompletions ?? 0;
   initOrAdvanceMaze(gs);
   if (gs.maze) {
     gs.maze.timeFluxAvailable = Math.floor(gs.timeFlux);
   }
   gs.maze?.update(deltaTime);
+  const mazeMoveCompletionsAfter = gs.maze?.moveCompletions ?? 0;
+  if (mazeMoveCompletionsAfter > mazeMoveCompletionsBefore) {
+    saveAutosave(gs);
+  }
 
   if (IS_DEBUG && gs.cheats && gs.cheats.length > 0) {
     processCheats(gs);
@@ -49,6 +55,9 @@ export function update(gs: GameState, deltaTime: number): void {
     gs.gameTime = evt.at;
     gs.nextEvt = null;
     processEvt(gs, evt);
+    if (evt.name === 'EvtRefineryDone') {
+      saveAutosave(gs);
+    }
     gs.timeActive = false;
     return;
   }
@@ -76,6 +85,8 @@ export function update(gs: GameState, deltaTime: number): void {
 // Shard physics (position, velocity, bouncing) is handled in UI (RefineAnim.vue).
 // Model only handles: grace period, triggered shard resource granting, cleanup.
 function updateShards(gs: GameState, dt: number) {
+  const hadAnyShards = gs.shards.some(s => s !== null);
+
   // If there are no shards but we still have a refinery
   // outcome, treat the outcome as fully resolved so that
   // the wafer UI can become interactive again.
@@ -122,6 +133,9 @@ function updateShards(gs: GameState, dt: number) {
   if (!hasAnyShards) {
     gs.shards.length = 0;
     gs.lastRefineryOutcome = null;
+    if (hadAnyShards) {
+      saveAutosave(gs);
+    }
   }
 }
 
@@ -185,6 +199,7 @@ function initOrAdvanceMaze(gs: GameState) {
     const inst = new IceMaze({ x: def.x, y: def.y }, moves, seed);
     inst.loadSettings(toSettings(def, seed), seed);
     gs.maze = inst;
+    saveAutosave(gs);
   }
 }
 

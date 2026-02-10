@@ -119,13 +119,13 @@
 
 
 const props = defineProps<{
-  draggingItem?: { id: string; molecule: Molecule } | null;
+  draggingItem?: { id: string; molecule: Molecule; rotation: number } | null;
 }>();
 
 const emit = defineEmits<{
   (e: 'refine-start'): void;
   (e: 'clear-dragging'): void;
-  (e: 'pickup-item', item: { id: string; molecule: Molecule }): void;
+  (e: 'pickup-item', item: { id: string; rotation: number }): void;
 }>();
 
 	const shardSpec = getResourceSpec('shardDust');
@@ -291,7 +291,9 @@ function moleculeOverlapsEnabledCell(w: Wafer, mol: Molecule): boolean {
 
 watch(() => props.draggingItem, (newVal) => {
   if (newVal) {
-    rotation.value = 0;
+    const normalized = ((newVal.rotation % 6) + 6) % 6;
+    rotation.value = normalized;
+    updateManualDragMolecule(rotateMolecule(newVal.molecule, rotation.value));
     upgradeHoverCells.value = null;
     if (lastHoverPos.value) {
       onHover(lastHoverPos.value);
@@ -413,7 +415,7 @@ function onPickup(itemIdx: number) {
 
   const item = wafer.value.items[itemIdx];
   if (item) {
-    emit('pickup-item', { id: item.id, molecule: item.molecule });
+    emit('pickup-item', { id: item.id, rotation: item.rotation });
     globalInputQueue.push(new CmdRemoveMolecule({ itemIdx }));
   }
 }

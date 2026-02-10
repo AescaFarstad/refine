@@ -4,15 +4,15 @@ export class SeededRandom {
   private _seed: number = 0;
 
   constructor(seed?: number) {
-    this._seed = ((seed === undefined) ? Date.now() : seed) | 0;
+    this._seed = ((seed === undefined) ? Date.now() : seed) >>> 0;
   }
 
   init(seed: number): void {
-    this._seed = seed | 0;
+    this._seed = seed >>> 0;
   }
 
   getSeed(): number {
-    return this._seed;
+    return this._seed >>> 0;
   }
 
   get(): number {

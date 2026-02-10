@@ -14,6 +14,7 @@ import { placeMolecule, removeMolecule, enableCellWithFloodfill, computeWaferUpg
 import { applyResearchPurchase } from '../Research';
 import { startRefining } from '../Refine';
 import { applyReward } from '../Reward';
+import { saveAutosave } from '../SaveLoad';
 
 type Handler = (gs: GameState, cmd: CmdInput) => void;
 const handlersByName = new Map<string, Handler>();
@@ -133,9 +134,8 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
         if (!v) continue;
         gs.encounteredEssences[k] = true;
       }
-      const existing = gs.items.find(x => x.id === id);
-      if (existing) existing.quantity += q;
-      else gs.items.push({ id, quantity: q });
+      const prevQty = gs.items[id] ?? 0;
+      gs.items[id] = prevQty + q;
     }
     if (hasLootedItems) {
       discoverRefineTab(gs);
@@ -188,6 +188,7 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
 
   recomputeActiveRaidParams(gs, c.id);
   recomputeActiveRaidEstimates(gs, 100);
+  saveAutosave(gs);
 });
 
 handlersByName.set('CmdStartRefining', (gs, cmd) => {
@@ -207,6 +208,7 @@ handlersByName.set('CmdAcknowledgeOutcome', (gs, cmd) => {
   }
   gs.acknowledgedRaidOutcome = gs.lastRaidOutcome;
   gs.lastRaidOutcome = null;
+  saveAutosave(gs);
 });
 
 handlersByName.set('CmdConsumeOutcomeRewards', (gs, cmd) => {
@@ -219,6 +221,7 @@ handlersByName.set('CmdConsumeOutcomeRewards', (gs, cmd) => {
     applyReward(gs, reward, { activeRaidId: raidId, raidEntry });
   }
   outcome.rewardsConsumed = true;
+  saveAutosave(gs);
 });
 
 handlersByName.set('CmdAcknowledgeSignatureLearn', (gs, cmd) => {
@@ -284,12 +287,14 @@ handlersByName.set('CmdSelectRaid', (gs, cmd) => {
 
   recomputeActiveRaidParams(gs, c.id);
   recomputeActiveRaidEstimates(gs, 100);
+  saveAutosave(gs);
 });
 
 handlersByName.set('CmdToggleGear', (gs, cmd) => {
   const c = cmd as CmdToggleGear;
   toggleGearForRaid(gs, c.raidId, c.gearId, c.selected);
   recomputeActiveRaidEstimates(gs, 100);
+  saveAutosave(gs);
 });
 
 handlersByName.set('CmdToggleQuest', (gs, cmd) => {
@@ -300,12 +305,22 @@ handlersByName.set('CmdToggleQuest', (gs, cmd) => {
   if (gs.completedQuests.includes(id)) return;
   const list = gs.activeQuests;
   const i = list.indexOf(id);
+  let changed = false;
   if (c.active) {
-    if (i === -1) list.push(id);
+    if (i === -1) {
+      list.push(id);
+      changed = true;
+    }
   } else {
-    if (i !== -1) list.splice(i, 1);
+    if (i !== -1) {
+      list.splice(i, 1);
+      changed = true;
+    }
   }
-  recomputeActiveRaidEstimates(gs, 100);
+  if (changed) {
+    recomputeActiveRaidEstimates(gs, 100);
+    saveAutosave(gs);
+  }
 });
 
 handlersByName.set('CmdReviewQuest', (gs, cmd) => {
@@ -319,21 +334,23 @@ handlersByName.set('CmdPlaceMolecule', (gs, cmd) => {
   const c = cmd as CmdPlaceMolecule;
   const itemId = c.itemId;
 
-  const invEntry = gs.items.find(x => x.id === itemId);
-  if (!invEntry || invEntry.quantity <= 0) return;
+  const invQty = gs.items[itemId] ?? 0;
+  if (invQty <= 0) return;
 
   const placed = placeMolecule(gs.wafer, itemId, c.molecule, c.rotation);
   if (!placed) return;
 
-  invEntry.quantity -= 1;
-  if (invEntry.quantity <= 0) {
-    const idx = gs.items.indexOf(invEntry);
-    if (idx !== -1) gs.items.splice(idx, 1);
+  const nextQty = invQty - 1;
+  if (nextQty <= 0) {
+    delete gs.items[itemId];
+  } else {
+    gs.items[itemId] = nextQty;
   }
 
   computeEffectiveEssences(gs.wafer);
   ensureSignatureDiscoveryFromWafer(gs);
   discover(gs, DISCOVERY.UI_WAFER_INFO);
+  saveAutosave(gs);
 });
 
 handlersByName.set('CmdRemoveMolecule', (gs, cmd) => {
@@ -351,9 +368,8 @@ handlersByName.set('CmdRemoveMolecule', (gs, cmd) => {
     if (!v) continue;
     gs.encounteredEssences[k] = true;
   }
-  const invEntry = gs.items.find(x => x.id === itemId);
-  if (invEntry) invEntry.quantity += 1;
-  else gs.items.push({ id: itemId, quantity: 1 });
+  gs.items[itemId] = (gs.items[itemId] ?? 0) + 1;
+  saveAutosave(gs);
 });
 
 handlersByName.set('CmdGrowWafer', (gs, cmd) => {
@@ -371,6 +387,7 @@ handlersByName.set('CmdGrowWafer', (gs, cmd) => {
   gs.waferUpgradesPurchased = upgradesPurchased + 1;
   computeEffectiveEssences(gs.wafer);
   ensureSignatureDiscoveryFromWafer(gs);
+  saveAutosave(gs);
 });
 
 handlersByName.set('CmdResearchNode', (gs, cmd) => {
@@ -380,6 +397,9 @@ handlersByName.set('CmdResearchNode', (gs, cmd) => {
   if (result.success && gs.raid.id) {
     recomputeActiveRaidParams(gs, gs.raid.id);
     recomputeActiveRaidEstimates(gs, 100);
+  }
+  if (result.success) {
+    saveAutosave(gs);
   }
 });
 
@@ -404,6 +424,7 @@ handlersByName.set('CmdUpgradeGearCategory', (gs, cmd) => {
 
   gs.skillPoints = currentSP - cost;
   gs.gearLevels[catId] = currentSlots + 1;
+  saveAutosave(gs);
 });
 
 handlersByName.set('CmdOpenGearUpgradeModal', (gs) => {
@@ -446,15 +467,21 @@ handlersByName.set('CmdToggleItemBan', (gs, cmd) => {
   const raidEntry = gs.unlockedRaids.find(r => r.id === c.raidId);
   if (!raidEntry) return;
 
+  let changed = false;
   const idx = raidEntry.bannedItemIds.indexOf(c.itemId);
   if (c.banned) {
     if (idx === -1 && raidEntry.bannedItemIds.length < gs.itemBans) {
       raidEntry.bannedItemIds.push(c.itemId);
+      changed = true;
     }
   } else {
     if (idx !== -1) {
       raidEntry.bannedItemIds.splice(idx, 1);
+      changed = true;
     }
+  }
+  if (changed) {
+    saveAutosave(gs);
   }
 });
 

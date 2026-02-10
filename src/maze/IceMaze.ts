@@ -14,6 +14,7 @@ interface ActorAnimation {
 export class IceMaze {
   public readonly dimensions: Point2;
   public movesMade: number = 0;
+  public moveCompletions: number = 0;
   public timeFluxAvailable: number = 0;
   public cellTimeFlux: boolean[][] = [];
   public cellTimeFluxVersion: number = 0;
@@ -92,6 +93,7 @@ export class IceMaze {
         this.playerVisualPos.y = this.state.player.cell.y;
         this.commitPendingTimeFlux(Infinity, true);
         this.playerAnim = null;
+        this.moveCompletions++;
         // Sync visual key state when animation completes
         this.visualTakenKeys = this.state.takenKeys.slice();
       } else {
@@ -149,6 +151,7 @@ export class IceMaze {
   reset(seed?: number): void {
     if (typeof seed === "number") this.settings.seed = seed | 0;
     this.movesMade = 0;
+    this.moveCompletions = 0;
     this.cellTimeFlux = this.makeCellTimeFlux();
     this.cellTimeFluxVersion = 0;
     this.state = Chase.create(this.settings);

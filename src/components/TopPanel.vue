@@ -7,13 +7,67 @@
       <div class="metric time-metric"><span class="label">Time</span><span class="value time-value">{{ timeDisplay }}</span></div>
 
       <div class="spacer"></div>
+
+      <div class="actions">
+        <button v-if="showCheatButton" class="settings-btn" type="button" aria-label="Open cheat tools" @click="openCheats">
+          <span class="settings-icon" :style="cheatIconStyle"></span>
+        </button>
+        <button class="settings-btn" type="button" aria-label="Open settings" @click="openSettings">
+          <span class="settings-icon" :style="gearIconStyle"></span>
+        </button>
+      </div>
     </div>
+
+    <SettingsWindow :visible="settingsOpen" @close="closeSettings" />
   </header>
 </template>
 
 <script setup lang="ts">
-import { timeDisplay } from '../logic/UIState';
+import { computed, ref } from 'vue';
+import { getGameState, timeDisplay, uiState } from '../logic/UIState';
+import atlasStorage from '../logic/AtlasStorage';
+import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
+import { DISCOVERY } from '../logic/DiscoveryLib';
 import Tabs from './Tabs.vue';
+import SettingsWindow from './SettingsWindow.vue';
+
+const settingsOpen = ref(false);
+const itemsSource = atlasStorage.getItemsSource();
+const gearFrame = atlasStorage.getItemsFrame('gear')!;
+const cheatFrame = atlasStorage.getItemsFrame('field_scanner')!;
+
+const gearIconStyle = computed(() => {
+  return atlasSpriteStyle(itemsSource, gearFrame, {
+    size: 20,
+    mode: 'fit',
+    allowUpscale: false,
+  });
+});
+
+const cheatIconStyle = computed(() => {
+  return atlasSpriteStyle(itemsSource, cheatFrame, {
+    size: 20,
+    mode: 'fit',
+    allowUpscale: false,
+  });
+});
+
+const showCheatButton = computed(() => {
+  uiState.discoveryCounter; // reactivity trigger
+  return getGameState().discoveries[DISCOVERY.DEV] === true;
+});
+
+function openCheats(): void {
+  uiState.cheatOpen = true;
+}
+
+function openSettings(): void {
+  settingsOpen.value = true;
+}
+
+function closeSettings(): void {
+  settingsOpen.value = false;
+}
 </script>
 
 <style scoped>
@@ -40,6 +94,37 @@ import Tabs from './Tabs.vue';
 }
 
 .spacer { flex: 1 1 auto; }
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-btn {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: filter 0.15s ease, background 0.15s ease;
+}
+
+.settings-btn:hover {
+  filter: brightness(1.2);
+  background: rgba(79, 209, 197, 0.16);
+}
+
+.settings-btn:active {
+  filter: brightness(0.95);
+}
+
+.settings-icon {
+  display: block;
+}
 
 .metric {
   display: flex;

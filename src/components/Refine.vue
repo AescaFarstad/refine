@@ -23,12 +23,11 @@ import { uiState } from '../logic/UIState';
 import Wafer from './Wafer.vue';
 import AllItems from './AllItems.vue';
 import { getGameLib } from '../logic/UIState';
-import itemsData from '../data/items';
 import type { Molecule } from '../logic/ItemLib';
 import { CmdStartRefining } from '../logic/input/InputCommands';
 import { globalInputQueue } from '../logic/Model';
 
-const draggingItem = ref<{ id: string; molecule: Molecule } | null>(null);
+const draggingItem = ref<{ id: string; molecule: Molecule; rotation: number } | null>(null);
 const waferRef = ref<InstanceType<typeof Wafer> | null>(null);
 
 const availableItems = computed(() => {
@@ -39,14 +38,12 @@ const availableItems = computed(() => {
 });
 
 function onPickItem(id: string) {
-  const itemDef = (itemsData as any)[id];
-  if (!itemDef || !itemDef.molecule) {
-    return;
-  }
+  const itemDef = getGameLib().getItem(id);
 
   draggingItem.value = {
     id,
     molecule: itemDef.molecule,
+    rotation: 0,
   };
 }
 
@@ -62,8 +59,13 @@ function onRefineStart() {
   globalInputQueue.push(new CmdStartRefining());
 }
 
-function onPickupItem(item: { id: string; molecule: Molecule }) {
-  draggingItem.value = item;
+function onPickupItem(item: { id: string; rotation: number }) {
+  const itemDef = getGameLib().getItem(item.id);
+  draggingItem.value = {
+    id: item.id,
+    molecule: itemDef.molecule,
+    rotation: item.rotation,
+  };
 }
 
 function onContextMenu(e: MouseEvent) {

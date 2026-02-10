@@ -46,10 +46,7 @@ handlersByName.set('CheatAddRaidItems', (gs, cheat) => {
       if (!v) continue;
       gs.encounteredEssences[k] = true;
     }
-    const inv = gs.items;
-    const existing = inv.find(x => x.id === id);
-    if (existing) existing.quantity += qty;
-    else inv.push({ id, quantity: qty });
+    gs.items[id] = (gs.items[id] ?? 0) + qty;
   }
 
   for (const id of ids) {

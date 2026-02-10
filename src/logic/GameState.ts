@@ -13,11 +13,19 @@ import type { RaidEventLog } from './RaidLog';
 import type { RaidMutation, MutationDescription } from './RaidMutation';
 import type { Reward, UIModalEntry } from './Reward';
 
+/*
+  When adding/editing properties here, make sure save-loading is compatible.
+  /src/logic/SaveLoad.ts
+  Version bump is always done manually, don't touch it.
+*/
+
 export const DEFAULT_SPEED: number = 6;
 export const MIN_WALK_SPEED: number = 1; // km/h
 
 export class GameState {
   public lib: Lib = new Lib();
+  public readonly version: number = 1; // game state version for serialization
+  public seed: number = 0;
 
   // Elapsed game time in seconds (canonical for /core/ as well)
   public gameTime: number = 0;
@@ -26,7 +34,7 @@ export class GameState {
   public timeSpeed: number = 1;
   public timeSpeedMaxBoost: number = 1;
 
-  public random: SeededRandom = new SeededRandom();
+  public random: SeededRandom = new SeededRandom(0);
 
   // Properties for /core/ compatibility (not actively used in this project)
   public hypothetical: { key: string; connections: any } | null = null;
@@ -65,7 +73,7 @@ export class GameState {
   public lastRefineryOutcome: RefineryOutcome | null = null;
   public shardPickupGraceSec: number = 0;
 
-  public items: Array<Item> = [];
+  public items: Record<string, number> = {};
   public encounteredEssences: Record<string, true> = {};
   public seenEssences: Record<string, true> = {};
   public discoveries: Record<string, true> = {};
@@ -109,7 +117,11 @@ export class GameState {
   // Queue of UI modal keys to show (from show_ui rewards)
   public pendingUIModals: UIModalEntry[] = [];
 
-  constructor() {
+  constructor(seed: number = Date.now()) {
+    const normalizedSeed = seed >>> 0;
+    this.seed = normalizedSeed;
+    this.random = new SeededRandom(normalizedSeed);
+
     for (const categoryId of Object.keys(gearCategories)) {
       this.gearLevels[categoryId] = 1;
     }

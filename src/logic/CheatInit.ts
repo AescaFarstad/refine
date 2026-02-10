@@ -5,9 +5,10 @@ import { DISCOVERY } from './DiscoveryLib';
 import { CheatAddResources, CheatLoadResearchState, CheatUnlockAllRaids, CheatDisableQuestPrereqs, CheatGrantDiscoveries, CheatAddRaidItems, CheatUnlockAllGear, CheatGrantRewards, CheatLearnSignatures, CheatCompleteSignatures, CheatAddItemBans } from './cheat/CheatCommands';
 import signatures from '../data/signatures';
 import { recomputeActiveRaidEstimates, recomputeActiveRaidParams } from './Raid';
+import { readURLSettings } from '../URLSettings';
 
 export function initDebug(gameState: GameState): void {
-  if (!new URLSearchParams(window.location.search).has('cheat')) return;
+  if (!readURLSettings().cheat) return;
   setIsDebug(true);
 
   uiState.editResearchOpen = true;

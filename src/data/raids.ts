@@ -45,7 +45,7 @@ const raids: Record<string, RawRaidDefinition> = {
   ozernoye: {
     name: 'Ozernoye',
     locationImageId: 'ozernoye',
-    description: 'A lakeside settlement overtaken by anomalous activity. Many scavengers never returned from its shores.',
+    description: 'A lakeside settlement overtaken by... OH GOD! WHaT IS THSIissisi??!',
     baseLootChance: 40,
     zoneCollapseSec: 12800,
     zoneCollapseStepPerMutation: 360,
@@ -74,7 +74,7 @@ const raids: Record<string, RawRaidDefinition> = {
   dyatlovsk: {
     name: 'Dyatlovsk',
     locationImageId: 'dyatlovsk',
-    description: 'A frontier town deep in contaminated territory. Dense anomalous growth has reclaimed the streets.',
+    description: 'A closed city in eastern Siberia, rumored to host a biological laboratory.',
     baseLootChance: 40,
     zoneCollapseSec: 8400,
     zoneCollapseStepPerMutation: 360,

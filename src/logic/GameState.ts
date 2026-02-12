@@ -51,7 +51,7 @@ export class GameState {
   public baseMaxWeight: number = 10;
   public damage: number = 1;
   public chanceToHit: number = 60;
-  public chanceToBlock: number = 30;
+  public chanceToBlock: number = 0;
   public health: number = 10;
   public itemBans: number = 0;
   public wafer: Wafer = createWafer(2);

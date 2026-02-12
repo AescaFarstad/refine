@@ -27,7 +27,7 @@
               <td>{{ row.hp }}</td>
               <td>{{ row.damage }}</td>
               <td>{{ row.hitPct }}%</td>
-              <td>{{ row.blockPct }}%</td>
+              <td>{{ row.blockPct }}%<span v-if="row.blockPctRaw !== row.blockPct" class="raw-pct"> ({{ row.blockPctRaw }}% more)</span></td>
               <td>
                 <template v-for="(ability, idx) in getAbilities(row)" :key="ability.name">
                   <span v-if="idx > 0">, </span>
@@ -79,6 +79,7 @@ interface MonsterRow {
   canRetaliate: boolean;
   armor: number;
   damageCap: number;
+  blockPctRaw: number;
 }
 
 function clamp01(v: number): number { return Math.max(0, Math.min(100, Math.round(v))); }
@@ -101,7 +102,8 @@ const monsterRows = computed<MonsterRow[]>(() => {
   for (const id of Object.keys(counts)) {
     const m = lib.monsters.get(id)!;
     const hit = clamp01(hitBase - Math.max(0, Math.min(100, m.dodge)));
-    const block = clamp01(blockBase - Math.max(0, Math.min(100, m.accuracy)));
+    const blockRaw = Math.round(blockBase - Math.max(0, Math.min(100, m.accuracy)));
+    const block = clamp01(blockRaw);
     const canSummon = m.features.includes(FEATURE_SUMMON);
     const canSummon2 = m.features.includes(FEATURE_SUMMON2);
     const canSelfDestruct = m.features.includes(FEATURE_SELF_DESTRUCT);
@@ -122,6 +124,7 @@ const monsterRows = computed<MonsterRow[]>(() => {
       canRetaliate,
       armor,
       damageCap,
+      blockPctRaw: blockRaw,
     });
   }
   rows.sort((a, b) => (a.name < b.name ? -1 : 1));
@@ -209,6 +212,10 @@ function getAbilities(row: MonsterRow): Ability[] {
 .ability-label:hover::after,
 .ability-label:hover::before {
   opacity: 1;
+}
+
+.raw-pct {
+  opacity: 0.45;
 }
 
 .discover-container {

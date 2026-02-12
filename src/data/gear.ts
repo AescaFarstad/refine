@@ -404,7 +404,7 @@ const gear: Record<string, RawGearDefinition> = {
     name: 'Shotgun',
     category: 'ranged_weapons',
     damage: 2,
-    chanceToHit: 40,
+    chanceToHit: 35,
     price: 200,
     weight: 4,
     image: 'shotgun',
@@ -421,7 +421,7 @@ const gear: Record<string, RawGearDefinition> = {
   armor_plates: {
     name: 'Armor Plates',
     category: 'armor',
-    chanceToBlock: 20,
+    chanceToBlock: 25,
     price: 120,
     weight: 4,
     image: 'armor_plates',

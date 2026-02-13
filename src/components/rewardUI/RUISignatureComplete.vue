@@ -11,7 +11,10 @@
           </div>
         </div>
         <p class="completion-text">
-          Signature complete. It gives a permanent <span class="bonus-value">{{ yieldBonusPct }}%</span> yield bonus.
+          Signature complete.
+          <template v-if="rewardParts.length > 0">
+            Permanent bonus: <span class="bonus-value">{{ rewardParts.join(', ') }}</span>.
+          </template>
         </p>
       </div>
       <footer class="modal-actions">
@@ -26,7 +29,7 @@ import { computed } from 'vue';
 import { uiState } from '../../logic/UIState';
 import atlasStorage from '../../logic/AtlasStorage';
 import type { Reward } from '../../logic/Reward';
-import { SIGNATURE_YIELD_BONUS_PCT } from '../../logic/Const';
+import type { SignatureDefinition } from '../../logic/SignatureLib';
 
 const props = defineProps<{
   params?: { signatureIds?: string[] };
@@ -36,14 +39,40 @@ const emit = defineEmits<{
   close: [rewards?: Reward[]]
 }>();
 
-const yieldBonusPct = SIGNATURE_YIELD_BONUS_PCT;
-
 const completedSignatures = computed(() => {
   if (!uiState.lib) return [];
   const ids = props.params?.signatureIds ?? [];
   return ids
     .map(id => uiState.lib!.signatures.get(id))
-    .filter(Boolean) as { id: string; name: string }[];
+    .filter(Boolean) as SignatureDefinition[];
+});
+
+const rewardParts = computed(() => {
+  let totalYieldBonus = 0;
+  let totalSuccessBonus = 0;
+  let totalSpeedBonus = 0;
+  let otherRewardCount = 0;
+
+  for (const sig of completedSignatures.value) {
+    for (const reward of sig.rewards) {
+      if (reward.kind === 'refining_yield_pct_bonus') {
+        totalYieldBonus += reward.amount;
+      } else if (reward.kind === 'refining_success_chance_bonus') {
+        totalSuccessBonus += reward.amount;
+      } else if (reward.kind === 'refining_speed_pct_bonus') {
+        totalSpeedBonus += reward.amount;
+      } else {
+        otherRewardCount++;
+      }
+    }
+  }
+
+  const parts: string[] = [];
+  if (totalYieldBonus > 0) parts.push(`+${totalYieldBonus}% yield`);
+  if (totalSuccessBonus > 0) parts.push(`+${totalSuccessBonus}% success chance`);
+  if (totalSpeedBonus > 0) parts.push(`+${totalSpeedBonus}% refining speed`);
+  if (otherRewardCount > 0) parts.push(`${otherRewardCount} extra reward${otherRewardCount > 1 ? 's' : ''}`);
+  return parts;
 });
 
 const gridClass = computed(() => {

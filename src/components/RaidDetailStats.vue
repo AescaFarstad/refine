@@ -1,14 +1,63 @@
 <template>
   <div class="stat-line">
-    <div :class="['stat', hpFlashClass]"><span class="label">Health</span> <span class="value">{{ hp }} ❤︎</span></div>
-    <div :class="['stat', damageFlashClass]"><span class="label">Damage</span> <span class="value">{{ damage }} ✴</span></div>
-    <div :class="['stat', bagsFlashClass]"><span class="label">Bags</span> <span class="value">{{ bagsCapacity }} ⌞ ⌝</span></div>
+    <div class="stat-shell">
+      <div :class="['stat', hpFlashClass]">
+        <span :class="['label', 'stat-caption', { 'stat-caption--hintable': healthHintRows.length > 0 }]">Health</span>
+        <span class="value">{{ hp }} ❤︎</span>
+      </div>
+      <div v-if="healthHintRows.length > 0" class="stat-hint" role="tooltip" aria-hidden="true">
+        <div v-for="(row, i) in healthHintRows" :key="`health-${i}`" class="hint-row">
+          <span class="hint-label">{{ row.label }}</span>
+          <span class="hint-value">{{ row.value }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="stat-shell">
+      <div :class="['stat', damageFlashClass]">
+        <span :class="['label', 'stat-caption', { 'stat-caption--hintable': damageHintRows.length > 0 }]">Damage</span>
+        <span class="value">{{ damage }} ✴</span>
+      </div>
+      <div v-if="damageHintRows.length > 0" class="stat-hint" role="tooltip" aria-hidden="true">
+        <div v-for="(row, i) in damageHintRows" :key="`damage-${i}`" class="hint-row">
+          <span class="hint-label">{{ row.label }}</span>
+          <span class="hint-value">{{ row.value }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="stat-shell">
+      <div :class="['stat', bagsFlashClass]">
+        <span :class="['label', 'stat-caption', { 'stat-caption--hintable': bagsHintRows.length > 0 }]">Bags</span>
+        <span class="value">{{ bagsCapacity }} ⌞ ⌝</span>
+      </div>
+      <div v-if="bagsHintRows.length > 0" class="stat-hint" role="tooltip" aria-hidden="true">
+        <div v-for="(row, i) in bagsHintRows" :key="`bags-${i}`" class="hint-row">
+          <span class="hint-label">{{ row.label }}</span>
+          <span class="hint-value">{{ row.value }}</span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch, type Ref } from 'vue';
 import { uiState, getGameState } from '../logic/UIState';
+
+type HintRow = { label: string; value: string };
+
+interface RaidHintStats {
+  regenPerKm: number;
+  regenAfterCombat: number;
+  regenPer10Minutes: number;
+  hitChanceBonus: number;
+  blockChanceBonus: number;
+  attackSkipCount: number;
+  reflectOnHitPct: number;
+  reflectOnBlockPct: number;
+  stunChance: number;
+  lootChance: number;
+  rarityBuff: number;
+}
 
 const hp = computed(() => {
   uiState.raidKey;
@@ -27,6 +76,65 @@ const bagsCapacity = computed(() => {
   uiState.volume;
   const gs = getGameState();
   return Math.max(0, gs.raid.bagsVolume);
+});
+
+const raidHintStats = computed<RaidHintStats>(() => {
+  uiState.raidKey;
+  const gs = getGameState();
+  return {
+    regenPerKm: gs.raid.regenPerKm,
+    regenAfterCombat: gs.raid.regenAfterCombat,
+    regenPer10Minutes: gs.raid.regenPer10Minutes,
+    hitChanceBonus: gs.raid.hitChance - gs.chanceToHit,
+    blockChanceBonus: gs.raid.blockChance - gs.chanceToBlock,
+    attackSkipCount: gs.raid.attackSkipCount,
+    reflectOnHitPct: gs.raid.reflectOnHitPct,
+    reflectOnBlockPct: gs.raid.reflectOnBlockPct,
+    stunChance: gs.raid.stunChance,
+    lootChance: gs.raid.lootChanceBonus,
+    rarityBuff: gs.raid.rarityBuff,
+  };
+});
+
+function fmtSigned(n: number, suffix = ''): string {
+  if (n > 0) return `+${n}${suffix}`;
+  if (n < 0) return `${n}${suffix}`;
+  return `0${suffix}`;
+}
+
+function fmtPercent(n: number): string {
+  const rounded = Math.round(n * 10) / 10;
+  if (Number.isInteger(rounded)) return `${rounded}%`;
+  return `${rounded.toFixed(1)}%`;
+}
+
+const healthHintRows = computed<HintRow[]>(() => {
+  const g = raidHintStats.value;
+  const rows: HintRow[] = [];
+  if (g.regenPerKm) rows.push({ label: 'Regen', value: `${fmtSigned(g.regenPerKm)} hp/km` });
+  if (g.regenAfterCombat) rows.push({ label: 'Regen after combat', value: `${fmtSigned(g.regenAfterCombat)} hp` });
+  if (g.regenPer10Minutes) rows.push({ label: 'Regen per 10 min', value: `${fmtSigned(g.regenPer10Minutes)} hp` });
+  if (g.blockChanceBonus) rows.push({ label: 'Block chance bonus', value: fmtSigned(g.blockChanceBonus, '%') });
+  if (g.attackSkipCount) rows.push({ label: 'Attack skips', value: fmtSigned(g.attackSkipCount) });
+  return rows;
+});
+
+const damageHintRows = computed<HintRow[]>(() => {
+  const g = raidHintStats.value;
+  const rows: HintRow[] = [];
+  if (g.hitChanceBonus) rows.push({ label: 'Hit chance bonus', value: fmtSigned(g.hitChanceBonus, '%') });
+  if (g.reflectOnHitPct) rows.push({ label: 'Reflect on hit', value: fmtSigned(g.reflectOnHitPct, '%') });
+  if (g.reflectOnBlockPct) rows.push({ label: 'Reflect on block', value: fmtSigned(g.reflectOnBlockPct, '%') });
+  if (g.stunChance > 0) rows.push({ label: 'Stun chance', value: fmtPercent(g.stunChance) });
+  return rows;
+});
+
+const bagsHintRows = computed<HintRow[]>(() => {
+  const g = raidHintStats.value;
+  const rows: HintRow[] = [];
+  if (g.lootChance) rows.push({ label: 'Loot chance', value: fmtSigned(g.lootChance, '%') });
+  if (g.rarityBuff) rows.push({ label: 'Loot rarity', value: fmtSigned(g.rarityBuff) });
+  return rows;
 });
 
 const hpFlashClass = ref('');
@@ -69,6 +177,7 @@ watch(bagsCapacity, (next, prev) => {
 
 <style scoped>
 .stat-line { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 12px; }
+.stat-shell { position: relative; }
 .stat {
   position: relative;
   isolation: isolate;
@@ -98,6 +207,57 @@ watch(bagsCapacity, (next, prev) => {
   position: relative;
   z-index: 1;
 }
+.stat-caption {
+  cursor: default;
+}
+.stat-caption--hintable {
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 3px;
+}
+.stat-hint {
+  position: absolute;
+  top: calc(100% + 10px);
+  bottom: auto;
+  left: 50%;
+  transform: translateX(-50%);
+  visibility: hidden;
+  opacity: 0;
+  z-index: 3000;
+  background: var(--hint-bg, rgba(10, 14, 20, 0.95));
+  border: 1px solid var(--hint-border, rgba(255, 255, 255, 0.15));
+  border-radius: 4px;
+  padding: 10px 12px;
+  min-width: 250px;
+  width: max-content;
+  max-width: min(90vw, 420px);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transition: opacity 120ms ease;
+}
+.stat-hint::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 7px solid var(--hint-bg, rgba(10, 14, 20, 0.95));
+  filter: drop-shadow(0 -1px 0 var(--hint-border, rgba(255, 255, 255, 0.15)));
+}
+.stat-shell:has(.stat-hint):has(.stat-caption:hover) {
+  z-index: 3100;
+}
+.stat-shell:has(.stat-hint):has(.stat-caption:hover) .stat-hint {
+  visibility: visible;
+  opacity: 1;
+}
 .stat.flash-up::after {
   background: radial-gradient(circle, rgba(156, 180, 208, 0.96) 0%, rgba(156, 180, 208, 0.72) 42%, rgba(156, 180, 208, 0) 74%);
   animation: stat-flash-up 700ms ease-out;
@@ -114,6 +274,25 @@ watch(bagsCapacity, (next, prev) => {
 }
 .stat .label { color: var(--text-secondary); font-size: 14px; text-transform: uppercase; letter-spacing: 0.06em; margin-right: 0; }
 .stat .value { font-weight: 800;  font-size: 18px; }
+.hint-row {
+  white-space: nowrap;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 8px;
+  align-items: baseline;
+  margin: 2px 0;
+}
+.hint-label {
+  color: var(--text-secondary);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  font-weight: 800;
+}
+.hint-value {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 800;
+}
 
 @keyframes stat-flash-up {
   0% { opacity: 0; transform: translate(-50%, -50%) scale(0.08); }

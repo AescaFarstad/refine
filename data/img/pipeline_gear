@@ -7,23 +7,13 @@
 ]
 
 {
-  image:ChatGPT Image Nov 30, 2025, 03_38_22 PM.png
-  content:ak_rifle vest2 reckon_drone2 frag_grenade
-}
-
-{
-  image:ChatGPT Image Nov 30, 2025, 03_40_27 PM.png
-  content:revolver spring_boots flash_grenade _
-}
-
-{
   image:ChatGPT Image Nov 30, 2025, 03_46_17 PM.png
-  content:case rucksack aspirator_probe robodog3
+  content:_ rucksack aspirator_probe _
 }
 
 {
   image:ChatGPT Image Nov 30, 2025, 03_46_36 PM.png
-  content:spear backpack fist _
+  content:_ backpack _ _
 }
 
 {
@@ -33,17 +23,12 @@
 
 {
   image:ChatGPT Image Nov 30, 2025, 03_51_34 PM.png
-  content:helmet2 armor_plates2 cargo_harness _
+  content:helmet2 _ cargo_harness _
 }
 
 {
   image:ChatGPT Image Nov 30, 2025, 03_52_17 PM.png
-  content:band_aid medkit injector _
-}
-
-{
-  image:ChatGPT Image Nov 30, 2025, 03_52_45 PM.png
-  content:scope laser_sight _ _
+  content:band_aid medkit _ _
 }
 
 {
@@ -73,7 +58,7 @@
 
 {
   image:ChatGPT Image Jan 4, 2026, 02_55_55 PM.png
-  content:loupe wall binoculars eye
+  content:loupe wall _ eye
 }
 
 {
@@ -181,8 +166,63 @@
   content: puzzle syringes carcass gear
 }
 
-#start
 {
   image:ChatGPT Image Jan 17, 2026, 04_55_28 PM.png
   content: quartz vein bismuth salt
+}
+
+{
+  image:ChatGPT Image Feb 13, 2026, 10_48_57 PM.png
+  content: tesseract crate _ _
+}
+
+{
+  image:ChatGPT Image Feb 13, 2026, 11_15_56 PM2.png
+  content: flare_gun axe sledgehammer_plain stims
+}
+
+{
+  image:ChatGPT Image Feb 13, 2026, 11_22_00 PM.png
+  content: camo_cloak _ chest _
+}
+
+{
+  image:ChatGPT Image Feb 13, 2026, 11_32_28 PM.png
+  content: entrace_1 entrance_2 espace x_mark
+}
+
+#start
+{
+  image:ChatGPT Image Feb 13, 2026, 11_37_52 PM.png
+  content: sledgehammer hammer3 hammer_mini hammer2
+}
+
+{
+  image:ChatGPT Image Feb 14, 2026, 12_08_06 AM2.png
+  content: kukri binoculars scope laser_sight
+}
+
+{
+  image:ChatGPT Image Feb 13, 2026, 11_52_42 PM.png
+  content: _ _ _ ambulance_case
+}
+
+{
+  image:ChatGPT Image Feb 13, 2026, 11_56_41 PM.png
+  content: _ armor_plates3 _ sack
+}
+
+{
+  image:ChatGPT Image Feb 13, 2026, 11_50_19 PM2.png
+  content: walking_stick _ scaffold toolbox
+}
+
+{
+  image:ChatGPT Image Feb 13, 2026, 11_48_45 PM.png
+  content: _ resupply spear _
+}
+
+{
+  image:ChatGPT Image Feb 13, 2026, 11_48_38 PM.png
+  content: poison _ bio_hazard _
 }

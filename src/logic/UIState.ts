@@ -135,6 +135,7 @@ function createDefaultUIState() {
     shardPickupGraceSec: 0,
     shardPhysics: new Map<string, ShardPhysics>(),
     waferVersion: 0,
+    refinePreviewVersion: 0,
 
     mazeLevelIndex: 0,
     mazeKeysCollected: 0,
@@ -177,6 +178,9 @@ interface UISyncCache {
   lastRaidKey: string;
   lastWaferItemCount: number;
   lastWaferEnabledCount: number;
+  lastRefiningYieldPctBonus: number;
+  lastRefiningSuccessChanceBonus: number;
+  lastRefiningSpeedPctBonus: number;
   lastRaidFoundItemsVersion: number;
   lastUnlockedRaidIdsKey: string;
   lastInventoryItemCount: number;
@@ -188,6 +192,9 @@ const SYNC_CACHE_DEFAULTS: UISyncCache = {
   lastRaidKey: '',
   lastWaferItemCount: 0,
   lastWaferEnabledCount: 0,
+  lastRefiningYieldPctBonus: Number.NaN,
+  lastRefiningSuccessChanceBonus: Number.NaN,
+  lastRefiningSpeedPctBonus: Number.NaN,
   lastRaidFoundItemsVersion: -1,
   lastUnlockedRaidIdsKey: '',
   lastInventoryItemCount: -1,
@@ -419,6 +426,17 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.shards = game.shards.filter(s => s !== null);
   uiState.shardPickupGraceSec = game.shardPickupGraceSec || 0;
   uiState.waferUpgradesPurchased = game.waferUpgradesPurchased || 0;
+
+  if (
+    game.refiningYieldPctBonus !== syncCache.lastRefiningYieldPctBonus ||
+    game.refiningSuccessChanceBonus !== syncCache.lastRefiningSuccessChanceBonus ||
+    game.refiningSpeedPctBonus !== syncCache.lastRefiningSpeedPctBonus
+  ) {
+    uiState.refinePreviewVersion++;
+    syncCache.lastRefiningYieldPctBonus = game.refiningYieldPctBonus;
+    syncCache.lastRefiningSuccessChanceBonus = game.refiningSuccessChanceBonus;
+    syncCache.lastRefiningSpeedPctBonus = game.refiningSpeedPctBonus;
+  }
 
   if (game.wafer) {
     const currentItemCount = Array.isArray(game.wafer.items) ? game.wafer.items.filter(item => item !== null).length : 0;

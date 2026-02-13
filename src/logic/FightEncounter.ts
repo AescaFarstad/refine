@@ -1,7 +1,7 @@
 import type { ActiveRaid, GameState } from './GameState';
 import { createFightEncounterLogEntry, type FightEncounterLogEntry, type FightEvent, type LootEncounterLogEntry } from './RaidLog';
 import Perks from './Perks';
-import { FEATURE_SUMMON, FEATURE_SUMMON2, FEATURE_SELF_DESTRUCT, FEATURE_RETALIATES, SUMMON_CHANCE_PER_ROUND, SUMMON_CHANCE_PER_ROUND2 } from './MonsterFeatures';
+import { FEATURE_SUMMON, FEATURE_SUMMON2, FEATURE_SELF_DESTRUCT, SUMMON_CHANCE_PER_ROUND, SUMMON_CHANCE_PER_ROUND2 } from './MonsterFeatures';
 import { REGEN_INTERVAL_SEC } from './Const';
 
 function clamp(v: number, lo: number, hi: number): number { return Math.max(lo, Math.min(hi, v)); }
@@ -70,6 +70,19 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
   const { monsterId, injected, regenPer10Minutes, elapsedTimeBeforeFight, nextRegenThresholdSec: inputNextThreshold } = ctx;
   const m = gs.lib.monsters.get(monsterId)!;
   const monsterName = m.name;
+  const hasCamouflage = r.perks.includes(Perks.CAMOUFLAGE);
+  if (hasCamouflage && Math.floor(gs.random.get() * 100) < 10) {
+    const entry: FightEncounterLogEntry & { monsterId: string; monsterName: string; timeSpentSec: number } = createFightEncounterLogEntry({
+      monsterId,
+      monsterName,
+      skipped: true,
+      skipReason: 'camouflage',
+      injected,
+      timeSpentSec: 0,
+      elapsedTotalSec: elapsedTimeBeforeFight,
+    });
+    return { entry, timeSpentSec: 0, extras: [], summonedMonsterId: null, nextRegenThresholdSec: inputNextThreshold };
+  }
   let monsterHp = m.hp;
 
   const baseHit = r.hitChance;
@@ -79,24 +92,20 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
   const theirAccuracy = m.accuracy;
   const theirDamage = m.damage;
 
-  const roundTime = 60 + (r.perks.includes(Perks.CAREFUL_MANEUVERING) ? 60 : 0);
-  const hasStun = r.perks.includes(Perks.STUN);
+  const roundTime = 60 + (r.perks.includes(Perks.AIMING) ? 60 : 0);
   const canSummon = m.features.includes(FEATURE_SUMMON);
   const canSummon2 = m.features.includes(FEATURE_SUMMON2);
   const canSelfDestruct = m.features.includes(FEATURE_SELF_DESTRUCT);
-  const canRetaliate = m.features.includes(FEATURE_RETALIATES);
-  const armor = m.armor;
+  const armor = r.perks.includes(Perks.ARMOR_PIERCING) ? Math.floor(m.armor / 2) : m.armor;
   const damageCap = m.damageCap;
 
   const fightLog: FightEvent[] = [];
   let totalTime = 0;
   let dieFromOvertime = false;
   let biopsyTriggered = false;
-  let stunTriggered = false;
   let summonedMonsterId: string | null = null;
   let monsterSelfDestructed = false;
-  const hasDecoy = r.perks.includes(Perks.DECOY);
-  let decoyUsed = false;
+  let remainingAttackSkips = r.attackSkipCount;
 
   let fightTimeSec = 0; // Time elapsed during this fight only
   let nextRegenThresholdSec = inputNextThreshold;
@@ -105,9 +114,7 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
     const myHpBefore = r.hp;
     const theirHpBefore = monsterHp;
 
-    // Apply stun bonus if triggered
-    const stunBonus = (hasStun && stunTriggered) ? 25 : 0;
-    const hitCheck = clamp(baseHit + stunBonus - theirDodge, 0, 100);
+    const hitCheck = clamp(baseHit - theirDodge, 0, 100);
     const myRoll = Math.floor(gs.random.get() * 100);
 
     if (myRoll <= hitCheck) {
@@ -117,32 +124,25 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
       dmg = Math.max(0, dmg - armor);
       const theirHpAfter = theirHpBefore - dmg;
 
-      // Trigger stun on first successful hit with 50% probability (can only happen once per fight)
-      // But only if the enemy survives this hit
-      let stunJustTriggered = false;
-      let hitChanceBefore = baseHit - theirDodge;
-      let hitChanceAfter = baseHit - theirDodge;
-      if (hasStun && !stunTriggered && theirHpAfter > 0 && Math.floor(gs.random.get() * 100) < 50) {
-        stunTriggered = true;
-        stunJustTriggered = true;
-        // Calculate actual hit chances (not clamped) for display
-        hitChanceAfter = baseHit + 25 - theirDodge;
-      }
+      // Roll for stun on landed hit: stunned monsters don't retaliate.
+      const stunThisRound = theirHpAfter > 0 && Math.floor(gs.random.get() * 100) < r.stunChance;
 
-      // If monster has retaliate feature, they counter-attack even though we hit (unless they died)
+      // Monster counter-attacks when it survives the hit and isn't stunned
       let theirHit = 0;
       let blockCheck = 0;
       let blocked = false;
       let received = 0;
-      if (canRetaliate && theirHpAfter > 0) {
+      let attackSkipTriggered = false;
+      const monsterAttacked = theirHpAfter > 0 && !stunThisRound;
+      if (monsterAttacked) {
         blockCheck = clamp(baseBlock - theirAccuracy, 0, 100);
         theirHit = Math.floor(gs.random.get() * 100);
         blocked = (theirHit <= blockCheck);
         received = blocked ? 0 : theirDamage;
-        // Decoy: first successful enemy hit deals no damage
-        if (received > 0 && hasDecoy && !decoyUsed) {
+        if (received > 0 && remainingAttackSkips > 0) {
           received = 0;
-          decoyUsed = true;
+          attackSkipTriggered = true;
+          remainingAttackSkips -= 1;
         }
       }
       const myHpAfter = myHpBefore - received;
@@ -155,7 +155,8 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         summonedMonsterId = monsterId;
         summonJustTriggered = true;
       }
-      const totalElapsedAfterRound = elapsedTimeBeforeFight + fightTimeSec + roundTime;
+      const thisRoundTime = roundTime + (monsterAttacked ? 60 : 0);
+      const totalElapsedAfterRound = elapsedTimeBeforeFight + fightTimeSec + thisRoundTime;
       const regen = applyTimeRegen(r, regenPer10Minutes, totalElapsedAfterRound, nextRegenThresholdSec);
       nextRegenThresholdSec = regen.nextRegenThresholdSec;
       const ev: FightEvent = {
@@ -166,7 +167,7 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         theirHitValue: theirHit,
         myBlockRoll: blockCheck,
         damageReceived: received,
-        timeSpentSec: roundTime,
+        timeSpentSec: thisRoundTime,
         elapsedTotalSec: 0,
         biopsyTriggered: false,
         theirHpBefore,
@@ -175,9 +176,9 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         myHpAfter: r.hp, // Use updated HP after regen
         blocked,
         hitLanded: true,
-        stunTriggered: stunJustTriggered,
-        hitChanceBefore,
-        hitChanceAfter,
+        stunTriggered: stunThisRound,
+        monsterStunned: stunThisRound,
+        attackSkipTriggered,
         summonTriggered: summonJustTriggered,
         selfDestructed: false,
         timeRegenHealed: regen.healed,
@@ -186,8 +187,8 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         timeRegenDurationSec: regen.ticksCrossed * REGEN_INTERVAL_SEC,
       };
       fightLog.push(ev);
-      totalTime += roundTime;
-      fightTimeSec += roundTime;
+      totalTime += thisRoundTime;
+      fightTimeSec += thisRoundTime;
       monsterHp = theirHpAfter;
       if (r.hp <= 0) {
         // Defeat from counterattack
@@ -210,10 +211,11 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
       const theirHit = Math.floor(gs.random.get() * 100);
       const blocked = (theirHit <= blockCheck);
       let received = blocked ? 0 : theirDamage;
-      // Decoy: first successful enemy hit deals no damage
-      if (received > 0 && hasDecoy && !decoyUsed) {
+      let attackSkipTriggered = false;
+      if (received > 0 && remainingAttackSkips > 0) {
         received = 0;
-        decoyUsed = true;
+        attackSkipTriggered = true;
+        remainingAttackSkips -= 1;
       }
       const myHpAfter = myHpBefore - received;
       // Reflective damage (from gear) is based on monster base damage in both cases
@@ -248,7 +250,8 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         summonJustTriggered = true;
       }
       r.hp = myHpAfter;
-      const totalElapsedAfterRound = elapsedTimeBeforeFight + fightTimeSec + roundTime;
+      const thisRoundTime = roundTime + 60; // monster always counter-attacks on miss
+      const totalElapsedAfterRound = elapsedTimeBeforeFight + fightTimeSec + thisRoundTime;
       const regen = applyTimeRegen(r, regenPer10Minutes, totalElapsedAfterRound, nextRegenThresholdSec);
       nextRegenThresholdSec = regen.nextRegenThresholdSec;
       const ev: FightEvent = {
@@ -257,7 +260,7 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         // Player missed this round; any outgoing damage is reflection and logged separately
         damageDealt: 0,
         reflectedDamage: reflect,
-        timeSpentSec: roundTime,
+        timeSpentSec: thisRoundTime,
         elapsedTotalSec: 0,
         biopsyTriggered: false,
         theirHitValue: theirHit,
@@ -270,8 +273,8 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         blocked,
         hitLanded: false,
         stunTriggered: false,
-        hitChanceBefore: 0,
-        hitChanceAfter: 0,
+        monsterStunned: false,
+        attackSkipTriggered,
         summonTriggered: summonJustTriggered,
         selfDestructed: selfDestructTriggered,
         timeRegenHealed: regen.healed,
@@ -280,8 +283,8 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         timeRegenDurationSec: regen.ticksCrossed * REGEN_INTERVAL_SEC,
       };
       fightLog.push(ev);
-      totalTime += roundTime;
-      fightTimeSec += roundTime;
+      totalTime += thisRoundTime;
+      fightTimeSec += thisRoundTime;
       if (r.hp <= 0) {
         // Defeat
         break;

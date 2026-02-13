@@ -15,16 +15,16 @@
 
         <div class="note-row stun-note" v-if="ev.stunTriggered" v-html="stunLine(ev)"></div>
 
-        <template v-if="!ev.hitLanded || (ev.hitLanded && ev.theirHitValue > 0)">
+        <template v-if="!ev.monsterStunned && (!ev.hitLanded || (ev.hitLanded && ev.theirHitValue > 0))">
           <div class="fr-grid">
             <div class="cell who">They</div>
-            <div class="cell outcome" :class="(!ev.blocked && ev.damageReceived > 0) ? 'hit-they' : 'miss-they'"><strong>{{ ev.selfDestructed ? 'EXPLODE!' : ((!ev.blocked && ev.damageReceived > 0) ? 'HIT!' : 'MISS!') }}</strong></div>
+            <div class="cell outcome" :class="enemyAttackHit(ev) ? 'hit-they' : 'miss-they'"><strong>{{ enemyAttackOutcome(ev) }}</strong></div>
             <div class="cell roll">
               <span class="roll-target">{{ ev.myBlockRoll }}</span>
               <span class="roll-vs">vs</span>
               <span class="roll-self">{{ ev.theirHitValue }}</span>
             </div>
-            <div class="cell after" v-html="(!ev.blocked && ev.damageReceived > 0) ? hpChange('your', ev.myHpBefore, ev.myHpAfter) : ''"></div>
+            <div class="cell after" v-html="enemyAttackAfter(ev)"></div>
           </div>
 
           <div class="note-row reflect-note" v-if="ev.reflectedDamage > 0" v-html="reflectLine(ev)"></div>
@@ -40,7 +40,7 @@
   </div>
   <div class="note-row" v-show="entry.dieFromOvertime && shownStep >= overtimeStep">You die of overexertion.</div>
   <div class="note-row biopsy-note" v-show="useBiopsy && shownStep >= biopsyStep">You examine their body...</div>
-  <div class="note-row skipped-note dimmed" v-if="entry.skipped">You managed to walk around the {{ entry.monsterName }}.</div>
+  <div class="note-row skipped-note dimmed" v-if="entry.skipped">{{ skippedMessage(entry) }}</div>
 </template>
 
 <script setup lang="ts">
@@ -77,10 +77,23 @@ function reflectLine(ev: FightEvent): string {
   return `They take reflected damage on ${on}. ${hpChange('their', ev.theirHpBefore, ev.theirHpAfter, true)}`;
 }
 
-function stunLine(ev: FightEvent): string {
-  const before = ev.hitChanceBefore;
-  const after = ev.hitChanceAfter;
-  return `You stun the target. Chance to hit them: <b>${before}</b> → <b>${after}</b>`;
+function stunLine(_ev: FightEvent): string {
+  return `You stun the target. The enemy can't retaliate!`;
+}
+
+function enemyAttackHit(ev: FightEvent): boolean {
+  return ev.selfDestructed || (!ev.blocked && (ev.damageReceived > 0 || ev.attackSkipTriggered));
+}
+
+function enemyAttackOutcome(ev: FightEvent): string {
+  if (ev.selfDestructed) return 'EXPLODE!';
+  return enemyAttackHit(ev) ? 'HIT!' : 'MISS!';
+}
+
+function enemyAttackAfter(ev: FightEvent): string {
+  if (!ev.blocked && ev.damageReceived > 0) return hpChange('your', ev.myHpBefore, ev.myHpAfter);
+  if (ev.attackSkipTriggered) return '<span class="damage-negated">Damage negated</span>';
+  return '';
 }
 
 function biopsyUsed(entry: FightEncounterLogEntry): boolean {
@@ -93,8 +106,16 @@ function formatDuration(sec: number): string {
   if (m === 1) return '1 minute';
   return `${m} minutes`;
 }
+
+function skippedMessage(entry: FightEncounterLogEntry): string {
+  if (entry.skipReason === 'camouflage') {
+    return 'Thanks to the camouflage you bypassed this one unnoticed.';
+  }
+  return `You managed to walk around the ${entry.monsterName}.`;
+}
 </script>
 
 <style scoped>
 .time-regen-note { margin-top: 8px; }
+:deep(.damage-negated) { opacity: 0.6; }
 </style>

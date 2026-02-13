@@ -108,6 +108,9 @@ export async function ensureMoleculeAtlas(): Promise<void> {
     for (const sig of signatures.values()) {
       // Signatures panel (pre-rendered "known" and "unknown")
       {
+        const signatureCardW = 90;
+        const signatureCardH = 90;
+
         const drawSignatureMolecule = (ctx: CanvasRenderingContext2D, completed: boolean, canvasW: number, canvasH: number): void => {
           ctx.clearRect(0, 0, canvasW, canvasH);
 
@@ -170,8 +173,8 @@ export async function ensureMoleculeAtlas(): Promise<void> {
 
         // Known, incomplete
         {
-          const canvasW = 80;
-          const canvasH = 90;
+          const canvasW = signatureCardW;
+          const canvasH = signatureCardH;
           packed.push({
             key: `sig:card:open:${sig.id}`,
             w: canvasW,
@@ -187,8 +190,8 @@ export async function ensureMoleculeAtlas(): Promise<void> {
 
         // Known, completed
         {
-          const canvasW = 80;
-          const canvasH = 90;
+          const canvasW = signatureCardW;
+          const canvasH = signatureCardH;
           packed.push({
             key: `sig:card:done:${sig.id}`,
             w: canvasW,
@@ -206,8 +209,8 @@ export async function ensureMoleculeAtlas(): Promise<void> {
         {
           if (!unknownSigColorsRendered.has(sig.color)) {
             unknownSigColorsRendered.add(sig.color);
-            const canvasW = 80;
-            const canvasH = 90;
+            const canvasW = signatureCardW;
+            const canvasH = signatureCardH;
             packed.push({
               key: `sig:card:unknownColor:${sig.color}`,
               w: canvasW,

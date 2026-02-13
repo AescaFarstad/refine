@@ -10,14 +10,27 @@
   </template>
   <template v-else>
     <template v-if="isMonsterLoot && entry.biopsyChance > 0 && !entry.biopsySuccess && shownStep >= 1">
-      <div class="note-row dimmed">The monster's remains were scattered or spoiled (<b>{{ entry.biopsyChance }}</b> vs {{ entry.biopsyRoll }})</div>
+      <div class="note-row dimmed" v-if="entry.explosiveTriggered">
+        The monster's remains were spoiled by explosion (<b>{{ entry.explosiveChance }}</b> vs {{ entry.explosiveRoll }}). Biopsy was not attempted.
+      </div>
+      <div class="note-row dimmed" v-else-if="entry.explosiveChance > 0">
+        Explosive check passed (<b>{{ entry.explosiveChance }}</b> vs {{ entry.explosiveRoll }}), but biopsy failed (<b>{{ entry.biopsyChance }}</b> vs {{ entry.biopsyRoll }}).
+      </div>
+      <div class="note-row dimmed" v-else>
+        The monster's remains were scattered or spoiled (<b>{{ entry.biopsyChance }}</b> vs {{ entry.biopsyRoll }})
+      </div>
     </template>
     <template v-else>
       <div class="loot-cols" :class="{ hasItem: !!entry.itemId && shownStep >= 1 }">
         <div class="lc col1">
           <template v-if="shownStep >= 1">
             <template v-if="isMonsterLoot && entry.biopsyChance > 0">
-              <div class="line outcome">Found <b>{{ itemName(entry.itemId) }}</b>! (<b>{{ entry.biopsyChance }}</b> vs {{ entry.biopsyRoll }})</div>
+              <div class="line outcome" v-if="entry.explosiveChance > 0">
+                Found <b>{{ itemName(entry.itemId) }}</b>! (explosive <b>{{ entry.explosiveChance }}</b> vs {{ entry.explosiveRoll }}, biopsy <b>{{ entry.biopsyChance }}</b> vs {{ entry.biopsyRoll }})
+              </div>
+              <div class="line outcome" v-else>
+                Found <b>{{ itemName(entry.itemId) }}</b>! (<b>{{ entry.biopsyChance }}</b> vs {{ entry.biopsyRoll }})
+              </div>
             </template>
             <template v-else>
               <template v-if="entry.itemId">

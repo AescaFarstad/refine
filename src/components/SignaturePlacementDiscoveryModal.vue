@@ -4,7 +4,7 @@
       <section class="modal-body">
         <div class="sig-display" :style="sigStyleTransform" />
         <div class="modal-text">
-          You've just created a signature pattern on the wafer. Successfully refining it will permanently improve wafer yields.
+          You've just created a signature pattern on the wafer. Successfully refining it will grant permanent rewards.
         </div>
       </section>
 

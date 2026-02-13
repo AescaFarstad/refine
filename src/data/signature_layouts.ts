@@ -73,6 +73,28 @@ const signatureLayouts: Record<string, RawSignatureLayoutDefinition> = {
       ],
     },
   },
+  insipre: {
+    molecule: {
+      atoms: [
+        { color: 'color_1', x: 1, y: -2 },
+        { color: 'color_1', x: 3, y: -2 },
+        { color: 'color_1', x: 0, y: -1 },
+        { color: 'color_1', x: 3, y: -1 },
+        { color: 'color_1', x: -1, y: 0 },
+        { color: 'color_1', x: 0, y: 0 },
+        { color: 'color_1', x: 2, y: 0 },
+        { color: 'color_1', x: 3, y: 0 },
+        { color: 'color_1', x: -2, y: 1 },
+        { color: 'color_1', x: 0, y: 1 },
+        { color: 'color_1', x: 1, y: 1 },
+        { color: 'color_1', x: 3, y: 1 },
+        { color: 'color_1', x: -1, y: 2 },
+        { color: 'color_1', x: 1, y: 2 },
+        { color: 'color_1', x: -2, y: 3 },
+        { color: 'color_1', x: 1, y: 3 },
+      ]
+    },
+  },
   up_trihex: {
     molecule: {
       atoms: [

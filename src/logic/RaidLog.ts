@@ -66,9 +66,9 @@ export interface FightEvent {
   myHpAfter: number;
   blocked: boolean;
   hitLanded: boolean;
-  stunTriggered: boolean;
-  hitChanceBefore: number;  // hit chance before stun bonus
-  hitChanceAfter: number;   // hit chance after stun bonus
+  stunTriggered: boolean;    // true when stun triggered this round
+  monsterStunned: boolean;   // true when monster was stunned and couldn't retaliate
+  attackSkipTriggered: boolean; // true when an incoming hit was negated by attackSkipCount
   summonTriggered: boolean; // true when monster summons another of its kind
   selfDestructed: boolean;  // true when monster self-destructs on successful attack
   timeRegenHealed: number;  // HP healed by time-based regen after this round (0 if none)
@@ -88,6 +88,7 @@ export interface FightEncounterLogEntry extends RaidLogEntryBase {
   selfDestructed: boolean; // true if the monster self-destructed (no corpse left)
   summoned: boolean; // true if this fight was summoned by another monster (doesn't count toward progress)
   skipped: boolean; // true if the fight was avoided (e.g., via Safer Routes perk)
+  skipReason: '' | 'safer_routes' | 'camouflage';
 }
 
 export interface LootEncounterLogEntry extends RaidLogEntryBase {
@@ -108,6 +109,9 @@ export interface LootEncounterLogEntry extends RaidLogEntryBase {
   biopsyChance: number;
   biopsyRoll: number;
   biopsySuccess: boolean;
+  explosiveChance: number;
+  explosiveRoll: number;
+  explosiveTriggered: boolean;
 }
 
 export interface MonsterLootEncounterLogEntry extends RaidLogEntryBase {
@@ -128,6 +132,9 @@ export interface MonsterLootEncounterLogEntry extends RaidLogEntryBase {
   biopsyChance: number;
   biopsyRoll: number;
   biopsySuccess: boolean;
+  explosiveChance: number;
+  explosiveRoll: number;
+  explosiveTriggered: boolean;
 }
 
 export interface ZoneCollapseLogEntry extends RaidLogEntryBase {
@@ -242,8 +249,8 @@ export function createFightEvent(init: Partial<FightEvent> = {}): FightEvent {
     blocked: false,
     hitLanded: false,
     stunTriggered: false,
-    hitChanceBefore: 0,
-    hitChanceAfter: 0,
+    monsterStunned: false,
+    attackSkipTriggered: false,
     summonTriggered: false,
     selfDestructed: false,
     timeRegenHealed: 0,
@@ -277,6 +284,7 @@ export function createFightEncounterLogEntry(init: Partial<FightEncounterLogEntr
     selfDestructed: false,
     summoned: false,
     skipped: false,
+    skipReason: '',
     ...rest,
   };
 }
@@ -311,6 +319,9 @@ export function createLootEncounterLogEntry(init: Partial<LootEncounterLogEntry>
     biopsyChance: 0,
     biopsyRoll: 0,
     biopsySuccess: false,
+    explosiveChance: 0,
+    explosiveRoll: 0,
+    explosiveTriggered: false,
     ...rest,
   };
 }
@@ -345,6 +356,9 @@ export function createMonsterLootEncounterLogEntry(init: Partial<MonsterLootEnco
     biopsyChance: 0,
     biopsyRoll: 0,
     biopsySuccess: false,
+    explosiveChance: 0,
+    explosiveRoll: 0,
+    explosiveTriggered: false,
     ...rest,
   };
 }

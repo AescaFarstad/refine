@@ -2,10 +2,35 @@ import type { Wafer, ReadonlyWafer } from './Wafer';
 import { getCell } from './Wafer';
 import type { SignatureDefinition, SignatureMolecule } from './SignatureLib';
 import type { Point2 } from './ItemLib';
+import type { RefiningRewardBonus } from './Reward';
 
 export interface WaferSignatureScanResult {
   newlyCompletedSignatureIds: string[];
   newSignatureMatches: Array<{ id: string; offset: Point2 }>;
+}
+
+function createRefiningRewardBonus(): RefiningRewardBonus {
+  return {
+    refiningYieldPctBonus: 0,
+    refiningSuccessChanceBonus: 0,
+    refiningSpeedPctBonus: 0,
+  };
+}
+
+export function sumSignatureRefiningRewards(signatures: readonly SignatureDefinition[]): RefiningRewardBonus {
+  const total = createRefiningRewardBonus();
+  for (const signature of signatures) {
+    for (const reward of signature.rewards) {
+      if (reward.kind === 'refining_yield_pct_bonus') {
+        total.refiningYieldPctBonus += reward.amount;
+      } else if (reward.kind === 'refining_success_chance_bonus') {
+        total.refiningSuccessChanceBonus += reward.amount;
+      } else if (reward.kind === 'refining_speed_pct_bonus') {
+        total.refiningSpeedPctBonus += reward.amount;
+      }
+    }
+  }
+  return total;
 }
 
 const essenceEquivalents: Record<string, string> = {

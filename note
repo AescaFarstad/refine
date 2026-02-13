@@ -72,7 +72,10 @@ february 8
   processing feedback, mostly UI tweaks, research nodes highlighting
 februrary 10
   save/loading
-
+february 12
+  re-balance, new perks
+february 13
+  images, balancing, signature rewards
 
 npx tsc --noEmit
 npx vue-tsc --noEmit
@@ -187,12 +190,6 @@ the "refine it!"
 
 walking stick
 
-gained: show the sum of essences
-
-signature window should arrange them in rows
-
-dyatlovsk hospital should be more interesting
-11d
 
 https://dist-delta-drab.vercel.app
 
@@ -221,3 +218,9 @@ adds bonuses to wafer
 refining time -5% (multiplicative)
 
 flare gun
+fire axe
+sledgehammer
+
+gear xp, 
+combat stim
+camo cloak

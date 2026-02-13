@@ -217,6 +217,11 @@ const showHintPanel = computed(() => {
   const hn = hoveredNode.value;
   if (!hn) return false;
   if (hn.cell.blocked) return false;
+  for (const reward of hn.archetype?.rewards ?? []) {
+    if (reward.kind === 'refining_yield_pct_bonus') return true;
+    if (reward.kind === 'refining_success_chance_bonus') return true;
+    if (reward.kind === 'refining_speed_pct_bonus') return true;
+  }
   return hn.archetype?.type === 'gear' || hn.archetype?.type === 'resource' || hn.archetype?.type === 'stat' || hn.archetype?.type === 'discovery';
 });
 

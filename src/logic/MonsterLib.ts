@@ -31,9 +31,7 @@ export function parseMonsterDefinitions(raw: Record<string, RawMonsterDefinition
 
     const strengthMult = d.strengthMult ?? 1.0;
     const cap = damageCap > 0 ? damageCap : Number.POSITIVE_INFINITY;
-    const hasRetaliates = features.includes('retaliates');
-    const dodgeMultiplier = hasRetaliates ? (2 + d.dodge) : (1 + d.dodge);
-    const strength = (d.hp + (d.hp / cap)) * (d.damage + armor) * d.accuracy * dodgeMultiplier * strengthMult;
+    const strength = (d.hp + (d.hp / cap)) * (d.damage + armor) * d.accuracy * d.dodge * strengthMult;
 
     tempMonsters.push({
       id: key,

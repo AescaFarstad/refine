@@ -135,7 +135,8 @@ import { discover } from '../logic/Discover';
 import { REWARD_UI_KEYS } from './rewardUI/RewardUIRegistry';
 import type { SignatureDefinition } from '../logic/SignatureLib';
 import atlasStorage from '../logic/AtlasStorage';
-import { CheatSetMazeLevel } from '../logic/cheat/CheatCommands';
+import { CheatCompleteSignatures, CheatSetMazeLevel } from '../logic/cheat/CheatCommands';
+import { processCheats } from '../logic/cheat/CheatProcessor';
 
 const open = computed(() => uiState.cheatOpen);
 
@@ -171,20 +172,19 @@ function signatureEntryClass(id: string): Record<string, boolean> {
 function cycleSignatureState(id: string): void {
   const gs = getGameStateMutable();
   const learnedIdx = gs.learnedSignatureIds.indexOf(id);
-  const completedIdx = gs.completedSignatureIds.indexOf(id);
-  const isLearned = learnedIdx !== -1;
-  const isCompleted = completedIdx !== -1;
+  const isLearned = learnedIdx >= 0;
+  const isCompleted = gs.completedSignatureIds.includes(id);
 
   if (!isLearned && !isCompleted) {
     // unknown → learned
     gs.learnedSignatureIds.push(id);
   } else if (isLearned && !isCompleted) {
     // learned → completed
-    gs.completedSignatureIds.push(id);
+    setCompletedSignatures([...gs.completedSignatureIds, id]);
   } else {
     // completed → unknown
     if (learnedIdx !== -1) gs.learnedSignatureIds.splice(learnedIdx, 1);
-    if (completedIdx !== -1) gs.completedSignatureIds.splice(completedIdx, 1);
+    setCompletedSignatures(gs.completedSignatureIds.filter(sigId => sigId !== id));
   }
 }
 
@@ -203,16 +203,18 @@ function cycleAllSignatures(): void {
     }
   } else if (!allCompleted) {
     // all learned but not all completed → make all completed
-    for (const id of ids) {
-      if (!gs.completedSignatureIds.includes(id)) {
-        gs.completedSignatureIds.push(id);
-      }
-    }
+    setCompletedSignatures(ids);
   } else {
     // all completed → reset all to unknown
     gs.learnedSignatureIds.length = 0;
-    gs.completedSignatureIds.length = 0;
+    setCompletedSignatures([]);
   }
+}
+
+function setCompletedSignatures(signatureIds: string[]): void {
+  const gs = getGameStateMutable();
+  gs.cheats.push(new CheatCompleteSignatures({ signatureIds }));
+  processCheats(gs);
 }
 
 function sigCheatSpriteStyle(id: string): Record<string, string> {

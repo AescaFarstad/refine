@@ -225,7 +225,7 @@ function close() {
 }
 
 .sig-sprite {
-  width: 80px;
+  width: 90px;
   height: 90px;
   display: block;
   background-image: var(--sig-atlas);

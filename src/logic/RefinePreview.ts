@@ -13,12 +13,10 @@ import {
     FAILURE_PER_EMPTY_CELL,
     MAGENTA_SUCCESS_PENALTY_PCT,
     REFINE_TIME,
-    SIGNATURE_YIELD_BONUS_PCT,
     UNIQUE_ITEMS_YIELD_BONUS_PCT,
 } from './Const';
 import { getWaferBuffAt } from './waferLayout';
-import { scanWaferForNewSignatures } from './Signatures';
-import type { SignatureDefinition } from './SignatureLib';
+import { scanWaferForNewSignatures, sumSignatureRefiningRewards } from './Signatures';
 import { DISCOVERY } from './DiscoveryLib';
 import type { ReadonlyGameState } from './UIState';
 
@@ -35,7 +33,10 @@ export interface RefinePreviewChem {
 
     signatureYieldBonus: number;
     newSignatureYieldBonus: number;
+    signatureSuccessChanceBonus: number;
+    newSignatureSuccessChanceBonus: number;
     signatureSpeedBonus: number;
+    newSignatureSpeedBonus: number;
     cyanYieldBonus: number;
     magentaYieldBonus: number;
     uniqueItemsYieldBonus: number;
@@ -456,22 +457,34 @@ export function computeRefinePreviewChem(gs: ReadonlyGameState): RefinePreviewCh
     const magentaCount = essenceTotals['magenta'] || 0;
     const magentaPenalty = magentaCount * MAGENTA_SUCCESS_PENALTY_PCT;
 
-    const baseFailureChance = gs.wafer.emptyCount * FAILURE_PER_EMPTY_CELL;
-    const failureChancePct = Math.min(100, Math.max(0, baseFailureChance + magentaPenalty - cyanReduction));
-
-    const baseYieldPct = 100;
-
     const completedIdSet = new Set(gs.completedSignatureIds);
     const signatureDefsForLevel = Array.from(gs.lib.signatures.values()).filter(s => s.level === gs.signatureLevel);
     const { newlyCompletedSignatureIds, newSignatureMatches } = scanWaferForNewSignatures(
         gs.wafer,
-        signatureDefsForLevel as SignatureDefinition[],
+        signatureDefsForLevel,
         completedIdSet
     );
 
-    const signatureYieldBonus = gs.completedSignatureIds.length * SIGNATURE_YIELD_BONUS_PCT;
-    const newSignatureYieldBonus = newlyCompletedSignatureIds.length * SIGNATURE_YIELD_BONUS_PCT;
-    const signatureSpeedBonus = 0;
+    const newlyCompletedSignatures = newlyCompletedSignatureIds.map(id => gs.lib.getSignature(id));
+    const newSignatureRewards = sumSignatureRefiningRewards(newlyCompletedSignatures);
+
+    const signatureYieldBonus = gs.refiningYieldPctBonus;
+    const newSignatureYieldBonus = newSignatureRewards.refiningYieldPctBonus;
+    const signatureSuccessChanceBonus = gs.refiningSuccessChanceBonus;
+    const newSignatureSuccessChanceBonus = newSignatureRewards.refiningSuccessChanceBonus;
+    const signatureSpeedBonus = gs.refiningSpeedPctBonus;
+    const newSignatureSpeedBonus = newSignatureRewards.refiningSpeedPctBonus;
+
+    const baseFailureChance = gs.wafer.emptyCount * FAILURE_PER_EMPTY_CELL;
+    const failureChancePct = Math.min(
+        100,
+        Math.max(0, baseFailureChance + magentaPenalty - cyanReduction - signatureSuccessChanceBonus - newSignatureSuccessChanceBonus)
+    );
+
+    const totalSpeedBonusPct = signatureSpeedBonus + newSignatureSpeedBonus;
+    const timeSec = REFINE_TIME / (1 + totalSpeedBonusPct / 100);
+
+    const baseYieldPct = 100;
 
     // Yield bonuses that require discovery to be unlocked
     const cyanYieldBonus = gs.discoveries[DISCOVERY.CYAN_YIELD]
@@ -509,12 +522,15 @@ export function computeRefinePreviewChem(gs: ReadonlyGameState): RefinePreviewCh
     }
 
     return {
-        timeSec: REFINE_TIME,
+        timeSec,
         failureChancePct,
         baseYieldPct,
         signatureYieldBonus,
         newSignatureYieldBonus,
+        signatureSuccessChanceBonus,
+        newSignatureSuccessChanceBonus,
         signatureSpeedBonus,
+        newSignatureSpeedBonus,
         cyanYieldBonus,
         magentaYieldBonus,
         uniqueItemsYieldBonus,

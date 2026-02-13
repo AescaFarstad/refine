@@ -1,4 +1,5 @@
 import type { Molecule } from './ItemLib';
+import type { Reward } from './Reward';
 
 export type SignatureMolecule = Omit<Molecule, 'connections'>;
 
@@ -9,6 +10,7 @@ export interface SignatureDefinition {
   group: string;
   molecule: SignatureMolecule;
   color: string;
+  rewards: Reward[];
 }
 
 export type RawSignatureLayoutDefinition = {
@@ -19,6 +21,7 @@ export type RawSignatureDefinition = {
   name: string;
   layout: string;
   colors: string[];
+  rewards?: readonly Reward[];
   level?: number;
   group?: string;
 };
@@ -62,6 +65,7 @@ export function parseSignatureDefinitions(
       group: d.group ?? 'default',
       molecule,
       color: computeSignatureColorFromColors(d.colors),
+      rewards: [...(d.rewards ?? [])],
     });
   }
   return map;

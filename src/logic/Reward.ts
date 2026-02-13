@@ -4,6 +4,20 @@ import { applyPermanentRaidMutation } from './RaidMutation';
 import { discover, ensureResearchTabDiscovery, ensureMazeTabDiscovery } from './Discover';
 import { DISCOVERY } from './DiscoveryLib';
 
+export interface RefiningRewardBonus {
+  refiningYieldPctBonus: number;
+  refiningSuccessChanceBonus: number;
+  refiningSpeedPctBonus: number;
+}
+
+export function createRefiningRewardBonus(): RefiningRewardBonus {
+  return {
+    refiningYieldPctBonus: 0,
+    refiningSuccessChanceBonus: 0,
+    refiningSpeedPctBonus: 0,
+  };
+}
+
 export type Reward =
   | { kind: 'resource'; resource: 'credits' | 'chronotraces' | 'timeFlux' | 'shardDust' | 'skillPoints'; amount: number }
 
@@ -16,6 +30,9 @@ export type Reward =
   | { kind: 'countable_gear'; gearId: string; amount: number }
 
   | { kind: 'stat'; stat: string; value: number }
+  | { kind: 'refining_yield_pct_bonus'; amount: number }
+  | { kind: 'refining_success_chance_bonus'; amount: number }
+  | { kind: 'refining_speed_pct_bonus'; amount: number }
 
   // Raid Modifications (Context-sensitive or targeted)
   // If targetRaidId is undefined, it applies to the "current" raid context (e.g. for Quest completion rewards)
@@ -54,6 +71,18 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
       anyGs[reward.stat] = anyGs[reward.stat] + reward.value;
       break;
     }
+
+    case 'refining_yield_pct_bonus':
+      gs.refiningYieldPctBonus += reward.amount;
+      break;
+
+    case 'refining_success_chance_bonus':
+      gs.refiningSuccessChanceBonus += reward.amount;
+      break;
+
+    case 'refining_speed_pct_bonus':
+      gs.refiningSpeedPctBonus += reward.amount;
+      break;
 
     case 'unlock_gear':
       if (!gs.unlockedGear.includes(reward.gearId))

@@ -40,7 +40,6 @@ const monsters: Record<string, RawMonsterDefinition> = {
     accuracy: 10,
     damage: 1,
     lootItemId: 'distorted_remains',
-    features:['retaliates'],
     upgrade: "flower",
     strengthMult: 1.2,
   },
@@ -61,7 +60,6 @@ const monsters: Record<string, RawMonsterDefinition> = {
     accuracy: 0,
     damage: 2,
     lootItemId: 'flower_remains',
-    features:['retaliates'],
     armor: 2,
     upgrade: "dendroid",
     strengthMult: 1.2,
@@ -116,7 +114,6 @@ const monsters: Record<string, RawMonsterDefinition> = {
     damage: 3,
     armor: 5,
     lootItemId: 'dendroid_remains',
-    features:['retaliates'],
   },
   soldier: {
     name: 'Turned Soldier',
@@ -134,7 +131,6 @@ const monsters: Record<string, RawMonsterDefinition> = {
     damage: 5,
     lootItemId: 'squid_remains',
     armor: 2,
-    features:['retaliates'],
   },
   devourer: {
     name: 'Devourer Swarm',
@@ -144,7 +140,6 @@ const monsters: Record<string, RawMonsterDefinition> = {
     damage: 4,
     lootItemId: 'devourer_remains',
     damageCap: 5,
-    features:['retaliates'],
   },
   hive: {
     name: 'The Hive',
@@ -171,7 +166,7 @@ const monsters: Record<string, RawMonsterDefinition> = {
     accuracy: 10,
     damage: 5,
     lootItemId: 'finger_remains',
-    features: ['regen', 'retaliates'],
+    features: ['regen'],
     armor: 3,
   },
   hedgehog: {
@@ -181,7 +176,7 @@ const monsters: Record<string, RawMonsterDefinition> = {
     accuracy: 40,
     damage: 5,
     lootItemId: 'hedgehog_remains',
-    features: ['damage_on_hurt', 'retaliates'],
+    features: ['damage_on_hurt'],
     armor: 3,
   },
 };

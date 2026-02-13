@@ -476,6 +476,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
             monsterId,
             monsterName: monster.name,
             skipped: true,
+            skipReason: 'safer_routes',
             injected,
             elapsedTotalSec: timeSpentSec,
           });
@@ -530,7 +531,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
             diedToZoneCollapse: false,
           };
         }
-        if (raid.regenAfterCombat > 0) {
+        if (raid.regenAfterCombat > 0 && !fight.entry.skipped) {
           const hpBefore = raid.hp;
           raid.hp = Math.min(raid.maxHp, raid.hp + raid.regenAfterCombat);
           const hpAfter = raid.hp;
@@ -864,6 +865,8 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
   gs.raid.damage = gs.damage;
   gs.raid.hitChance = gs.chanceToHit;
   gs.raid.blockChance = gs.chanceToBlock;
+  gs.raid.attackSkipCount = 0;
+  gs.raid.stunChance = 0;
   gs.raid.perks = [];
   gs.raid.lootChanceBonus = 0;
   gs.raid.tmpLootBuffAppliedPct = 0;
@@ -899,6 +902,8 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
     gs.raid.lootChanceBonus += g.lootChance;
     gs.raid.hitChance += g.chanceToHit;
     gs.raid.blockChance += g.chanceToBlock;
+    gs.raid.attackSkipCount += g.attackSkipCount;
+    gs.raid.stunChance = 100 - (100 - gs.raid.stunChance) * (100 - g.stunChance) / 100;
     gs.raid.reflectOnHitPct += g.reflectOnHitPct;
     gs.raid.reflectOnBlockPct += g.reflectOnBlockPct;
     gs.raid.biopsyChance += g.biopsyChance;

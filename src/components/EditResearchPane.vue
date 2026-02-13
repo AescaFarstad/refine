@@ -79,6 +79,36 @@
         <button type="button" class="btn radius-btn" @click="incrementRadius">+</button>
       </div>
 
+      <div class="code-section">
+        <div class="code-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <span>Newly Placed Nodes</span>
+          <div style="display: flex; gap: 4px;">
+            <button
+              type="button"
+              class="btn btn-small"
+              @click="copyNewlyPlacedToClipboard"
+              :disabled="newlyPlacedNodes.length === 0"
+            >
+              Copy
+            </button>
+            <button
+              type="button"
+              class="btn btn-small"
+              @click="clearNewlyPlaced"
+              :disabled="newlyPlacedNodes.length === 0"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+        <textarea
+          class="code-area"
+          readonly
+          :value="newlyPlacedCode"
+          :placeholder="'Click on research nodes to place them...'"
+        />
+      </div>
+
       <div class="archetype-section">
 
         <!-- Non-gear archetypes (stats, resources, etc.) -->
@@ -143,35 +173,6 @@
         />
       </div>
 
-      <div class="code-section">
-        <div class="code-header" style="display: flex; justify-content: space-between; align-items: center;">
-          <span>Newly Placed Nodes</span>
-          <div style="display: flex; gap: 4px;">
-            <button
-              type="button"
-              class="btn btn-small"
-              @click="copyNewlyPlacedToClipboard"
-              :disabled="newlyPlacedNodes.length === 0"
-            >
-              Copy
-            </button>
-            <button
-              type="button"
-              class="btn btn-small"
-              @click="clearNewlyPlaced"
-              :disabled="newlyPlacedNodes.length === 0"
-            >
-              Clear
-            </button>
-          </div>
-        </div>
-        <textarea
-          class="code-area"
-          readonly
-          :value="newlyPlacedCode"
-          :placeholder="'Click on research nodes to place them...\nThey will appear here ready to paste into research_pane.ts'"
-        />
-      </div>
     </div>
   </div>
 </template>
@@ -241,7 +242,7 @@ const availableArchetypes = computed(() => {
   }
 
   const nonGear: Array<{ id: string; label: string; icon: ResearchStatIcon; type: string; archetype: ResearchArchetype }> = [];
-  const gear: Array<{ id: string; label: string; gearId?: string; imageKey?: string; isAlreadyUnlocked: boolean; archetype: ResearchArchetype }> = [];
+  const gear: Array<{ id: string; label: string; gearId?: string; imageKey?: string; isAlreadyUnlocked: boolean; archetype: ResearchArchetype; category: string }> = [];
 
   lib.research.archetypes.forEach((archetype, id) => {
     if (id === 'hub' || id === 'obs' || id === 'empty' || id === 'void') return;
@@ -257,7 +258,8 @@ const availableArchetypes = computed(() => {
       // Get gear definition for image key
       const gearDef = gearId ? lib.gear.get(gearId) : null;
       const imageKey = gearDef?.image;
-      gear.push({ id, label, gearId, imageKey, isAlreadyUnlocked: isAlreadyPlaced, archetype });
+      const category = gearDef?.category || '';
+      gear.push({ id, label, gearId, imageKey, isAlreadyUnlocked: isAlreadyPlaced, archetype, category });
     } else if (archetype.type === 'stat') {
       const reward = rewards.find(r => r.kind === 'stat');
       const stat = reward && reward.kind === 'stat' ? reward.stat : '';
@@ -294,9 +296,10 @@ const availableArchetypes = computed(() => {
     }
   });
 
-  // Sort alphabetically by label
-  nonGear.sort((a, b) => a.label.localeCompare(b.label));
-  gear.sort((a, b) => a.label.localeCompare(b.label));
+  // Sort non-gear by type, then label
+  nonGear.sort((a, b) => a.type.localeCompare(b.type) || a.label.localeCompare(b.label));
+  // Sort gear by category, then label
+  gear.sort((a, b) => a.category.localeCompare(b.category) || a.label.localeCompare(b.label));
 
   return { nonGear, gear };
 });
@@ -564,7 +567,7 @@ function getGearSpriteStyle(imageKey: string | undefined): Record<string, string
   position: absolute;
   top: 0;
   left: 0;
-  width: 800px;
+  width: 470px;
   max-height: 100%;
   display: flex;
   flex-direction: column;
@@ -593,19 +596,20 @@ function getGearSpriteStyle(imageKey: string | undefined): Record<string, string
 
 .panel-header h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: 13px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .panel-body {
-  padding: 8px;
-  font-size: 14px;
+  padding: 5px;
+  font-size: 12px;
   line-height: 1.4;
   overflow: auto;
+  scrollbar-width: none;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 5px;
 }
 
 .controls-row {
@@ -628,8 +632,8 @@ function getGearSpriteStyle(imageKey: string | undefined): Record<string, string
 }
 
 .btn {
-  padding: 4px 10px;
-  font-size: 14px;
+  padding: 3px 7px;
+  font-size: 12px;
   font-weight: 600;
   border-radius: 5px;
   border: 1px solid var(--panel-border);
@@ -670,7 +674,7 @@ function getGearSpriteStyle(imageKey: string | undefined): Record<string, string
 
 .code-area {
   width: 100%;
-  min-height: 100px;
+  min-height: 60px;
   resize: vertical;
   font-family: monospace;
   font-size: 12px;
@@ -731,19 +735,19 @@ function getGearSpriteStyle(imageKey: string | undefined): Record<string, string
 
 .archetype-grid-4col {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
 }
 
 .archetype-btn {
-  padding: 6px 8px;
+  padding: 2px 3px;
   text-align: left;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 3px;
   white-space: nowrap;
   overflow: hidden;
-  min-height: 38px;
+  min-height: 34px;
   border: 0px;
   background-color: rgb(22, 31, 42);
 }
@@ -779,8 +783,8 @@ function getGearSpriteStyle(imageKey: string | undefined): Record<string, string
 .archetype-label {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 18px;
-  line-height: 1.3;
+  font-size: 13px;
+  line-height: 1.2;
   font-weight: 600;
 }
 

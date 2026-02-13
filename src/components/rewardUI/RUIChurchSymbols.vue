@@ -13,7 +13,7 @@
 
         <div v-if="newSignatures.length > 0" class="signatures-section">
           <p class="signatures-label">
-            {{ showSignatures ? `You learned ${newSignatures.length} new signature${newSignatures.length > 1 ? 's' : ''}:` : 'Arranging items on the wafer in these patterns should improve yields from refining.' }}
+            {{ showSignatures ? `You learned ${newSignatures.length} new signature${newSignatures.length > 1 ? 's' : ''}:` : 'Arranging items on the wafer in these patterns should improve refining bonuses.' }}
           </p>
           <div class="signatures-grid">
             <div
@@ -228,7 +228,7 @@ function close() {
 }
 
 .sig-sprite {
-  width: 80px;
+  width: 90px;
   height: 90px;
   display: block;
   background-image: var(--sig-atlas);

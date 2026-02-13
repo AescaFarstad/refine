@@ -438,15 +438,35 @@ function onWheel(event: WheelEvent) {
   scheduleZoomStopRender();
 }
 
+const isPainting = ref(false);
+
 function onMouseDown(event: MouseEvent) {
   if (event.button !== 0) return;
   isMouseDown.value = true;
   isPanning.value = false;
   lastPanClient.value = { x: event.clientX, y: event.clientY };
+
+  // Shift + edit mode = paint brush mode
+  const mode = (uiState as any).researchEditMode as string | undefined;
+  if (event.shiftKey && mode) {
+    isPainting.value = true;
+    updateHoverCell(event);
+    if (hoverAxial.value) {
+      applyEditModeAt(hoverAxial.value);
+    }
+  }
 }
 
 function onMouseMove(event: MouseEvent) {
   updateHoverCell(event);
+
+  // Paint brush mode: apply edit at each cell while dragging with shift
+  if (isPainting.value && isMouseDown.value) {
+    if (hoverAxial.value) {
+      applyEditModeAt(hoverAxial.value);
+    }
+    return;
+  }
 
   if (!isMouseDown.value || !lastPanClient.value) return;
   const prev = lastPanClient.value;
@@ -473,12 +493,14 @@ function onMouseMove(event: MouseEvent) {
 
 function onMouseUp(event: MouseEvent) {
   if (event.button !== 0) return;
+  const wasPainting = isPainting.value;
   const wasPanning = isMouseDown.value && isPanning.value;
-  if (isMouseDown.value && !isPanning.value) {
+  if (isMouseDown.value && !isPanning.value && !wasPainting) {
     handleClick(event);
   }
   isMouseDown.value = false;
   isPanning.value = false;
+  isPainting.value = false;
   lastPanClient.value = null;
   if (wasPanning) {
     scheduleRender({ base: true, baseMode: 'render', highlight: true });
@@ -489,6 +511,7 @@ function onMouseLeave(_event: MouseEvent) {
   const wasPanning = isMouseDown.value && isPanning.value;
   isMouseDown.value = false;
   isPanning.value = false;
+  isPainting.value = false;
   lastPanClient.value = null;
   if (hoverAxial.value) {
     hoverAxial.value = null;
@@ -505,6 +528,7 @@ function onWindowMouseUp(event: MouseEvent) {
   const wasPanning = isMouseDown.value && isPanning.value;
   isMouseDown.value = false;
   isPanning.value = false;
+  isPainting.value = false;
   lastPanClient.value = null;
   if (wasPanning) {
     scheduleRender({ base: true, baseMode: 'render', highlight: true });

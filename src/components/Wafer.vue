@@ -83,7 +83,7 @@
         @mouseenter="isRefineHovered = true"
         @mouseleave="isRefineHovered = false"
       >
-        Start Refining (4 hours)
+        Start Refining ({{ refineDurationLabel }})
       </button>
 
       <div v-if="isRefining" class="progress-status">
@@ -203,6 +203,7 @@ watch(showWaferUpgrades, (enabled) => {
 const preview = computed(() => {
   waferVersion.value;
   const _dep = uiState.discoveryCounter;
+  const _refinePreviewVersion = uiState.refinePreviewVersion;
 
   const gs = getGameState();
 
@@ -212,6 +213,7 @@ const preview = computed(() => {
       expectedCredits: 0,
       expectedChrono: 0,
       expectedFlux: 0,
+      timeSec: 0,
       failureChancePct: 0,
       creditsEssences: 0,
       chronoEssences: 0,
@@ -224,6 +226,10 @@ const preview = computed(() => {
       uniqueItemsYieldBonus: 0,
       signatureYieldBonus: 0,
       newSignatureYieldBonus: 0,
+      signatureSuccessChanceBonus: 0,
+      newSignatureSuccessChanceBonus: 0,
+      signatureSpeedBonus: 0,
+      newSignatureSpeedBonus: 0,
       newSignatureMatches: [] as Array<{ id: string; offset: { x: number; y: number } }>,
       gearOutputs: [],
     };
@@ -248,6 +254,8 @@ const preview = computed(() => {
     emptyCells,
   };
 });
+
+const refineDurationLabel = computed(() => formatDurationHM(preview.value.timeSec));
 
 	const placedItems = computed(() => {
 	  // Touch waferVersion for reactivity

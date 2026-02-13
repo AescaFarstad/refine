@@ -72,11 +72,6 @@
 }
 
 {
-  image:ChatGPT Image Oct 12, 2025, 08_19_41 PM.png
-  content:inventory_keys bicycle_pedal calipers hammer
-}
-
-{
   image:ChatGPT Image Oct 12, 2025, 08_25_19 PM.png
   content:vase handkerchief ruined_ammo_box aluminium_bowl
 }
@@ -145,7 +140,7 @@
   image:ChatGPT Image Jan 18, 2026, 02_33_33 PM.png
   content: red_christmas_ball pine_cone brush glass
 }
-#start
+
 {
   image:ChatGPT Image Jan 18, 2026, 02_40_47 PM.png
   content: pine_toy tall_glass paint _
@@ -164,4 +159,9 @@
 {
   image:ChatGPT Image Jan 18, 2026, 03_47_37 PM.png
   content: pushkin _ tire corkscrew
+}
+#start
+{
+  image:ChatGPT Image Oct 12, 2025, 08_19_41 PM.png
+  content:inventory_keys bicycle_pedal calipers hammer
 }

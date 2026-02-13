@@ -176,6 +176,9 @@ function getSpriteStyle(imageKey: string): Record<string, string> {
   pointer-events: auto;
   user-select: none;
   z-index: 24;
+  background: rgba(10, 10, 18, 0.65);
+  border-radius: 8px 0 0 8px;
+  /* padding: 8px 0; */
 }
 
 .highlight-cell-wrap {

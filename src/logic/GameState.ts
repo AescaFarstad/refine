@@ -57,6 +57,9 @@ export class GameState {
   public wafer: Wafer = createWafer(2);
   public waferUpgradesPurchased: number = 0;
   public refiningDuration: number = 0;
+  public refiningYieldPctBonus: number = 0;
+  public refiningSuccessChanceBonus: number = 0;
+  public refiningSpeedPctBonus: number = 0;
   public shards: Array<Shard> = [];
   public raid: ActiveRaid = new ActiveRaid();
 
@@ -151,6 +154,8 @@ export class ActiveRaid {
   public tmpLootBuffNextRaidPct: number = 0;
   public hitChance: number = 60;
   public blockChance: number = 30;
+  public attackSkipCount: number = 0;
+  public stunChance: number = 0;
   public reflectOnHitPct: number = 0;   // monster hits you
   public reflectOnBlockPct: number = 0; // you block monster
   public biopsyChance: number = 0;      // chance to successfully harvest monster loot

@@ -47,7 +47,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import type { RaidEventLogEntry, WalkEncounterLogEntry, PreparationEncounterLogEntry } from '../../logic/RaidLog';
+import type { FightEncounterLogEntry, RaidEventLogEntry, WalkEncounterLogEntry, PreparationEncounterLogEntry } from '../../logic/RaidLog';
 import { DEFAULT_SPEED } from '../../logic/GameState';
 import { formatDurationHM } from '../../logic/StringUtils';
 import atlasStorage from '../../logic/AtlasStorage';
@@ -128,10 +128,74 @@ function getInitialEntry(): RaidEventLogEntry | null {
   return props.entries?.[0] || null;
 }
 
+function fightHasBiopsy(entry: FightEncounterLogEntry): boolean {
+  return entry.fightLog.some(ev => ev.biopsyTriggered);
+}
+
+function getFightStartHp(entry: FightEncounterLogEntry, index: number): number {
+  const firstRound = entry.fightLog[0];
+  if (firstRound) return firstRound.myHpBefore;
+  if (index > 0) return props.entries[index - 1]!.currentHp;
+  return entry.currentHp;
+}
+
+function getFightSubStepHp(entry: FightEncounterLogEntry, step: number, index: number): number {
+  const rounds = entry.fightLog.length;
+  if (step <= rounds) return entry.fightLog[step - 1]!.myHpAfter;
+
+  let hp = rounds > 0
+    ? entry.fightLog[rounds - 1]!.myHpAfter
+    : getFightStartHp(entry, index);
+  let cursor = rounds;
+
+  if (entry.hpAfterRegen > entry.hpBeforeRegen) {
+    cursor += 1;
+    hp = entry.hpAfterRegen;
+    if (step === cursor) return hp;
+  }
+
+  if (entry.timeRegenHpAfter > entry.timeRegenHpBefore) {
+    cursor += 1;
+    hp = entry.timeRegenHpAfter;
+    if (step === cursor) return hp;
+  }
+
+  if (entry.dieFromOvertime) {
+    cursor += 1;
+    hp = 0;
+    if (step === cursor) return hp;
+  }
+
+  if (fightHasBiopsy(entry)) {
+    cursor += 1;
+    if (step === cursor) return hp;
+  }
+
+  return hp;
+}
+
+function getInitialHpBeforePlayback(): number {
+  const first = getInitialEntry();
+  if (!first) return 0;
+  if (first.kind === 'PreparationEncounter') return first.hpBefore;
+  if (first.kind === 'WalkEncounter') return first.hpBefore;
+  if (first.kind === 'FightEncounter' && !first.skipped) return getFightStartHp(first, 0);
+  return first.currentHp;
+}
+
 const currentHp = computed(() => {
-  const e = getLastShownEntry();
-  if (e) return e.currentHp ?? 0;
-  return getInitialEntry()?.currentHp ?? 0;
+  if (timelinePos.value <= 0) return getInitialHpBeforePlayback();
+  if (timeline.length <= 0) return 0;
+  const token = timeline[Math.min(timelinePos.value - 1, timeline.length - 1)]!;
+  const entry = props.entries[token.index]!;
+
+  if (token.kind === 'fight_sub' && entry.kind === 'FightEncounter') {
+    return getFightSubStepHp(entry, token.step, token.index);
+  }
+  if (token.kind === 'entry' && entry.kind === 'FightEncounter' && !entry.skipped) {
+    return getFightStartHp(entry, token.index);
+  }
+  return entry.currentHp;
 });
 
 const currentMaxHp = computed(() => {
@@ -207,7 +271,7 @@ function buildTimeline() {
       const hasTimeRegen = (e.timeRegenHpAfter || 0) > (e.timeRegenHpBefore || 0);
       if (hasTimeRegen) timeline.push({ kind: 'fight_sub', index: i, step: ++step });
       if (e.dieFromOvertime) timeline.push({ kind: 'fight_sub', index: i, step: ++step });
-      const hasBiopsy = !!(e.fightLog || []).find((ev: any) => !!ev.biopsyTriggered);
+      const hasBiopsy = fightHasBiopsy(e);
       if (hasBiopsy) timeline.push({ kind: 'fight_sub', index: i, step: ++step });
     }
   }

@@ -111,7 +111,8 @@ export function handleLootLikeEncounter(
 
   const thorough = (r.perks || []).includes(Perks.THOROUGH_SEARCH);
   const hackAndSlash = (r.perks || []).includes(Perks.HACK_AND_SLASH);
-  const timeSpentSec = 300 + (thorough ? 300 : 0) - (hackAndSlash ? 60 : 0);
+  const hackAndCrack = (r.perks || []).includes(Perks.HACK_AND_CRACK);
+  const timeSpentSec = 300 + (thorough ? 300 : 0) - (hackAndCrack ? 240 : hackAndSlash ? 120 : 0);
 
   const checkValue = clamp(ctx.baseLootChance + r.lootChanceBonus + r.tmpLootBuffAppliedPct, 0, 100);
   const myRoll = Math.floor(gs.random.get() * 100);
@@ -235,11 +236,16 @@ export function handleMonsterLootEncounter(
       volumeBefore: before,
       volumeAfter: before,
       biopsyChance,
+      explosiveChance: r.perks.includes(Perks.EXPLOSIVE) ? 40 : 0,
     });
   }
 
-  const biopsyRoll = Math.floor(gs.random.get() * 100);
-  const biopsySuccess = biopsyRoll < biopsyChance;
+  const explosiveChance = r.perks.includes(Perks.EXPLOSIVE) ? 40 : 0;
+  const explosiveRoll = explosiveChance > 0 ? Math.floor(gs.random.get() * 100) : 0;
+  const explosiveTriggered = explosiveChance > 0 && explosiveRoll < explosiveChance;
+
+  const biopsyRoll = explosiveTriggered ? 0 : Math.floor(gs.random.get() * 100);
+  const biopsySuccess = !explosiveTriggered && biopsyRoll < biopsyChance;
 
   const entry: MonsterLootEncounterLogEntry = createMonsterLootEncounterLogEntry({
     timeSpentSec,
@@ -251,6 +257,9 @@ export function handleMonsterLootEncounter(
     biopsyChance,
     biopsyRoll,
     biopsySuccess,
+    explosiveChance,
+    explosiveRoll,
+    explosiveTriggered,
   });
 
   if (!biopsySuccess) {

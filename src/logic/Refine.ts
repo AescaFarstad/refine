@@ -84,6 +84,12 @@ export function resolveRefineryDone(gs: GameState): void {
         justCompleted.push(id);
       }
       if (justCompleted.length > 0) {
+        for (const signatureId of justCompleted) {
+          const signature = gs.lib.getSignature(signatureId);
+          for (const reward of signature.rewards) {
+            applyReward(gs, reward);
+          }
+        }
         applyReward(gs, {
           kind: 'show_ui',
           ui: 'signature_complete',

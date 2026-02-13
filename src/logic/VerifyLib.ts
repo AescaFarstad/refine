@@ -98,6 +98,9 @@ function verifyRewardRefs(reward: Reward, context: string, lib: Lib, errors: Ver
       }
       return;
     case 'resource':
+    case 'refining_yield_pct_bonus':
+    case 'refining_success_chance_bonus':
+    case 'refining_speed_pct_bonus':
       return;
     case 'discovery':
       if (!DISCOVERY_IDS.has(reward.discoveryId)) {
@@ -207,6 +210,15 @@ export function verifyResearch(lib: Lib, errors: VerifyErrors): void {
   }
 }
 
+export function verifySignatures(lib: Lib, errors: VerifyErrors): void {
+  for (const signature of lib.signatures.values()) {
+    const context = `Signature[${signature.id}]`;
+    for (const reward of signature.rewards) {
+      verifyRewardRefs(reward, context, lib, errors);
+    }
+  }
+}
+
 export function verifyLibIntegrity(lib: Lib): void {
   const errors: VerifyErrors = [];
   verifyRaids(lib, errors);
@@ -214,6 +226,7 @@ export function verifyLibIntegrity(lib: Lib): void {
   verifyItems(lib, errors);
   verifyGear(lib, errors);
   verifyResearch(lib, errors);
+  verifySignatures(lib, errors);
 
   if (errors.length > 0) {
     const count = errors.length;

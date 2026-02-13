@@ -6,6 +6,7 @@ import { applyResearchNodeEffect, axialToIndex, calculateVisibility } from '../R
 import { setEnableQuestPrereqs } from '../Const';
 import { discover } from '../Discover';
 import { applyReward } from '../Reward';
+import { undoRewards } from '../RewardsUndo';
 
 type Handler = (gs: GameState, cheat: CheatInput) => void;
 const handlersByName = new Map<string, Handler>();
@@ -148,11 +149,32 @@ handlersByName.set('CheatLearnSignatures', (gs, cheat) => {
 
 handlersByName.set('CheatCompleteSignatures', (gs, cheat) => {
   const c = cheat as CheatCompleteSignatures;
+  const nextCompleted: string[] = [];
+  const nextCompletedSet = new Set<string>();
   for (const id of c.signatureIds) {
-    if (!gs.completedSignatureIds.includes(id)) {
-      gs.completedSignatureIds.push(id);
+    if (nextCompletedSet.has(id)) continue;
+    nextCompletedSet.add(id);
+    nextCompleted.push(id);
+  }
+
+  const previousCompletedSet = new Set<string>(gs.completedSignatureIds);
+  for (const id of gs.completedSignatureIds) {
+    if (!nextCompletedSet.has(id)) {
+      const signature = gs.lib.getSignature(id);
+      undoRewards(gs, signature.rewards);
     }
   }
+
+  for (const id of nextCompleted) {
+    if (!previousCompletedSet.has(id)) {
+      const signature = gs.lib.getSignature(id);
+      for (const reward of signature.rewards) {
+        applyReward(gs, reward);
+      }
+    }
+  }
+
+  gs.completedSignatureIds = nextCompleted;
 });
 
 handlersByName.set('CheatAddItemBans', (gs, cheat) => {

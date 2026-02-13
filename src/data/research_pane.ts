@@ -32,7 +32,7 @@ export const researchPane: ResearchPlacementInput[] = [
   { archetypeId: 'gear_cargo_harness', cells: { x: -4, y: -14 }, radius: 1 },
 
   { archetypeId: 'gear_revolver', cells: { x: -13, y: 12 }, radius: 1 },
-  { archetypeId: 'gear_spear', cells: { x: 10, y: 2 }, radius: 1 },
+  { archetypeId: 'gear_sledgehammer', cells: { x: 10, y: 2 }, radius: 1 },
   { archetypeId: 'gear_kevlar_vest', cells: { x: -6, y: 16 }, radius: 1 },
   { archetypeId: 'gear_stim_patch', cells: { x: -12, y: 5 }, radius: 1 },
   { archetypeId: 'gear_flash_grenade', cells: { x: 12, y: -4 }, radius: 1 },
@@ -48,7 +48,7 @@ export const researchPane: ResearchPlacementInput[] = [
   { archetypeId: 'gear_uzi', cells: { x: 2, y: -13 }, radius: 1 },
   { archetypeId: 'gear_laser_sight', cells: { x: -16, y: 10 }, radius: 1 },
   { archetypeId: 'gear_aspirator_probe', cells: { x: 20, y: -5 }, radius: 1 },
-  { archetypeId: 'gear_needle_drone', cells: { x: 22, y: -10 }, radius: 1 },
+  { archetypeId: 'gear_combat_drone', cells: { x: 22, y: -10 }, radius: 1 },
   { archetypeId: 'gear_metal_detector', cells: { x: 17, y: 2 }, radius: 1 },
   { archetypeId: 'gear_firearms_checkup', cells: { x: 20, y: -17 }, radius: 1 },
   { archetypeId: 'gear_plasma_bag', cells: { x: -3, y: 19 }, radius: 1 },

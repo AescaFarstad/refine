@@ -103,7 +103,7 @@
         <div class="stat-row" :class="{ 'flash-red': shouldFlashFailure }">
           <span class="stat-label">Failure Chance:</span>
           <span class="stat-value" :class="failureClass">{{ preview.failureChancePct }}%</span>
-          <span class="stat-source" v-if="preview.emptyCells > 0 || cyanEssences > 0 || magentaEssences > 0">
+          <span class="stat-source" v-if="preview.emptyCells > 0 || cyanEssences > 0 || magentaEssences > 0 || preview.signatureSuccessChanceBonus > 0 || preview.newSignatureSuccessChanceBonus > 0">
             <template v-if="preview.emptyCells > 0">
               from {{ preview.emptyCells }} empty cells
             </template>
@@ -120,6 +120,28 @@
               <template v-for="key in magentaEssenceKeys" :key="key">
                 <span class="ess-icon" :style="essenceIconStyle(key)" />
               </template>
+            </template>
+            <template v-if="preview.signatureSuccessChanceBonus > 0">
+              <template v-if="preview.emptyCells > 0 || cyanEssences > 0 || magentaEssences > 0">, </template>
+              -{{ preview.signatureSuccessChanceBonus }}% from signatures
+            </template>
+            <template v-if="preview.newSignatureSuccessChanceBonus > 0">
+              <template v-if="preview.emptyCells > 0 || cyanEssences > 0 || magentaEssences > 0 || preview.signatureSuccessChanceBonus > 0">, </template>
+              -{{ preview.newSignatureSuccessChanceBonus }}% from NEW signatures
+            </template>
+          </span>
+        </div>
+
+        <div v-if="preview.signatureSpeedBonus > 0 || preview.newSignatureSpeedBonus > 0" class="stat-row">
+          <span class="stat-label">Refining Speed:</span>
+          <span class="stat-value success">+{{ preview.signatureSpeedBonus + preview.newSignatureSpeedBonus }}%</span>
+          <span class="stat-source">
+            <template v-if="preview.signatureSpeedBonus > 0">
+              +{{ preview.signatureSpeedBonus }}% (signatures)
+            </template>
+            <template v-if="preview.newSignatureSpeedBonus > 0">
+              <template v-if="preview.signatureSpeedBonus > 0"> </template>
+              +{{ preview.newSignatureSpeedBonus }}% (NEW signatures)
             </template>
           </span>
         </div>
@@ -153,6 +175,10 @@ export interface WaferInfoPreview {
   totalYieldPct: number;
   signatureYieldBonus: number;
   newSignatureYieldBonus: number;
+  signatureSuccessChanceBonus: number;
+  newSignatureSuccessChanceBonus: number;
+  signatureSpeedBonus: number;
+  newSignatureSpeedBonus: number;
   newSignatureMatches: Array<{ id: string; offset: Point2 }>;
   cyanYieldBonus: number;
   magentaYieldBonus: number;

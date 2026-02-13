@@ -49,7 +49,8 @@ import { globalInputQueue } from '../logic/Model';
 import { CmdDiscover } from '../logic/input/InputCommands';
 import { DISCOVERY } from '../logic/DiscoveryLib';
 import type { RaidDefinition } from '../logic/RaidLib';
-import { FEATURE_SUMMON, FEATURE_SUMMON2, FEATURE_SELF_DESTRUCT, FEATURE_RETALIATES, SUMMON_CHANCE_PER_ROUND, SUMMON_CHANCE_PER_ROUND2 } from '../logic/MonsterFeatures';
+import { FEATURE_SUMMON, FEATURE_SUMMON2, FEATURE_SELF_DESTRUCT, SUMMON_CHANCE_PER_ROUND, SUMMON_CHANCE_PER_ROUND2 } from '../logic/MonsterFeatures';
+import Perks from '../logic/Perks';
 
 const props = defineProps<{
   raid: RaidDefinition;
@@ -76,7 +77,6 @@ interface MonsterRow {
   canSummon: boolean;
   canSummon2: boolean;
   canSelfDestruct: boolean;
-  canRetaliate: boolean;
   armor: number;
   damageCap: number;
   blockPctRaw: number;
@@ -107,8 +107,8 @@ const monsterRows = computed<MonsterRow[]>(() => {
     const canSummon = m.features.includes(FEATURE_SUMMON);
     const canSummon2 = m.features.includes(FEATURE_SUMMON2);
     const canSelfDestruct = m.features.includes(FEATURE_SELF_DESTRUCT);
-    const canRetaliate = m.features.includes(FEATURE_RETALIATES);
-    const armor = m.armor;
+    const hasArmorPiercing = gs.raid.perks.includes(Perks.ARMOR_PIERCING);
+    const armor = hasArmorPiercing ? Math.floor(m.armor / 2) : m.armor;
     const damageCap = m.damageCap;
     rows.push({
       id,
@@ -121,7 +121,6 @@ const monsterRows = computed<MonsterRow[]>(() => {
       canSummon,
       canSummon2,
       canSelfDestruct,
-      canRetaliate,
       armor,
       damageCap,
       blockPctRaw: blockRaw,
@@ -143,9 +142,6 @@ function getAbilities(row: MonsterRow): Ability[] {
   }
   if (row.canSelfDestruct) {
     abilities.push({ name: 'Explodes', tooltip: 'When this monster successfully attacks, it explodes' });
-  }
-  if (row.canRetaliate) {
-    abilities.push({ name: 'Retaliates', tooltip: 'Counterattacks even when hit' });
   }
   if (row.armor > 0) {
     abilities.push({ name: `Armor\u00A0${row.armor}`, tooltip: `All incoming damage is decreased by ${row.armor}` });

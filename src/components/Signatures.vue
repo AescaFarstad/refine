@@ -9,6 +9,11 @@
       >
         <div class="sig-sprite" :style="sigSpriteStyle(sig.id)" />
         <div class="sig-name">{{ displayName(sig.id, sig.name) }}</div>
+        <SignatureHint
+          class="sig-hint"
+          :signature="sig"
+          :completed="isCompleted(sig.id)"
+        />
       </div>
     </div>
   </div>
@@ -19,6 +24,7 @@ import { computed } from 'vue';
 import type { SignatureDefinition } from '../logic/SignatureLib';
 import { uiState } from '../logic/UIState';
 import atlasStorage from '../logic/AtlasStorage';
+import SignatureHint from './SignatureHint.vue';
 
 const props = defineProps<{
   waferSignatureIds?: string[];
@@ -102,6 +108,7 @@ function sigSpriteStyle(id: string): Record<string, string> {
 }
 
 .sig-entry {
+  position: relative;
   display: grid;
   grid-template-rows: auto auto;
   gap: 4px;
@@ -109,7 +116,7 @@ function sigSpriteStyle(id: string): Record<string, string> {
 }
 
 .sig-sprite {
-  width: 80px;
+  width: 90px;
   height: 90px;
   display: block;
   background-image: var(--sig-atlas);
@@ -128,9 +135,27 @@ function sigSpriteStyle(id: string): Record<string, string> {
   opacity: 0.5;
 }
 
+.sig-entry.incomplete:hover {
+  opacity: 1;
+}
+
 .sig-entry.unknown .sig-name {
   color: rgba(251, 146, 60, 0.85);
   font-weight: 800;
+}
+
+.sig-hint {
+  display: none;
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%);
+  z-index: 30;
+  pointer-events: none;
+}
+
+.sig-entry:hover .sig-hint {
+  display: block;
 }
 
 .sig-entry.glowing {

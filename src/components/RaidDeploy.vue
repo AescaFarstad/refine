@@ -21,6 +21,10 @@
               <div class="hint-row">
                 <span class="hint-value">Gear is consumed</span>
               </div>
+              <div v-if="reimbursedPct > 0" class="hint-row">
+                <span class="hint-label">Reimbursement on death:</span>
+                <span class="hint-value">{{ reimbursedPct }}%</span>
+              </div>
               <div class="hint-section">
                 <div class="hint-item">
                   <span class="item-text">All gear will be lost regardless of the raid outcome.</span>
@@ -76,7 +80,6 @@
                   <span class="hint-value">{{ timeEstMean }} <span class="hint-muted">σ:</span> {{ timeEstStdDev }}</span>
                 </div>
                 <div class="hint-section">
-                  <div class="section-heading">Info</div>
                   <div class="hint-item">
                     <span class="item-text">Estimated based on {{ timeEstSampleCount }} virtual attempts.</span>
                   </div>
@@ -153,6 +156,11 @@ const selectedPrice = computed(() => {
   if (!raidId) return 0;
   return getRaidGearCost(gs, raidId);
 });
+const reimbursedPct = computed(() => {
+  uiState.raidKey;
+  const gs = getGameState();
+  return Math.max(0, Math.round(gs.raid.reimbursedPct));
+});
 const canAfford = computed(() => uiState.credits >= selectedPrice.value);
 const deployDisabledReason = computed(() => {
   // Touch reactive keys so recompute happens on gear/quest changes
@@ -216,8 +224,8 @@ const isCollapseWarning = computed(() => {
   if (!hasTimeData.value) return false;
   const estimateSec = uiState.raidTimeEstimateSec || 0;
   const collapseSec = raid.zoneCollapseSec;
-  // Warning if estimated time is 80%+ of collapse time but no deaths yet
-  return estimateSec >= collapseSec * 0.8;
+  // Warning if estimated time is 90%+ of collapse time but no deaths yet
+  return estimateSec >= collapseSec * 0.9;
 });
 
 const isCollapseDanger = computed(() => {

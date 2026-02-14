@@ -152,12 +152,6 @@ function createDefaultUIState() {
     waferVersion: 0,
     refinePreviewVersion: 0,
 
-    mazeLevelIndex: 0,
-    mazeKeysCollected: 0,
-    mazeTotalKeys: 0,
-    mazeFailed: false,
-    mazeSolved: false,
-
     researchOwnedCount: 0,
     researchRevealRadius: 0,
     researchEditMode: '' as string,
@@ -461,20 +455,6 @@ export function SyncUIFromGameState(game: GameState): void {
       syncCache.lastWaferItemCount = currentItemCount;
       syncCache.lastWaferEnabledCount = currentEnabledCount;
     }
-  }
-
-  uiState.mazeLevelIndex = game.mazeLevelIndex || 0;
-  const maze = game.maze;
-  if (maze) {
-    uiState.mazeKeysCollected = maze.state?.keysCollected || 0;
-    uiState.mazeTotalKeys = maze.state?.keys?.length || 0;
-    uiState.mazeFailed = !!maze.state?.failed;
-    uiState.mazeSolved = (maze.state?.keys?.length || 0) === (maze.state?.keysCollected || 0);
-  } else {
-    uiState.mazeKeysCollected = 0;
-    uiState.mazeTotalKeys = 0;
-    uiState.mazeFailed = false;
-    uiState.mazeSolved = false;
   }
 
   if (game.researchOwnedCount !== uiState.researchOwnedCount) {

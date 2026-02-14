@@ -4,7 +4,6 @@ import SeededRandom from "./core/SeededRandom";
 import { Essence } from "./ItemLib";
 import type { Point2 } from "./core/math";
 import type { CheatInput } from './cheat/CheatCommands';
-import type { IceMaze } from "../maze/IceMaze";
 import type { Wafer } from "./Wafer";
 import { createWafer } from "./Wafer";
 import { initResearchCells } from "./Research";
@@ -89,11 +88,6 @@ export class GameState {
   public completedSignatureIds: string[] = [];
   public signatureLearnQueue: string[] = [];
   public signaturePlacementDiscoveryId: string = '';
-
-  public maze: IceMaze | null = null;
-  public mazeLevelIndex: number = 0;
-  public labirinthResetRequested: boolean = false;
-  public labirinthTranscendRequested: boolean = false;
 
   public activeTab: 'raid' | 'refine' | 'research' | 'maze' = 'raid';
 

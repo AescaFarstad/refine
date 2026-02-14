@@ -44,28 +44,6 @@ export class CmdStartRefining implements CmdInput {
   constructor() { }
 }
 
-// Maze controls
-export type MazeDir = 'up' | 'left' | 'down' | 'right';
-
-export class CmdMazeMove implements CmdInput {
-  readonly name = 'CmdMazeMove';
-  readonly dir: MazeDir;
-  constructor(dir: MazeDir) { this.dir = dir; }
-}
-
-export class CmdMazeReset implements CmdInput {
-  readonly name = 'CmdMazeReset';
-}
-
-export class CmdMazeRestart implements CmdInput {
-  readonly name = 'CmdMazeRestart';
-}
-
-export class CmdMazeTranscend implements CmdInput {
-  readonly name = 'CmdMazeTranscend';
-}
-
-
 export class CmdResearchNode implements CmdInput {
   readonly name = 'CmdResearchNode';
   readonly pos: Point2;

@@ -13,7 +13,7 @@ const EXCLUDED_KEYS = new Set([
   'raidSimulation',
   'acknowledgedRaidOutcome',
   'discoveryCounter',
-  // IceMaze runtime/visual-only state (not part of save format)
+  // Runtime/visual-only state (not part of save format)
   'lastMoveError',
   'lastMoveErrorUntil',
   'pendingTimeFlux',

@@ -40,7 +40,7 @@
       :disabled="uiState.timeActive"
       type="button"
     >
-      <span class="tab-title">{{ mazeTabTitle }}</span>
+      <span class="tab-title">Maze</span>
       <span class="tab-sub" :class="{ 'resource-animate': animatingTimeFlux }"><span class="tab-label">{{ timeFluxSpec.name }}</span><span class="tab-value" data-resource-display="timeFlux" :style="{ color: timeFluxSpec.color }">{{ fluxDisplay }}</span></span>
     </button>
   </nav>
@@ -48,7 +48,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { uiState, getGameLib } from '../logic/UIState';
+import { uiState } from '../logic/UIState';
 import { getResourceSpec } from '../logic/Resources';
 import { globalInputQueue } from '../logic/Model';
 import { CmdSwitchTab } from '../logic/input/InputCommands';
@@ -59,14 +59,6 @@ const activeTab = computed<TabKey>(() => uiState.activeTab);
 function switchTab(tab: TabKey) {
   globalInputQueue.push(new CmdSwitchTab({ tab }));
 }
-
-// Maze progress tracking
-const totalMazes = computed(() => getGameLib()?.mazeLevels?.length || 0);
-const completedMazes = computed(() => uiState.mazeLevelIndex);
-const hasMazeProgress = computed(() => completedMazes.value > 0);
-const mazeTabTitle = computed(() =>
-  hasMazeProgress.value ? `Maze ${completedMazes.value}/${totalMazes.value}` : 'Maze'
-);
 
 const creditsSpec = getResourceSpec('credits');
 const chronotracesSpec = getResourceSpec('chronotraces');

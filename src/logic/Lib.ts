@@ -13,8 +13,6 @@ import { parseSignatureDefinitions } from './SignatureLib';
 import type { MonsterDefinition } from './MonsterLib';
 import { parseMonsterDefinitions } from './MonsterLib';
 import monstersData from '../data/monsters';
-import type { MazeDefinition } from './MazeLib';
-import { buildOrderedMazeLevels, parseMazeDefinitions } from './MazeLib';
 import raidsData from '../data/raids';
 import questsShegolskoeData from '../data/quests/quests_shegolskoe';
 import questsOzernoyeData from '../data/quests/quests_ozernoye';
@@ -25,7 +23,6 @@ import gearCategoriesData from '../data/gear_categories';
 import itemsData from '../data/items';
 import signaturesData from '../data/signatures';
 import signatureLayoutsData from '../data/signature_layouts';
-import mazeData from '../data/maze';
 import { ResearchLib } from "./ResearchLib";
 import { researchArchetypes } from '../data/research_archetypes';
 import { researchPane, researchPaneEmptyCells, researchPaneVoidCells } from '../data/research_pane';
@@ -42,9 +39,6 @@ export class Lib {
   public items: Map<string, ItemDefinition> = new Map();
   public signatures: Map<string, SignatureDefinition> = new Map();
   public monsters: Map<string, MonsterDefinition> = new Map();
-  public mazes: Map<string, MazeDefinition> = new Map();
-  // Ordered levels array (sorted by numeric prefix lN_)
-  public mazeLevels: MazeDefinition[] = [];
   public research: ResearchLib = new ResearchLib();
 
   constructor() {
@@ -136,9 +130,6 @@ export class Lib {
       this.compileAllPotentialItems();
 
       this.monsters = parseMonsterDefinitions(monstersData);
-
-      this.mazes = parseMazeDefinitions(mazeData);
-      this.mazeLevels = buildOrderedMazeLevels(this.mazes);
 
       // Initialize research library with gear archetypes
       this.research.load(

@@ -3,7 +3,6 @@ import SeededRandom from "./core/SeededRandom";
 import { loadGame_V1 } from "./LoadGame_V1";
 import type { Wafer } from "./Wafer";
 import { getPivotHex } from "./MoleculeUtils";
-import type { IceMaze } from "../maze/IceMaze";
 import { indexToAxial } from "./Research";
 import type { RawRaidDefinition } from "./RaidLib";
 
@@ -35,52 +34,6 @@ interface SerializedWafer {
   placedItems: SavedWaferItem[];
 }
 
-interface SavedPoint {
-  x: number;
-  y: number;
-}
-
-interface SavedMazeDemon {
-  id: number;
-  x: number;
-  y: number;
-}
-
-interface SavedMazeSettings {
-  x: number;
-  y: number;
-  seed: number;
-  spawn: SavedPoint;
-  keys: SavedPoint[];
-  spawnProbability: number;
-  maxDemons: number;
-  artefacts: Array<{ type: number; x: number; y: number }>;
-  fill: SavedPoint[];
-}
-
-interface SavedMazeState {
-  randomSeed: number;
-  player: SavedPoint;
-  demons: SavedMazeDemon[];
-  takenKeys: boolean[];
-  keysCollected: number;
-  turn: number;
-  failed: boolean;
-  numEyes: number;
-  freezeLeft: number;
-  nextActorId: number;
-  artefactsTaken: boolean[];
-}
-
-interface SavedMaze {
-  settings: SavedMazeSettings;
-  timeFluxAvailable: number;
-  movesMade: number;
-  cellTimeFlux: string;
-  cellTimeFluxVersion: number;
-  state: SavedMazeState;
-}
-
 function isObjectRecord(value: unknown): value is AnonymousObject {
   return typeof value === "object" && value !== null;
 }
@@ -89,7 +42,6 @@ function saveReplacer(key: string, value: unknown): unknown {
   if (key === "lib") return undefined;
   if (key === "researchCells") return undefined;
   if (key === "wafer") return undefined;
-  if (key === "maze") return undefined;
   if (key === "raidSimulation") return undefined;
   if (key === "acknowledgedRaidOutcome") return undefined;
   if (key === "discoveryCounter") return undefined;
@@ -137,60 +89,6 @@ function collectOwnedResearchCellsString(gameState: GameState): string {
   return out.join(CELL_PAIR_SEPARATOR);
 }
 
-function serializePoint(point: { x: number; y: number }): SavedPoint {
-  return { x: point.x, y: point.y };
-}
-
-function serializeCellTimeFlux(bits: boolean[][], width: number, height: number): string {
-  let out = "";
-  for (let x = 0; x < width; x++) {
-    const column = bits[x]!;
-    for (let y = 0; y < height; y++) {
-      out += column[y] ? "1" : "0";
-    }
-  }
-  return out;
-}
-
-function serializeMaze(maze: IceMaze): SavedMaze {
-  const settings = (maze as unknown as { settings: SavedMazeSettings }).settings;
-
-  return {
-    settings: {
-      x: settings.x,
-      y: settings.y,
-      seed: settings.seed,
-      spawn: serializePoint(settings.spawn),
-      keys: settings.keys.map(serializePoint),
-      spawnProbability: settings.spawnProbability,
-      maxDemons: settings.maxDemons,
-      artefacts: settings.artefacts.map(a => ({ type: a.type, x: a.x, y: a.y })),
-      fill: settings.fill.map(serializePoint),
-    },
-    timeFluxAvailable: maze.timeFluxAvailable,
-    movesMade: maze.movesMade,
-    cellTimeFlux: serializeCellTimeFlux(
-      maze.cellTimeFlux,
-      maze.dimensions.x,
-      maze.dimensions.y
-    ),
-    cellTimeFluxVersion: maze.cellTimeFluxVersion,
-    state: {
-      randomSeed: maze.state.random.getSeed(),
-      player: serializePoint(maze.state.player.cell),
-      demons: maze.state.demons.map(d => ({ id: d.id, x: d.cell.x, y: d.cell.y })),
-      takenKeys: maze.state.takenKeys.slice(),
-      keysCollected: maze.state.keysCollected,
-      turn: maze.state.turn,
-      failed: maze.state.failed,
-      numEyes: maze.state.numEyes,
-      freezeLeft: maze.state.freezeLeft,
-      nextActorId: maze.state.nextActorId,
-      artefactsTaken: maze.state.artefacts.map(a => a.taken),
-    },
-  };
-}
-
 function serializeRawRaidLib(gameState: GameState): Record<string, RawRaidDefinition> {
   const out: Record<string, RawRaidDefinition> = {};
   for (const raid of gameState.lib.raids.values()) {
@@ -216,7 +114,6 @@ function serializeGameState(gameState: GameState): AnonymousObject {
   const out = JSON.parse(JSON.stringify(gameState, saveReplacer)) as AnonymousObject;
   out[RESEARCH_OWNED_CELLS_KEY] = collectOwnedResearchCellsString(gameState);
   out.wafer = serializeWafer(gameState.wafer);
-  out.maze = gameState.maze ? serializeMaze(gameState.maze) : null;
   out.rawRaidLib = serializeRawRaidLib(gameState);
   return out;
 }

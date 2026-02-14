@@ -30,12 +30,6 @@
           </button>
         </div>
 
-        <div class="maze-level-controls" style="margin-top: 12px;">
-          <span class="maze-level-label">Maze Level: {{ mazeLevelIndex + 1 }} / {{ mazeLevelCount }}</span>
-          <button class="btn" type="button" @click="changeMazeLevel(-1)" :disabled="mazeLevelIndex <= 0">−</button>
-          <button class="btn" type="button" @click="changeMazeLevel(1)" :disabled="mazeLevelIndex >= mazeLevelCount - 1">+</button>
-        </div>
-
         <h4 class="section-title">Grant Resources</h4>
         <div class="resource-and-discovery">
           <div class="resource-grid">
@@ -134,7 +128,7 @@ import { DISCOVERY, type DiscoveryId } from '../logic/DiscoveryLib';
 import { discover } from '../logic/Discover';
 import { REWARD_UI_KEYS } from './rewardUI/RewardUIRegistry';
 import atlasStorage from '../logic/AtlasStorage';
-import { CheatCompleteSignatures, CheatSetMazeLevel } from '../logic/cheat/CheatCommands';
+import { CheatCompleteSignatures } from '../logic/cheat/CheatCommands';
 import { processCheats } from '../logic/cheat/CheatProcessor';
 
 const open = computed(() => uiState.cheatOpen);
@@ -332,16 +326,6 @@ function formatUILabel(key: string): string {
   return key.replaceAll('_', ' ');
 }
 
-// Maze level cheat controls
-const mazeLevelIndex = computed(() => uiState.mazeLevelIndex);
-const mazeLevelCount = computed(() => uiState.lib?.mazeLevels.length ?? 0);
-
-function changeMazeLevel(delta: number): void {
-  const gs = getGameStateMutable();
-  const newIndex = gs.mazeLevelIndex + delta;
-  gs.cheats.push(new CheatSetMazeLevel({ levelIndex: newIndex }));
-}
-
 function closeAll() {
   uiState.cheatOpen = false;
   uiState.devAtlasKey = '';
@@ -532,15 +516,4 @@ function closeAll() {
   background: rgba(251, 191, 36, 0.28);
 }
 
-.maze-level-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.maze-level-label {
-  font-size: 13px;
-  color: var(--text-secondary);
-  min-width: 120px;
-}
 </style>

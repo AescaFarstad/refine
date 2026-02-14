@@ -101,11 +101,3 @@ export class CheatAddItemBans implements CheatInput {
     this.amount = args.amount;
   }
 }
-
-export class CheatSetMazeLevel implements CheatInput {
-  readonly name = 'CheatSetMazeLevel';
-  readonly levelIndex: number;
-  constructor(args: { levelIndex: number }) {
-    this.levelIndex = args.levelIndex;
-  }
-}

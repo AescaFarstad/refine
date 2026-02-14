@@ -93,7 +93,6 @@ import { onBeforeUnmount, onMounted, ref, computed, watch } from 'vue';
 import { getGameLib, getGameState, uiState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
 import { CmdMazeMove, CmdMazeReset, CmdMazeRestart, CmdMazeTranscend } from '../logic/input/InputCommands';
-import type { MazeDefinition } from '../logic/MazeLib';
 import type { Point2 } from '../logic/core/math';
 import { getResourceSpec } from '../logic/Resources';
 import { DISCOVERY } from '../logic/DiscoveryLib';
@@ -115,7 +114,7 @@ let hoverCell: { x: number; y: number } | null = null;
 let needsStaticRedraw = true;
 let lastVisualKeyState: string = '';
 
-function getLevels(): Array<MazeDefinition> { return getGameLib()?.mazeLevels || []; }
+function getLevels() { return getGameLib()?.mazeLevels || []; }
 const levelIndex = computed(() => uiState.mazeLevelIndex);
 const levelTitle = computed(() => {
   const lv = getLevels()[levelIndex.value];

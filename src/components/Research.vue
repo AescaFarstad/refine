@@ -97,8 +97,7 @@ import { uiState, getGameState, getGameLib } from '../logic/UIState';
 import { axialToIndex, calculateResearchNodePrice, findCheapestPath } from '../logic/Research';
 import EditResearchPane from './EditResearchPane.vue';
 import ResearchNodeHint from './researchHints/ResearchNodeHint.vue';
-import type { ResearchCell } from '../logic/GameState';
-import type { ResearchArchetype, ResearchNodeInstance } from '../logic/ResearchLib';
+import type { ReadonlyResearchArchetype, ReadonlyResearchCell, ReadonlyResearchNodeInstance } from '../logic/UIState';
 import { axialToPixel } from '../logic/HexMath';
 import { RESEARCH_OBSTACLE_PRICE, RESEARCH_OBSTACLE_PRICE_GROWTH } from '../logic/Const';
 import { getResourceSpec } from '../logic/Resources';
@@ -195,7 +194,11 @@ const hoverPreview = computed(() => {
   };
 });
 
-const hoveredNode = computed<null | { cell: ResearchCell; node: ResearchNodeInstance | null; archetype: ResearchArchetype | null }>(() => {
+const hoveredNode = computed<null | {
+  cell: ReadonlyResearchCell;
+  node: ReadonlyResearchNodeInstance | null;
+  archetype: ReadonlyResearchArchetype | null;
+}>(() => {
   const cell = hoverCell.value;
   if (!cell) return null;
 

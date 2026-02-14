@@ -11,14 +11,13 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { ResearchCell } from '../../logic/GameState';
-import type { ResearchArchetype, ResearchNodeInstance } from '../../logic/ResearchLib';
 import { getGameState } from '../../logic/UIState';
+import type { ReadonlyResearchArchetype, ReadonlyResearchCell, ReadonlyResearchNodeInstance } from '../../logic/UIState';
 
 const props = defineProps<{
-  cell: ResearchCell;
-  node: ResearchNodeInstance | null;
-  archetype: ResearchArchetype | null;
+  cell: ReadonlyResearchCell;
+  node: ReadonlyResearchNodeInstance | null;
+  archetype: ReadonlyResearchArchetype | null;
 }>();
 
 const statInfo: Record<string, { name: string; description: string }> = {

@@ -1,6 +1,6 @@
 import type { Wafer, ReadonlyWafer } from './Wafer';
 import { getCell } from './Wafer';
-import type { SignatureDefinition, SignatureMolecule } from './SignatureLib';
+import type { ReadonlySignatureDefinition, ReadonlySignatureMolecule } from './SignatureLib';
 import type { Point2 } from './ItemLib';
 import type { RefiningRewardBonus } from './Reward';
 
@@ -17,7 +17,7 @@ function createRefiningRewardBonus(): RefiningRewardBonus {
   };
 }
 
-export function sumSignatureRefiningRewards(signatures: readonly SignatureDefinition[]): RefiningRewardBonus {
+export function sumSignatureRefiningRewards(signatures: readonly ReadonlySignatureDefinition[]): RefiningRewardBonus {
   const total = createRefiningRewardBonus();
   for (const signature of signatures) {
     for (const reward of signature.rewards) {
@@ -45,7 +45,7 @@ function essenceMatchesForSignature(essence: string, targetColor: string): boole
   return essenceEquivalents[essence] === targetColor;
 }
 
-function signatureMatchesAtOffset(wafer: ReadonlyWafer, molecule: SignatureMolecule, offset: { x: number; y: number }): boolean {
+function signatureMatchesAtOffset(wafer: ReadonlyWafer, molecule: ReadonlySignatureMolecule, offset: { x: number; y: number }): boolean {
   for (const atom of molecule.atoms) {
     const cell = getCell(wafer, { x: atom.x + offset.x, y: atom.y + offset.y });
     if (!cell || !cell.enabled) return false;
@@ -57,7 +57,7 @@ function signatureMatchesAtOffset(wafer: ReadonlyWafer, molecule: SignatureMolec
 
 export function scanWaferForNewSignatures(
   wafer: ReadonlyWafer,
-  signatureDefs: SignatureDefinition[],
+  signatureDefs: readonly ReadonlySignatureDefinition[],
   completedSignatureIds: Set<string>
 ): WaferSignatureScanResult {
   const newlyCompletedSignatureIds: string[] = [];

@@ -133,7 +133,6 @@ import { RESOURCE_SPECS, type ResourceKey } from '../logic/Resources';
 import { DISCOVERY, type DiscoveryId } from '../logic/DiscoveryLib';
 import { discover } from '../logic/Discover';
 import { REWARD_UI_KEYS } from './rewardUI/RewardUIRegistry';
-import type { SignatureDefinition } from '../logic/SignatureLib';
 import atlasStorage from '../logic/AtlasStorage';
 import { CheatCompleteSignatures, CheatSetMazeLevel } from '../logic/cheat/CheatCommands';
 import { processCheats } from '../logic/cheat/CheatProcessor';
@@ -150,7 +149,7 @@ const atlasVars = {
 } as Record<string, string>;
 
 // All signatures from lib
-const allSignatures = computed<SignatureDefinition[]>(() => {
+const allSignatures = computed(() => {
   const lib = uiState.lib;
   if (!lib) return [];
   return Array.from(lib.signatures.values());

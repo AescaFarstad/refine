@@ -25,13 +25,12 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { SignatureDefinition } from '../logic/SignatureLib';
-import type { Lib } from '../logic/Lib';
-import { getGameState, uiState } from '../logic/UIState';
+import type { ReadonlySignatureDefinition } from '../logic/SignatureLib';
+import { getGameLib } from '../logic/UIState';
 import { formatRewardHintText } from '../logic/RewardHintText';
 
 const props = defineProps<{
-  signature: SignatureDefinition;
+  signature: ReadonlySignatureDefinition;
   completed: boolean;
 }>();
 
@@ -67,7 +66,7 @@ const otherRewardLines = computed(() => {
     if (reward.kind === 'refining_yield_pct_bonus') continue;
     if (reward.kind === 'refining_success_chance_bonus') continue;
     if (reward.kind === 'refining_speed_pct_bonus') continue;
-    out.push(formatRewardHintText(reward, getGameState().lib! as Lib));
+    out.push(formatRewardHintText(reward, getGameLib()));
   }
   return out;
 });

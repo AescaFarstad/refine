@@ -10,6 +10,21 @@ import type { Point2 } from './ItemLib';
 import { DISCOVERY } from './DiscoveryLib';
 import type { UIModalEntry } from './Reward';
 
+export type DeepReadonly<T> =
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  T extends (...args: any[]) => any ? T :
+  T extends Map<infer K, infer V> ? ReadonlyMap<K, DeepReadonly<V>> :
+  T extends Set<infer U> ? ReadonlySet<DeepReadonly<U>> :
+  T extends (infer U)[] ? readonly DeepReadonly<U>[] :
+  T extends object ? { readonly [K in keyof T]: DeepReadonly<T[K]> } :
+  T;
+
+export type ReadonlyLib = DeepReadonly<Lib>;
+export type ReadonlyGameState = DeepReadonly<GameState>;
+export type ReadonlyResearchCell = ReadonlyGameState['researchCells'][number];
+export type ReadonlyResearchArchetype = ReadonlyLib['research']['archetypes'] extends ReadonlyMap<string, infer V> ? V : never;
+export type ReadonlyResearchNodeInstance = ReadonlyLib['research']['nodes'] extends ReadonlyMap<number, infer V> ? V : never;
+
 export interface ShardPhysics {
   pos: Point2;
   vel: Point2;
@@ -33,7 +48,7 @@ export interface UIRefinery {
 
 function createDefaultUIState() {
   return {
-    lib: null as Lib | null,
+    lib: null as ReadonlyLib | null,
 
     credits: 0,
     chronotraces: 0,
@@ -477,20 +492,9 @@ export function SyncUIFromGameState(game: GameState): void {
 }
 
 // Expose current game lib for UI components that need live definitions
-export function getGameLib(): Lib {
+export function getGameLib(): ReadonlyLib {
   return gameRef!.lib;
 }
-
-
-export type DeepReadonly<T> =
-  T extends (...args: unknown[]) => unknown ? T :
-  T extends Map<infer K, infer V> ? ReadonlyMap<K, DeepReadonly<V>> :
-  T extends Set<infer U> ? ReadonlySet<DeepReadonly<U>> :
-  T extends (infer U)[] ? readonly DeepReadonly<U>[] :
-  T extends object ? { readonly [K in keyof T]: DeepReadonly<T[K]> } :
-  T;
-
-export type ReadonlyGameState = DeepReadonly<GameState>;
 
 
 export function getGameState(): ReadonlyGameState {

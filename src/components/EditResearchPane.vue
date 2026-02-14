@@ -186,7 +186,7 @@ import atlasStorage from '../logic/AtlasStorage';
 import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 import { setResearchRevealRadius } from '../logic/Model';
 import { CheatLoadResearchState } from '../logic/cheat/CheatCommands';
-import type { ResearchArchetype } from '../logic/ResearchLib';
+import type { ReadonlyResearchArchetype } from '../logic/UIState';
 import type { ResearchCell } from '../logic/GameState';
 import ResearchNodeHint from './researchHints/ResearchNodeHint.vue';
 
@@ -241,8 +241,8 @@ const availableArchetypes = computed(() => {
     }
   }
 
-  const nonGear: Array<{ id: string; label: string; icon: ResearchStatIcon; type: string; archetype: ResearchArchetype }> = [];
-  const gear: Array<{ id: string; label: string; gearId?: string; imageKey?: string; isAlreadyUnlocked: boolean; archetype: ResearchArchetype; category: string }> = [];
+  const nonGear: Array<{ id: string; label: string; icon: ResearchStatIcon; type: string; archetype: ReadonlyResearchArchetype }> = [];
+  const gear: Array<{ id: string; label: string; gearId?: string; imageKey?: string; isAlreadyUnlocked: boolean; archetype: ReadonlyResearchArchetype; category: string }> = [];
 
   lib.research.archetypes.forEach((archetype, id) => {
     if (id === 'hub' || id === 'obs' || id === 'empty' || id === 'void') return;
@@ -304,7 +304,7 @@ const availableArchetypes = computed(() => {
   return { nonGear, gear };
 });
 
-const hoveredArchetype = ref<ResearchArchetype | null>(null);
+const hoveredArchetype = ref<ReadonlyResearchArchetype | null>(null);
 const hoverPosition = ref<Point | null>(null);
 
 const mockHintCell = computed((): ResearchCell => {
@@ -318,7 +318,7 @@ const mockHintCell = computed((): ResearchCell => {
   };
 });
 
-function onHoverStart(archetype: ResearchArchetype, event: MouseEvent) {
+function onHoverStart(archetype: ReadonlyResearchArchetype, event: MouseEvent) {
   const button = event.currentTarget as HTMLElement;
   hoverPosition.value = {
     x: button.offsetLeft + 20,

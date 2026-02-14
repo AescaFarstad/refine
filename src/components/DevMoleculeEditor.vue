@@ -94,7 +94,6 @@ import { translateForSnap, rotateMolecule } from '../logic/MoleculeUtils';
 import { HEX_SIZE, WAFER_CANVAS_WIDTH, WAFER_CANVAS_HEIGHT } from '../logic/RefineUIBehaviour';
 import type { Molecule, Point2 } from '../logic/ItemLib';
 import { updateManualDragMolecule } from '../logic/ManualDrag';
-import type { RaidDefinition } from '../logic/RaidLib';
 
 const emit = defineEmits<{ (e: 'close'): void }>();
 
@@ -144,10 +143,7 @@ const allItems = computed(() => {
 
 const availableRaids = computed(() => {
   if (!uiState.lib) return [];
-  const raids: RaidDefinition[] = [];
-  for (const [, raid] of uiState.lib.raids) {
-    raids.push(raid);
-  }
+  const raids = Array.from(uiState.lib.raids.values());
   raids.sort((a, b) => a.order - b.order);
   return raids;
 });

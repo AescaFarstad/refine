@@ -21,7 +21,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { SignatureDefinition } from '../logic/SignatureLib';
+import type { ReadonlySignatureDefinition } from '../logic/SignatureLib';
 import { uiState } from '../logic/UIState';
 import atlasStorage from '../logic/AtlasStorage';
 import SignatureHint from './SignatureHint.vue';
@@ -30,7 +30,7 @@ const props = defineProps<{
   waferSignatureIds?: string[];
 }>();
 
-const signaturesForLevel = computed<SignatureDefinition[]>(() => {
+const signaturesForLevel = computed<ReadonlySignatureDefinition[]>(() => {
   const lib = uiState.lib!;
   const level = uiState.signatureLevel;
   return Array.from(lib.signatures.values()).filter(s => s.level === level);

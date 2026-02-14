@@ -628,7 +628,7 @@ function applyEditModeAt(axial: Point2): void {
     cell.cost = mode === 'obstacle' ? 1 : 0;
   }
 
-  calculateVisibility(gs, lib.research);
+  calculateVisibility(gs, gs.lib.research);
 
   // Force local redraw and notify dev tools
   scheduleRender({ base: true, highlight: true });

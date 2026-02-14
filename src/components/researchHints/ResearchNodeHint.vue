@@ -4,8 +4,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { ResearchCell } from '../../logic/GameState';
-import type { ResearchArchetype, ResearchNodeInstance, ResearchNodeType } from '../../logic/ResearchLib';
+import type { ResearchNodeType } from '../../logic/ResearchLib';
+import type { ReadonlyResearchArchetype, ReadonlyResearchCell, ReadonlyResearchNodeInstance } from '../../logic/UIState';
 import DiscoveryHint from './DiscoveryHint.vue';
 import GearHint from './GearHint.vue';
 import RewardHint from './RewardHint.vue';
@@ -13,9 +13,9 @@ import ResourceHint from './ResourceHint.vue';
 import StatHint from './StatHint.vue';
 
 const props = defineProps<{
-  cell: ResearchCell;
-  node: ResearchNodeInstance | null;
-  archetype: ResearchArchetype | null;
+  cell: ReadonlyResearchCell;
+  node: ReadonlyResearchNodeInstance | null;
+  archetype: ReadonlyResearchArchetype | null;
 }>();
 
 const nodeType = computed<ResearchNodeType>(() => {

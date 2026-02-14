@@ -61,7 +61,7 @@ export interface ResearchArchetype {
 }
 
 export function isResearchArchetypeRevealedByDiscovery(
-  archetype: ResearchArchetype,
+  archetype: { readonly revealingDiscovery: DiscoveryId | '' },
   discoveries: Readonly<Record<string, true>>,
 ): boolean {
   return archetype.revealingDiscovery !== '' && discoveries[archetype.revealingDiscovery] === true;

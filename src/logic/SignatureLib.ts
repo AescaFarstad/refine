@@ -1,4 +1,4 @@
-import type { Molecule } from './ItemLib';
+import type { Molecule, MoleculeAtom } from './ItemLib';
 import type { Reward } from './Reward';
 
 export type SignatureMolecule = Omit<Molecule, 'connections'>;
@@ -11,6 +11,18 @@ export interface SignatureDefinition {
   molecule: SignatureMolecule;
   color: string;
   rewards: Reward[];
+}
+
+export type ReadonlySignatureMolecule = { readonly atoms: readonly Readonly<MoleculeAtom>[] };
+
+export interface ReadonlySignatureDefinition {
+  readonly id: string;
+  readonly name: string;
+  readonly level: number;
+  readonly group: string;
+  readonly molecule: ReadonlySignatureMolecule;
+  readonly color: string;
+  readonly rewards: readonly Reward[];
 }
 
 export type RawSignatureLayoutDefinition = {

@@ -1,6 +1,4 @@
-import { isResearchArchetypeRevealedByDiscovery, type ResearchArchetype } from './ResearchLib';
-import type { Lib } from './Lib';
-import type { GearDefinition } from './GearLib';
+import { isResearchArchetypeRevealedByDiscovery } from './ResearchLib';
 import { RESEARCH_PANE_SIZE } from './Const';
 import { indexToAxial } from './Research';
 import { axialToPixel } from './HexMath';
@@ -9,7 +7,9 @@ import type { Point2 } from './ItemLib';
 import atlasStorage from './AtlasStorage';
 import { computeMaxSquareForHexNode, type MaxSquareResult } from './MaxSquareInHexNode';
 import { getResourceSpecByAnyKey } from './Resources';
-import { ReadonlyGameState } from './UIState';
+import type { ReadonlyGameState, ReadonlyLib, ReadonlyResearchArchetype } from './UIState';
+
+type GearIconDefinition = { readonly image: string };
 
 const RESEARCH_COLOR_OWNED_BG = 'rgb(50, 140, 80)';
 const RESEARCH_COLOR_UNOWNED_BG = 'rgb(35, 45, 70)';
@@ -81,7 +81,7 @@ export interface ResearchCellInfo {
 export function renderResearchBaseLayer(
   ctx: CanvasRenderingContext2D,
   game: ReadonlyGameState,
-  lib: Lib,
+  lib: ReadonlyLib,
   origin: Point2,
   hexSize: number,
   backgroundHexSize: number
@@ -151,7 +151,7 @@ export function renderResearchBaseLayer(
   }
 }
 
-function getGearDefinitionForArchetype(lib: Lib, archetype: ResearchArchetype | null): GearDefinition | null {
+function getGearDefinitionForArchetype(lib: ReadonlyLib, archetype: ReadonlyResearchArchetype | null): GearIconDefinition | null {
   if (!archetype) return null;
   const reward = archetype.rewards.find(r => r.kind === 'unlock_gear' || r.kind === 'countable_gear');
   if (!reward) return null;
@@ -161,7 +161,7 @@ function getGearDefinitionForArchetype(lib: Lib, archetype: ResearchArchetype | 
   return null;
 }
 
-function getVisualStyle(archetype: ResearchArchetype | null, owned: boolean): {
+function getVisualStyle(archetype: ReadonlyResearchArchetype | null, owned: boolean): {
   fillColor: string;
 } {
   if (owned) {
@@ -184,12 +184,12 @@ function drawMergedNode(
   ctx: CanvasRenderingContext2D,
   game: ReadonlyGameState,
   cells: ResearchCellInfo[],
-  archetype: ResearchArchetype | null,
+  archetype: ReadonlyResearchArchetype | null,
   owned: boolean,
   origin: Point2,
   hexSize: number,
   backgroundHexSize: number,
-  gearDef: GearDefinition | null
+  gearDef: GearIconDefinition | null
 ): void {
   const style = getVisualStyle(archetype, owned);
   ctx.save();
@@ -222,12 +222,12 @@ function drawSingleCell(
   ctx: CanvasRenderingContext2D,
   game: ReadonlyGameState,
   info: ResearchCellInfo,
-  archetype: ResearchArchetype | null,
+  archetype: ReadonlyResearchArchetype | null,
   owned: boolean,
   origin: Point2,
   hexSize: number,
   backgroundHexSize: number,
-  gearDef: GearDefinition | null
+  gearDef: GearIconDefinition | null
 ): void {
   const style = getVisualStyle(archetype, owned);
   const center = axialToPixel(info.axial, hexSize, origin);
@@ -245,11 +245,11 @@ function drawNodeOverlay(
   ctx: CanvasRenderingContext2D,
   game: ReadonlyGameState,
   cells: ResearchCellInfo[],
-  archetype: ResearchArchetype | null,
+  archetype: ReadonlyResearchArchetype | null,
   owned: boolean,
   origin: Point2,
   hexSize: number,
-  gearDef: GearDefinition | null
+  gearDef: GearIconDefinition | null
 ): void {
   if (!archetype) return;
 
@@ -302,7 +302,7 @@ function drawArchetypeIconForNode(
   ctx: CanvasRenderingContext2D,
   game: ReadonlyGameState,
   cells: ResearchCellInfo[],
-  archetype: ResearchArchetype,
+  archetype: ReadonlyResearchArchetype,
   owned: boolean,
   origin: Point2,
   hexSize: number
@@ -408,7 +408,7 @@ function getStatIconSpec(statKey: string | undefined): ResearchStatIconSpec | nu
 function drawStatIconForNode(
   ctx: CanvasRenderingContext2D,
   cells: ResearchCellInfo[],
-  archetype: ResearchArchetype,
+  archetype: ReadonlyResearchArchetype,
   owned: boolean,
   origin: Point2,
   hexSize: number
@@ -502,7 +502,7 @@ function drawStatIconForNode(
 function drawResourceIconForNode(
   ctx: CanvasRenderingContext2D,
   cells: ResearchCellInfo[],
-  archetype: ResearchArchetype,
+  archetype: ReadonlyResearchArchetype,
   owned: boolean,
   origin: Point2,
   hexSize: number
@@ -572,7 +572,7 @@ function drawResourceIconForNode(
 function drawGearIconForNode(
   ctx: CanvasRenderingContext2D,
   cells: ResearchCellInfo[],
-  gearDef: GearDefinition,
+  gearDef: GearIconDefinition,
   owned: boolean,
   origin: Point2,
   hexSize: number

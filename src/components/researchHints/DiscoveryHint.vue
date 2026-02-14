@@ -12,14 +12,14 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { ResearchCell } from '../../logic/GameState';
 import { getGameState, uiState } from '../../logic/UIState';
-import { isResearchArchetypeRevealedByDiscovery, type ResearchArchetype, type ResearchNodeInstance } from '../../logic/ResearchLib';
+import { isResearchArchetypeRevealedByDiscovery } from '../../logic/ResearchLib';
+import type { ReadonlyResearchArchetype, ReadonlyResearchCell, ReadonlyResearchNodeInstance } from '../../logic/UIState';
 
 const props = defineProps<{
-  cell: ResearchCell;
-  node: ResearchNodeInstance | null;
-  archetype: ResearchArchetype | null;
+  cell: ReadonlyResearchCell;
+  node: ReadonlyResearchNodeInstance | null;
+  archetype: ReadonlyResearchArchetype | null;
 }>();
 
 const isRevealedByDiscovery = computed(() => {

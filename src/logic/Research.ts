@@ -34,13 +34,6 @@ export function getCell(gs: GameState, x: number, y: number): ResearchCell | nul
   return gs.researchCells[idx];
 }
 
-export function setCell(gs: GameState, x: number, y: number, cell: ResearchCell): boolean {
-  const idx = axialToIndex(x, y);
-  if (idx === -1) return false;
-  gs.researchCells[idx] = cell;
-  return true;
-}
-
 export function initResearchCells(gs: GameState, lib: ResearchLib): void {
   const totalCells = RESEARCH_PANE_SIZE * RESEARCH_PANE_SIZE;
 
@@ -109,12 +102,6 @@ export function initResearchCells(gs: GameState, lib: ResearchLib): void {
   });
 
   calculateVisibility(gs, lib);
-}
-
-export function hexDistance(x1: number, y1: number, x2: number, y2: number): number {
-  const z1 = -x1 - y1;
-  const z2 = -x2 - y2;
-  return Math.max(Math.abs(x1 - x2), Math.abs(y1 - y2), Math.abs(z1 - z2));
 }
 
 export function calculateVisibility(gs: GameState, lib: ResearchLib): void {

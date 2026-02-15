@@ -18,13 +18,14 @@ import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
 import { uiState, getGameState, getGameLib, getGameStateMutable } from '../logic/UIState';
 import { clearCanvas, drawHexagon } from '../logic/DrawHex';
 import type { Point2 } from '../logic/ItemLib';
-import { pixelToAxial, axialToPixel } from '../logic/HexMath';
+import { axialToPixel } from '../logic/HexMath';
 import { renderResearchBaseLayer } from '../logic/drawResearch';
 import { findCheapestPath, indexToAxial, axialToIndex, calculateVisibility, calculateResearchNodePrice } from '../logic/Research';
 import { globalInputQueue } from '../logic/Model';
 import { CmdResearchNode } from '../logic/input/InputCommands';
 import { getResourceSpec } from '../logic/Resources';
 import type { ResearchHighlightHover } from '../logic/ResearchHighlightHover';
+import { useHexPaneInteraction } from '../logic/pane/useHexPaneInteraction';
 
 const container = ref<HTMLDivElement | null>(null);
 const baseCanvas = ref<HTMLCanvasElement | null>(null);
@@ -40,9 +41,6 @@ let baseBufferZoom = 1;
 let baseBufferValid = false;
 
 const BASE_BUFFER_PADDING_PX = 768;
-const ZOOM_STOP_RENDER_DEBOUNCE_MS = 400;
-
-let zoomStopTimeoutId: number | null = null;
 
 const HEX_SIZE = 18;
 const BACKGROUND_HEX_SIZE = HEX_SIZE * 0.85;
@@ -59,9 +57,6 @@ const origin = computed<Point2>(() => ({
 
 const zoom = ref(1);
 const offset = ref<Point2>({ x: 0, y: 0 });
-const isPanning = ref(false);
-const isMouseDown = ref(false);
-const lastPanClient = ref<Point2 | null>(null);
 const hoverAxial = ref<Point2 | null>(null);
 
 const props = withDefaults(defineProps<{
@@ -115,10 +110,6 @@ onUnmounted(() => {
   if (rafId != null) {
     cancelAnimationFrame(rafId);
     rafId = null;
-  }
-  if (zoomStopTimeoutId != null) {
-    window.clearTimeout(zoomStopTimeoutId);
-    zoomStopTimeoutId = null;
   }
 });
 
@@ -273,18 +264,6 @@ function presentBaseLayer() {
   displayCtx.drawImage(baseBufferCanvas, 0, 0);
 }
 
-function scheduleZoomStopRender(): void {
-  if (typeof window === 'undefined') return;
-  if (zoomStopTimeoutId != null) {
-    window.clearTimeout(zoomStopTimeoutId);
-    zoomStopTimeoutId = null;
-  }
-  zoomStopTimeoutId = window.setTimeout(() => {
-    zoomStopTimeoutId = null;
-    scheduleRender({ base: true, baseMode: 'render', highlight: true });
-  }, ZOOM_STOP_RENDER_DEBOUNCE_MS);
-}
-
 function renderHighlightLayer() {
   const canvas = highlightCanvas.value;
   if (!canvas) return;
@@ -409,155 +388,47 @@ function drawPanelHighlightLayer(
   ctx.restore();
 }
 
-function onWheel(event: WheelEvent) {
-  const canvas = baseCanvas.value;
-  if (!canvas) return;
-
-  const rect = canvas.getBoundingClientRect();
-  const px = event.clientX - rect.left;
-  const py = event.clientY - rect.top;
-
-  const oldZoom = zoom.value || 1;
-  const zoomFactor = event.deltaY > 0 ? 0.9 : 1.1;
-  let newZoom = oldZoom * zoomFactor;
-  newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
-
-  if (newZoom === oldZoom) return;
-
-  const off = offset.value;
-  const worldX = (px - off.x) / oldZoom;
-  const worldY = (py - off.y) / oldZoom;
-
-  offset.value = {
-    x: px - worldX * newZoom,
-    y: py - worldY * newZoom,
-  };
-  zoom.value = newZoom;
-
-  scheduleRender({ base: true, baseMode: 'present', highlight: true });
-  scheduleZoomStopRender();
-}
-
-const isPainting = ref(false);
-
-function onMouseDown(event: MouseEvent) {
-  if (event.button !== 0) return;
-  isMouseDown.value = true;
-  isPanning.value = false;
-  lastPanClient.value = { x: event.clientX, y: event.clientY };
-
-  // Shift + edit mode = paint brush mode
-  const mode = (uiState as any).researchEditMode as string | undefined;
-  if (event.shiftKey && mode) {
-    isPainting.value = true;
-    updateHoverCell(event);
-    if (hoverAxial.value) {
-      applyEditModeAt(hoverAxial.value);
-    }
-  }
-}
-
-function onMouseMove(event: MouseEvent) {
-  updateHoverCell(event);
-
-  // Paint brush mode: apply edit at each cell while dragging with shift
-  if (isPainting.value && isMouseDown.value) {
-    if (hoverAxial.value) {
-      applyEditModeAt(hoverAxial.value);
-    }
-    return;
-  }
-
-  if (!isMouseDown.value || !lastPanClient.value) return;
-  const prev = lastPanClient.value;
-  const dx = event.clientX - prev.x;
-  const dy = event.clientY - prev.y;
-
-  if (!isPanning.value) {
-    const distSq = dx * dx + dy * dy;
-    if (distSq < 9) {
-      return;
-    }
-    isPanning.value = true;
-  }
-
-  lastPanClient.value = { x: event.clientX, y: event.clientY };
-
-  offset.value = {
-    x: offset.value.x + dx,
-    y: offset.value.y + dy,
-  };
-
-  scheduleRender({ base: true, baseMode: 'present', highlight: true });
-}
-
-function onMouseUp(event: MouseEvent) {
-  if (event.button !== 0) return;
-  const wasPainting = isPainting.value;
-  const wasPanning = isMouseDown.value && isPanning.value;
-  if (isMouseDown.value && !isPanning.value && !wasPainting) {
-    handleClick(event);
-  }
-  isMouseDown.value = false;
-  isPanning.value = false;
-  isPainting.value = false;
-  lastPanClient.value = null;
-  if (wasPanning) {
-    scheduleRender({ base: true, baseMode: 'render', highlight: true });
-  }
-}
-
-function onMouseLeave(_event: MouseEvent) {
-  const wasPanning = isMouseDown.value && isPanning.value;
-  isMouseDown.value = false;
-  isPanning.value = false;
-  isPainting.value = false;
-  lastPanClient.value = null;
-  if (hoverAxial.value) {
-    hoverAxial.value = null;
-    emit('hover-cell', null);
-  }
-  scheduleRender({ highlight: true });
-  if (wasPanning) {
-    scheduleRender({ base: true, baseMode: 'render' });
-  }
-}
-
-function onWindowMouseUp(event: MouseEvent) {
-  if (event.button !== 0) return;
-  const wasPanning = isMouseDown.value && isPanning.value;
-  isMouseDown.value = false;
-  isPanning.value = false;
-  isPainting.value = false;
-  lastPanClient.value = null;
-  if (wasPanning) {
-    scheduleRender({ base: true, baseMode: 'render', highlight: true });
-  }
-}
-
-function updateHoverCell(event: MouseEvent): void {
-  const canvas = baseCanvas.value;
-  if (!canvas) return;
-
-  const rect = canvas.getBoundingClientRect();
-  const px = event.clientX - rect.left;
-  const py = event.clientY - rect.top;
-
-  const z = zoom.value || 1;
-  const off = offset.value;
-  const worldX = (px - off.x) / z;
-  const worldY = (py - off.y) / z;
-
-  const o = origin.value;
-  const axial = pixelToAxial({ x: worldX, y: worldY }, HEX_SIZE, o);
-
-  const prev = hoverAxial.value;
-  if (!prev || prev.x !== axial.x || prev.y !== axial.y) {
-    hoverAxial.value = axial;
+const {
+  onWheel,
+  onMouseDown,
+  onMouseMove,
+  onMouseUp,
+  onMouseLeave,
+  onWindowMouseUp,
+} = useHexPaneInteraction({
+  canvas: baseCanvas,
+  origin,
+  hexSize: HEX_SIZE,
+  zoom,
+  offset,
+  hoverAxial,
+  minZoom: MIN_ZOOM,
+  maxZoom: MAX_ZOOM,
+  zoomStopRenderDebounceMs: 400,
+  isPaintMode: (event) => {
+    const mode = (uiState as any).researchEditMode as string | undefined;
+    return event.shiftKey && !!mode;
+  },
+  onHoverChanged: (axial) => {
     emit('hover-cell', axial);
     scheduleRender({ highlight: true });
-  }
-}
+  },
+  onPrimaryClick: (axial) => {
+    handleClick(axial);
+  },
+  onPaintAt: (axial) => {
+    applyEditModeAt(axial);
+  },
+  onPanOrZoomTransient: () => {
+    scheduleRender({ base: true, baseMode: 'present', highlight: true });
+  },
+  onPanOrZoomCommit: () => {
+    scheduleRender({ base: true, baseMode: 'render', highlight: true });
+  },
+  onMouseLeave: () => {
+    scheduleRender({ highlight: true });
+  },
+});
 
 function applyEditModeAt(axial: Point2): void {
   const mode = (uiState as any).researchEditMode as string | undefined;
@@ -635,22 +506,7 @@ function applyEditModeAt(axial: Point2): void {
   (uiState as any).researchEditVersion = ((uiState as any).researchEditVersion || 0) + 1;
 }
 
-function handleClick(event: MouseEvent): void {
-  const canvas = baseCanvas.value;
-  if (!canvas) return;
-
-  const rect = canvas.getBoundingClientRect();
-  const px = event.clientX - rect.left;
-  const py = event.clientY - rect.top;
-
-  const z = zoom.value || 1;
-  const off = offset.value;
-  const worldX = (px - off.x) / z;
-  const worldY = (py - off.y) / z;
-
-  const o = origin.value;
-  const axial = pixelToAxial({ x: worldX, y: worldY }, HEX_SIZE, o);
-
+function handleClick(axial: Point2): void {
   const mode = (uiState as any).researchEditMode as '' | 'empty' | 'void' | 'obstacle' | 'coordinates' | undefined;
   if (mode) {
     applyEditModeAt(axial);

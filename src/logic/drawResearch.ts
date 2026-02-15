@@ -257,7 +257,6 @@ function drawNodeOverlay(
   const covert = !!archetype.covert;
   const isObstacleLike = type === 'obstacle' || covert;
 
-  // Gear nodes: draw the gear icon centered over the combined cell area
   if (type === 'gear' && gearDef) {
     drawGearIconForNode(ctx, cells, gearDef, owned, origin, hexSize);
     return;
@@ -268,19 +267,16 @@ function drawNodeOverlay(
     return;
   }
 
-  // Overt stat nodes: draw the stat icon (e.g. damage ✴) instead of obstacle markers.
   if (type === 'stat' && !covert) {
     drawStatIconForNode(ctx, cells, archetype, owned, origin, hexSize);
     return;
   }
 
-  // Resource nodes: draw the resource icon
   if (type === 'resource' && !covert) {
     drawResourceIconForNode(ctx, cells, archetype, owned, origin, hexSize);
     return;
   }
 
-  // Owned obstacle/covert nodes are visually treated as empty: no overlay.
   if (owned || !isObstacleLike) return;
 
   const radius = hexSize * 0.35;

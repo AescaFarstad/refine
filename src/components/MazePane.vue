@@ -19,13 +19,15 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { uiState, getGameState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
 import { clearCanvas } from '../logic/DrawHex';
-import { axialToPixel } from '../logic/HexMath';
 import { bfsMazePath } from '../logic/BFS';
 import { axialToIndex } from '../logic/Research';
 import { CmdMazeMoveTo } from '../logic/input/InputCommands';
 import { renderMazeBaseLayer } from '../logic/drawMaze';
 import { renderMazePathOverlay } from '../logic/drawMazePath';
 import { useHexPaneInteraction } from '../logic/pane/useHexPaneInteraction';
+import { useHoverPathTransition } from '../logic/pane/useHoverPathTransition';
+import { useMazeAvatar } from '../logic/pane/useMazeAvatar';
+import { useMazeMoveAnimation } from '../logic/pane/useMazeMoveAnimation';
 import type { Point2 } from '../logic/ItemLib';
 
 const container = ref<HTMLDivElement | null>(null);
@@ -39,7 +41,9 @@ const CELL_FILL_SIZE = CELL_SIZE + 0.6;
 const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 3;
 const AVATAR_CANVAS_SIZE = 96;
-const AVATAR_MOVE_SPEED = 8; // cells per second
+const AVATAR_MOVE_SPEED = 16; // cells per second
+const AVATAR_TURN_SPEED = 12; // radians per second
+const HOVER_PATH_TRANSITION_SPEED = 40; // cells per second
 
 const canvasWidth = ref(0);
 const canvasHeight = ref(0);
@@ -52,23 +56,78 @@ const origin = computed<Point2>(() => ({
 const zoom = ref(1);
 const offset = ref<Point2>({ x: 0, y: 0 });
 const hoverAxial = ref<Point2 | null>(null);
+const mouseWorldPos = ref<Point2 | null>(null);
 
-// Animation state (transient, Vue-local)
-const movePath = ref<Point2[]>([]);
-const moveAnimProgress = ref(0);
-const facingAngle = ref(0);
-let animStartCell: Point2 = { x: 0, y: 0 }; // captured when animation begins
-let animFrameId: number | null = null;
-let lastAnimTime: number = 0;
-
-// Segment queue: when a path passes through resource nodes, we split it into
-// segments and complete each one in turn, sending a command at every stop.
-const segmentQueue = ref<{ path: Point2[]; target: Point2 }[]>([]);
-
-// Hover path for overlay
-const hoverPath = ref<Point2[]>([]);
+const {
+  displayedPath: displayedHoverPath,
+  transitionActive: hoverPathTransitionActive,
+  queueTo: queueHoverPathTransition,
+  clearImmediate: clearHoverPathImmediate,
+  dispose: disposeHoverPathTransition,
+} = useHoverPathTransition(renderPath, HOVER_PATH_TRANSITION_SPEED);
 
 let baseRafId: number | null = null;
+
+let isMoving = () => false;
+
+function getDisplayAvatarCell(): Point2 {
+  return pendingAvatarCell.value ?? getGameState().maze.avatarCell;
+}
+
+const {
+  facingAngle,
+  drawAvatar,
+  updateAvatarPosition,
+  ensureIdleFacingLoop,
+  stopIdleFacingLoop,
+  positionAvatarAt,
+  turnTowards,
+  dispose: disposeAvatar,
+} = useMazeAvatar({
+  avatarCanvas,
+  zoom,
+  offset,
+  origin,
+  hexSize: HEX_SIZE,
+  avatarCanvasSize: AVATAR_CANVAS_SIZE,
+  avatarTurnSpeed: AVATAR_TURN_SPEED,
+  getDisplayAvatarCell,
+  getDisplayedHoverPath: () => displayedHoverPath.value,
+  getMouseWorldPos: () => mouseWorldPos.value,
+  isMoving: () => isMoving(),
+});
+
+const {
+  movePath,
+  moveAnimProgress,
+  segmentQueue,
+  pendingAvatarCell,
+  getQueuedAvatarCell,
+  getQueuedMovementUsed,
+  onPrimaryClick: onPrimaryMoveClick,
+  dispose: disposeMoveAnimation,
+} = useMazeMoveAnimation({
+  hexSize: HEX_SIZE,
+  avatarMoveSpeed: AVATAR_MOVE_SPEED,
+  origin,
+  facingAngle,
+  turnTowards,
+  positionAvatarAt,
+  stopIdleFacingLoop,
+  getGameState,
+  queueMoveCommand: (target) => {
+    globalInputQueue.push(new CmdMazeMoveTo({ target }));
+  },
+  clearHoverPathImmediate,
+  scheduleBaseRender,
+  updateAvatarPosition,
+  onPathAnimationFullyComplete: () => {
+    onHoverChanged(hoverAxial.value);
+    ensureIdleFacingLoop();
+  },
+});
+
+isMoving = () => movePath.value.length > 0 || segmentQueue.value.length > 0;
 
 // Debug: call window.debugMaze() from console when hover paths stop working
 function debugMaze() {
@@ -87,15 +146,16 @@ function debugMaze() {
     movePathLen: movePath.value.length,
     segmentQueueLen: segmentQueue.value.length,
     moveAnimProgress: moveAnimProgress.value,
-    animFrameId: animFrameId,
+    animActive: movePath.value.length > 0,
     hoverAxial: ha ? `${ha.x},${ha.y}` : 'null',
-    hoverPathLen: hoverPath.value.length,
+    hoverPathLen: displayedHoverPath.value.length,
+    hoverPathTransitionActive: hoverPathTransitionActive.value,
     bfsReachable: bfsResult?.reachable ?? 'N/A',
     bfsCost: bfsResult?.cost ?? 'N/A',
     bfsPathLen: bfsResult?.path.length ?? 'N/A',
   });
   if (movePath.value.length > 0 || segmentQueue.value.length > 0) {
-    console.warn('[debugMaze] movePath/segmentQueue non-empty — this blocks hover paths!');
+    console.warn('[debugMaze] movePath/segmentQueue non-empty — hover path starts from queue tip.');
     console.log('movePath:', JSON.parse(JSON.stringify(movePath.value)));
     console.log('segmentQueue:', JSON.parse(JSON.stringify(segmentQueue.value)));
   }
@@ -119,10 +179,9 @@ onUnmounted(() => {
     cancelAnimationFrame(baseRafId);
     baseRafId = null;
   }
-  if (animFrameId != null) {
-    cancelAnimationFrame(animFrameId);
-    animFrameId = null;
-  }
+  disposeAvatar();
+  disposeMoveAnimation();
+  disposeHoverPathTransition();
 });
 
 watch(
@@ -136,7 +195,7 @@ watch(
 watch(
   () => uiState.mazeVersion,
   () => {
-    pendingAvatarCell = null;
+    pendingAvatarCell.value = null;
     scheduleBaseRender();
     updateAvatarPosition();
   }
@@ -146,7 +205,7 @@ watch(
 watch(
   () => uiState.mazeMovementUsed,
   () => {
-    pendingAvatarCell = null;
+    pendingAvatarCell.value = null;
   }
 );
 
@@ -209,7 +268,7 @@ function renderPath(): void {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   clearCanvas(ctx);
 
-  const hp = hoverPath.value;
+  const hp = displayedHoverPath.value;
   if (hp.length === 0) return;
 
   const z = zoom.value;
@@ -217,246 +276,34 @@ function renderPath(): void {
   ctx.setTransform(z, 0, 0, z, off.x, off.y);
 
   const gs = getGameState();
-  const from = pendingAvatarCell ?? gs.maze.avatarCell;
-  const remaining = gs.timeFlux - gs.maze.movementUsed;
+  const from = getQueuedAvatarCell();
+  const remaining = Math.max(0, gs.timeFlux - getQueuedMovementUsed());
   renderMazePathOverlay(ctx, hp, from, origin.value, HEX_SIZE, remaining);
-}
-
-// --- Avatar rendering ---
-
-function drawAvatar(): void {
-  const c = avatarCanvas.value;
-  if (!c) return;
-  const dpr = window.devicePixelRatio || 1;
-  c.width = AVATAR_CANVAS_SIZE * dpr;
-  c.height = AVATAR_CANVAS_SIZE * dpr;
-  c.style.width = `${AVATAR_CANVAS_SIZE}px`;
-  c.style.height = `${AVATAR_CANVAS_SIZE}px`;
-  const ctx = c.getContext('2d');
-  if (!ctx) return;
-
-  ctx.scale(dpr, dpr);
-  const cx = AVATAR_CANVAS_SIZE / 2;
-  const cy = AVATAR_CANVAS_SIZE / 2;
-  const r = HEX_SIZE * 0.65;
-
-  ctx.clearRect(0, 0, AVATAR_CANVAS_SIZE, AVATAR_CANVAS_SIZE);
-  ctx.save();
-  ctx.translate(cx, cy);
-
-  // Arrow shape: triangle pointing right + rear protrusion
-  ctx.fillStyle = 'rgb(255, 220, 80)';
-  ctx.strokeStyle = 'rgb(180, 150, 40)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  // Front point
-  ctx.moveTo(r, 0);
-  // Bottom wing
-  ctx.lineTo(-r * 0.6, r * 0.6);
-  // Rear notch
-  ctx.lineTo(-r * 0.3, 0);
-  // Top wing
-  ctx.lineTo(-r * 0.6, -r * 0.6);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.restore();
-}
-
-function positionAvatarAt(pixelX: number, pixelY: number, angle: number): void {
-  const c = avatarCanvas.value;
-  if (!c) return;
-
-  const z = zoom.value;
-  const off = offset.value;
-  const screenX = pixelX * z + off.x;
-  const screenY = pixelY * z + off.y;
-
-  const half = AVATAR_CANVAS_SIZE / 2;
-  c.style.left = `${screenX - half}px`;
-  c.style.top = `${screenY - half}px`;
-  c.style.transform = `rotate(${angle}rad) scale(${z})`;
-}
-
-function updateAvatarPosition(): void {
-  const gs = getGameState();
-  const pixel = axialToPixel(gs.maze.avatarCell, HEX_SIZE, origin.value);
-  positionAvatarAt(pixel.x, pixel.y, facingAngle.value);
-}
-
-// --- Animation loop ---
-
-function startMoveAnimation(path: Point2[], fromCell?: Point2): void {
-  if (path.length === 0) return;
-  const src = fromCell ?? getGameState().maze.avatarCell;
-  animStartCell = { x: src.x, y: src.y };
-  movePath.value = path;
-  moveAnimProgress.value = 0;
-  lastAnimTime = performance.now();
-  if (animFrameId == null) {
-    animFrameId = requestAnimationFrame(animationTick);
-  }
-}
-
-function animationTick(now: number): void {
-  animFrameId = null;
-  const dt = Math.max(0, (now - lastAnimTime) / 1000);
-  lastAnimTime = now;
-
-  const path = movePath.value;
-  if (path.length === 0) return;
-
-  moveAnimProgress.value += dt * AVATAR_MOVE_SPEED;
-
-  const currentStep = Math.floor(moveAnimProgress.value);
-
-  if (currentStep >= path.length) {
-    // Animation complete — position at target, then send command
-    const target = path[path.length - 1]!;
-    const targetPixel = axialToPixel(target, HEX_SIZE, origin.value);
-    positionAvatarAt(targetPixel.x, targetPixel.y, facingAngle.value);
-
-    movePath.value = [];
-    moveAnimProgress.value = 0;
-    pendingAvatarCell = { x: target.x, y: target.y };
-    globalInputQueue.push(new CmdMazeMoveTo({ target }));
-    scheduleBaseRender();
-
-    // If there are queued segments, start the next one from the current stop
-    if (segmentQueue.value.length > 0) {
-      const nextSeg = segmentQueue.value.shift()!;
-      startMoveAnimation(nextSeg.path, target);
-      return;
-    }
-    // Don't call updateAvatarPosition() — command hasn't been processed yet.
-    // The mazeVersion watch will reposition after reset/payout if needed.
-
-    // Re-show hover path to wherever the mouse is sitting
-    onHoverChanged(hoverAxial.value);
-    return;
-  }
-
-  // Interpolate position between cells
-  const t = moveAnimProgress.value - currentStep;
-  const fromCell = currentStep === 0
-    ? animStartCell
-    : path[currentStep - 1]!;
-  const toCell = path[currentStep];
-  if (!toCell) {
-    console.warn('[MazePane] animationTick safety: toCell is falsy!', { currentStep, pathLen: path.length, progress: moveAnimProgress.value });
-    movePath.value = [];
-    moveAnimProgress.value = 0;
-    return;
-  }
-
-  const fromPixel = axialToPixel(fromCell, HEX_SIZE, origin.value);
-  const toPixel = axialToPixel(toCell, HEX_SIZE, origin.value);
-
-  const interpX = fromPixel.x + (toPixel.x - fromPixel.x) * t;
-  const interpY = fromPixel.y + (toPixel.y - fromPixel.y) * t;
-
-  // Update facing angle toward next cell
-  const dx = toPixel.x - fromPixel.x;
-  const dy = toPixel.y - fromPixel.y;
-  if (dx !== 0 || dy !== 0) {
-    facingAngle.value = Math.atan2(dy, dx);
-  }
-
-  positionAvatarAt(interpX, interpY, facingAngle.value);
-
-  animFrameId = requestAnimationFrame(animationTick);
 }
 
 // --- Interaction ---
 
 // When a command is queued but not yet processed, the visual avatar position
 // may differ from gs.maze.avatarCell.  This stores the override; null = use gs.
-let pendingAvatarCell: Point2 | null = null;
-
 function onHoverChanged(axial: Point2 | null): void {
-  if (!axial || movePath.value.length > 0 || segmentQueue.value.length > 0) {
-    hoverPath.value = [];
-    renderPath();
+  if (!axial) {
+    queueHoverPathTransition([]);
     return;
   }
 
   const gs = getGameState();
-  const from = pendingAvatarCell ?? gs.maze.avatarCell;
+  const from = getQueuedAvatarCell();
   const result = bfsMazePath(gs, from, axial);
-  hoverPath.value = result.reachable ? result.path : [];
-  renderPath();
-}
-
-function onPrimaryClick(axial: Point2): void {
-  // Don't accept clicks during animation or queued segments
-  if (movePath.value.length > 0 || segmentQueue.value.length > 0) return;
-
-  const gs = getGameState();
-  const result = bfsMazePath(gs, gs.maze.avatarCell, axial);
-  if (!result.reachable || result.cost === 0) return;
-
-  // Clear hover path
-  hoverPath.value = [];
-  renderPath();
-
-  // Check if this would exceed pool — if so, send command immediately (forced reset)
-  const remaining = gs.timeFlux - gs.maze.movementUsed;
-  if (result.cost > remaining) {
-    globalInputQueue.push(new CmdMazeMoveTo({ target: axial }));
-    scheduleBaseRender();
-    updateAvatarPosition();
-    return;
-  }
-
-  // Build set of untaken resource cells to detect intermediate stops
-  const resourceCells = new Set<string>();
-  for (const spawn of gs.mazeResourceSpawns) {
-    if (!gs.maze.takenCells.some(t => t.x === spawn.cell.x && t.y === spawn.cell.y)) {
-      resourceCells.add(`${spawn.cell.x},${spawn.cell.y}`);
-    }
-  }
-
-  // Find intermediate resource stop indices (exclude the final cell — it's the destination)
-  const stopIndices: number[] = [];
-  for (let i = 0; i < result.path.length - 1; i++) {
-    const cell = result.path[i]!;
-    if (resourceCells.has(`${cell.x},${cell.y}`)) {
-      stopIndices.push(i);
-    }
-  }
-
-  if (stopIndices.length === 0) {
-    // No intermediate resource stops — animate entire path as before
-    startMoveAnimation(result.path);
-    return;
-  }
-
-  // Split the path into segments, stopping at each resource node
-  const segments: { path: Point2[]; target: Point2 }[] = [];
-  let segStart = 0;
-  for (const stopIdx of stopIndices) {
-    const segPath = result.path.slice(segStart, stopIdx + 1);
-    segments.push({ path: segPath, target: result.path[stopIdx]! });
-    segStart = stopIdx + 1;
-  }
-  // Final segment from last resource to destination
-  if (segStart < result.path.length) {
-    const segPath = result.path.slice(segStart);
-    segments.push({ path: segPath, target: result.path[result.path.length - 1]! });
-  }
-
-  // Queue all segments after the first; start animating the first
-  segmentQueue.value = segments.slice(1);
-  startMoveAnimation(segments[0]!.path);
+  queueHoverPathTransition(result.reachable ? result.path : []);
+  ensureIdleFacingLoop();
 }
 
 const {
-  onWheel,
-  onMouseDown,
-  onMouseMove,
-  onMouseUp,
-  onMouseLeave,
+  onWheel: onInteractionWheel,
+  onMouseDown: onInteractionMouseDown,
+  onMouseMove: onInteractionMouseMove,
+  onMouseUp: onInteractionMouseUp,
+  onMouseLeave: onInteractionMouseLeave,
   onWindowMouseUp,
 } = useHexPaneInteraction({
   canvas: baseCanvas,
@@ -469,23 +316,72 @@ const {
   maxZoom: MAX_ZOOM,
   isPaintMode: () => false,
   onHoverChanged,
-  onPrimaryClick,
+  onPrimaryClick: (axial) => {
+    onPrimaryMoveClick(axial);
+    onHoverChanged(hoverAxial.value);
+  },
   onPaintAt: () => {},
   onPanOrZoomTransient: () => {
     scheduleBaseRender();
     renderPath();
     updateAvatarPosition();
+    ensureIdleFacingLoop();
   },
   onPanOrZoomCommit: () => {
     scheduleBaseRender();
     renderPath();
     updateAvatarPosition();
+    ensureIdleFacingLoop();
   },
   onMouseLeave: () => {
-    hoverPath.value = [];
-    renderPath();
+    queueHoverPathTransition([]);
+    ensureIdleFacingLoop();
   },
 });
+
+function updateMouseWorldPos(event: MouseEvent | WheelEvent): void {
+  const root = container.value;
+  if (!root) return;
+  const rect = root.getBoundingClientRect();
+  const px = event.clientX - rect.left;
+  const py = event.clientY - rect.top;
+  const z = zoom.value || 1;
+  const off = offset.value;
+  mouseWorldPos.value = {
+    x: (px - off.x) / z,
+    y: (py - off.y) / z,
+  };
+}
+
+function onWheel(event: WheelEvent): void {
+  onInteractionWheel(event);
+  updateMouseWorldPos(event);
+  ensureIdleFacingLoop();
+}
+
+function onMouseDown(event: MouseEvent): void {
+  updateMouseWorldPos(event);
+  onInteractionMouseDown(event);
+  ensureIdleFacingLoop();
+}
+
+function onMouseMove(event: MouseEvent): void {
+  onInteractionMouseMove(event);
+  updateMouseWorldPos(event);
+  ensureIdleFacingLoop();
+}
+
+function onMouseUp(event: MouseEvent): void {
+  updateMouseWorldPos(event);
+  onInteractionMouseUp(event);
+  ensureIdleFacingLoop();
+}
+
+function onMouseLeave(event: MouseEvent): void {
+  mouseWorldPos.value = null;
+  onInteractionMouseLeave(event);
+  ensureIdleFacingLoop();
+}
 </script>
 
 <style scoped>

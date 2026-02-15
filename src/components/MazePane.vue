@@ -10,6 +10,7 @@
   >
     <canvas ref="baseCanvas" class="maze-layer"></canvas>
     <canvas ref="pathCanvas" class="maze-layer"></canvas>
+    <canvas ref="effectsCanvas" class="maze-layer maze-effects-layer"></canvas>
     <canvas ref="avatarCanvas" class="maze-avatar-canvas"></canvas>
   </div>
 </template>
@@ -20,20 +21,36 @@ import { uiState, getGameState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
 import { clearCanvas } from '../logic/DrawHex';
 import { bfsMazePath } from '../logic/BFS';
+import { axialToPixel } from '../logic/HexMath';
 import { axialToIndex } from '../logic/Research';
 import { CmdMazeMoveTo } from '../logic/input/InputCommands';
 import { renderMazeBaseLayer } from '../logic/drawMaze';
 import { renderMazePathOverlay } from '../logic/drawMazePath';
+import { isMazeEntranceCell } from '../logic/Maze';
 import { useHexPaneInteraction } from '../logic/pane/useHexPaneInteraction';
 import { useHoverPathTransition } from '../logic/pane/useHoverPathTransition';
 import { useMazeAvatar } from '../logic/pane/useMazeAvatar';
 import { useMazeMoveAnimation } from '../logic/pane/useMazeMoveAnimation';
+import { useMazePickupAnimation } from '../logic/pane/useMazePickupAnimation';
 import type { Point2 } from '../logic/ItemLib';
+import type { MazeResourceHoverHint, MazeResourceKey } from '../logic/pane/MazeOverlayState';
 
 const container = ref<HTMLDivElement | null>(null);
 const baseCanvas = ref<HTMLCanvasElement | null>(null);
 const pathCanvas = ref<HTMLCanvasElement | null>(null);
 const avatarCanvas = ref<HTMLCanvasElement | null>(null);
+const effectsCanvas = ref<HTMLCanvasElement | null>(null);
+
+const emit = defineEmits<{
+  (e: 'resource-hover', hint: MazeResourceHoverHint | null): void;
+  (e: 'resource-hover-batch', hints: MazeResourceHoverHint[]): void;
+  (e: 'hover-path-cost', cost: number): void;
+  (e: 'entrance-hover', hovering: boolean): void;
+}>();
+
+const props = defineProps<{
+  highlightResourceKey: MazeResourceKey | null;
+}>();
 
 const HEX_SIZE = 18;
 const CELL_SIZE = HEX_SIZE * 1;
@@ -43,7 +60,7 @@ const MAX_ZOOM = 3;
 const AVATAR_CANVAS_SIZE = 96;
 const AVATAR_MOVE_SPEED = 16; // cells per second
 const AVATAR_TURN_SPEED = 12; // radians per second
-const HOVER_PATH_TRANSITION_SPEED = 40; // cells per second
+const HOVER_PATH_TRANSITION_SPEED = 60; // cells per second
 
 const canvasWidth = ref(0);
 const canvasHeight = ref(0);
@@ -74,6 +91,76 @@ function getDisplayAvatarCell(): Point2 {
   return pendingAvatarCell.value ?? getGameState().maze.avatarCell;
 }
 
+function buildHoverResourceHint(axial: Point2 | null): MazeResourceHoverHint | null {
+  if (!axial) return null;
+  const gs = getGameState();
+  const spawn = gs.mazeResourceSpawns.find(
+    s => s.cell.x === axial.x && s.cell.y === axial.y,
+  );
+  if (!spawn) return null;
+
+  const taken = gs.maze.takenCells.some(c => c.x === axial.x && c.y === axial.y);
+  if (taken) return null;
+
+  const world = axialToPixel(spawn.cell, HEX_SIZE, origin.value);
+  const z = zoom.value;
+  const off = offset.value;
+
+  return {
+    resourceKey: spawn.resourceKey,
+    amount: spawn.amount,
+    screenX: world.x * z + off.x,
+    screenY: world.y * z + off.y,
+  };
+}
+
+function emitHoverResourceHint(axial: Point2 | null = hoverAxial.value): void {
+  emit('resource-hover', buildHoverResourceHint(axial));
+}
+
+function buildHoverResourceHintsByKey(resourceKey: MazeResourceKey | null): MazeResourceHoverHint[] {
+  if (!resourceKey) return [];
+
+  const gs = getGameState();
+  const takenKeys = new Set(gs.maze.takenCells.map((cell) => `${cell.x},${cell.y}`));
+  const z = zoom.value;
+  const off = offset.value;
+
+  return gs.mazeResourceSpawns
+    .filter((spawn) => spawn.resourceKey === resourceKey && !takenKeys.has(`${spawn.cell.x},${spawn.cell.y}`))
+    .map((spawn) => {
+      const world = axialToPixel(spawn.cell, HEX_SIZE, origin.value);
+      return {
+        resourceKey: spawn.resourceKey,
+        amount: spawn.amount,
+        screenX: world.x * z + off.x,
+        screenY: world.y * z + off.y,
+      };
+    });
+}
+
+function emitHoverResourceHintBatch(): void {
+  emit('resource-hover-batch', buildHoverResourceHintsByKey(props.highlightResourceKey));
+}
+
+function emitEntranceHover(axial: Point2 | null = hoverAxial.value): void {
+  const isEntranceHover = !!axial && isMazeEntranceCell(getGameState(), axial);
+  emit('entrance-hover', isEntranceHover);
+}
+
+function computeHoverPathCost(axial: Point2 | null): number {
+  if (!axial) return 0;
+  const gs = getGameState();
+  const from = getQueuedAvatarCell();
+  const result = bfsMazePath(gs, from, axial);
+  if (!result.reachable) return 0;
+  return result.cost;
+}
+
+function emitHoverPathCost(axial: Point2 | null = hoverAxial.value): void {
+  emit('hover-path-cost', computeHoverPathCost(axial));
+}
+
 const {
   facingAngle,
   drawAvatar,
@@ -95,6 +182,17 @@ const {
   getDisplayedHoverPath: () => displayedHoverPath.value,
   getMouseWorldPos: () => mouseWorldPos.value,
   isMoving: () => isMoving(),
+});
+
+const {
+  spawnAt: spawnPickup,
+  dispose: disposePickupAnimation,
+} = useMazePickupAnimation({
+  effectsCanvas,
+  zoom,
+  offset,
+  hexSize: HEX_SIZE,
+  origin,
 });
 
 const {
@@ -121,6 +219,17 @@ const {
   clearHoverPathImmediate,
   scheduleBaseRender,
   updateAvatarPosition,
+  onSegmentComplete: (targetCell, takenBefore) => {
+    const gs = getGameState();
+    const key = `${targetCell.x},${targetCell.y}`;
+    if (takenBefore.has(key)) return;
+    const spawn = gs.mazeResourceSpawns.find(
+      s => s.cell.x === targetCell.x && s.cell.y === targetCell.y,
+    );
+    if (spawn) {
+      spawnPickup(targetCell, spawn);
+    }
+  },
   onPathAnimationFullyComplete: () => {
     onHoverChanged(hoverAxial.value);
     ensureIdleFacingLoop();
@@ -167,6 +276,10 @@ onMounted(() => {
   drawAvatar();
   scheduleBaseRender();
   updateAvatarPosition();
+  emitHoverResourceHint(null);
+  emitHoverResourceHintBatch();
+  emitHoverPathCost(null);
+  emitEntranceHover(null);
   window.addEventListener('resize', onResize);
   window.addEventListener('mouseup', onWindowMouseUp);
 });
@@ -181,13 +294,22 @@ onUnmounted(() => {
   }
   disposeAvatar();
   disposeMoveAnimation();
+  disposePickupAnimation();
   disposeHoverPathTransition();
+  emit('resource-hover', null);
+  emit('resource-hover-batch', []);
+  emit('hover-path-cost', 0);
+  emit('entrance-hover', false);
 });
 
 watch(
   () => [uiState.researchOwnedCount, uiState.discoveryCounter],
   () => {
     scheduleBaseRender();
+    emitHoverResourceHint();
+    emitHoverResourceHintBatch();
+    emitHoverPathCost();
+    emitEntranceHover();
   }
 );
 
@@ -198,6 +320,10 @@ watch(
     pendingAvatarCell.value = null;
     scheduleBaseRender();
     updateAvatarPosition();
+    emitHoverResourceHint();
+    emitHoverResourceHintBatch();
+    emitHoverPathCost();
+    emitEntranceHover();
   }
 );
 
@@ -206,6 +332,17 @@ watch(
   () => uiState.mazeMovementUsed,
   () => {
     pendingAvatarCell.value = null;
+    emitHoverResourceHint();
+    emitHoverResourceHintBatch();
+    emitHoverPathCost();
+    emitEntranceHover();
+  }
+);
+
+watch(
+  () => props.highlightResourceKey,
+  () => {
+    emitHoverResourceHintBatch();
   }
 );
 
@@ -213,6 +350,9 @@ function onResize(): void {
   setupCanvases();
   scheduleBaseRender();
   updateAvatarPosition();
+  emitHoverResourceHint();
+  emitHoverResourceHintBatch();
+  emitEntranceHover();
 }
 
 function setupCanvases(): void {
@@ -226,7 +366,7 @@ function setupCanvases(): void {
   canvasWidth.value = width;
   canvasHeight.value = height;
 
-  for (const c of [baseCanvas.value, pathCanvas.value]) {
+  for (const c of [baseCanvas.value, pathCanvas.value, effectsCanvas.value]) {
     if (!c) continue;
     c.width = width;
     c.height = height;
@@ -288,6 +428,9 @@ function renderPath(): void {
 function onHoverChanged(axial: Point2 | null): void {
   if (!axial) {
     queueHoverPathTransition([]);
+    emitHoverResourceHint(null);
+    emitHoverPathCost(null);
+    emitEntranceHover(null);
     return;
   }
 
@@ -296,6 +439,9 @@ function onHoverChanged(axial: Point2 | null): void {
   const result = bfsMazePath(gs, from, axial);
   queueHoverPathTransition(result.reachable ? result.path : []);
   ensureIdleFacingLoop();
+  emitHoverResourceHint(axial);
+  emit('hover-path-cost', result.reachable ? result.cost : 0);
+  emitEntranceHover(axial);
 }
 
 const {
@@ -326,12 +472,16 @@ const {
     renderPath();
     updateAvatarPosition();
     ensureIdleFacingLoop();
+    emitHoverResourceHint();
+    emitHoverResourceHintBatch();
   },
   onPanOrZoomCommit: () => {
     scheduleBaseRender();
     renderPath();
     updateAvatarPosition();
     ensureIdleFacingLoop();
+    emitHoverResourceHint();
+    emitHoverResourceHintBatch();
   },
   onMouseLeave: () => {
     queueHoverPathTransition([]);
@@ -403,6 +553,10 @@ function onMouseLeave(event: MouseEvent): void {
 
 .maze-layer:first-of-type {
   pointer-events: auto;
+}
+
+.maze-effects-layer {
+  pointer-events: none;
 }
 
 .maze-avatar-canvas {

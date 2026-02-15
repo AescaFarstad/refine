@@ -25,7 +25,7 @@ export interface MazeAvatarController {
   ensureIdleFacingLoop: () => void;
   stopIdleFacingLoop: () => void;
   positionAvatarAt: (pixelX: number, pixelY: number, angle: number) => void;
-  turnTowards: (current: number, target: number, dt: number) => number;
+  turnTowards: (current: number, target: number, dt: number, speedMultiplier?: number) => number;
   dispose: () => void;
 }
 
@@ -52,8 +52,8 @@ export function useMazeAvatar(options: MazeAvatarOptions): MazeAvatarController 
   let facingFrameId: number | null = null;
   let lastFacingTime = 0;
 
-  function turnTowards(current: number, target: number, dt: number): number {
-    const maxTurn = options.avatarTurnSpeed * dt;
+  function turnTowards(current: number, target: number, dt: number, speedMultiplier = 1): number {
+    const maxTurn = options.avatarTurnSpeed * dt * speedMultiplier;
     const delta = shortestAngleDelta(current, target);
     if (Math.abs(delta) <= maxTurn) {
       return normalizeAngle(target);
@@ -126,6 +126,9 @@ export function useMazeAvatar(options: MazeAvatarOptions): MazeAvatarController 
     const mouseWorldPos = options.getMouseWorldPos();
     if (!mouseWorldPos) return null;
     const fromPixel = getDisplayAvatarPixel();
+    const dx = mouseWorldPos.x - fromPixel.x;
+    const dy = mouseWorldPos.y - fromPixel.y;
+    if (dx * dx + dy * dy < (options.hexSize * 2) ** 2) return null;
     return angleBetween(fromPixel, mouseWorldPos);
   }
 

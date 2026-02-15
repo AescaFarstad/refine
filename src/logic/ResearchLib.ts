@@ -1,4 +1,4 @@
-import type { Point2 } from './core/math';
+import { copy, type Point2 } from './core/math';
 import type { Reward } from './Reward';
 import type { DiscoveryId } from './DiscoveryLib';
 
@@ -72,7 +72,7 @@ export interface ResearchNodeInstance {
   nodeId: number;
   archetypeId: string;
   cells: Point2[];
-  centerCell: Point2 | null;
+  centerCell: Point2;
   initiallyOwned: boolean;
 }
 
@@ -111,6 +111,38 @@ function generateRadiusCells(centers: Point2[], radius: number): Point2[] {
   }
 
   return result;
+}
+
+function computeNodeCenterCell(cells: Point2[], inputCenterCell: Point2 | undefined): Point2 {
+  if (inputCenterCell) {
+    return copy(inputCenterCell);
+  }
+  if (cells.length === 1) {
+    return copy(cells[0]!);
+  }
+
+  let sumX = 0;
+  let sumY = 0;
+  for (const cell of cells) {
+    sumX += cell.x;
+    sumY += cell.y;
+  }
+  const avgX = sumX / cells.length;
+  const avgY = sumY / cells.length;
+
+  let bestCell = cells[0]!;
+  let bestDist = Infinity;
+  for (const cell of cells) {
+    const dx = cell.x - avgX;
+    const dy = cell.y - avgY;
+    const dist = dx * dx + dy * dy;
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestCell = cell;
+    }
+  }
+
+  return copy(bestCell);
 }
 
 export class ResearchLib {
@@ -190,7 +222,7 @@ export class ResearchLib {
         nodeId: nodeIndex++,
         archetypeId: input.archetypeId,
         cells: cells,
-        centerCell: input.centerCell ?? null,
+        centerCell: computeNodeCenterCell(cells, input.centerCell),
         initiallyOwned: input.initiallyOwned ?? false,
       };
 
@@ -207,7 +239,7 @@ export class ResearchLib {
           nodeId: nodeIndex++,
           archetypeId,
           cells: [{ x: p.x, y: p.y }],
-          centerCell: null,
+          centerCell: { x: p.x, y: p.y },
           initiallyOwned: false,
         };
 

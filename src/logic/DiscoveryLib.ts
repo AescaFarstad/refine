@@ -28,6 +28,7 @@ const ids = [
   'UI_WAFER_INFO',
   'UI_SIGNATURE_INFO',
   'MAGENTA_CRYSTALS',
+  'MAZE_NEXUS',
   'YOU_WON_SEEN',
   'DEV',
 ] as const;

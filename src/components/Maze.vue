@@ -8,35 +8,123 @@
       </div>
     </template>
     <template v-else>
-      <MazePane />
-      <div class="maze-info">
-        <span class="maze-info-flux">∿ {{ remainingPool }} / {{ totalPool }}</span>
-      </div>
+      <MazePane
+        :highlight-resource-key="hoveredPillResourceKey"
+        @resource-hover="onResourceHover"
+        @resource-hover-batch="onResourceHoverBatch"
+        @hover-path-cost="onHoverPathCost"
+        @entrance-hover="onEntranceHover"
+      />
+      <MazeOverlay
+        :remaining-pool="remainingPool"
+        :attempt-resources="attemptResources"
+        :high-resources="highResources"
+        :hover-resource-hints="displayedResourceHints"
+        :hover-path-cost="hoverPathCost"
+        :is-hovering-entrance="isHoveringEntrance"
+        :high-movement-used="highMovementUsed"
+        @resource-pill-hover="onResourcePillHover"
+        @reset-high-movement="onResetHighMovement"
+      />
+      <MazeNexusMenu :visible="uiState.mazeNexusMenuOpen" />
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import MazePane from './MazePane.vue';
+import MazeOverlay from './MazeOverlay.vue';
+import MazeNexusMenu from './MazeNexusMenu.vue';
 import { uiState, getGameState } from '../logic/UIState';
-import { axialToIndex } from '../logic/Research';
-import { MAZE_ENTRANCE } from '../logic/Maze';
+import { globalInputQueue } from '../logic/Model';
+import { CmdMazeResetHighMovement } from '../logic/input/InputCommands';
+import { getOwnedMazeEntrances } from '../logic/Maze';
+import type { MazeResourceHoverHint, MazeResourceKey, MazeResourceTotals } from '../logic/pane/MazeOverlayState';
 
 const entranceOwned = computed(() => {
   // Re-evaluate when research changes
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   uiState.researchOwnedCount;
   const gs = getGameState();
-  const idx = axialToIndex(MAZE_ENTRANCE.x, MAZE_ENTRANCE.y);
-  if (idx === -1) return false;
-  return gs.researchCells[idx]?.owned === true;
+  return getOwnedMazeEntrances(gs).length > 0;
 });
 
-const totalPool = computed(() => {
+const hoverResourceHint = ref<MazeResourceHoverHint | null>(null);
+const hoverResourceHints = ref<MazeResourceHoverHint[]>([]);
+const hoveredPillResourceKey = ref<MazeResourceKey | null>(null);
+const hoverPathCost = ref(0);
+const isHoveringEntrance = ref(false);
+
+function onResourceHover(hint: MazeResourceHoverHint | null): void {
+  hoverResourceHint.value = hint;
+}
+
+function onResourceHoverBatch(hints: MazeResourceHoverHint[]): void {
+  hoverResourceHints.value = hints;
+}
+
+function onResourcePillHover(resourceKey: MazeResourceKey | null): void {
+  hoveredPillResourceKey.value = resourceKey;
+}
+
+function onHoverPathCost(cost: number): void {
+  hoverPathCost.value = cost;
+}
+
+function onEntranceHover(hovering: boolean): void {
+  isHoveringEntrance.value = hovering;
+}
+
+function onResetHighMovement(): void {
+  globalInputQueue.push(new CmdMazeResetHighMovement());
+}
+
+watch(
+  () => uiState.mazeVersion,
+  () => {
+    hoverPathCost.value = 0;
+    isHoveringEntrance.value = false;
+    hoveredPillResourceKey.value = null;
+    hoverResourceHints.value = [];
+    uiState.mazeNexusMenuOpen = false;
+  }
+);
+
+const displayedResourceHints = computed<MazeResourceHoverHint[]>(() => {
+  if (hoveredPillResourceKey.value) return hoverResourceHints.value;
+  if (!hoverResourceHint.value) return [];
+  return [hoverResourceHint.value];
+});
+
+const attemptResources = computed<MazeResourceTotals>(() => {
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-  uiState.timeFlux;
-  return getGameState().timeFlux;
+  uiState.mazeMovementUsed;
+  const m = getGameState().maze;
+  return {
+    credits: m.collectedCredits,
+    chronotraces: m.collectedChronotraces,
+    shardDust: m.collectedShardDust,
+  };
+});
+
+const highResources = computed<MazeResourceTotals>(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.mazeMovementUsed;
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.mazeVersion;
+  const gs = getGameState();
+  return {
+    credits: gs.mazeHighCredits,
+    chronotraces: gs.mazeHighChronotraces,
+    shardDust: gs.mazeHighShardDust,
+  };
+});
+
+const highMovementUsed = computed(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.mazeVersion;
+  return getGameState().mazeHighMovementUsed;
 });
 
 const remainingPool = computed(() => {
@@ -69,23 +157,5 @@ const remainingPool = computed(() => {
   line-height: 1.8;
   text-align: center;
   opacity: 0.7;
-}
-
-.maze-info {
-  position: absolute;
-  left: 12px;
-  top: 12px;
-  padding: 4px 10px;
-  border: 1px solid var(--panel-border);
-  border-radius: 4px;
-  background: var(--panel-bg);
-  color: var(--text-primary);
-  font-size: 13px;
-  z-index: 10;
-  pointer-events: none;
-}
-
-.maze-info-flux {
-  color: #48bb78;
 }
 </style>

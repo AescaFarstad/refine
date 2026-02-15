@@ -75,7 +75,7 @@ export interface ResearchCellInfo {
   owned: boolean;
   archetypeId: string;
   nodeId: number;
-  centerCell: Point2 | null;
+  centerCell: Point2;
 }
 
 export function renderResearchBaseLayer(
@@ -112,7 +112,7 @@ export function renderResearchBaseLayer(
       owned: cell.owned,
       archetypeId: cell.archetypeId,
       nodeId: cell.nodeId,
-      centerCell: nodeInstance?.centerCell ?? null,
+      centerCell: nodeInstance?.centerCell ?? { x: axial.x, y: axial.y },
     };
 
     if (cell.nodeId != null && cell.nodeId >= 0) {

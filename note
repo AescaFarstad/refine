@@ -305,3 +305,14 @@ I want to smooth hex boundaries. What can you suggest?
 
 
 window.debugMaze()
+
+shop
+multiple entrances
+refresher panels
+double all block impassible +1 time flux per movement
++1 to all block impassible
+x2 to surroundings impassible
+shards act as refreshers impassible
++1 range to refreshers and multipliers impassible
+nearby x2 multipliaers become x3
+passing over these cells does not cost timeflux

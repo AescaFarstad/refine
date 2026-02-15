@@ -1,7 +1,7 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdReviewQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro, CmdPickupShard, CmdSpeedUpRefining, CmdClearShardPickupGrace, CmdMazeMoveTo } from './InputCommands';
+import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdReviewQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro, CmdPickupShard, CmdSpeedUpRefining, CmdClearShardPickupGrace, CmdMazeMoveTo, CmdMazeResetHighMovement } from './InputCommands';
 import { SHARD_PICKUP_DELAY_SEC } from '../Model';
 import { discover, discoverRefineTab, ensureSignatureDiscoveryFromWafer } from '../Discover';
 import { DISCOVERY } from '../DiscoveryLib';
@@ -14,7 +14,8 @@ import { applyResearchPurchase } from '../Research';
 import { startRefining } from '../Refine';
 import { applyReward } from '../Reward';
 import { saveAutosave } from '../SaveLoad';
-import { handleMazeMoveTo, computeMazeResourceSpawns } from '../Maze';
+import { handleMazeMoveTo, computeMazeResourceSpawns, syncMazeResetEntranceCell } from '../Maze';
+import { uiState } from '../UIState';
 
 type Handler = (gs: GameState, cmd: CmdInput) => void;
 const handlersByName = new Map<string, Handler>();
@@ -372,6 +373,7 @@ handlersByName.set('CmdResearchNode', (gs, cmd) => {
   }
   if (result.success) {
     computeMazeResourceSpawns(gs, lib);
+    syncMazeResetEntranceCell(gs);
     saveAutosave(gs);
   }
 });
@@ -484,7 +486,18 @@ handlersByName.set('CmdClearShardPickupGrace', (gs) => {
 
 handlersByName.set('CmdMazeMoveTo', (gs, cmd) => {
   const c = cmd as CmdMazeMoveTo;
-  handleMazeMoveTo(gs, c.target);
+  const moveResult = handleMazeMoveTo(gs, c.target);
+  if (moveResult.nexusReached) {
+    uiState.mazeNexusMenuOpen = true;
+  } else if (moveResult.success) {
+    uiState.mazeNexusMenuOpen = false;
+  }
+  saveAutosave(gs);
+});
+
+handlersByName.set('CmdMazeResetHighMovement', (gs) => {
+  gs.mazeHighMovementUsed = 0;
+  uiState.mazeVersion++;
   saveAutosave(gs);
 });
 

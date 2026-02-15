@@ -1,7 +1,6 @@
 import { axialToPixel } from './HexMath';
-import { axialToIndex } from './Research';
 import { RESOURCE_SPECS } from './Resources';
-import { MAZE_ENTRANCE } from './Maze';
+import { getOwnedMazeEntrances, getOwnedMazeNexuses } from './Maze';
 import type { Point2 } from './ItemLib';
 import type { ReadonlyGameState } from './UIState';
 import { computeOwnedResearchBoundary } from './hexBoundary';
@@ -9,22 +8,32 @@ import atlasStorage from './AtlasStorage';
 
 const MAZE_SHADOW_COLOR = 'rgba(0, 0, 0, 0.55)';
 const MAZE_SHADOW_OFFSET = { x: 3, y: 4 };
-const MAZE_CELL_FILL_COLOR = 'rgb(59, 81, 90)';
-const MAZE_CELL_OUTER_STROKE_COLOR = 'rgba(7, 14, 22, 0.62)';
+const MAZE_CELL_FILL_COLOR_TOP = 'rgb(34, 68, 74)';
+const MAZE_CELL_FILL_COLOR_MID = 'rgb(44, 84, 88)';
+const MAZE_CELL_FILL_COLOR_BOT = 'rgb(28, 56, 64)';
+const MAZE_RESOURCE_GLOW_RADIUS_SCALE = 1.8;
+const MAZE_RESOURCE_GLOW_ALPHA = 0.18;
+const MAZE_TAKEN_RESOURCE_GLOW_ALPHA = 0.05;
+const MAZE_CELL_OUTER_STROKE_COLOR = 'rgba(4, 18, 22, 0.65)';
 const MAZE_CELL_OUTER_STROKE_WIDTH = 6;
-const MAZE_CELL_INNER_STROKE_COLOR = 'rgba(180, 226, 240, 0.4)';
+const MAZE_CELL_INNER_STROKE_COLOR = 'rgba(140, 220, 210, 0.32)';
 const MAZE_CELL_INNER_STROKE_WIDTH = 2.5;
 const MAZE_BOUNDARY_SMOOTHNESS = 0.8;
 const MAZE_BOUNDARY_CONCAVE_BLEND = 0.7;
 const MAZE_BOUNDARY_CONCAVE_BLEND_NU = 0.45;
 const MAZE_TAKEN_GLYPH_COLOR = 'rgba(120, 120, 120, 0.4)';
-const MAZE_GLYPH_BG_FILL_COLOR = 'rgba(6, 14, 22, 0.4)';
-const MAZE_GLYPH_BG_STROKE_COLOR = 'rgba(173, 216, 230, 0.22)';
-const MAZE_TAKEN_GLYPH_BG_FILL_COLOR = 'rgba(6, 14, 22, 0.22)';
-const MAZE_TAKEN_GLYPH_BG_STROKE_COLOR = 'rgba(173, 216, 230, 0.1)';
+const MAZE_GLYPH_BG_FILL_COLOR = 'rgba(4, 16, 20, 0.45)';
+const MAZE_GLYPH_BG_STROKE_COLOR = 'rgba(140, 210, 205, 0.2)';
+const MAZE_TAKEN_GLYPH_BG_FILL_COLOR = 'rgba(4, 16, 20, 0.22)';
+const MAZE_TAKEN_GLYPH_BG_STROKE_COLOR = 'rgba(140, 210, 205, 0.1)';
 const MAZE_GLYPH_BG_RADIUS_SCALE = 0.62;
 const MAZE_GLYPH_BG_STROKE_WIDTH = 1.2;
 const MAZE_ENTRANCE_ICON_SCALE = 0.72;
+const MAZE_NEXUS_ICON_SCALE = 0.72;
+
+function hexAlphaSuffix(alpha: number): string {
+  return Math.round(alpha * 255).toString(16).padStart(2, '0');
+}
 
 function hashCoord01(x: number, y: number): number {
   const xi = Math.round(x * 1024);
@@ -167,6 +176,56 @@ function drawMazeEntranceSymbol(
   }
 }
 
+function drawMazeNexusSymbol(
+  ctx: CanvasRenderingContext2D,
+  game: ReadonlyGameState,
+  center: Point2,
+  hexSize: number,
+): void {
+  const archetype = game.lib.research.archetypes.get('disc_maze_nexus')!;
+  const icon = archetype.ownedIcon ?? archetype.icon;
+
+  if (icon.kind === 'glyph') {
+    const iconScale = icon.scale ?? 1;
+    const iconOffset = icon.offset ?? { x: 0, y: 0 };
+    const glyphSize = Math.max(12, hexSize * 1.05 * iconScale * MAZE_NEXUS_ICON_SCALE);
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `bold ${glyphSize}px sans-serif`;
+    ctx.fillStyle = 'rgba(248, 250, 252, 0.96)';
+    ctx.fillText(icon.glyph, center.x + iconOffset.x, center.y + iconOffset.y + 2);
+    ctx.restore();
+    return;
+  }
+
+  if (icon.kind === 'itemImage') {
+    const source = atlasStorage.getItemsSource();
+    const frame = atlasStorage.getItemsFrame(icon.key)!;
+    const iconScale = icon.scale ?? 1;
+    const iconOffset = icon.offset ?? { x: 0, y: 0 };
+    const iconMaxSize = hexSize * 1.2 * MAZE_NEXUS_ICON_SCALE;
+    const scale = Math.min(iconMaxSize / frame.w, iconMaxSize / frame.h) * iconScale;
+    const drawW = frame.w * scale;
+    const drawH = frame.h * scale;
+
+    ctx.save();
+    ctx.translate(center.x + iconOffset.x, center.y + iconOffset.y);
+    ctx.drawImage(
+      source,
+      frame.x,
+      frame.y,
+      frame.w,
+      frame.h,
+      -drawW / 2,
+      -drawH / 2,
+      drawW,
+      drawH
+    );
+    ctx.restore();
+  }
+}
+
 export function renderMazeBaseLayer(
   ctx: CanvasRenderingContext2D,
   game: ReadonlyGameState,
@@ -190,10 +249,25 @@ export function renderMazeBaseLayer(
     ctx.fill('evenodd');
     ctx.restore();
 
-    // Main maze silhouette and border.
+    // Main maze silhouette and border — gradient fill for depth.
     ctx.save();
     traceBoundaryPath(ctx, loops, origin, hexSize);
-    ctx.fillStyle = MAZE_CELL_FILL_COLOR;
+
+    // Compute vertical bounds for gradient
+    let minY = Infinity;
+    let maxY = -Infinity;
+    for (const loop of loops) {
+      for (const p of loop) {
+        const py = origin.y + p.y * hexSize;
+        if (py < minY) minY = py;
+        if (py > maxY) maxY = py;
+      }
+    }
+    const grad = ctx.createLinearGradient(0, minY, 0, maxY);
+    grad.addColorStop(0, MAZE_CELL_FILL_COLOR_TOP);
+    grad.addColorStop(0.45, MAZE_CELL_FILL_COLOR_MID);
+    grad.addColorStop(1, MAZE_CELL_FILL_COLOR_BOT);
+    ctx.fillStyle = grad;
     ctx.fill('evenodd');
 
     traceBoundaryPath(ctx, loops, origin, hexSize);
@@ -210,10 +284,16 @@ export function renderMazeBaseLayer(
     ctx.restore();
   }
 
-  const entranceIdx = axialToIndex(MAZE_ENTRANCE.x, MAZE_ENTRANCE.y);
-  if (entranceIdx !== -1 && cells[entranceIdx]!.owned) {
-    const center = axialToPixel(MAZE_ENTRANCE, hexSize, origin);
+  const ownedEntrances = getOwnedMazeEntrances(game);
+  for (const entrance of ownedEntrances) {
+    const center = axialToPixel(entrance, hexSize, origin);
     drawMazeEntranceSymbol(ctx, game, center, hexSize);
+  }
+
+  const ownedNexuses = getOwnedMazeNexuses(game);
+  for (const nexus of ownedNexuses) {
+    const center = axialToPixel(nexus, hexSize, origin);
+    drawMazeNexusSymbol(ctx, game, center, hexSize);
   }
 
   // Draw resource glyphs
@@ -228,6 +308,18 @@ export function renderMazeBaseLayer(
     const glyphYOffset = spawn.resourceKey === 'credits' ? 2 : 1;
 
     ctx.save();
+
+    // Soft colored glow behind the icon
+    const glowRadius = bgRadius * MAZE_RESOURCE_GLOW_RADIUS_SCALE;
+    const glowAlpha = taken ? MAZE_TAKEN_RESOURCE_GLOW_ALPHA : MAZE_RESOURCE_GLOW_ALPHA;
+    const glowGrad = ctx.createRadialGradient(pixel.x, pixel.y, 0, pixel.x, pixel.y, glowRadius);
+    glowGrad.addColorStop(0, spec.color + hexAlphaSuffix(glowAlpha));
+    glowGrad.addColorStop(1, spec.color + '00');
+    ctx.beginPath();
+    ctx.arc(pixel.x, pixel.y, glowRadius, 0, Math.PI * 2);
+    ctx.fillStyle = glowGrad;
+    ctx.fill();
+
     ctx.beginPath();
     ctx.arc(pixel.x, pixel.y, bgRadius, 0, Math.PI * 2);
     ctx.fillStyle = taken ? MAZE_TAKEN_GLYPH_BG_FILL_COLOR : MAZE_GLYPH_BG_FILL_COLOR;

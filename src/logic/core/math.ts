@@ -16,34 +16,34 @@ export function set(p: Point2, x: number, y: number): void {
   p.x = x;
   p.y = y;
 }
-export function set_(p: Point2, p1: Point2): void {
+export function set_(p: Point2, p1: Readonly<Point2>): void {
   p.x = p1.x;
   p.y = p1.y;
 }
 
-export function copy(p: Point2): Point2 {
+export function copy(p: Readonly<Point2>): Point2 {
   return { x: p.x, y: p.y };
 }
 
-export function subtract(p2: Point2, p1: Point2): Point2 {
+export function subtract(p2: Readonly<Point2>, p1: Readonly<Point2>): Point2 {
   return { x: p2.x - p1.x, y: p2.y - p1.y };
 }
 
-export function subtract_(p: Point2, p1: Point2): void {
+export function subtract_(p: Point2, p1: Readonly<Point2>): void {
   p.x -= p1.x;
   p.y -= p1.y;
 }
 
-export function add(p1: Point2, p2: Point2): Point2 {
+export function add(p1: Readonly<Point2>, p2: Readonly<Point2>): Point2 {
   return { x: p1.x + p2.x, y: p1.y + p2.y };
 }
 
-export function add_(p: Point2, p2: Point2): void {
+export function add_(p: Point2, p2: Readonly<Point2>): void {
   p.x += p2.x;
   p.y += p2.y;
 }
 
-export function scale(p: Point2, s: number): Point2 {
+export function scale(p: Readonly<Point2>, s: number): Point2 {
   return { x: p.x * s, y: p.y * s };
 }
 
@@ -52,7 +52,7 @@ export function scale_(p: Point2, s: number): void {
   p.y *= s;
 }
 
-export function normalize(p: Point2): Point2 {
+export function normalize(p: Readonly<Point2>): Point2 {
   const len = length(p);
   if (len > 0) {
     return { x: p.x / len, y: p.y / len };
@@ -71,21 +71,21 @@ export function normalize_(p: Point2): void {
   }
 }
 
-export function length_sq(p: Point2): number {
+export function length_sq(p: Readonly<Point2>): number {
   return p.x * p.x + p.y * p.y;
 }
 
-export function length(p: Point2): number {
+export function length(p: Readonly<Point2>): number {
   return Math.sqrt(p.x * p.x + p.y * p.y);
 }
 
-export function distance(p1: Point2, p2: Point2): number {
+export function distance(p1: Readonly<Point2>, p2: Readonly<Point2>): number {
   const dx = p1.x - p2.x;
   const dy = p1.y - p2.y;
   return Math.sqrt(dx * dx + dy * dy);
 }
 
-export function distance_sq(p1: Point2, p2: Point2): number {
+export function distance_sq(p1: Readonly<Point2>, p2: Readonly<Point2>): number {
   const dx = p1.x - p2.x;
   const dy = p1.y - p2.y;
   return dx * dx + dy * dy;
@@ -114,7 +114,7 @@ export function cvtExp(value: number, inMin: number, inMax: number, outMin: numb
   return outMin * Math.pow(outMax / outMin, t);
 }
 
-export function distancePointToSegment(p: Point2, a: Point2, b: Point2): number {
+export function distancePointToSegment(p: Readonly<Point2>, a: Readonly<Point2>, b: Readonly<Point2>): number {
   const ab = subtract(b, a);
   const ap = subtract(p, a);
   const lenSq = ab.x * ab.x + ab.y * ab.y;
@@ -131,23 +131,28 @@ export function distancePointToSegment(p: Point2, a: Point2, b: Point2): number 
   };  return distance(p, closestPoint);
 }
 
-export function dot(p1: Point2, p2: Point2): number {
+export function dot(p1: Readonly<Point2>, p2: Readonly<Point2>): number {
   return p1.x * p2.x + p1.y * p2.y;
 }
 
-export function cross(p1: Point2, p2: Point2): number {
+export function cross(p1: Readonly<Point2>, p2: Readonly<Point2>): number {
   return p1.x * p2.y - p1.y * p2.x;
 }
 
-export function isToRight(p1: Point2, p2: Point2, p3: Point2): boolean {
+export function isToRight(p1: Readonly<Point2>, p2: Readonly<Point2>, p3: Readonly<Point2>): boolean {
   return (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x) < 0;
 }
 
-export function isPointInAABB(point: Point2, min: Point2, max: Point2): boolean {
+export function isPointInAABB(point: Readonly<Point2>, min: Readonly<Point2>, max: Readonly<Point2>): boolean {
   return point.x >= min.x && point.x <= max.x && point.y >= min.y && point.y <= max.y;
 }
 
-export function lineSegmentIntersectionTest(p1: Point2, p2: Point2, p3: Point2, p4: Point2): boolean {
+export function lineSegmentIntersectionTest(
+  p1: Readonly<Point2>,
+  p2: Readonly<Point2>,
+  p3: Readonly<Point2>,
+  p4: Readonly<Point2>,
+): boolean {
   const EPSILON = 1e-10;  const r = subtract(p2, p1);
   const s = subtract(p4, p3);
   const r_cross_s = cross(r, s);
@@ -170,13 +175,18 @@ export function lineSegmentIntersectionTest(p1: Point2, p2: Point2, p3: Point2, 
 }
 
 // Fast broad-phase AABB vs AABB intersection test
-export function aabbIntersection(min1: Point2, max1: Point2, min2: Point2, max2: Point2): boolean {
+export function aabbIntersection(
+  min1: Readonly<Point2>,
+  max1: Readonly<Point2>,
+  min2: Readonly<Point2>,
+  max2: Readonly<Point2>,
+): boolean {
   return !(max1.x < min2.x || min1.x > max2.x || max1.y < min2.y || min1.y > max2.y);
 }
 
 
 
-export function lineLineIntersection(line1: Line, line2: Line): Point2 | null {
+export function lineLineIntersection(line1: Readonly<Line>, line2: Readonly<Line>): Point2 | null {
   const p1 = line1.point;
   const v1 = line1.direction;
   const p2 = line2.point;
@@ -212,7 +222,12 @@ export function lineLineIntersect(x1: number, y1: number, x2: number, y2: number
   return { x, y };
 }
 
-export function getLineSegmentIntersectionPoint(p1: Point2, p2: Point2, p3: Point2, p4: Point2): Point2 | null {
+export function getLineSegmentIntersectionPoint(
+  p1: Readonly<Point2>,
+  p2: Readonly<Point2>,
+  p3: Readonly<Point2>,
+  p4: Readonly<Point2>,
+): Point2 | null {
   const den = (p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x);
   if (den === 0) {
     return null; // Lines are parallel
@@ -230,14 +245,18 @@ export function getLineSegmentIntersectionPoint(p1: Point2, p2: Point2, p3: Poin
   return null;
 }
 
-export function pointLineSignedDistance(point: Point2, lineP1: Point2, lineDir: Point2): number {
+export function pointLineSignedDistance(
+  point: Readonly<Point2>,
+  lineP1: Readonly<Point2>,
+  lineDir: Readonly<Point2>,
+): number {
   const normal = { x: -lineDir.y, y: lineDir.x };
   const pointVec = subtract(point, lineP1);
   const dist = dot(pointVec, normal) / length(normal);
   return dist;
 }
 
-export function rotateTo(out: Point2, p: Point2, angle: number): void {
+export function rotateTo(out: Point2, p: Readonly<Point2>, angle: number): void {
   const c = Math.cos(angle), s = Math.sin(angle);
   const x = p.x, y = p.y;
   out.x = x * c - y * s;
@@ -251,7 +270,7 @@ export function rotate_(p: Point2, angle: number): void {
   p.y = x * s + y * c;
 }
 
-export function rotate(p: Point2, angle: number): Point2 {
+export function rotate(p: Readonly<Point2>, angle: number): Point2 {
   return { x: p.x * Math.cos(angle) - p.y * Math.sin(angle), y: p.x * Math.sin(angle) + p.y * Math.cos(angle) };
 }
 

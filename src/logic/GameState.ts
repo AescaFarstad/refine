@@ -72,6 +72,8 @@ export class GameState {
   public mazeHighCredits: number = 0;
   public mazeHighChronotraces: number = 0;
   public mazeHighShardDust: number = 0;
+  public mazeHighMovementUsed: number = 0;
+  public mazeResetEntranceCell: Point2 = { x: 0, y: 0 };
 
   // Maze — transient (not saved, reset on load)
   public maze: MazeTransient = createMazeTransient();
@@ -266,9 +268,9 @@ export interface MazeTransient {
   version: number;
 }
 
-export function createMazeTransient(): MazeTransient {
+export function createMazeTransient(avatarCell: Point2 = { x: 0, y: 0 }): MazeTransient {
   return {
-    avatarCell: { x: -5, y: -1 },
+    avatarCell: { x: avatarCell.x, y: avatarCell.y },
     movementUsed: 0,
     collectedCredits: 0,
     collectedChronotraces: 0,

@@ -206,3 +206,7 @@ export class CmdMazeMoveTo implements CmdInput {
     this.target = args.target;
   }
 }
+
+export class CmdMazeResetHighMovement implements CmdInput {
+  readonly name = 'CmdMazeResetHighMovement';
+}

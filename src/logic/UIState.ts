@@ -1,7 +1,7 @@
 import { reactive, computed } from 'vue';
 import { formatDurationHM } from './StringUtils';
 import { createRaidDamageBreakdown, createRaidTimeBreakdownSec, type GameState, type RaidDamageBreakdown, type RaidOutcome, type RefineryOutcome, type Shard, type RaidTimeBreakdownSec } from './GameState';
-import type { RaidDefinition } from './RaidLib';
+import type { EncounterDef, RaidDefinition } from './RaidLib';
 import { getEffectiveRaidDefinition } from './Raid';
 import { computeRefinePreviewChem } from './RefinePreview';
 import type { Lib } from './Lib';
@@ -161,6 +161,7 @@ function createDefaultUIState() {
 
     mazeMovementUsed: 0,
     mazeVersion: 0,
+    mazeNexusMenuOpen: false,
 
     questPrereqsVersion: 0,
 
@@ -188,6 +189,7 @@ let gameRef: GameState | null = null;
 
 interface UISyncCache {
   lastRaidKey: string;
+  lastEffectiveRaidsKey: string;
   lastWaferItemCount: number;
   lastWaferEnabledCount: number;
   lastRefiningYieldPctBonus: number;
@@ -202,6 +204,7 @@ interface UISyncCache {
 
 const SYNC_CACHE_DEFAULTS: UISyncCache = {
   lastRaidKey: '',
+  lastEffectiveRaidsKey: '',
   lastWaferItemCount: 0,
   lastWaferEnabledCount: 0,
   lastRefiningYieldPctBonus: Number.NaN,
@@ -215,6 +218,44 @@ const SYNC_CACHE_DEFAULTS: UISyncCache = {
 };
 
 let syncCache: UISyncCache = { ...SYNC_CACHE_DEFAULTS };
+
+function encounterSyncKey(encounter: EncounterDef): string {
+  switch (encounter.type) {
+    case 'FightEncounter':
+      return `FightEncounter:${encounter.monsterId}`;
+    case 'QuestEncounter':
+      return `QuestEncounter:${encounter.questId}`;
+    case 'MonsterLootEncounter':
+      return `MonsterLootEncounter:${encounter.monsterId}`;
+    default:
+      return encounter.type;
+  }
+}
+
+function raidDefinitionSyncKey(raid: RaidDefinition): string {
+  const encountersKey = raid.encounters
+    .map(step => `${Math.trunc(step.count)}:${encounterSyncKey(step.encounter)}`)
+    .join(',');
+  return `${raid.id}|${raid.baseLootChance}|${raid.zoneCollapseSec}|${raid.zoneCollapseStepPerMutation}|${raid.items.join(',')}|${encountersKey}`;
+}
+
+function buildEffectiveRaidsSyncKey(game: GameState): string {
+  const raidKeys: string[] = [];
+  const loadoutKeys: string[] = [];
+  game.lib.raids.forEach((raid, id) => {
+    raidKeys.push(raidDefinitionSyncKey(raid));
+    loadoutKeys.push(`${id}:${(game.loadouts[id] ?? []).join(',')}`);
+  });
+
+  const activeQuestsKey = [...game.activeQuests].sort().join(',');
+  const completedQuestsKey = [...game.completedQuests].sort().join(',');
+  const unlockedRaidProgressKey = game.unlockedRaids
+    .map(r => `${r.id}:${r.successes}:${r.questCompletions}`)
+    .sort()
+    .join(',');
+
+  return `${uiState.questPrereqsVersion}|${activeQuestsKey}|${completedQuestsKey}|${unlockedRaidProgressKey}|${loadoutKeys.join(';')}|${raidKeys.join(';')}`;
+}
 
 function overwriteUIState(next: UIState): void {
   const target = uiState as unknown as Record<string, unknown>;
@@ -267,17 +308,19 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.speed = game.speed ?? 0;
   uiState.volume = game.volume;
 
-  const raids: UIRaidDef[] = [];
-  const order: string[] = [];
-  game.lib.raids.forEach((_, id) => {
-    const eff = getEffectiveRaidDefinition(game, id) as UIRaidDef | null;
-    if (eff) {
+  const effectiveRaidsKey = buildEffectiveRaidsSyncKey(game);
+  if (effectiveRaidsKey !== syncCache.lastEffectiveRaidsKey) {
+    const raids: UIRaidDef[] = [];
+    const order: string[] = [];
+    game.lib.raids.forEach((_, id) => {
+      const eff = getEffectiveRaidDefinition(game, id) as UIRaidDef;
       raids.push(eff);
       order.push(id);
-    }
-  });
-  uiState.raids = raids;
-  uiState.raidOrder = order;
+    });
+    uiState.raids = raids;
+    uiState.raidOrder = order;
+    syncCache.lastEffectiveRaidsKey = effectiveRaidsKey;
+  }
 
   uiState.unlockedRaidIds = game.unlockedRaids.map(r => r.id);
   uiState.unlockedGear = Array.isArray(game.unlockedGear) ? [...game.unlockedGear] : [];

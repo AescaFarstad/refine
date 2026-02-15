@@ -12,6 +12,9 @@ export const researchPane: ResearchPlacementInput[] = [
   { archetypeId: 'disc_unique_items_yield', cells: [{ x: -5, y: -5 }, { x: -4, y: -5 }, { x: -5, y: -4 }] },
   { archetypeId: 'disc_essence_anomaly_magenta', cells: [{ x: 15, y: -8 }, { x: 14, y: -8 }, { x: 14, y: -7 }] },
 
+  { archetypeId: 'disc_maze_navigation', cells: [{ x: 12, y: -15 },{ x: 13, y: -16 },{ x: 11, y: -15 },{ x: 12, y: -14 },], centerCell: { x: 12, y: -15 } },
+  { archetypeId: 'disc_maze_navigation', cells: [{ x: 5, y: 13 },{ x: 4, y: 13 },{ x: 6, y: 12 },{ x: 5, y: 14 },], centerCell: { x: 5, y: 13 } },
+  { archetypeId: 'disc_maze_nexus', cells: [{ x: -4, y: -18 },{ x: -3, y: -19 },{ x: -4, y: -17 },{ x: -5, y: -18 }], centerCell: { x: -4, y: -18 } },
 
   { archetypeId: 'stat_weight', cells: { x: 1, y: -3 } },
   { archetypeId: 'res_credits', cells: { x: 3, y: -2 } },
@@ -77,8 +80,8 @@ export const researchPane: ResearchPlacementInput[] = [
   { archetypeId: 'gear_shotgun', cells: { x: -21, y: 4 }, radius: 1 },
   { archetypeId: 'gear_thorough_search', cells: { x: -12, y: -1 }, radius: 1 },
 
-  { archetypeId: 'gear_zone_crystal', cells: [{ x: 9, y: -15 }, { x: 10, y: -16 }, { x: 10, y: -15 }, { x: 9, y: -14 }] },
-  { archetypeId: 'gear_zone_crystal', cells: [{ x: 15, y: 6 }, { x: 14, y: 7 }, { x: 14, y: 8 }, { x: 15, y: 7 }] },
+  // { archetypeId: 'gear_zone_crystal', cells: [{ x: 9, y: -15 }, { x: 10, y: -16 }, { x: 10, y: -15 }, { x: 9, y: -14 }] },
+  // { archetypeId: 'gear_zone_crystal', cells: [{ x: 15, y: 6 }, { x: 14, y: 7 }, { x: 14, y: 8 }, { x: 15, y: 7 }] },
 
   { archetypeId: 'stat_vision', cells: { x: 6, y: 4 } },
   { archetypeId: 'stat_volume', cells: { x: 4, y: 8 } },
@@ -157,7 +160,6 @@ export const researchPane: ResearchPlacementInput[] = [
   { archetypeId: 'stat_volume', cells: { x: 27, y: -2 } },
   { archetypeId: 'stat_volume', cells: { x: 28, y: -5 } },
   { archetypeId: 'stat_speed', cells: { x: 21, y: -14 } },
-  { archetypeId: 'stat_hp', cells: { x: 12, y: -15 } },
   { archetypeId: 'stat_itemBans', cells: { x: 6, y: -20 } },
   { archetypeId: 'stat_hp', cells: { x: 10, y: -21 } },
   { archetypeId: 'stat_hp', cells: { x: 0, y: -15 } },
@@ -258,8 +260,8 @@ export const researchPaneEmptyCells: Point2[] = [
   { x: -3, y: -5 }, { x: 3, y: -5 }, { x: -4, y: -4 }, { x: -1, y: -4 }, { x: 1, y: -4 }, { x: -9, y: -3 },
   { x: 10, y: -1 }, { x: 11, y: -1 }, { x: -16, y: 0 }, { x: 2, y: 0 }, { x: 19, y: 0 }, { x: 13, y: 1 },
   { x: 14, y: 1 }, { x: -13, y: 2 }, { x: -13, y: 3 }, { x: -3, y: 8 }, { x: -20, y: 9 }, { x: -21, y: 10 },
-  { x: 8, y: 10 }, { x: 7, y: 11 }, { x: 6, y: 12 }, { x: 17, y: 12 }, { x: -17, y: 13 }, { x: -16, y: 13 },
-  { x: 5, y: 13 }, { x: 17, y: 13 }, { x: -21, y: 14 }, { x: -20, y: 14 }, { x: -17, y: 14 }, { x: 4, y: 14 },
+  { x: 8, y: 10 }, { x: 7, y: 11 }, { x: 17, y: 12 }, { x: -17, y: 13 }, { x: -16, y: 13 },
+  { x: 17, y: 13 }, { x: -21, y: 14 }, { x: -20, y: 14 }, { x: -17, y: 14 }, { x: 4, y: 14 },
   { x: 17, y: 14 }, { x: 3, y: 15 }, { x: -20, y: 16 }, { x: -19, y: 16 }, { x: 2, y: 16 }, { x: -8, y: 19 },
   { x: -7, y: 19 }, { x: -6, y: 19 }, { x: -9, y: 20 }, { x: -8, y: 20 }, { x: -7, y: 20 }, { x: -6, y: 20 },
   { x: 8, y: 20 }, { x: -9, y: 21 }, { x: -8, y: 21 }, { x: -7, y: 21 }, { x: -9, y: 22 }, { x: -8, y: 22 },

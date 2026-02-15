@@ -1,7 +1,7 @@
 import { ref, type Ref, type ComputedRef, onUnmounted } from 'vue';
 import { bfsMazePath } from '../BFS';
 import { axialToPixel } from '../HexMath';
-import { MAZE_ENTRANCE } from '../Maze';
+import { isMazeEntranceCell } from '../Maze';
 import type { Point2 } from '../ItemLib';
 import type { ReadonlyGameState } from '../UIState';
 
@@ -19,6 +19,12 @@ interface MazeProjection {
   avatarCell: Point2;
   movementUsed: number;
   takenCellKeys: Set<string>;
+  resetEntranceCell: Point2;
+}
+
+interface MazeProjectionSummary {
+  avatarCell: Point2;
+  movementUsed: number;
 }
 
 export interface MazeMoveAnimationOptions {
@@ -26,7 +32,7 @@ export interface MazeMoveAnimationOptions {
   avatarMoveSpeed: number;
   origin: Point2Ref;
   facingAngle: Ref<number>;
-  turnTowards: (current: number, target: number, dt: number) => number;
+  turnTowards: (current: number, target: number, dt: number, speedMultiplier?: number) => number;
   positionAvatarAt: (pixelX: number, pixelY: number, angle: number) => void;
   stopIdleFacingLoop: () => void;
   getGameState: () => ReadonlyGameState;
@@ -34,6 +40,7 @@ export interface MazeMoveAnimationOptions {
   clearHoverPathImmediate: () => void;
   scheduleBaseRender: () => void;
   updateAvatarPosition: () => void;
+  onSegmentComplete: (targetCell: Point2, takenBefore: Set<string>) => void;
   onPathAnimationFullyComplete: () => void;
 }
 
@@ -73,7 +80,7 @@ export function useMazeMoveAnimation(options: MazeMoveAnimationOptions): MazeMov
     return `${cell.x},${cell.y}`;
   }
 
-  function cloneCell(cell: Point2): Point2 {
+  function copy(cell: Point2): Point2 {
     return { x: cell.x, y: cell.y };
   }
 
@@ -85,42 +92,44 @@ export function useMazeMoveAnimation(options: MazeMoveAnimationOptions): MazeMov
     return resourceCellKeys;
   }
 
-  function createPathSegment(path: Point2[]): MoveSegment {
+  function createPathSegment(path: Point2[], gs: ReadonlyGameState): MoveSegment {
     const target = path[path.length - 1]!;
-    const resetsMaze = target.x === MAZE_ENTRANCE.x && target.y === MAZE_ENTRANCE.y;
-    const expectedAvatarCell = resetsMaze ? cloneCell(MAZE_ENTRANCE) : cloneCell(target);
+    const resetsMaze = isMazeEntranceCell(gs, target);
+    const expectedAvatarCell = copy(target);
     return {
       kind: 'path',
       path,
-      target: cloneCell(target),
+      target: copy(target),
       expectedAvatarCell,
       resetsMaze,
     };
   }
 
-  function createResetCommandSegment(target: Point2): MoveSegment {
+  function createResetCommandSegment(target: Point2, projection: MazeProjection): MoveSegment {
     return {
       kind: 'command',
       path: [],
-      target: cloneCell(target),
-      expectedAvatarCell: cloneCell(MAZE_ENTRANCE),
+      target: copy(target),
+      expectedAvatarCell: copy(projection.resetEntranceCell),
       resetsMaze: true,
     };
   }
 
   function snapshotProjection(gs: ReadonlyGameState): MazeProjection {
     return {
-      avatarCell: cloneCell(gs.maze.avatarCell),
+      avatarCell: copy(gs.maze.avatarCell),
       movementUsed: gs.maze.movementUsed,
       takenCellKeys: new Set(gs.maze.takenCells.map(toCellKey)),
+      resetEntranceCell: copy(gs.mazeResetEntranceCell),
     };
   }
 
   function cloneProjection(projection: MazeProjection): MazeProjection {
     return {
-      avatarCell: cloneCell(projection.avatarCell),
+      avatarCell: copy(projection.avatarCell),
       movementUsed: projection.movementUsed,
       takenCellKeys: new Set(projection.takenCellKeys),
+      resetEntranceCell: copy(projection.resetEntranceCell),
     };
   }
 
@@ -130,9 +139,10 @@ export function useMazeMoveAnimation(options: MazeMoveAnimationOptions): MazeMov
     resourceCellKeys: Set<string>,
   ): void {
     if (segment.resetsMaze) {
-      projection.avatarCell = cloneCell(segment.expectedAvatarCell);
+      projection.avatarCell = copy(segment.expectedAvatarCell);
       projection.movementUsed = 0;
       projection.takenCellKeys.clear();
+      projection.resetEntranceCell = copy(segment.expectedAvatarCell);
       return;
     }
 
@@ -143,10 +153,20 @@ export function useMazeMoveAnimation(options: MazeMoveAnimationOptions): MazeMov
         projection.takenCellKeys.add(key);
       }
     }
-    projection.avatarCell = cloneCell(segment.expectedAvatarCell);
+    projection.avatarCell = copy(segment.expectedAvatarCell);
   }
 
-  function getProjectedQueueState(gs: ReadonlyGameState): MazeProjection {
+  function applySegmentToSummary(summary: MazeProjectionSummary, segment: MoveSegment): void {
+    if (segment.resetsMaze) {
+      summary.avatarCell = segment.expectedAvatarCell;
+      summary.movementUsed = 0;
+      return;
+    }
+    summary.movementUsed += segment.path.length;
+    summary.avatarCell = segment.expectedAvatarCell;
+  }
+
+  function clearProjectedBaseOverrideIfIdle(): void {
     if (
       projectedBaseOverride &&
       movePath.value.length === 0 &&
@@ -155,6 +175,10 @@ export function useMazeMoveAnimation(options: MazeMoveAnimationOptions): MazeMov
     ) {
       projectedBaseOverride = null;
     }
+  }
+
+  function getProjectedQueueState(gs: ReadonlyGameState): MazeProjection {
+    clearProjectedBaseOverrideIfIdle();
 
     const projection = projectedBaseOverride
       ? cloneProjection(projectedBaseOverride)
@@ -171,12 +195,25 @@ export function useMazeMoveAnimation(options: MazeMoveAnimationOptions): MazeMov
     return projection;
   }
 
+  function getProjectedQueueSummary(gs: ReadonlyGameState): MazeProjectionSummary {
+    clearProjectedBaseOverrideIfIdle();
+    const summary: MazeProjectionSummary = projectedBaseOverride
+      ? { avatarCell: projectedBaseOverride.avatarCell, movementUsed: projectedBaseOverride.movementUsed }
+      : { avatarCell: gs.maze.avatarCell, movementUsed: gs.maze.movementUsed };
+
+    if (activeSegment) {
+      applySegmentToSummary(summary, activeSegment);
+    }
+    for (const segment of segmentQueue.value) {
+      applySegmentToSummary(summary, segment);
+    }
+    return summary;
+  }
+
   function commitDispatchedSegment(segment: MoveSegment): void {
     const gs = options.getGameState();
     const resourceCellKeys = buildResourceCellKeys(gs);
-    const projection = projectedBaseOverride
-      ? cloneProjection(projectedBaseOverride)
-      : snapshotProjection(gs);
+    const projection = projectedBaseOverride ?? snapshotProjection(gs);
     applySegmentToProjection(projection, segment, resourceCellKeys);
     projectedBaseOverride = projection;
   }
@@ -206,7 +243,7 @@ export function useMazeMoveAnimation(options: MazeMoveAnimationOptions): MazeMov
 
     if (nextSegment.kind === 'command') {
       options.stopIdleFacingLoop();
-      pendingAvatarCell.value = cloneCell(nextSegment.expectedAvatarCell);
+      pendingAvatarCell.value = copy(nextSegment.expectedAvatarCell);
       commitDispatchedSegment(nextSegment);
       options.queueMoveCommand(nextSegment.target);
       options.scheduleBaseRender();
@@ -220,7 +257,7 @@ export function useMazeMoveAnimation(options: MazeMoveAnimationOptions): MazeMov
 
   function startMoveAnimation(path: Point2[], fromCell?: Point2): void {
     if (path.length === 0) return;
-    activeSegment = createPathSegment(path);
+    activeSegment = createPathSegment(path, options.getGameState());
     startPathAnimation(path, fromCell);
   }
 
@@ -297,9 +334,11 @@ export function useMazeMoveAnimation(options: MazeMoveAnimationOptions): MazeMov
 
       movePath.value = [];
       moveAnimProgress.value = 0;
-      pendingAvatarCell.value = cloneCell(segment.expectedAvatarCell);
+      pendingAvatarCell.value = copy(segment.expectedAvatarCell);
+      const takenBefore = new Set(options.getGameState().maze.takenCells.map(toCellKey));
       commitDispatchedSegment(segment);
       options.queueMoveCommand(segment.target);
+      options.onSegmentComplete(segment.target, takenBefore);
       options.scheduleBaseRender();
       processNextSegment(segment.expectedAvatarCell);
       return;
@@ -319,7 +358,7 @@ export function useMazeMoveAnimation(options: MazeMoveAnimationOptions): MazeMov
     const dy = toPixel.y - fromPixel.y;
     if (dx !== 0 || dy !== 0) {
       const targetAngle = Math.atan2(dy, dx);
-      options.facingAngle.value = options.turnTowards(options.facingAngle.value, targetAngle, dt);
+      options.facingAngle.value = options.turnTowards(options.facingAngle.value, targetAngle, dt, speedMultiplier);
     }
 
     options.positionAvatarAt(interpX, interpY, options.facingAngle.value);
@@ -336,7 +375,7 @@ export function useMazeMoveAnimation(options: MazeMoveAnimationOptions): MazeMov
 
     const remaining = gs.timeFlux - projectedState.movementUsed;
     if (result.cost > remaining) {
-      segmentQueue.value.push(createResetCommandSegment(axial));
+      segmentQueue.value.push(createResetCommandSegment(axial, projectedState));
       if (movePath.value.length === 0 && activeSegment === null) {
         processNextSegment();
       }
@@ -351,7 +390,7 @@ export function useMazeMoveAnimation(options: MazeMoveAnimationOptions): MazeMov
       const key = toCellKey(cell);
       if (resourceCellKeys.has(key) && !projectedState.takenCellKeys.has(key)) {
         const segPath = result.path.slice(segStart, i + 1);
-        const segment = createPathSegment(segPath);
+        const segment = createPathSegment(segPath, gs);
         queuedSegments.push(segment);
         applySegmentToProjection(projectedState, segment, resourceCellKeys);
         segStart = i + 1;
@@ -360,7 +399,7 @@ export function useMazeMoveAnimation(options: MazeMoveAnimationOptions): MazeMov
 
     if (segStart < result.path.length) {
       const segPath = result.path.slice(segStart);
-      const segment = createPathSegment(segPath);
+      const segment = createPathSegment(segPath, gs);
       queuedSegments.push(segment);
       applySegmentToProjection(projectedState, segment, resourceCellKeys);
     }
@@ -376,13 +415,13 @@ export function useMazeMoveAnimation(options: MazeMoveAnimationOptions): MazeMov
   }
 
   function getQueuedAvatarCell(): Point2 {
-    const projection = getProjectedQueueState(options.getGameState());
-    return cloneCell(projection.avatarCell);
+    const summary = getProjectedQueueSummary(options.getGameState());
+    return copy(summary.avatarCell);
   }
 
   function getQueuedMovementUsed(): number {
-    const projection = getProjectedQueueState(options.getGameState());
-    return projection.movementUsed;
+    const summary = getProjectedQueueSummary(options.getGameState());
+    return summary.movementUsed;
   }
 
   function dispose(): void {

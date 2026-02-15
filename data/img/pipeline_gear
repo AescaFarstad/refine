@@ -191,7 +191,6 @@
   content: entrace_1 entrance_2 espace x_mark
 }
 
-#start
 {
   image:ChatGPT Image Feb 13, 2026, 11_37_52 PM.png
   content: sledgehammer hammer3 hammer_mini hammer2
@@ -225,4 +224,20 @@
 {
   image:ChatGPT Image Feb 13, 2026, 11_48_38 PM.png
   content: poison _ bio_hazard _
+}
+#start
+
+{
+  image:ChatGPT Image Feb 16, 2026, 12_52_36 AM.png
+  content: tetrahedron_inv_arrow _ triangle_concave triangle_inscribed
+}
+
+{
+  image:ChatGPT Image Feb 16, 2026, 12_50_02 AM.png
+  content:  tetrahedron_inv _ pentagon pentagon_cocave
+}
+
+{
+  image:ChatGPT Image Feb 16, 2026, 12_55_40 AM.png
+  content: tetrahedron_strict eye_in_triangle triangle_fluid triangle_spinner
 }

@@ -1,18 +1,77 @@
-import type { Point2 } from './core/math';
+import { copy, type Point2 } from './core/math';
 import type { GameState, MazeResourceSpawn } from './GameState';
 import { createMazeTransient } from './GameState';
 import type { ResearchLib } from './ResearchLib';
 import { axialDistance } from './HexMath';
 import { axialToIndex } from './Research';
 import { bfsMazePath } from './BFS';
+import type { ReadonlyGameState } from './UIState';
 
-export const MAZE_ENTRANCE: Point2 = { x: -5, y: -1 };
+const MAZE_ENTRANCE_ARCHETYPE_ID = 'disc_maze_navigation';
+const MAZE_NEXUS_ARCHETYPE_ID = 'disc_maze_nexus';
+const MAZE_RESET_ENTRANCE_UNSET: Point2 = { x: 0, y: 0 };
+
+export function isMazeEntranceCell(gs: ReadonlyGameState, cell: Point2): boolean {
+  const idx = axialToIndex(cell.x, cell.y);
+  if (idx === -1) return false;
+  const researchCell = gs.researchCells[idx]!;
+  if (!researchCell.owned) return false;
+  if (researchCell.nodeId < 0) return false;
+  const node = gs.lib.research.nodes.get(researchCell.nodeId)!;
+  return node.archetypeId === MAZE_ENTRANCE_ARCHETYPE_ID;
+}
+
+export function getOwnedMazeEntrances(gs: ReadonlyGameState): Array<Point2> {
+  const entrances: Array<Point2> = [];
+  for (const node of gs.lib.research.nodes.values()) {
+    const idx = axialToIndex(node.centerCell.x, node.centerCell.y);
+    if (gs.researchCells[idx]?.owned)
+      if (node.archetypeId == MAZE_ENTRANCE_ARCHETYPE_ID)
+        entrances.push(copy(node.centerCell));
+  }
+  return entrances;
+}
+
+export function isMazeNexusCell(gs: ReadonlyGameState, cell: Point2): boolean {
+  const idx = axialToIndex(cell.x, cell.y);
+  if (idx === -1) return false;
+  const researchCell = gs.researchCells[idx]!;
+  if (!researchCell.owned) return false;
+  if (researchCell.nodeId < 0) return false;
+  const node = gs.lib.research.nodes.get(researchCell.nodeId)!;
+  return node.archetypeId === MAZE_NEXUS_ARCHETYPE_ID;
+}
+
+export function getOwnedMazeNexuses(gs: ReadonlyGameState): Array<Point2> {
+  const nexuses: Array<Point2> = [];
+  for (const node of gs.lib.research.nodes.values()) {
+    const idx = axialToIndex(node.centerCell.x, node.centerCell.y);
+    if (gs.researchCells[idx]?.owned)
+      if (node.archetypeId == MAZE_NEXUS_ARCHETYPE_ID)
+        nexuses.push(copy(node.centerCell));
+  }
+  return nexuses;
+}
+
+export function syncMazeResetEntranceCell(gs: GameState) {
+  if (gs.mazeResetEntranceCell.x === MAZE_RESET_ENTRANCE_UNSET.x && gs.mazeResetEntranceCell.y === MAZE_RESET_ENTRANCE_UNSET.y)
+    for (const node of gs.lib.research.nodes.values())
+      if (node.archetypeId == MAZE_ENTRANCE_ARCHETYPE_ID)
+        if (gs.researchCells[axialToIndex(node.centerCell.x, node.centerCell.y)]!.owned)
+          gs.mazeResetEntranceCell = copy(node.centerCell);
+}
 
 export function computeMazeResourceSpawns(gs: GameState, lib: ResearchLib): void {
   const spawns: MazeResourceSpawn[] = [];
   const origin: Point2 = { x: 0, y: 0 };
 
   for (const node of lib.nodes.values()) {
+    const center = node.centerCell;
+    const idx = axialToIndex(center.x, center.y);
+    if (idx === -1) continue;
+    const cell = gs.researchCells[idx];
+    if (!cell?.owned) continue;
+
     const archetype = lib.archetypes.get(node.archetypeId);
     if (!archetype) continue;
 
@@ -23,7 +82,6 @@ export function computeMazeResourceSpawns(gs: GameState, lib: ResearchLib): void
     } else if (archetype.type === 'stat') {
       resourceKey = 'credits';
     } else if (archetype.type === 'resource') {
-      // Check if this is a shardDust resource
       const isShardResource = archetype.rewards.some(
         r => r.kind === 'resource' && (r as { resource?: string }).resource === 'shardDust'
       );
@@ -31,41 +89,6 @@ export function computeMazeResourceSpawns(gs: GameState, lib: ResearchLib): void
     }
 
     if (!resourceKey) continue;
-
-    // Determine center cell
-    let center: Point2;
-    if (node.centerCell) {
-      center = node.centerCell;
-    } else if (node.cells.length === 1) {
-      center = node.cells[0]!;
-    } else {
-      // Compute geometric center and pick closest cell
-      let sumX = 0, sumY = 0;
-      for (const c of node.cells) {
-        sumX += c.x;
-        sumY += c.y;
-      }
-      const avgX = sumX / node.cells.length;
-      const avgY = sumY / node.cells.length;
-      let bestCell = node.cells[0]!;
-      let bestDist = Infinity;
-      for (const c of node.cells) {
-        const dx = c.x - avgX;
-        const dy = c.y - avgY;
-        const d = dx * dx + dy * dy;
-        if (d < bestDist) {
-          bestDist = d;
-          bestCell = c;
-        }
-      }
-      center = bestCell;
-    }
-
-    // Only include if center cell is owned
-    const idx = axialToIndex(center.x, center.y);
-    if (idx === -1) continue;
-    const cell = gs.researchCells[idx];
-    if (!cell?.owned) continue;
 
     const dist = axialDistance(center, origin);
     const amount = Math.max(1, dist);
@@ -77,10 +100,11 @@ export function computeMazeResourceSpawns(gs: GameState, lib: ResearchLib): void
 }
 
 export function resetMazeTransient(gs: GameState): void {
-  const m = createMazeTransient();
+  const m = createMazeTransient(gs.mazeResetEntranceCell);
   m.version = gs.maze.version + 1;
   gs.maze = m;
 }
+
 
 function isCellTaken(gs: GameState, cell: Point2): boolean {
   return gs.maze.takenCells.some(t => t.x === cell.x && t.y === cell.y);
@@ -130,24 +154,26 @@ export interface MazeMoveResult {
   path: Point2[];
   forcedReset: boolean;
   payout: boolean;
+  nexusReached: boolean;
 }
 
 export function handleMazeMoveTo(gs: GameState, target: Point2): MazeMoveResult {
+  syncMazeResetEntranceCell(gs);
   const result = bfsMazePath(gs, gs.maze.avatarCell, target);
 
   if (!result.reachable) {
-    return { success: false, path: [], forcedReset: false, payout: false };
+    return { success: false, path: [], forcedReset: false, payout: false, nexusReached: false };
   }
 
   if (result.cost === 0) {
-    return { success: true, path: [], forcedReset: false, payout: false };
+    return { success: true, path: [], forcedReset: false, payout: false, nexusReached: false };
   }
 
   const remainingPool = gs.timeFlux - gs.maze.movementUsed;
 
   if (result.cost > remainingPool) {
     resetMazeTransient(gs);
-    return { success: true, path: result.path, forcedReset: true, payout: false };
+    return { success: true, path: result.path, forcedReset: true, payout: false, nexusReached: false };
   }
 
   gs.maze.movementUsed += result.cost;
@@ -158,12 +184,16 @@ export function handleMazeMoveTo(gs: GameState, target: Point2): MazeMoveResult 
 
   gs.maze.avatarCell = { x: target.x, y: target.y };
 
-  const isEntrance = target.x === MAZE_ENTRANCE.x && target.y === MAZE_ENTRANCE.y;
+  const isEntrance = isMazeEntranceCell(gs, target);
   if (isEntrance) {
+    gs.mazeResetEntranceCell = copy(target);
+    syncMazeResetEntranceCell(gs);
+    gs.mazeHighMovementUsed = Math.max(gs.mazeHighMovementUsed, gs.maze.movementUsed);
     applyMazePayout(gs);
     resetMazeTransient(gs);
-    return { success: true, path: result.path, forcedReset: false, payout: true };
+    return { success: true, path: result.path, forcedReset: false, payout: true, nexusReached: false };
   }
 
-  return { success: true, path: result.path, forcedReset: false, payout: false };
+  const isNexus = isMazeNexusCell(gs, target);
+  return { success: true, path: result.path, forcedReset: false, payout: false, nexusReached: isNexus };
 }

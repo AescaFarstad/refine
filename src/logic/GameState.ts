@@ -7,6 +7,7 @@ import type { CheatInput } from './cheat/CheatCommands';
 import type { Wafer } from "./Wafer";
 import { createWafer } from "./Wafer";
 import { initResearchCells } from "./Research";
+import { computeMazeResourceSpawns } from "./Maze";
 import gearCategories from "../data/gear_categories";
 import type { RaidEventLog } from './RaidLog';
 import type { RaidMutation, MutationDescription } from './RaidMutation';
@@ -67,6 +68,17 @@ export class GameState {
   public researchRevealRadius: number = 3;
   public researchSignatureLearnIndex: number = 0;
 
+  // Maze — persistent (saved)
+  public mazeHighCredits: number = 0;
+  public mazeHighChronotraces: number = 0;
+  public mazeHighShardDust: number = 0;
+
+  // Maze — transient (not saved, reset on load)
+  public maze: MazeTransient = createMazeTransient();
+
+  // Maze — derived (computed on load + research purchase)
+  public mazeResourceSpawns: MazeResourceSpawn[] = [];
+
   public unlockedRaids: Array<Raid> = [new Raid("shegolskoe")];
 
   public nextEvt: Evt | null = null;
@@ -123,6 +135,7 @@ export class GameState {
       this.gearLevels[categoryId] = 1;
     }
     initResearchCells(this, this.lib.research);
+    computeMazeResourceSpawns(this, this.lib.research);
   }
 }
 
@@ -235,6 +248,34 @@ export interface Shard {
   pickupDelaySec: number;
   size: number;
   launchSpeedMultiplier: number;
+}
+
+export interface MazeResourceSpawn {
+  cell: Point2;
+  resourceKey: 'credits' | 'chronotraces' | 'shardDust';
+  amount: number;
+}
+
+export interface MazeTransient {
+  avatarCell: Point2;
+  movementUsed: number;
+  collectedCredits: number;
+  collectedChronotraces: number;
+  collectedShardDust: number;
+  takenCells: Point2[];
+  version: number;
+}
+
+export function createMazeTransient(): MazeTransient {
+  return {
+    avatarCell: { x: -5, y: -1 },
+    movementUsed: 0,
+    collectedCredits: 0,
+    collectedChronotraces: 0,
+    collectedShardDust: 0,
+    takenCells: [],
+    version: 0,
+  };
 }
 
 export interface ResearchCell {

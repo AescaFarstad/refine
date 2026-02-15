@@ -1,7 +1,7 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdReviewQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro, CmdPickupShard, CmdSpeedUpRefining, CmdClearShardPickupGrace } from './InputCommands';
+import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdReviewQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro, CmdPickupShard, CmdSpeedUpRefining, CmdClearShardPickupGrace, CmdMazeMoveTo } from './InputCommands';
 import { SHARD_PICKUP_DELAY_SEC } from '../Model';
 import { discover, discoverRefineTab, ensureSignatureDiscoveryFromWafer } from '../Discover';
 import { DISCOVERY } from '../DiscoveryLib';
@@ -14,6 +14,7 @@ import { applyResearchPurchase } from '../Research';
 import { startRefining } from '../Refine';
 import { applyReward } from '../Reward';
 import { saveAutosave } from '../SaveLoad';
+import { handleMazeMoveTo, computeMazeResourceSpawns } from '../Maze';
 
 type Handler = (gs: GameState, cmd: CmdInput) => void;
 const handlersByName = new Map<string, Handler>();
@@ -370,6 +371,7 @@ handlersByName.set('CmdResearchNode', (gs, cmd) => {
     recomputeActiveRaidEstimates(gs, 100);
   }
   if (result.success) {
+    computeMazeResourceSpawns(gs, lib);
     saveAutosave(gs);
   }
 });
@@ -478,6 +480,12 @@ handlersByName.set('CmdSpeedUpRefining', (gs) => {
 
 handlersByName.set('CmdClearShardPickupGrace', (gs) => {
   gs.shardPickupGraceSec = 0;
+});
+
+handlersByName.set('CmdMazeMoveTo', (gs, cmd) => {
+  const c = cmd as CmdMazeMoveTo;
+  handleMazeMoveTo(gs, c.target);
+  saveAutosave(gs);
 });
 
 export function processInputs(gameState: GameState): void {

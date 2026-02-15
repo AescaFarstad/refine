@@ -159,6 +159,9 @@ function createDefaultUIState() {
     researchPlacementRadius: 0,
     researchNewlyPlaced: [] as Array<{ archetypeId: string; cells: { x: number; y: number }; radius: number }>,
 
+    mazeMovementUsed: 0,
+    mazeVersion: 0,
+
     questPrereqsVersion: 0,
 
     // Queue of UI modal keys to show (from show_ui rewards)
@@ -463,6 +466,9 @@ export function SyncUIFromGameState(game: GameState): void {
 
   const radius = game.researchRevealRadius;
   uiState.researchRevealRadius = typeof radius === 'number' ? radius : 0;
+
+  uiState.mazeMovementUsed = game.maze.movementUsed;
+  uiState.mazeVersion = game.maze.version;
 
   uiState.activeTab = game.activeTab;
 

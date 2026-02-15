@@ -45,6 +45,9 @@ function saveReplacer(key: string, value: unknown): unknown {
   if (key === "raidSimulation") return undefined;
   if (key === "acknowledgedRaidOutcome") return undefined;
   if (key === "discoveryCounter") return undefined;
+  // Maze transient + derived (not persisted)
+  if (key === "maze") return undefined;
+  if (key === "mazeResourceSpawns") return undefined;
 
   if (key === "random" && value instanceof SeededRandom) {
     return value.getSeed();

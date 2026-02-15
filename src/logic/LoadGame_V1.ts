@@ -7,6 +7,7 @@ import { getPivotHex, rotateMolecule, translateMolecule } from "./MoleculeUtils"
 import { parseRaidDefinitions } from "./RaidLib";
 import type { RaidDefinition, RawRaidDefinition } from "./RaidLib";
 import { recomputeActiveRaidEstimates, recomputeActiveRaidParams } from "./Raid";
+import { computeMazeResourceSpawns, resetMazeTransient } from "./Maze";
 
 // This file must not contain fallbacks for anything. Fail fast.
 
@@ -237,6 +238,9 @@ function rehydrateGameState(input: AnonymousObject): GameState | false {
   }
   gameState.researchOwnedCount = ownedPaidCount;
   calculateVisibility(gameState, gameState.lib.research);
+
+  resetMazeTransient(gameState);
+  computeMazeResourceSpawns(gameState, gameState.lib.research);
 
   if (!applySavedRawRaidLib(gameState, savedRawRaidLib)) return false;
 

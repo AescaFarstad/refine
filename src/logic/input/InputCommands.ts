@@ -198,3 +198,11 @@ export class CmdSpeedUpRefining implements CmdInput {
 export class CmdClearShardPickupGrace implements CmdInput {
   readonly name = 'CmdClearShardPickupGrace';
 }
+
+export class CmdMazeMoveTo implements CmdInput {
+  readonly name = 'CmdMazeMoveTo';
+  readonly target: Point2;
+  constructor(args: { target: Point2 }) {
+    this.target = args.target;
+  }
+}

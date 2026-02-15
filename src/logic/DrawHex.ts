@@ -7,7 +7,7 @@ import { axialToPixel } from './HexMath';
  * Uses pointy-top hex orientation
  */
 
-const UNIT_HEX_POINTS: ReadonlyArray<Point2> = (() => {
+export const UNIT_HEX_POINTS: ReadonlyArray<Point2> = (() => {
     const points: Point2[] = [];
     const angleOffset = Math.PI / 6;
     for (let i = 0; i < 6; i++) {

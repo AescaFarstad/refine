@@ -299,3 +299,9 @@ path needs a separate layer
 player avatar is a tiny thing. it can be it's own tiny canvas moving/rotating instead fo being redrawn
 
 resources are drawn as color-coded glyphs. amounts are not shown
+
+I want to smooth hex boundaries. What can you suggest?
+
+
+
+window.debugMaze()

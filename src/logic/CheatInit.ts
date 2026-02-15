@@ -28,7 +28,6 @@ export function initDebug(gameState: GameState): void {
     new CheatAddResources({ credits: 100000, chronotraces: 100000, timeFlux: 0, shardDust: 10000, skillPoints: 100 }),
     new CheatAddItemBans({ amount: 5 }),
     new CheatGrantDiscoveries({ discoveryIds: Object.values(DISCOVERY) }),
-    new CheatLoadResearchState({ ownedCells: [{ x: 0, y: 0 }] }),
     new CheatUnlockAllRaids(),
     new CheatUnlockAllGear(),
     new CheatDisableQuestPrereqs({ disabled: true }),

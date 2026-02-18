@@ -13,6 +13,7 @@ import { computeMazeResourceSpawns, resetMazeTransient } from "./Maze";
 
 type AnonymousObject = Record<string, unknown>;
 const RESEARCH_OWNED_CELLS_KEY = "researchOwnedCells";
+const RESEARCH_NEXUS_IDS_KEY = "researchNexusIds";
 const CELL_PAIR_SEPARATOR = "  ";
 
 interface SavedWaferItem {
@@ -39,6 +40,7 @@ const REQUIRED_KEYS: readonly string[] = [
   "wafer",
   "raid",
   RESEARCH_OWNED_CELLS_KEY,
+  RESEARCH_NEXUS_IDS_KEY,
   "unlockedRaids",
   "items",
 ];
@@ -118,6 +120,31 @@ function parseSavedWafer(value: unknown): ParsedSavedWafer | false {
   return { enabledCells, placedItems };
 }
 
+interface SavedNexusPlacement {
+  nexusId: string;
+  idx: number;
+}
+
+function parseResearchNexusIds(value: unknown): SavedNexusPlacement[] | false {
+  if (typeof value !== "string") return false;
+  if (value.length === 0) return [];
+  const chunks = value.split(CELL_PAIR_SEPARATOR);
+  const out: SavedNexusPlacement[] = [];
+  for (const chunk of chunks) {
+    const parts = chunk.split(" ");
+    if (parts.length !== 3) return false;
+    const nexusId = parts[0]!;
+    if (nexusId.length === 0) return false;
+    const x = Number(parts[1]);
+    const y = Number(parts[2]);
+    if (!Number.isInteger(x) || !Number.isInteger(y)) return false;
+    const idx = axialToIndex(x, y);
+    if (idx === -1) return false;
+    out.push({ nexusId, idx });
+  }
+  return out;
+}
+
 function isRawRaidDefinitionRecord(value: unknown): value is Record<string, RawRaidDefinition> {
   if (!isObjectRecord(value)) return false;
   for (const rawRaid of Object.values(value)) {
@@ -184,12 +211,14 @@ function rehydrateGameState(input: AnonymousObject): GameState | false {
   if (savedWafer === false) return false;
   const savedRawRaidLib = parseSavedRawRaidLib(input.rawRaidLib);
   if (savedRawRaidLib === false) return false;
+  const nexusPlacements = parseResearchNexusIds(input[RESEARCH_NEXUS_IDS_KEY]);
+  if (nexusPlacements === false) return false;
 
   const gameState = new GameState();
   const mutableGameState = gameState as unknown as AnonymousObject;
 
   for (const [k, v] of Object.entries(input)) {
-    if (k === "lib" || k === "version" || k === "researchCells" || k === RESEARCH_OWNED_CELLS_KEY || k === "wafer" || k === "maze" || k === "rawRaidLib") continue;
+    if (k === "lib" || k === "version" || k === "researchCells" || k === RESEARCH_OWNED_CELLS_KEY || k === RESEARCH_NEXUS_IDS_KEY || k === "wafer" || k === "maze" || k === "rawRaidLib") continue;
     mutableGameState[k] = v;
   }
   gameState.discoveryCounter = 0;
@@ -237,6 +266,13 @@ function rehydrateGameState(input: AnonymousObject): GameState | false {
     if (cell.owned && cell.cost > 0) ownedPaidCount++;
   }
   gameState.researchOwnedCount = ownedPaidCount;
+
+  for (const placement of nexusPlacements) {
+    if (placement.idx >= 0 && placement.idx < gameState.researchCells.length) {
+      gameState.researchCells[placement.idx]!.nexusId = placement.nexusId;
+    }
+  }
+
   calculateVisibility(gameState, gameState.lib.research);
 
   resetMazeTransient(gameState);

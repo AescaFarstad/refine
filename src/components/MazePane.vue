@@ -7,6 +7,10 @@
     @mousemove="onMouseMove"
     @mouseup="onMouseUp"
     @mouseleave="onMouseLeave"
+    @dragenter.prevent
+    @dragover.prevent
+    @dragleave.prevent
+    @drop.prevent
   >
     <canvas ref="baseCanvas" class="maze-layer"></canvas>
     <canvas ref="pathCanvas" class="maze-layer"></canvas>
@@ -21,17 +25,20 @@ import { uiState, getGameState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
 import { clearCanvas } from '../logic/DrawHex';
 import { bfsMazePath } from '../logic/BFS';
-import { axialToPixel } from '../logic/HexMath';
+import { axialToPixel, pixelToAxial } from '../logic/HexMath';
 import { axialToIndex } from '../logic/Research';
-import { CmdMazeMoveTo } from '../logic/input/InputCommands';
+import { CmdMazeMoveTo, CmdMazePlaceNexusItem } from '../logic/input/InputCommands';
 import { renderMazeBaseLayer } from '../logic/drawMaze';
+import { RESOURCE_SPECS } from '../logic/Resources';
 import { renderMazePathOverlay } from '../logic/drawMazePath';
-import { isMazeEntranceCell } from '../logic/Maze';
+import { isMazeEntranceCell, canPlaceMazeNexusItem, getMazeNexusItemPlacementCells, getMazeNexusPlacementFailureReason } from '../logic/Maze';
 import { useHexPaneInteraction } from '../logic/pane/useHexPaneInteraction';
 import { useHoverPathTransition } from '../logic/pane/useHoverPathTransition';
 import { useMazeAvatar } from '../logic/pane/useMazeAvatar';
 import { useMazeMoveAnimation } from '../logic/pane/useMazeMoveAnimation';
 import { useMazePickupAnimation } from '../logic/pane/useMazePickupAnimation';
+import atlasStorage from '../logic/AtlasStorage';
+import { setMazeManualDragFollowerVisible, MAZE_DRAG_MOVE_EVENT, MAZE_DRAG_END_EVENT, type MazeDragEndDetail, type MazeDragPayload } from '../logic/MazeNexusDnd';
 import type { Point2 } from '../logic/ItemLib';
 import type { MazeResourceHoverHint, MazeResourceKey } from '../logic/pane/MazeOverlayState';
 
@@ -74,6 +81,9 @@ const zoom = ref(1);
 const offset = ref<Point2>({ x: 0, y: 0 });
 const hoverAxial = ref<Point2 | null>(null);
 const mouseWorldPos = ref<Point2 | null>(null);
+const dragNexusItemId = ref('');
+const dragNexusAxial = ref<Point2 | null>(null);
+const dragNexusValid = ref(false);
 
 const {
   displayedPath: displayedHoverPath,
@@ -282,12 +292,16 @@ onMounted(() => {
   emitEntranceHover(null);
   window.addEventListener('resize', onResize);
   window.addEventListener('mouseup', onWindowMouseUp);
+  window.addEventListener(MAZE_DRAG_MOVE_EVENT, onMazeDragMove as EventListener);
+  window.addEventListener(MAZE_DRAG_END_EVENT, onMazeDragEnd as EventListener);
 });
 
 onUnmounted(() => {
   delete (window as any).debugMaze;
   window.removeEventListener('resize', onResize);
   window.removeEventListener('mouseup', onWindowMouseUp);
+  window.removeEventListener(MAZE_DRAG_MOVE_EVENT, onMazeDragMove as EventListener);
+  window.removeEventListener(MAZE_DRAG_END_EVENT, onMazeDragEnd as EventListener);
   if (baseRafId != null) {
     cancelAnimationFrame(baseRafId);
     baseRafId = null;
@@ -303,7 +317,7 @@ onUnmounted(() => {
 });
 
 watch(
-  () => [uiState.researchOwnedCount, uiState.discoveryCounter],
+  () => [uiState.researchOwnedCount, uiState.discoveryCounter, uiState.credits],
   () => {
     scheduleBaseRender();
     emitHoverResourceHint();
@@ -409,16 +423,131 @@ function renderPath(): void {
   clearCanvas(ctx);
 
   const hp = displayedHoverPath.value;
-  if (hp.length === 0) return;
+  const previewAxial = dragNexusAxial.value;
+  const previewItemId = dragNexusItemId.value;
+  if (hp.length === 0 && !previewAxial) return;
 
   const z = zoom.value;
   const off = offset.value;
   ctx.setTransform(z, 0, 0, z, off.x, off.y);
 
   const gs = getGameState();
-  const from = getQueuedAvatarCell();
-  const remaining = Math.max(0, gs.timeFlux - getQueuedMovementUsed());
-  renderMazePathOverlay(ctx, hp, from, origin.value, HEX_SIZE, remaining);
+  if (hp.length > 0) {
+    const from = getQueuedAvatarCell();
+    const remaining = Math.max(0, gs.timeFlux - getQueuedMovementUsed());
+    renderMazePathOverlay(ctx, hp, from, origin.value, HEX_SIZE, remaining);
+  }
+
+  if (previewAxial && previewItemId) {
+    renderNexusPlacementPreview(ctx, gs, previewItemId, previewAxial, dragNexusValid.value);
+  }
+}
+
+function renderNexusPlacementPreview(
+  ctx: CanvasRenderingContext2D,
+  gs: ReturnType<typeof getGameState>,
+  nexusItemId: string,
+  anchor: Point2,
+  valid: boolean,
+): void {
+  const cells = getMazeNexusItemPlacementCells(gs, nexusItemId, anchor);
+  const def = gs.lib.nexusItems.get(nexusItemId)!;
+
+  // Compute centroid of all placement cells
+  let cx = 0;
+  let cy = 0;
+  for (const cell of cells) {
+    const p = axialToPixel(cell, HEX_SIZE, origin.value);
+    cx += p.x;
+    cy += p.y;
+  }
+  cx /= cells.length;
+  cy /= cells.length;
+
+  // Draw effect radius circle (always) + highlight affected resources (only when valid)
+  const effectRadius = def.effectRadius;
+  if (effectRadius > 0) {
+    const radiusPx = effectRadius * HEX_SIZE * Math.sqrt(3);
+
+    // Radius circle fill
+    const radGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radiusPx);
+    radGrad.addColorStop(0, 'rgba(120, 220, 230, 0.06)');
+    radGrad.addColorStop(0.7, 'rgba(120, 220, 230, 0.04)');
+    radGrad.addColorStop(1, 'rgba(120, 220, 230, 0)');
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, radiusPx, 0, Math.PI * 2);
+    ctx.fillStyle = radGrad;
+    ctx.fill();
+
+    // Radius circle border
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = 'rgba(140, 220, 230, 0.35)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // Highlight resources within radius (only when placement is valid)
+    if (valid) {
+      const radiusPxSq = radiusPx * radiusPx;
+      for (const spawn of gs.mazeResourceSpawns) {
+        const pixel = axialToPixel(spawn.cell, HEX_SIZE, origin.value);
+        const dx = pixel.x - cx;
+        const dy = pixel.y - cy;
+        if (dx * dx + dy * dy > radiusPxSq) continue;
+
+        const spec = RESOURCE_SPECS[spawn.resourceKey];
+        const glowR = HEX_SIZE * 1.6;
+
+        ctx.save();
+        const glow = ctx.createRadialGradient(pixel.x, pixel.y, 0, pixel.x, pixel.y, glowR);
+        glow.addColorStop(0, spec.color + '50');
+        glow.addColorStop(0.5, spec.color + '20');
+        glow.addColorStop(1, spec.color + '00');
+        ctx.beginPath();
+        ctx.arc(pixel.x, pixel.y, glowR, 0, Math.PI * 2);
+        ctx.fillStyle = glow;
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+  }
+
+  // Only draw placement cells + icon when valid
+  if (!valid) return;
+
+  const pid = def.placableInstanceDescription;
+  const imageKey = pid?.image;
+  if (imageKey) {
+    const frame = atlasStorage.getItemsFrame(imageKey);
+    if (frame) {
+      const source = atlasStorage.getItemsSource();
+      const iconMaxSize = HEX_SIZE * 1.2;
+      const scale = Math.min(iconMaxSize / frame.w, iconMaxSize / frame.h);
+      const drawW = frame.w * scale;
+      const drawH = frame.h * scale;
+      ctx.save();
+      ctx.globalAlpha = 0.95;
+      ctx.drawImage(
+        source,
+        frame.x, frame.y, frame.w, frame.h,
+        cx - drawW / 2, cy - drawH / 2, drawW, drawH,
+      );
+      ctx.restore();
+      return;
+    }
+  }
+
+  const text = def.glyph || def.name.charAt(0);
+  const glyphSize = Math.max(12, HEX_SIZE * 1.05);
+  ctx.save();
+  ctx.font = `bold ${glyphSize}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(248, 250, 252, 0.96)';
+  ctx.fillText(text, cx, cy + 1);
+  ctx.restore();
 }
 
 // --- Interaction ---
@@ -531,6 +660,83 @@ function onMouseLeave(event: MouseEvent): void {
   mouseWorldPos.value = null;
   onInteractionMouseLeave(event);
   ensureIdleFacingLoop();
+}
+
+function clientToAxial(clientX: number, clientY: number): Point2 | null {
+  const root = container.value;
+  if (!root) return null;
+
+  const rect = root.getBoundingClientRect();
+  const px = clientX - rect.left;
+  const py = clientY - rect.top;
+  if (px < 0 || py < 0 || px > rect.width || py > rect.height) return null;
+
+  const z = zoom.value || 1;
+  const off = offset.value;
+  const worldX = (px - off.x) / z;
+  const worldY = (py - off.y) / z;
+
+  return pixelToAxial({ x: worldX, y: worldY }, HEX_SIZE, origin.value);
+}
+
+function onMazeDragMove(event: CustomEvent<{ clientX: number, clientY: number, payload: MazeDragPayload }>): void {
+  const { clientX, clientY, payload } = event.detail || {};
+  if (!payload || !payload.item) {
+    clearDragPreview();
+    return;
+  }
+  
+  const itemId = payload.item.id;
+  const axial = clientToAxial(clientX, clientY);
+
+  const valid = !!axial && canPlaceMazeNexusItem(getGameState(), itemId, axial);
+  
+  if (valid) {
+    setMazeManualDragFollowerVisible(false); // Hide the floating follower, show the snapped preview
+  } else {
+    setMazeManualDragFollowerVisible(true); // Show the floating follower
+  }
+
+  dragNexusItemId.value = itemId;
+  dragNexusAxial.value = axial;
+  dragNexusValid.value = valid;
+  renderPath();
+}
+
+function onMazeDragEnd(event: CustomEvent<MazeDragEndDetail>): void {
+  const { clientX, clientY, payload, cancelled } = event.detail;
+  if (!payload || !payload.item) return;
+  if (cancelled) {
+    clearDragPreview();
+    setMazeManualDragFollowerVisible(true);
+    return;
+  }
+
+  const itemId = payload.item.id;
+  const axial = clientToAxial(clientX, clientY);
+
+  if (axial && canPlaceMazeNexusItem(getGameState(), itemId, axial)) {
+    globalInputQueue.push(new CmdMazePlaceNexusItem({ target: axial, nexusItemId: itemId }));
+  }
+
+  clearDragPreview();
+  // Ensure follower is visible again (though it should be cleaned up by the drag end logic anyway)
+  setMazeManualDragFollowerVisible(true);
+  
+  requestAnimationFrame(() => {
+    scheduleBaseRender();
+  });
+}
+
+function clearDragPreview(): void {
+  const wasValid = dragNexusValid.value;
+  dragNexusItemId.value = '';
+  dragNexusAxial.value = null;
+  dragNexusValid.value = false;
+  if (wasValid) {
+    setMazeManualDragFollowerVisible(true);
+  }
+  renderPath();
 }
 </script>
 

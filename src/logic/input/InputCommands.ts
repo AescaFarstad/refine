@@ -207,6 +207,16 @@ export class CmdMazeMoveTo implements CmdInput {
   }
 }
 
+export class CmdMazePlaceNexusItem implements CmdInput {
+  readonly name = 'CmdMazePlaceNexusItem';
+  readonly target: Point2;
+  readonly nexusItemId: string;
+  constructor(args: { target: Point2; nexusItemId: string }) {
+    this.target = args.target;
+    this.nexusItemId = args.nexusItemId;
+  }
+}
+
 export class CmdMazeResetHighMovement implements CmdInput {
   readonly name = 'CmdMazeResetHighMovement';
 }

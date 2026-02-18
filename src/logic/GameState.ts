@@ -283,6 +283,7 @@ export function createMazeTransient(avatarCell: Point2 = { x: 0, y: 0 }): MazeTr
 export interface ResearchCell {
   nodeId: number;
   archetypeId: string;
+  nexusId: string;
   revealed: boolean;
   owned: boolean;
   cost: number;

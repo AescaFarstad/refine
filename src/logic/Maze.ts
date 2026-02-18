@@ -7,6 +7,7 @@ import { axialToIndex } from './Research';
 import { bfsMazePath } from './BFS';
 import type { ReadonlyGameState } from './UIState';
 
+
 const MAZE_ENTRANCE_ARCHETYPE_ID = 'disc_maze_navigation';
 const MAZE_NEXUS_ARCHETYPE_ID = 'disc_maze_nexus';
 const MAZE_RESET_ENTRANCE_UNSET: Point2 = { x: 0, y: 0 };
@@ -105,6 +106,86 @@ export function resetMazeTransient(gs: GameState): void {
   gs.maze = m;
 }
 
+export function getMazeNexusItemPlacementCells(gs: ReadonlyGameState, itemId: string, center: Point2): Point2[] {
+  const def = gs.lib.nexusItems.get(itemId)!;
+  const pattern = def.placableInstanceDescription?.cells;
+  if (!pattern || pattern.length === 0) {
+    return [{ x: center.x, y: center.y }];
+  }
+  return pattern.map(cell => ({ x: center.x + cell.x, y: center.y + cell.y }));
+}
+
+function getMazeNexusPlacementCellFailureReason(gs: ReadonlyGameState, cell: Point2): string {
+  const idx = axialToIndex(cell.x, cell.y);
+  if (idx === -1) return 'out_of_bounds';
+  const researchCell = gs.researchCells[idx]!;
+  if (!researchCell.owned) return 'cell_not_owned';
+  if (researchCell.nexusId) return 'cell_has_nexus_item';
+
+  const hasResourceSpawn = gs.mazeResourceSpawns.some(
+    spawn => spawn.cell.x === cell.x && spawn.cell.y === cell.y,
+  );
+  if (hasResourceSpawn) return 'cell_has_resource_spawn';
+
+  if (researchCell.nodeId < 0) return '';
+  const node = gs.lib.research.nodes.get(researchCell.nodeId)!;
+  if (node.archetypeId === MAZE_ENTRANCE_ARCHETYPE_ID) return 'cell_is_maze_entrance';
+  if (node.archetypeId === MAZE_NEXUS_ARCHETYPE_ID) return 'cell_is_maze_nexus_access';
+
+  const archetype = gs.lib.research.archetypes.get(node.archetypeId)!;
+  if (archetype.type === 'resource') return 'cell_is_resource_node';
+  if (archetype.type === 'discovery') return 'cell_is_discovery_node';
+  if (archetype.type === 'void') return 'cell_is_void_node';
+
+  return '';
+}
+
+function isMazeNexusPlacementCellValid(gs: ReadonlyGameState, cell: Point2): boolean {
+  return getMazeNexusPlacementCellFailureReason(gs, cell) === '';
+}
+
+export function getMazeNexusPlacementFailureReason(gs: ReadonlyGameState, itemId: string, center: Point2): string {
+  const cells = getMazeNexusItemPlacementCells(gs, itemId, center);
+  for (const cell of cells) {
+    const reason = getMazeNexusPlacementCellFailureReason(gs, cell);
+    if (reason) return `${reason}@${cell.x},${cell.y}`;
+  }
+  return '';
+}
+
+export function canPlaceMazeNexusItem(gs: ReadonlyGameState, itemId: string, center: Point2): boolean {
+  const cells = getMazeNexusItemPlacementCells(gs, itemId, center);
+  for (const cell of cells) {
+    if (!isMazeNexusPlacementCellValid(gs, cell)) return false;
+  }
+  return true;
+}
+
+export function placeMazeNexusItem(gs: GameState, itemId: string, center: Point2): boolean {
+  if (!isMazeNexusCell(gs, gs.maze.avatarCell)) {
+    return false;
+  }
+
+  const placementFailure = getMazeNexusPlacementFailureReason(gs, itemId, center);
+  if (placementFailure) {
+    return false;
+  }
+
+  const def = gs.lib.nexusItems.get(itemId)!;
+  if (gs.credits < def.price) {
+    return false;
+  }
+
+  gs.credits -= def.price;
+
+  const cells = getMazeNexusItemPlacementCells(gs, itemId, center);
+  for (const cell of cells) {
+    const idx = axialToIndex(cell.x, cell.y);
+    gs.researchCells[idx]!.nexusId = itemId;
+  }
+  return true;
+}
+
 
 function isCellTaken(gs: GameState, cell: Point2): boolean {
   return gs.maze.takenCells.some(t => t.x === cell.x && t.y === cell.y);
@@ -114,20 +195,27 @@ function collectResourceAtCell(gs: GameState, cell: Point2): void {
   if (isCellTaken(gs, cell)) return;
 
   const spawn = gs.mazeResourceSpawns.find(s => s.cell.x === cell.x && s.cell.y === cell.y);
-  if (!spawn) return;
+  if (spawn) {
+    gs.maze.takenCells.push({ x: cell.x, y: cell.y });
 
-  gs.maze.takenCells.push({ x: cell.x, y: cell.y });
+    switch (spawn.resourceKey) {
+      case 'credits':
+        gs.maze.collectedCredits += spawn.amount;
+        break;
+      case 'chronotraces':
+        gs.maze.collectedChronotraces += spawn.amount;
+        break;
+      case 'shardDust':
+        gs.maze.collectedShardDust += spawn.amount;
+        break;
+    }
+    return;
+  }
 
-  switch (spawn.resourceKey) {
-    case 'credits':
-      gs.maze.collectedCredits += spawn.amount;
-      break;
-    case 'chronotraces':
-      gs.maze.collectedChronotraces += spawn.amount;
-      break;
-    case 'shardDust':
-      gs.maze.collectedShardDust += spawn.amount;
-      break;
+  // Nexus items: mark as taken when walked over
+  const idx = axialToIndex(cell.x, cell.y);
+  if (idx !== -1 && gs.researchCells[idx]?.nexusId) {
+    gs.maze.takenCells.push({ x: cell.x, y: cell.y });
   }
 }
 

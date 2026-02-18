@@ -8,6 +8,7 @@ import type { RawRaidDefinition } from "./RaidLib";
 
 type AnonymousObject = Record<string, unknown>;
 const RESEARCH_OWNED_CELLS_KEY = "researchOwnedCells";
+const RESEARCH_NEXUS_IDS_KEY = "researchNexusIds";
 const CELL_PAIR_SEPARATOR = "  ";
 const AUTOSAVE_LOCAL_STORAGE_KEY = "autosave-json-v1";
 const AUTOSAVE_MIN_INTERVAL_MS = 2000;
@@ -92,6 +93,17 @@ function collectOwnedResearchCellsString(gameState: GameState): string {
   return out.join(CELL_PAIR_SEPARATOR);
 }
 
+function collectResearchNexusIdsString(gameState: GameState): string {
+  const out: string[] = [];
+  for (let i = 0; i < gameState.researchCells.length; i++) {
+    const nexusId = gameState.researchCells[i]!.nexusId;
+    if (!nexusId) continue;
+    const p = indexToAxial(i);
+    out.push(`${nexusId} ${p.x} ${p.y}`);
+  }
+  return out.join(CELL_PAIR_SEPARATOR);
+}
+
 function serializeRawRaidLib(gameState: GameState): Record<string, RawRaidDefinition> {
   const out: Record<string, RawRaidDefinition> = {};
   for (const raid of gameState.lib.raids.values()) {
@@ -116,6 +128,7 @@ function serializeRawRaidLib(gameState: GameState): Record<string, RawRaidDefini
 function serializeGameState(gameState: GameState): AnonymousObject {
   const out = JSON.parse(JSON.stringify(gameState, saveReplacer)) as AnonymousObject;
   out[RESEARCH_OWNED_CELLS_KEY] = collectOwnedResearchCellsString(gameState);
+  out[RESEARCH_NEXUS_IDS_KEY] = collectResearchNexusIdsString(gameState);
   out.wafer = serializeWafer(gameState.wafer);
   out.rawRaidLib = serializeRawRaidLib(gameState);
   return out;

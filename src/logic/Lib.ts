@@ -12,6 +12,8 @@ import type { SignatureDefinition } from './SignatureLib';
 import { parseSignatureDefinitions } from './SignatureLib';
 import type { MonsterDefinition } from './MonsterLib';
 import { parseMonsterDefinitions } from './MonsterLib';
+import type { NexusItemDefinition } from './NexusLib';
+import { parseNexusItemDefinitions } from './NexusLib';
 import monstersData from '../data/monsters';
 import raidsData from '../data/raids';
 import questsShegolskoeData from '../data/quests/quests_shegolskoe';
@@ -22,6 +24,7 @@ import gearData from '../data/gear';
 import gearCategoriesData from '../data/gear_categories';
 import itemsData from '../data/items';
 import signaturesData from '../data/signatures';
+import nexusData from '../data/nexus';
 import signatureLayoutsData from '../data/signature_layouts';
 import { ResearchLib } from "./ResearchLib";
 import { researchArchetypes } from '../data/research_archetypes';
@@ -39,6 +42,7 @@ export class Lib {
   public items: Map<string, ItemDefinition> = new Map();
   public signatures: Map<string, SignatureDefinition> = new Map();
   public monsters: Map<string, MonsterDefinition> = new Map();
+  public nexusItems: Map<string, NexusItemDefinition> = new Map();
   public research: ResearchLib = new ResearchLib();
 
   constructor() {
@@ -130,6 +134,7 @@ export class Lib {
       this.compileAllPotentialItems();
 
       this.monsters = parseMonsterDefinitions(monstersData);
+      this.nexusItems = parseNexusItemDefinitions(nexusData);
 
       // Initialize research library with gear archetypes
       this.research.load(

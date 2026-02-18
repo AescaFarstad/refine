@@ -312,6 +312,8 @@ const mockHintCell = computed((): ResearchCell => {
     nodeId: -1,
     archetypeId: hoveredArchetype.value?.id || '',
     nexusId: '',
+    nexusPlacementId: 0,
+    passable: true,
     revealed: true,
     owned: true, // Show owned state to reveal full info
     cost: 0,

@@ -26,7 +26,7 @@ export function bfsMazePath(
 
   const startCell = gs.researchCells[startIdx];
   const endCell = gs.researchCells[endIdx];
-  if (!startCell?.owned || !endCell?.owned) {
+  if (!startCell?.owned || !endCell?.owned || !startCell.passable || !endCell.passable) {
     return { path: [], cost: 0, reachable: false };
   }
 
@@ -58,7 +58,7 @@ export function bfsMazePath(
       if (nIdx === -1) continue;
       if (visited.has(nIdx)) continue;
       const nCell = gs.researchCells[nIdx];
-      if (!nCell?.owned) continue;
+      if (!nCell?.owned || !nCell.passable) continue;
       visited.set(nIdx, currentIdx);
       queue.push(neighbor);
     }

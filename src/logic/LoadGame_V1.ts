@@ -2,12 +2,12 @@ import { GameState } from "./GameState";
 import SeededRandom from "./core/SeededRandom";
 import { clearWafer, getCell, placeMolecule } from "./Wafer";
 import { computeEffectiveEssences } from "./RefinePreview";
-import { axialToIndex, calculateVisibility, initResearchCells } from "./Research";
+import { axialToIndex, calculateVisibility, indexToAxial, initResearchCells } from "./Research";
 import { getPivotHex, rotateMolecule, translateMolecule } from "./MoleculeUtils";
 import { parseRaidDefinitions } from "./RaidLib";
 import type { RaidDefinition, RawRaidDefinition } from "./RaidLib";
 import { recomputeActiveRaidEstimates, recomputeActiveRaidParams } from "./Raid";
-import { computeMazeResourceSpawns, resetMazeTransient } from "./Maze";
+import { applyMazeNexusPlacementAtCell, computeMazeResourceSpawns, resetMazeTransient } from "./Maze";
 
 // This file must not contain fallbacks for anything. Fail fast.
 
@@ -122,6 +122,7 @@ function parseSavedWafer(value: unknown): ParsedSavedWafer | false {
 
 interface SavedNexusPlacement {
   nexusId: string;
+  placementId: number;
   idx: number;
 }
 
@@ -132,15 +133,17 @@ function parseResearchNexusIds(value: unknown): SavedNexusPlacement[] | false {
   const out: SavedNexusPlacement[] = [];
   for (const chunk of chunks) {
     const parts = chunk.split(" ");
-    if (parts.length !== 3) return false;
+    if (parts.length !== 4) return false;
     const nexusId = parts[0]!;
     if (nexusId.length === 0) return false;
-    const x = Number(parts[1]);
-    const y = Number(parts[2]);
+    const placementId = Number(parts[1]);
+    if (!Number.isInteger(placementId) || placementId <= 0) return false;
+    const x = Number(parts[2]);
+    const y = Number(parts[3]);
     if (!Number.isInteger(x) || !Number.isInteger(y)) return false;
     const idx = axialToIndex(x, y);
     if (idx === -1) return false;
-    out.push({ nexusId, idx });
+    out.push({ nexusId, placementId, idx });
   }
   return out;
 }
@@ -267,11 +270,16 @@ function rehydrateGameState(input: AnonymousObject): GameState | false {
   }
   gameState.researchOwnedCount = ownedPaidCount;
 
+  let maxPlacementId = 0;
   for (const placement of nexusPlacements) {
     if (placement.idx >= 0 && placement.idx < gameState.researchCells.length) {
-      gameState.researchCells[placement.idx]!.nexusId = placement.nexusId;
+      applyMazeNexusPlacementAtCell(gameState, placement.nexusId, placement.placementId, indexToAxial(placement.idx));
+      if (placement.placementId > maxPlacementId) {
+        maxPlacementId = placement.placementId;
+      }
     }
   }
+  gameState.mazeNextNexusPlacementId = maxPlacementId + 1;
 
   calculateVisibility(gameState, gameState.lib.research);
 

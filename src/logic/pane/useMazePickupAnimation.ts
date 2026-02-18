@@ -29,7 +29,7 @@ export interface MazePickupAnimationOptions {
 }
 
 export interface MazePickupAnimationController {
-  spawnAt: (cell: Point2, spawn: MazeResourceSpawn) => void;
+  spawnAt: (cell: Point2, spawn: MazeResourceSpawn, delayMs?: number) => void;
   dispose: () => void;
 }
 
@@ -43,7 +43,7 @@ export function useMazePickupAnimation(
   const particles: PickupParticle[] = [];
   let rafId: number | null = null;
 
-  function spawnAt(cell: Point2, spawn: MazeResourceSpawn): void {
+  function spawnAt(cell: Point2, spawn: MazeResourceSpawn, delayMs: number = 0): void {
     const pixel = axialToPixel(cell, options.hexSize, options.origin.value);
     const spec = RESOURCE_SPECS[spawn.resourceKey];
     particles.push({
@@ -52,7 +52,7 @@ export function useMazePickupAnimation(
       glyph: spec.glyph,
       color: spec.color,
       amount: spawn.amount,
-      startTime: performance.now(),
+      startTime: performance.now() + delayMs,
     });
     if (rafId === null) {
       rafId = requestAnimationFrame(tick);
@@ -101,6 +101,9 @@ export function useMazePickupAnimation(
 
     for (const p of particles) {
       const elapsed = now - p.startTime;
+      if (elapsed < 0) {
+        continue;
+      }
       const t = Math.min(1, elapsed / PICKUP_DURATION);
       const ease = easeOutCubic(t);
 

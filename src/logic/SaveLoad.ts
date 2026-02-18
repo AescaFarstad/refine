@@ -96,10 +96,14 @@ function collectOwnedResearchCellsString(gameState: GameState): string {
 function collectResearchNexusIdsString(gameState: GameState): string {
   const out: string[] = [];
   for (let i = 0; i < gameState.researchCells.length; i++) {
-    const nexusId = gameState.researchCells[i]!.nexusId;
+    const cell = gameState.researchCells[i]!;
+    const nexusId = cell.nexusId;
     if (!nexusId) continue;
+    if (!Number.isInteger(cell.nexusPlacementId) || cell.nexusPlacementId <= 0) {
+      throw new Error(`Invalid nexus placement id at cell index ${i}`);
+    }
     const p = indexToAxial(i);
-    out.push(`${nexusId} ${p.x} ${p.y}`);
+    out.push(`${nexusId} ${cell.nexusPlacementId} ${p.x} ${p.y}`);
   }
   return out.join(CELL_PAIR_SEPARATOR);
 }

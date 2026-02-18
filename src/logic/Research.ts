@@ -48,6 +48,8 @@ export function initResearchCells(gs: GameState, lib: ResearchLib): void {
       // behave and render as single-cell obstacles.
       archetypeId: 'obs',
       nexusId: '',
+      nexusPlacementId: 0,
+      passable: true,
       revealed: false,
       owned: false,
       cost: 1,
@@ -90,6 +92,8 @@ export function initResearchCells(gs: GameState, lib: ResearchLib): void {
         nodeId: node.nodeId,
         archetypeId: node.archetypeId,
         nexusId: '',
+        nexusPlacementId: 0,
+        passable: !cellBlocked,
         revealed: false,
         owned: isOwned,
         cost: cellCost,

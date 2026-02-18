@@ -1,4 +1,4 @@
-import { axialToPixel, axialNeighbor } from './HexMath';
+import { axialToPixel } from './HexMath';
 import { RESOURCE_SPECS } from './Resources';
 import { getOwnedMazeEntrances, getOwnedMazeNexuses } from './Maze';
 import type { Point2 } from './ItemLib';
@@ -16,6 +16,9 @@ const MAZE_CELL_FILL_COLOR_BOT = 'rgb(28, 56, 64)';
 const MAZE_RESOURCE_GLOW_RADIUS_SCALE = 1.8;
 const MAZE_RESOURCE_GLOW_ALPHA = 0.18;
 const MAZE_TAKEN_RESOURCE_GLOW_ALPHA = 0.05;
+const MAZE_RESOURCE_HIGHLIGHT_SCALE = 1.14;
+const MAZE_RESOURCE_HIGHLIGHT_GLOW_BOOST = 0.22;
+const MAZE_RESOURCE_HIGHLIGHT_RING_STROKE_WIDTH = 1.4;
 const MAZE_CELL_OUTER_STROKE_COLOR = 'rgba(4, 18, 22, 0.65)';
 const MAZE_CELL_OUTER_STROKE_WIDTH = 6;
 const MAZE_CELL_INNER_STROKE_COLOR = 'rgba(140, 220, 210, 0.32)';
@@ -155,11 +158,18 @@ export function renderMazeBaseLayer(
   hexSize: number,
   cellFillSize: number,
   takenCells: readonly { readonly x: number; readonly y: number }[],
+  highlightedResourceCellKeys?: ReadonlySet<string>,
+  visuallyTakenCellKeys?: ReadonlySet<string>,
 ): void {
   const cells = game.researchCells;
   const takenSet = new Set<string>();
   for (const t of takenCells) {
     takenSet.add(`${t.x},${t.y}`);
+  }
+  if (visuallyTakenCellKeys) {
+    for (const key of visuallyTakenCellKeys) {
+      takenSet.add(key);
+    }
   }
 
   const loops = computeOwnedResearchBoundary(cells);
@@ -223,17 +233,21 @@ export function renderMazeBaseLayer(
   const glyphSize = Math.max(12, hexSize * 1.05);
 
   for (const spawn of spawns) {
+    const cellKey = `${spawn.cell.x},${spawn.cell.y}`;
     const pixel = axialToPixel(spawn.cell, hexSize, origin);
-    const taken = takenSet.has(`${spawn.cell.x},${spawn.cell.y}`);
+    const taken = takenSet.has(cellKey);
+    const highlighted = highlightedResourceCellKeys?.has(cellKey) === true;
     const spec = RESOURCE_SPECS[spawn.resourceKey];
-    const bgRadius = glyphSize * MAZE_GLYPH_BG_RADIUS_SCALE;
+    const scale = highlighted ? MAZE_RESOURCE_HIGHLIGHT_SCALE : 1;
+    const bgRadius = glyphSize * MAZE_GLYPH_BG_RADIUS_SCALE * scale;
     const glyphYOffset = spawn.resourceKey === 'credits' ? 2 : 1;
 
     ctx.save();
 
     // Soft colored glow behind the icon
     const glowRadius = bgRadius * MAZE_RESOURCE_GLOW_RADIUS_SCALE;
-    const glowAlpha = taken ? MAZE_TAKEN_RESOURCE_GLOW_ALPHA : MAZE_RESOURCE_GLOW_ALPHA;
+    const glowAlphaBase = taken ? MAZE_TAKEN_RESOURCE_GLOW_ALPHA : MAZE_RESOURCE_GLOW_ALPHA;
+    const glowAlpha = Math.min(1, glowAlphaBase + (highlighted ? MAZE_RESOURCE_HIGHLIGHT_GLOW_BOOST : 0));
     const glowGrad = ctx.createRadialGradient(pixel.x, pixel.y, 0, pixel.x, pixel.y, glowRadius);
     glowGrad.addColorStop(0, spec.color + hexAlphaSuffix(glowAlpha));
     glowGrad.addColorStop(1, spec.color + '00');
@@ -250,7 +264,15 @@ export function renderMazeBaseLayer(
     ctx.lineWidth = MAZE_GLYPH_BG_STROKE_WIDTH;
     ctx.stroke();
 
-    ctx.font = `bold ${glyphSize}px sans-serif`;
+    if (highlighted) {
+      ctx.beginPath();
+      ctx.arc(pixel.x, pixel.y, bgRadius + (hexSize * 0.12), 0, Math.PI * 2);
+      ctx.strokeStyle = spec.color + hexAlphaSuffix(taken ? 0.35 : 0.7);
+      ctx.lineWidth = MAZE_RESOURCE_HIGHLIGHT_RING_STROKE_WIDTH;
+      ctx.stroke();
+    }
+
+    ctx.font = `bold ${glyphSize * scale}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = taken ? MAZE_TAKEN_GLYPH_COLOR : spec.color;
@@ -261,43 +283,28 @@ export function renderMazeBaseLayer(
   // Draw nexus items — impassable ones get stone hex shapes, passable ones get glyph circles
   const nexusDefs = game.lib.nexusItems;
 
-  // Collect impassable nexus cells and group into connected components
-  const impassableCells: { axial: Point2; idx: number; nexusId: string }[] = [];
-  const impassableSet = new Set<string>();
+  // Collect impassable nexus cells and group by placed item id.
+  const stoneGroupsByPlacementId = new Map<number, { cells: Point2[]; nexusId: string }>();
   for (let i = 0; i < cells.length; i++) {
     const cell = cells[i];
     if (!cell.owned || !cell.nexusId) continue;
     const def = nexusDefs.get(cell.nexusId);
     if (!def || def.placableInstanceDescription?.passable !== false) continue;
+    if (!Number.isInteger(cell.nexusPlacementId) || cell.nexusPlacementId <= 0) {
+      throw new Error(`Invalid nexusPlacementId for impassable nexus at index ${i}`);
+    }
     const axial = indexToAxial(i);
-    impassableCells.push({ axial, idx: i, nexusId: cell.nexusId });
-    impassableSet.add(`${axial.x},${axial.y}`);
-  }
-
-  // Flood-fill to find connected components of impassable cells
-  const visited = new Set<string>();
-  const stoneGroups: { cells: Point2[]; nexusId: string }[] = [];
-  for (const ic of impassableCells) {
-    const key = `${ic.axial.x},${ic.axial.y}`;
-    if (visited.has(key)) continue;
-    const group: Point2[] = [];
-    const stack = [ic.axial];
-    const groupNexusId = ic.nexusId;
-    while (stack.length > 0) {
-      const cur = stack.pop()!;
-      const ck = `${cur.x},${cur.y}`;
-      if (visited.has(ck)) continue;
-      if (!impassableSet.has(ck)) continue;
-      visited.add(ck);
-      group.push(cur);
-      for (let d = 0; d < 6; d++) {
-        stack.push(axialNeighbor(cur, d));
+    const existingGroup = stoneGroupsByPlacementId.get(cell.nexusPlacementId);
+    if (existingGroup) {
+      if (existingGroup.nexusId !== cell.nexusId) {
+        throw new Error(`Mixed nexus ids for placement id ${cell.nexusPlacementId}`);
       }
-    }
-    if (group.length > 0) {
-      stoneGroups.push({ cells: group, nexusId: groupNexusId });
+      existingGroup.cells.push(axial);
+    } else {
+      stoneGroupsByPlacementId.set(cell.nexusPlacementId, { cells: [axial], nexusId: cell.nexusId });
     }
   }
+  const stoneGroups = Array.from(stoneGroupsByPlacementId.values());
 
   // Draw each stone group as a solid hex shape
   const stoneHexSize = hexSize * MAZE_STONE_SHRINK;

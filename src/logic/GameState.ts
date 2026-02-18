@@ -73,6 +73,7 @@ export class GameState {
   public mazeHighChronotraces: number = 0;
   public mazeHighShardDust: number = 0;
   public mazeHighMovementUsed: number = 0;
+  public mazeNextNexusPlacementId: number = 1;
   public mazeResetEntranceCell: Point2 = { x: 0, y: 0 };
 
   // Maze — transient (not saved, reset on load)
@@ -284,6 +285,8 @@ export interface ResearchCell {
   nodeId: number;
   archetypeId: string;
   nexusId: string;
+  nexusPlacementId: number;
+  passable: boolean;
   revealed: boolean;
   owned: boolean;
   cost: number;

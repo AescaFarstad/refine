@@ -8,7 +8,7 @@
           v-for="[id, item] in items"
           :key="id"
           class="nexus-item"
-          :class="{ 'cannot-afford': !canAfford(item.price), 'impassable': !isPassable(item) }"
+          :class="{ 'cannot-afford': !canAfford(id), 'impassable': !isPassable(item) }"
           @pointerdown="onItemPointerDown(item, $event)"
         >
           <div v-if="previewCanvases[id]" class="nexus-item-preview" :ref="(el) => mountCanvas(el as HTMLElement | null, id)"></div>
@@ -18,7 +18,7 @@
             <div v-if="!isPassable(item)" class="nexus-item-impassable">Impassable</div>
           </div>
           <div class="nexus-item-price-area">
-            <span class="nexus-item-price">{{ item.price }}<span class="nexus-item-price-glyph">∿</span></span>
+            <span class="nexus-item-price">{{ getLivePrice(id) }}<span class="nexus-item-price-glyph">∿</span></span>
           </div>
         </div>
       </div>
@@ -31,7 +31,7 @@ import { parseNexusItemDefinitions, type NexusItemDefinition } from '../logic/Ne
 import rawNexusItems from '../data/nexus';
 import { startMazeManualDrag } from '../logic/MazeNexusDnd';
 import { createNexusPreviewCanvas } from '../logic/drawNexusPreview';
-import { uiState } from '../logic/UIState';
+import { getGameState, uiState } from '../logic/UIState';
 
 defineProps<{
   visible: boolean;
@@ -43,9 +43,8 @@ const PREVIEW_SIZE = 48;
 
 const previewCanvases: Record<string, HTMLCanvasElement> = {};
 for (const [id, def] of items) {
-  const cells = def.placableInstanceDescription?.cells;
-  if (!cells || cells.length === 0) continue;
-  const canvas = createNexusPreviewCanvas(cells, PREVIEW_SIZE, def.placableInstanceDescription?.image ?? '', def.glyph);
+  const cells = def.placableInstanceDescription.cells;
+  const canvas = createNexusPreviewCanvas(cells, PREVIEW_SIZE, def.placableInstanceDescription.image, def.glyph);
   if (canvas) previewCanvases[id] = canvas;
 }
 
@@ -59,12 +58,16 @@ function mountCanvas(el: HTMLElement | null, id: string): void {
   }
 }
 
-function canAfford(price: number): boolean {
-  return uiState.credits >= price;
+function getLivePrice(itemId: string): number {
+  return getGameState().lib.nexusItems.get(itemId)!.price;
+}
+
+function canAfford(itemId: string): boolean {
+  return uiState.timeFlux >= getLivePrice(itemId);
 }
 
 function isPassable(item: NexusItemDefinition): boolean {
-  return item.placableInstanceDescription?.passable !== false;
+  return item.placableInstanceDescription.passable;
 }
 
 function onItemPointerDown(item: NexusItemDefinition, event: PointerEvent): void {

@@ -6,7 +6,20 @@ import { axialDistance } from './HexMath';
 import { axialToIndex } from './Research';
 import { bfsMazePath } from './BFS';
 import type { ReadonlyGameState } from './UIState';
+import {
+  applyMazeDoublerBonusesToSpawns,
+  applyMazeRefresherBonusOnStep,
+  getMazeNexusItemPlacementCells,
+  hasMazeNexusLimitRadiusConflict,
+} from './MazeNexusBonuses';
 
+export {
+  getMazeNexusLimitBlockingDisks,
+  getMazeNexusItemPlacementCells,
+  getMazeNexusLimitDisks,
+  getMazeNexusPlacementAffectedSpawnIndexes,
+  getMazeNexusPlacementCentroidUnit,
+} from './MazeNexusBonuses';
 
 const MAZE_ENTRANCE_ARCHETYPE_ID = 'disc_maze_navigation';
 const MAZE_NEXUS_ARCHETYPE_ID = 'disc_maze_nexus';
@@ -97,6 +110,7 @@ export function computeMazeResourceSpawns(gs: GameState, lib: ResearchLib): void
     spawns.push({ cell: { x: center.x, y: center.y }, resourceKey, amount });
   }
 
+  applyMazeDoublerBonusesToSpawns(gs, spawns);
   gs.mazeResourceSpawns = spawns;
 }
 
@@ -104,15 +118,6 @@ export function resetMazeTransient(gs: GameState): void {
   const m = createMazeTransient(gs.mazeResetEntranceCell);
   m.version = gs.maze.version + 1;
   gs.maze = m;
-}
-
-export function getMazeNexusItemPlacementCells(gs: ReadonlyGameState, itemId: string, center: Point2): Point2[] {
-  const def = gs.lib.nexusItems.get(itemId)!;
-  const pattern = def.placableInstanceDescription?.cells;
-  if (!pattern || pattern.length === 0) {
-    return [{ x: center.x, y: center.y }];
-  }
-  return pattern.map(cell => ({ x: center.x + cell.x, y: center.y + cell.y }));
 }
 
 function getMazeNexusPlacementCellFailureReason(gs: ReadonlyGameState, cell: Point2): string {
@@ -150,6 +155,7 @@ export function getMazeNexusPlacementFailureReason(gs: ReadonlyGameState, itemId
     const reason = getMazeNexusPlacementCellFailureReason(gs, cell);
     if (reason) return `${reason}@${cell.x},${cell.y}`;
   }
+  if (hasMazeNexusLimitRadiusConflict(gs, itemId, center)) return 'limit_radius_overlap';
   return '';
 }
 
@@ -158,7 +164,17 @@ export function canPlaceMazeNexusItem(gs: ReadonlyGameState, itemId: string, cen
   for (const cell of cells) {
     if (!isMazeNexusPlacementCellValid(gs, cell)) return false;
   }
+  if (hasMazeNexusLimitRadiusConflict(gs, itemId, center)) return false;
   return true;
+}
+
+export function applyMazeNexusPlacementAtCell(gs: GameState, itemId: string, placementId: number, cell: Point2): void {
+  const idx = axialToIndex(cell.x, cell.y);
+  const researchCell = gs.researchCells[idx]!;
+  const def = gs.lib.nexusItems.get(itemId)!;
+  researchCell.nexusId = itemId;
+  researchCell.nexusPlacementId = placementId;
+  researchCell.passable = def.placableInstanceDescription.passable;
 }
 
 export function placeMazeNexusItem(gs: GameState, itemId: string, center: Point2): boolean {
@@ -172,17 +188,24 @@ export function placeMazeNexusItem(gs: GameState, itemId: string, center: Point2
   }
 
   const def = gs.lib.nexusItems.get(itemId)!;
-  if (gs.credits < def.price) {
+  if (gs.timeFlux < def.price) {
     return false;
   }
 
-  gs.credits -= def.price;
+  gs.timeFlux -= def.price;
 
   const cells = getMazeNexusItemPlacementCells(gs, itemId, center);
+  const placementId = gs.mazeNextNexusPlacementId++;
   for (const cell of cells) {
-    const idx = axialToIndex(cell.x, cell.y);
-    gs.researchCells[idx]!.nexusId = itemId;
+    applyMazeNexusPlacementAtCell(gs, itemId, placementId, cell);
   }
+
+  def.price += def.priceIncrease[0] ?? 0;
+  for (let i = 0; i < def.priceIncrease.length - 1; i++) {
+    def.priceIncrease[i]! += def.priceIncrease[i + 1]!;
+  }
+
+  computeMazeResourceSpawns(gs, gs.lib.research);
   return true;
 }
 
@@ -214,7 +237,8 @@ function collectResourceAtCell(gs: GameState, cell: Point2): void {
 
   // Nexus items: mark as taken when walked over
   const idx = axialToIndex(cell.x, cell.y);
-  if (idx !== -1 && gs.researchCells[idx]?.nexusId) {
+  if (idx !== -1 && gs.researchCells[idx]!.nexusId) {
+    applyMazeRefresherBonusOnStep(gs, cell);
     gs.maze.takenCells.push({ x: cell.x, y: cell.y });
   }
 }

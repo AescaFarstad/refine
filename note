@@ -316,3 +316,31 @@ shards act as refreshers impassible
 +1 range to refreshers and multipliers impassible
 nearby x2 multipliaers become x3
 passing over these cells does not cost timeflux
+
+resource pickup radius +1
+next 5 resources double their value
+get 1 credit for each timeflux spent on this trip by this point
+double all visible resources
+
+Create NexusLib.ts and nexus.ts for raw data. Their structure similar to the other libs. They will represent options available in maze nexus.
+
+items have:
+  name:string
+  description:string
+  price:number
+  price increase:number = 0
+  max count:number = -1 //meaning infinite
+  travelPriceIncrease
+  placableInstanceDescription{
+    passable:bool
+    cells Point2[]
+    image:string
+  }
+
+
+
+
+If I was reset due to flux, show message
+ad radius info to nexus
+Enlarge maze around bonuses and resources
+dashed underline under pills

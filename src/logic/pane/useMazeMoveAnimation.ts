@@ -2,10 +2,14 @@ import { ref, type Ref, type ComputedRef, onUnmounted } from 'vue';
 import { bfsMazePath } from '../BFS';
 import { axialToPixel } from '../HexMath';
 import { isMazeEntranceCell } from '../Maze';
+import { axialToIndex } from '../Research';
 import type { Point2 } from '../ItemLib';
 import type { ReadonlyGameState } from '../UIState';
 
 type Point2Ref = Ref<Point2> | ComputedRef<Point2>;
+
+const REFRESHER_PANEL_ID = 'refresher_panel';
+const REFRESHER_PANEL_PAUSE_MS = 500;
 
 interface MoveSegment {
   kind: 'path' | 'command';
@@ -40,7 +44,7 @@ export interface MazeMoveAnimationOptions {
   clearHoverPathImmediate: () => void;
   scheduleBaseRender: () => void;
   updateAvatarPosition: () => void;
-  onSegmentComplete: (targetCell: Point2, takenBefore: Set<string>) => void;
+  onSegmentComplete: (targetCell: Point2, takenBefore: Set<string>, segmentPath: Point2[]) => void;
   onPathAnimationFullyComplete: () => void;
 }
 
@@ -75,6 +79,8 @@ export function useMazeMoveAnimation(options: MazeMoveAnimationOptions): MazeMov
   let animStartCell: Point2 = { x: 0, y: 0 };
   let animFrameId: number | null = null;
   let lastAnimTime = 0;
+  let segmentPauseTimeoutId: number | null = null;
+  let segmentPauseActive = false;
 
   function toCellKey(cell: Point2): string {
     return `${cell.x},${cell.y}`;
@@ -90,6 +96,12 @@ export function useMazeMoveAnimation(options: MazeMoveAnimationOptions): MazeMov
       resourceCellKeys.add(toCellKey(spawn.cell));
     }
     return resourceCellKeys;
+  }
+
+  function isRefresherPanelCell(gs: ReadonlyGameState, cell: Point2): boolean {
+    const idx = axialToIndex(cell.x, cell.y);
+    if (idx === -1) return false;
+    return gs.researchCells[idx]!.nexusId === REFRESHER_PANEL_ID;
   }
 
   function createPathSegment(path: Point2[], gs: ReadonlyGameState): MoveSegment {
@@ -220,6 +232,11 @@ export function useMazeMoveAnimation(options: MazeMoveAnimationOptions): MazeMov
 
   function startPathAnimation(path: Point2[], fromCell?: Point2): void {
     if (path.length === 0) return;
+    if (segmentPauseTimeoutId != null) {
+      window.clearTimeout(segmentPauseTimeoutId);
+      segmentPauseTimeoutId = null;
+    }
+    segmentPauseActive = false;
     options.stopIdleFacingLoop();
     const src = fromCell ?? options.getGameState().maze.avatarCell;
     animStartCell = { x: src.x, y: src.y };
@@ -229,6 +246,25 @@ export function useMazeMoveAnimation(options: MazeMoveAnimationOptions): MazeMov
     if (animFrameId == null) {
       animFrameId = requestAnimationFrame(animationTick);
     }
+  }
+
+  function continueAfterSegment(fromCell: Point2, pauseMs: number): void {
+    if (pauseMs <= 0) {
+      segmentPauseActive = false;
+      processNextSegment(fromCell);
+      return;
+    }
+
+    if (segmentPauseTimeoutId != null) {
+      window.clearTimeout(segmentPauseTimeoutId);
+      segmentPauseTimeoutId = null;
+    }
+    segmentPauseActive = true;
+    segmentPauseTimeoutId = window.setTimeout(() => {
+      segmentPauseTimeoutId = null;
+      segmentPauseActive = false;
+      processNextSegment(fromCell);
+    }, pauseMs);
   }
 
   function processNextSegment(fromCell?: Point2): void {
@@ -338,9 +374,13 @@ export function useMazeMoveAnimation(options: MazeMoveAnimationOptions): MazeMov
       const takenBefore = new Set(options.getGameState().maze.takenCells.map(toCellKey));
       commitDispatchedSegment(segment);
       options.queueMoveCommand(segment.target);
-      options.onSegmentComplete(segment.target, takenBefore);
+      options.onSegmentComplete(segment.target, takenBefore, segment.path);
       options.scheduleBaseRender();
-      processNextSegment(segment.expectedAvatarCell);
+      activeSegment = null;
+      const pauseMs = isRefresherPanelCell(options.getGameState(), segment.expectedAvatarCell)
+        ? REFRESHER_PANEL_PAUSE_MS
+        : 0;
+      continueAfterSegment(segment.expectedAvatarCell, pauseMs);
       return;
     }
 
@@ -376,7 +416,7 @@ export function useMazeMoveAnimation(options: MazeMoveAnimationOptions): MazeMov
     const remaining = gs.timeFlux - projectedState.movementUsed;
     if (result.cost > remaining) {
       segmentQueue.value.push(createResetCommandSegment(axial, projectedState));
-      if (movePath.value.length === 0 && activeSegment === null) {
+      if (movePath.value.length === 0 && activeSegment === null && !segmentPauseActive) {
         processNextSegment();
       }
       return;
@@ -388,7 +428,9 @@ export function useMazeMoveAnimation(options: MazeMoveAnimationOptions): MazeMov
     for (let i = 0; i < result.path.length - 1; i++) {
       const cell = result.path[i]!;
       const key = toCellKey(cell);
-      if (resourceCellKeys.has(key) && !projectedState.takenCellKeys.has(key)) {
+      const splitOnResourcePickup = resourceCellKeys.has(key) && !projectedState.takenCellKeys.has(key);
+      const splitOnRefresherPanel = isRefresherPanelCell(gs, cell);
+      if (splitOnResourcePickup || splitOnRefresherPanel) {
         const segPath = result.path.slice(segStart, i + 1);
         const segment = createPathSegment(segPath, gs);
         queuedSegments.push(segment);
@@ -409,7 +451,7 @@ export function useMazeMoveAnimation(options: MazeMoveAnimationOptions): MazeMov
     }
 
     segmentQueue.value.push(...queuedSegments);
-    if (movePath.value.length === 0 && activeSegment === null) {
+    if (movePath.value.length === 0 && activeSegment === null && !segmentPauseActive) {
       processNextSegment();
     }
   }
@@ -425,6 +467,11 @@ export function useMazeMoveAnimation(options: MazeMoveAnimationOptions): MazeMov
   }
 
   function dispose(): void {
+    if (segmentPauseTimeoutId != null) {
+      window.clearTimeout(segmentPauseTimeoutId);
+      segmentPauseTimeoutId = null;
+      segmentPauseActive = false;
+    }
     if (animFrameId == null) return;
     cancelAnimationFrame(animFrameId);
     animFrameId = null;

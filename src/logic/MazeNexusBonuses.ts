@@ -20,8 +20,22 @@ export type MazeNexusLimitDisk = {
   radiusUnit: number;
 };
 
-function cellKey(cell: Point2): string {
-  return `${cell.x},${cell.y}`;
+export type MazeRefresherRefresh = {
+  spawnCell: Point2;
+  distanceUnit: number;
+};
+
+const UNIT_ORIGIN: Point2 = { x: 0, y: 0 };
+
+function sameCell(a: Point2, b: Point2): boolean {
+  return a.x === b.x && a.y === b.y;
+}
+
+function containsCell(cells: readonly Point2[], target: Point2): boolean {
+  for (const cell of cells) {
+    if (sameCell(cell, target)) return true;
+  }
+  return false;
 }
 
 function getMazeNexusPlacements(gs: ReadonlyGameState): Map<number, MazeNexusPlacement> {
@@ -173,37 +187,46 @@ export function applyMazeDoublerBonusesToSpawns(gs: ReadonlyGameState, spawns: M
   }
 }
 
-export function applyMazeRefresherBonusOnStep(gs: GameState, steppedCell: Point2): void {
+export function resolveMazeRefresherStep(
+  gs: ReadonlyGameState,
+  steppedCell: Point2,
+  takenCells: readonly Point2[],
+): MazeRefresherRefresh[] {
   const idx = axialToIndex(steppedCell.x, steppedCell.y);
-  if (idx === -1) return;
+  if (idx === -1) return [];
 
   const steppedResearchCell = gs.researchCells[idx]!;
-  if (steppedResearchCell.nexusId !== REFRESHER_PANEL_ID) return;
-
-  if (!Number.isInteger(steppedResearchCell.nexusPlacementId) || steppedResearchCell.nexusPlacementId <= 0) {
-    throw new Error(`Invalid refresher placement id at cell index ${idx}`);
-  }
-
-  const placementsById = getMazeNexusPlacements(gs);
-  const placement = placementsById.get(steppedResearchCell.nexusPlacementId)!;
-  if (placement.itemId !== REFRESHER_PANEL_ID) {
-    throw new Error(`Placement id ${placement.placementId} is not a refresher panel`);
-  }
-
-  const takenKeys = new Set(gs.maze.takenCells.map(cellKey));
-  for (const placementCell of placement.cells) {
-    if (takenKeys.has(cellKey(placementCell))) return;
-  }
+  if (steppedResearchCell.nexusId !== REFRESHER_PANEL_ID) return [];
 
   const def = gs.lib.nexusItems.get(REFRESHER_PANEL_ID)!;
-  const affectedSpawnIndexes = getPlacementAffectedSpawnIndexes(gs.mazeResourceSpawns, placement.cells, def.effectRadius);
-  if (affectedSpawnIndexes.length === 0) return;
+  if (def.effectRadius <= 0) return [];
 
-  const refreshedSpawnKeys = new Set<string>();
-  for (const spawnIndex of affectedSpawnIndexes) {
-    const spawn = gs.mazeResourceSpawns[spawnIndex]!;
-    refreshedSpawnKeys.add(cellKey(spawn.cell));
+  const centerUnit = axialToPixel(steppedCell, 1, UNIT_ORIGIN);
+  const effectRadiusUnit = def.effectRadius * Math.sqrt(3);
+  const effectRadiusUnitSq = effectRadiusUnit * effectRadiusUnit;
+
+  const refreshed: MazeRefresherRefresh[] = [];
+  for (const spawn of gs.mazeResourceSpawns) {
+    if (!containsCell(takenCells, spawn.cell)) continue;
+    const spawnUnit = axialToPixel(spawn.cell, 1, UNIT_ORIGIN);
+    const dx = spawnUnit.x - centerUnit.x;
+    const dy = spawnUnit.y - centerUnit.y;
+    const distanceUnitSq = dx * dx + dy * dy;
+    if (distanceUnitSq > effectRadiusUnitSq) continue;
+    refreshed.push({
+      spawnCell: spawn.cell,
+      distanceUnit: Math.sqrt(distanceUnitSq),
+    });
   }
 
-  gs.maze.takenCells = gs.maze.takenCells.filter(cell => !refreshedSpawnKeys.has(cellKey(cell)));
+  return refreshed;
+}
+
+export function applyMazeRefresherBonusOnStep(gs: GameState, steppedCell: Point2): void {
+  const refreshedSpawns = resolveMazeRefresherStep(gs, steppedCell, gs.maze.takenCells);
+  if (refreshedSpawns.length === 0) return;
+
+  gs.maze.takenCells = gs.maze.takenCells.filter(
+    takenCell => !refreshedSpawns.some(refreshed => sameCell(refreshed.spawnCell, takenCell)),
+  );
 }

@@ -11,6 +11,7 @@ import {
   applyMazeRefresherBonusOnStep,
   getMazeNexusItemPlacementCells,
   hasMazeNexusLimitRadiusConflict,
+  resolveMazeRefresherStep,
 } from './MazeNexusBonuses';
 
 export {
@@ -267,6 +268,207 @@ export interface MazeMoveResult {
   forcedReset: boolean;
   payout: boolean;
   nexusReached: boolean;
+}
+
+export interface MazeEnterProjection {
+  avatarCell: Point2;
+  movementUsed: number;
+  takenCells: Point2[];
+  resetEntranceCell: Point2;
+}
+
+export type MazeMoveSegmentPlan = Point2[];
+
+export interface MazeEnterProjectionResult {
+  success: boolean;
+  forcedReset: boolean;
+  payout: boolean;
+  nexusReached: boolean;
+}
+
+function sameCell(a: Point2, b: Point2): boolean {
+  return a.x === b.x && a.y === b.y;
+}
+
+function isProjectionCellTaken(projection: MazeEnterProjection, cell: Point2): boolean {
+  for (const taken of projection.takenCells) {
+    if (sameCell(taken, cell)) return true;
+  }
+  return false;
+}
+
+function removeProjectionTakenCell(projection: MazeEnterProjection, cell: Point2): void {
+  for (let i = projection.takenCells.length - 1; i >= 0; i--) {
+    if (sameCell(projection.takenCells[i]!, cell)) {
+      projection.takenCells.splice(i, 1);
+    }
+  }
+}
+
+function collectProjectionResourceAtCell(gs: ReadonlyGameState, projection: MazeEnterProjection, cell: Point2): void {
+  if (isProjectionCellTaken(projection, cell)) return;
+
+  const spawn = gs.mazeResourceSpawns.find(s => s.cell.x === cell.x && s.cell.y === cell.y);
+  if (spawn) {
+    projection.takenCells.push(copy(cell));
+    return;
+  }
+
+  const idx = axialToIndex(cell.x, cell.y);
+  if (idx !== -1 && gs.researchCells[idx]!.nexusId) {
+    const refreshed = resolveMazeRefresherStep(gs, cell, projection.takenCells);
+    for (const refresh of refreshed) {
+      removeProjectionTakenCell(projection, refresh.spawnCell);
+    }
+    projection.takenCells.push(copy(cell));
+  }
+}
+
+function resetProjectionTransient(projection: MazeEnterProjection): void {
+  projection.avatarCell = copy(projection.resetEntranceCell);
+  projection.movementUsed = 0;
+  projection.takenCells = [];
+}
+
+function cloneMazeEnterProjection(projection: MazeEnterProjection): MazeEnterProjection {
+  return {
+    avatarCell: copy(projection.avatarCell),
+    movementUsed: projection.movementUsed,
+    takenCells: projection.takenCells.map(copy),
+    resetEntranceCell: copy(projection.resetEntranceCell),
+  };
+}
+
+export function createMazeEnterProjection(gs: ReadonlyGameState): MazeEnterProjection {
+  return {
+    avatarCell: copy(gs.maze.avatarCell),
+    movementUsed: gs.maze.movementUsed,
+    takenCells: gs.maze.takenCells.map(copy),
+    resetEntranceCell: copy(gs.mazeResetEntranceCell),
+  };
+}
+
+export function projectMazeEnterCell(
+  gs: ReadonlyGameState,
+  projection: MazeEnterProjection,
+  target: Point2,
+): MazeEnterProjectionResult {
+  const result = bfsMazePath(gs, projection.avatarCell, target);
+  if (!result.reachable) {
+    return { success: false, forcedReset: false, payout: false, nexusReached: false };
+  }
+
+  if (result.cost === 0) {
+    return { success: true, forcedReset: false, payout: false, nexusReached: false };
+  }
+
+  if (result.cost !== 1) {
+    return { success: false, forcedReset: false, payout: false, nexusReached: false };
+  }
+
+  const remainingPool = gs.timeFlux - projection.movementUsed;
+  if (remainingPool <= 0) {
+    resetProjectionTransient(projection);
+    return { success: true, forcedReset: true, payout: false, nexusReached: false };
+  }
+
+  projection.movementUsed += 1;
+  collectProjectionResourceAtCell(gs, projection, target);
+  projection.avatarCell = copy(target);
+
+  return { success: true, forcedReset: false, payout: false, nexusReached: isMazeNexusCell(gs, target) };
+}
+
+export interface MazeMoveProjectionResult {
+  success: boolean;
+  path: Point2[];
+  forcedReset: boolean;
+  payout: boolean;
+  nexusReached: boolean;
+}
+
+export function projectMazeMoveTo(
+  gs: ReadonlyGameState,
+  projection: MazeEnterProjection,
+  target: Point2,
+): MazeMoveProjectionResult {
+  const result = bfsMazePath(gs, projection.avatarCell, target);
+  if (!result.reachable) {
+    return { success: false, path: [], forcedReset: false, payout: false, nexusReached: false };
+  }
+
+  if (result.cost === 0) {
+    return { success: true, path: [], forcedReset: false, payout: false, nexusReached: false };
+  }
+
+  for (const stepCell of result.path) {
+    const stepResult = projectMazeEnterCell(gs, projection, stepCell);
+    if (!stepResult.success) {
+      return { success: false, path: [], forcedReset: false, payout: false, nexusReached: false };
+    }
+    if (stepResult.forcedReset) {
+      return { success: true, path: [], forcedReset: true, payout: false, nexusReached: false };
+    }
+  }
+
+  const isEntrance = isMazeEntranceCell(gs, target);
+  if (isEntrance) {
+    projection.resetEntranceCell = copy(target);
+    resetProjectionTransient(projection);
+    return { success: true, path: result.path, forcedReset: false, payout: true, nexusReached: false };
+  }
+
+  const isNexus = isMazeNexusCell(gs, target);
+  return { success: true, path: result.path, forcedReset: false, payout: false, nexusReached: isNexus };
+}
+
+function isMazeBonusCell(gs: ReadonlyGameState, projection: MazeEnterProjection, cell: Point2): boolean {
+  if (isProjectionCellTaken(projection, cell)) return false;
+  const idx = axialToIndex(cell.x, cell.y);
+  return idx !== -1 && !!gs.researchCells[idx]!.nexusId;
+}
+
+function isFreshResourceCell(gs: ReadonlyGameState, projection: MazeEnterProjection, cell: Point2): boolean {
+  if (isProjectionCellTaken(projection, cell)) return false;
+  return gs.mazeResourceSpawns.some(spawn => spawn.cell.x === cell.x && spawn.cell.y === cell.y);
+}
+
+export function planMazeMoveSegments(
+  gs: ReadonlyGameState,
+  projectionStart: MazeEnterProjection,
+  target: Point2,
+): MazeMoveSegmentPlan {
+  const plan: MazeMoveSegmentPlan = [];
+  const projection = cloneMazeEnterProjection(projectionStart);
+  const result = bfsMazePath(gs, projection.avatarCell, target);
+  if (!result.reachable || result.cost === 0) return plan;
+
+  let currentPath: Point2[] = [];
+  for (let i = 0; i < result.path.length; i++) {
+    const stepCell = copy(result.path[i]!);
+    const stopOnResource = isFreshResourceCell(gs, projection, stepCell);
+    const stopOnBonus = isMazeBonusCell(gs, projection, stepCell);
+    const stepResult = projectMazeEnterCell(gs, projection, stepCell);
+    if (!stepResult.success) break;
+
+    if (stepResult.forcedReset) {
+      if (currentPath.length > 0) {
+        plan.push(copy(currentPath[currentPath.length - 1]!));
+        currentPath = [];
+      }
+      plan.push(copy(stepCell));
+      break;
+    }
+
+    currentPath.push(stepCell);
+    const isLast = i === result.path.length - 1;
+    if (!stopOnResource && !stopOnBonus && !stepResult.payout && !stepResult.nexusReached && !isLast) continue;
+
+    plan.push(copy(currentPath[currentPath.length - 1]!));
+    currentPath = [];
+  }
+
+  return plan;
 }
 
 export function handleMazeMoveTo(gs: GameState, target: Point2): MazeMoveResult {

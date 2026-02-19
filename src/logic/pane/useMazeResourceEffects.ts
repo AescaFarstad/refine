@@ -1,15 +1,12 @@
 import type { Ref, ComputedRef } from 'vue';
-import { axialToPixel } from '../HexMath';
-import { getMazeNexusPlacementCentroidUnit } from '../Maze';
-import { axialToIndex, indexToAxial } from '../Research';
+import { resolveMazeRefresherStep } from '../MazeNexusBonuses';
+import { axialToIndex } from '../Research';
 import type { Point2 } from '../ItemLib';
 import type { ReadonlyGameState } from '../UIState';
 import { useMazePickupAnimation } from './useMazePickupAnimation';
 import { useMazeRefresherAnimation } from './useMazeRefresherAnimation';
 
-const REFRESHER_PANEL_ID = 'refresher_panel';
 const REFRESHER_DELAY_MS_PER_UNIT = 50; // 0.5 sec / 10 units
-const UNIT_ORIGIN: Point2 = { x: 0, y: 0 };
 
 export interface MazeResourceEffectsOptions {
   pickupCanvas: Ref<HTMLCanvasElement | null>;
@@ -23,7 +20,7 @@ export interface MazeResourceEffectsOptions {
 }
 
 export interface MazeResourceEffectsController {
-  onSegmentComplete: (targetCell: Point2, takenBefore: Set<string>, segmentPath: Point2[]) => void;
+  onSegmentComplete: (targetCell: Point2, takenBefore: Point2[], segmentPath: Point2[]) => void;
   getVisuallyTakenCellKeys: () => ReadonlySet<string>;
   clearVisualRefreshMask: () => void;
   dispose: () => void;
@@ -33,26 +30,23 @@ function toCellKey(cell: Point2): string {
   return `${cell.x},${cell.y}`;
 }
 
-function buildRefresherPlacementsById(gs: ReadonlyGameState): Map<number, Point2[]> {
-  const placementsById = new Map<number, Point2[]>();
+function sameCell(a: Point2, b: Point2): boolean {
+  return a.x === b.x && a.y === b.y;
+}
 
-  for (let i = 0; i < gs.researchCells.length; i++) {
-    const cell = gs.researchCells[i]!;
-    if (cell.nexusId !== REFRESHER_PANEL_ID) continue;
-    if (!Number.isInteger(cell.nexusPlacementId) || cell.nexusPlacementId <= 0) {
-      throw new Error(`Invalid refresher placement id at cell index ${i}`);
-    }
-
-    const placementCells = placementsById.get(cell.nexusPlacementId);
-    const placementCell = indexToAxial(i);
-    if (placementCells) {
-      placementCells.push(placementCell);
-      continue;
-    }
-    placementsById.set(cell.nexusPlacementId, [placementCell]);
+function containsCell(cells: readonly Point2[], target: Point2): boolean {
+  for (const cell of cells) {
+    if (sameCell(cell, target)) return true;
   }
+  return false;
+}
 
-  return placementsById;
+function removeCell(cells: Point2[], target: Point2): void {
+  for (let i = cells.length - 1; i >= 0; i--) {
+    if (sameCell(cells[i]!, target)) {
+      cells.splice(i, 1);
+    }
+  }
 }
 
 export function useMazeResourceEffects(
@@ -104,83 +98,46 @@ export function useMazeResourceEffects(
     pendingRevealTimeoutIds.set(cellKey, timeoutId);
   }
 
-  function animateRefresherBonuses(segmentPath: Point2[], takenBefore: Set<string>): void {
+  function animateRefresherBonuses(segmentPath: Point2[], takenBefore: Point2[]): void {
     if (segmentPath.length === 0) return;
 
     const gs = options.getGameState();
-    const refresherDef = gs.lib.nexusItems.get(REFRESHER_PANEL_ID)!;
-    if (refresherDef.effectRadius <= 0) return;
-
-    const effectRadiusUnit = refresherDef.effectRadius * Math.sqrt(3);
-    const effectRadiusUnitSq = effectRadiusUnit * effectRadiusUnit;
-    const placementsById = buildRefresherPlacementsById(gs);
-    const simulatedTaken = new Set(takenBefore);
-    const spawnsByCellKey = new Map(gs.mazeResourceSpawns.map((spawn) => [toCellKey(spawn.cell), spawn]));
+    const simulatedTaken = takenBefore.map(cell => ({ x: cell.x, y: cell.y }));
 
     for (const steppedCell of segmentPath) {
-      const steppedKey = toCellKey(steppedCell);
-      if (simulatedTaken.has(steppedKey)) {
+      if (containsCell(simulatedTaken, steppedCell)) continue;
+
+      const spawnAtCell = gs.mazeResourceSpawns.find(
+        spawn => sameCell(spawn.cell, steppedCell),
+      );
+      if (spawnAtCell) {
+        simulatedTaken.push({ x: steppedCell.x, y: steppedCell.y });
         continue;
       }
 
-      const spawnAtCell = spawnsByCellKey.get(steppedKey);
-      if (spawnAtCell) {
-        simulatedTaken.add(steppedKey);
-        continue;
+      const refreshedSpawns = resolveMazeRefresherStep(gs, steppedCell, simulatedTaken);
+      for (const refreshed of refreshedSpawns) {
+        const delayMs = refreshed.distanceUnit * REFRESHER_DELAY_MS_PER_UNIT;
+        refresherAnimation.spawnAt(refreshed.spawnCell, delayMs);
+        setVisualRefreshMask(toCellKey(refreshed.spawnCell), delayMs);
+        removeCell(simulatedTaken, refreshed.spawnCell);
       }
 
       const steppedIdx = axialToIndex(steppedCell.x, steppedCell.y);
-      if (steppedIdx === -1) {
-        continue;
-      }
+      if (steppedIdx === -1) continue;
 
       const steppedResearchCell = gs.researchCells[steppedIdx]!;
-      if (steppedResearchCell.nexusId === REFRESHER_PANEL_ID) {
-        if (!Number.isInteger(steppedResearchCell.nexusPlacementId) || steppedResearchCell.nexusPlacementId <= 0) {
-          throw new Error(`Invalid refresher placement id at cell index ${steppedIdx}`);
-        }
-
-        const placementCells = placementsById.get(steppedResearchCell.nexusPlacementId)!;
-        let canTrigger = true;
-        for (const placementCell of placementCells) {
-          if (simulatedTaken.has(toCellKey(placementCell))) {
-            canTrigger = false;
-            break;
-          }
-        }
-
-        if (canTrigger) {
-          const placementCenterUnit = getMazeNexusPlacementCentroidUnit(placementCells);
-          for (const spawn of gs.mazeResourceSpawns) {
-            const spawnKey = toCellKey(spawn.cell);
-            if (!simulatedTaken.has(spawnKey)) continue;
-
-            const spawnUnit = axialToPixel(spawn.cell, 1, UNIT_ORIGIN);
-            const dx = spawnUnit.x - placementCenterUnit.x;
-            const dy = spawnUnit.y - placementCenterUnit.y;
-            const distanceUnitSq = dx * dx + dy * dy;
-            if (distanceUnitSq > effectRadiusUnitSq) continue;
-
-            const delayMs = Math.sqrt(distanceUnitSq) * REFRESHER_DELAY_MS_PER_UNIT;
-            refresherAnimation.spawnAt(spawn.cell, delayMs);
-            setVisualRefreshMask(spawnKey, delayMs);
-            simulatedTaken.delete(spawnKey);
-          }
-        }
-      }
-
       if (steppedResearchCell.nexusId) {
-        simulatedTaken.add(steppedKey);
+        simulatedTaken.push({ x: steppedCell.x, y: steppedCell.y });
       }
     }
   }
 
-  function onSegmentComplete(targetCell: Point2, takenBefore: Set<string>, segmentPath: Point2[]): void {
+  function onSegmentComplete(targetCell: Point2, takenBefore: Point2[], segmentPath: Point2[]): void {
     animateRefresherBonuses(segmentPath, takenBefore);
 
     const gs = options.getGameState();
-    const key = toCellKey(targetCell);
-    if (takenBefore.has(key)) return;
+    if (containsCell(takenBefore, targetCell)) return;
     const spawn = gs.mazeResourceSpawns.find(
       s => s.cell.x === targetCell.x && s.cell.y === targetCell.y,
     );

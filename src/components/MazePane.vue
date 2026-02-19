@@ -27,7 +27,6 @@ import { globalInputQueue } from '../logic/Model';
 import { clearCanvas } from '../logic/DrawHex';
 import { bfsMazePath } from '../logic/BFS';
 import { pixelToAxial } from '../logic/HexMath';
-import { axialToIndex } from '../logic/Research';
 import { CmdMazeMoveTo, CmdMazePlaceNexusItem } from '../logic/input/InputCommands';
 import { renderMazeBaseLayer } from '../logic/drawMaze';
 import { renderMazePathOverlay } from '../logic/drawMazePath';
@@ -87,7 +86,6 @@ const mouseWorldPos = ref<Point2 | null>(null);
 
 const {
   displayedPath: displayedHoverPath,
-  transitionActive: hoverPathTransitionActive,
   queueTo: queueHoverPathTransition,
   clearImmediate: clearHoverPathImmediate,
   dispose: disposeHoverPathTransition,
@@ -147,7 +145,6 @@ const resourceHighlights = useMazeResourceHighlights({
 
 const {
   movePath,
-  moveAnimProgress,
   segmentQueue,
   pendingAvatarCell,
   getQueuedAvatarCell,
@@ -236,39 +233,6 @@ function syncViewportDependentRendering(): void {
   emitResourceSignals();
 }
 
-// Debug: call window.debugMaze() from console when hover paths stop working
-function debugMaze() {
-  const gs = getGameState();
-  const ha = hoverAxial.value;
-  const bfsResult = ha ? bfsMazePath(gs, gs.maze.avatarCell, ha) : null;
-  const avatarIdx = axialToIndex(gs.maze.avatarCell.x, gs.maze.avatarCell.y);
-  const avatarOwned = avatarIdx !== -1 ? gs.researchCells[avatarIdx]?.owned : 'OUT_OF_GRID';
-  console.table({
-    avatarCell: `${gs.maze.avatarCell.x},${gs.maze.avatarCell.y}`,
-    avatarCellOwned: avatarOwned,
-    movementUsed: gs.maze.movementUsed,
-    timeFlux: gs.timeFlux,
-    remaining: gs.timeFlux - gs.maze.movementUsed,
-    mazeVersion: gs.maze.version,
-    movePathLen: movePath.value.length,
-    segmentQueueLen: segmentQueue.value.length,
-    moveAnimProgress: moveAnimProgress.value,
-    animActive: movePath.value.length > 0,
-    hoverAxial: ha ? `${ha.x},${ha.y}` : 'null',
-    hoverPathLen: displayedHoverPath.value.length,
-    hoverPathTransitionActive: hoverPathTransitionActive.value,
-    bfsReachable: bfsResult?.reachable ?? 'N/A',
-    bfsCost: bfsResult?.cost ?? 'N/A',
-    bfsPathLen: bfsResult?.path.length ?? 'N/A',
-  });
-  if (movePath.value.length > 0 || segmentQueue.value.length > 0) {
-    console.warn('[debugMaze] movePath/segmentQueue non-empty — hover path starts from queue tip.');
-    console.log('movePath:', JSON.parse(JSON.stringify(movePath.value)));
-    console.log('segmentQueue:', JSON.parse(JSON.stringify(segmentQueue.value)));
-  }
-}
-(window as any).debugMaze = debugMaze;
-
 onMounted(() => {
   setupCanvases();
   drawAvatar();
@@ -285,7 +249,6 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  delete (window as any).debugMaze;
   window.removeEventListener('resize', onResize);
   window.removeEventListener('mouseup', onWindowMouseUp);
   window.removeEventListener(MAZE_DRAG_MOVE_EVENT, onMazeDragMove as EventListener);

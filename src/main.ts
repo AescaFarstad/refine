@@ -6,6 +6,7 @@ import * as Model from './logic/Model';
 import { getGameStateMutable, replaceGameState, SyncUIFromGameState } from './logic/UIState';
 import atlasStorage from './logic/AtlasStorage';
 import { ensureMoleculeAtlas } from './logic/MoleculeAtlas';
+import { ensureNexusAtlas } from './logic/NexusAtlas';
 import { getRepresentation } from './logic/LogNumbers';
 import { getHypRepresentation } from './logic/HypNumbers';
 import { initDebug } from './logic/CheatInit';
@@ -51,6 +52,7 @@ getHypRepresentation(2000);
   await atlasStorage.loadItemsAtlas();
   await atlasStorage.loadLocationsAtlas();
   await ensureMoleculeAtlas();
+  await ensureNexusAtlas();
 
   // Sync UI immediately so initial values render before mounting
   replaceGameState(initialGameState);

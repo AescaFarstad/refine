@@ -162,6 +162,7 @@ function createDefaultUIState() {
     mazeMovementUsed: 0,
     mazeVersion: 0,
     mazeNexusMenuOpen: false,
+    mazeResetReason: '' as '' | 'warped' | 'banked',
 
     questPrereqsVersion: 0,
 

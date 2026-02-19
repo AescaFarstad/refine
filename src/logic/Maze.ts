@@ -24,7 +24,6 @@ export {
 
 const MAZE_ENTRANCE_ARCHETYPE_ID = 'disc_maze_navigation';
 const MAZE_NEXUS_ARCHETYPE_ID = 'disc_maze_nexus';
-const MAZE_RESET_ENTRANCE_UNSET: Point2 = { x: 0, y: 0 };
 
 export function isMazeEntranceCell(gs: ReadonlyGameState, cell: Point2): boolean {
   const idx = axialToIndex(cell.x, cell.y);
@@ -33,16 +32,18 @@ export function isMazeEntranceCell(gs: ReadonlyGameState, cell: Point2): boolean
   if (!researchCell.owned) return false;
   if (researchCell.nodeId < 0) return false;
   const node = gs.lib.research.nodes.get(researchCell.nodeId)!;
-  return node.archetypeId === MAZE_ENTRANCE_ARCHETYPE_ID;
+  if (node.archetypeId !== MAZE_ENTRANCE_ARCHETYPE_ID) return false;
+  return node.centerCell.x === cell.x && node.centerCell.y === cell.y;
 }
 
 export function getOwnedMazeEntrances(gs: ReadonlyGameState): Array<Point2> {
   const entrances: Array<Point2> = [];
   for (const node of gs.lib.research.nodes.values()) {
+    if (node.archetypeId !== MAZE_ENTRANCE_ARCHETYPE_ID) continue;
     const idx = axialToIndex(node.centerCell.x, node.centerCell.y);
-    if (gs.researchCells[idx]?.owned)
-      if (node.archetypeId == MAZE_ENTRANCE_ARCHETYPE_ID)
-        entrances.push(copy(node.centerCell));
+    if (gs.researchCells[idx]!.owned) {
+      entrances.push(copy(node.centerCell));
+    }
   }
   return entrances;
 }
@@ -54,26 +55,32 @@ export function isMazeNexusCell(gs: ReadonlyGameState, cell: Point2): boolean {
   if (!researchCell.owned) return false;
   if (researchCell.nodeId < 0) return false;
   const node = gs.lib.research.nodes.get(researchCell.nodeId)!;
-  return node.archetypeId === MAZE_NEXUS_ARCHETYPE_ID;
+  if (node.archetypeId !== MAZE_NEXUS_ARCHETYPE_ID) return false;
+  return node.centerCell.x === cell.x && node.centerCell.y === cell.y;
 }
 
 export function getOwnedMazeNexuses(gs: ReadonlyGameState): Array<Point2> {
   const nexuses: Array<Point2> = [];
   for (const node of gs.lib.research.nodes.values()) {
+    if (node.archetypeId !== MAZE_NEXUS_ARCHETYPE_ID) continue;
     const idx = axialToIndex(node.centerCell.x, node.centerCell.y);
-    if (gs.researchCells[idx]?.owned)
-      if (node.archetypeId == MAZE_NEXUS_ARCHETYPE_ID)
-        nexuses.push(copy(node.centerCell));
+    if (gs.researchCells[idx]!.owned) {
+      nexuses.push(copy(node.centerCell));
+    }
   }
   return nexuses;
 }
 
 export function syncMazeResetEntranceCell(gs: GameState) {
-  if (gs.mazeResetEntranceCell.x === MAZE_RESET_ENTRANCE_UNSET.x && gs.mazeResetEntranceCell.y === MAZE_RESET_ENTRANCE_UNSET.y)
-    for (const node of gs.lib.research.nodes.values())
-      if (node.archetypeId == MAZE_ENTRANCE_ARCHETYPE_ID)
-        if (gs.researchCells[axialToIndex(node.centerCell.x, node.centerCell.y)]!.owned)
-          gs.mazeResetEntranceCell = copy(node.centerCell);
+  if (isMazeEntranceCell(gs, gs.mazeResetEntranceCell)) return;
+  for (const node of gs.lib.research.nodes.values()) {
+    if (node.archetypeId !== MAZE_ENTRANCE_ARCHETYPE_ID) continue;
+    const idx = axialToIndex(node.centerCell.x, node.centerCell.y);
+    if (gs.researchCells[idx]!.owned) {
+      gs.mazeResetEntranceCell = copy(node.centerCell);
+      return;
+    }
+  }
 }
 
 export function computeMazeResourceSpawns(gs: GameState, lib: ResearchLib): void {
@@ -116,6 +123,7 @@ export function computeMazeResourceSpawns(gs: GameState, lib: ResearchLib): void
 }
 
 export function resetMazeTransient(gs: GameState): void {
+  syncMazeResetEntranceCell(gs);
   const m = createMazeTransient(gs.mazeResetEntranceCell);
   m.version = gs.maze.version + 1;
   gs.maze = m;
@@ -133,11 +141,13 @@ function getMazeNexusPlacementCellFailureReason(gs: ReadonlyGameState, cell: Poi
   );
   if (hasResourceSpawn) return 'cell_has_resource_spawn';
 
+  if (isMazeEntranceCell(gs, cell)) return 'cell_is_maze_entrance';
+  if (isMazeNexusCell(gs, cell)) return 'cell_is_maze_nexus_access';
+
   if (researchCell.nodeId < 0) return '';
   const node = gs.lib.research.nodes.get(researchCell.nodeId)!;
-  if (node.archetypeId === MAZE_ENTRANCE_ARCHETYPE_ID) return 'cell_is_maze_entrance';
-  if (node.archetypeId === MAZE_NEXUS_ARCHETYPE_ID) return 'cell_is_maze_nexus_access';
-
+  const isCenterCell = node.centerCell.x === cell.x && node.centerCell.y === cell.y;
+  if (!isCenterCell) return '';
   const archetype = gs.lib.research.archetypes.get(node.archetypeId)!;
   if (archetype.type === 'resource') return 'cell_is_resource_node';
   if (archetype.type === 'discovery') return 'cell_is_discovery_node';
@@ -501,7 +511,6 @@ export function handleMazeMoveTo(gs: GameState, target: Point2): MazeMoveResult 
   const isEntrance = isMazeEntranceCell(gs, target);
   if (isEntrance) {
     gs.mazeResetEntranceCell = copy(target);
-    syncMazeResetEntranceCell(gs);
     gs.mazeHighMovementUsed = Math.max(gs.mazeHighMovementUsed, gs.maze.movementUsed);
     applyMazePayout(gs);
     resetMazeTransient(gs);

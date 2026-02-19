@@ -13,6 +13,7 @@
     @drop.prevent
   >
     <canvas ref="baseCanvas" class="maze-layer"></canvas>
+    <canvas ref="furnitureCanvas" class="maze-layer"></canvas>
     <canvas ref="pathCanvas" class="maze-layer"></canvas>
     <canvas ref="refresherEffectsCanvas" class="maze-layer maze-effects-layer"></canvas>
     <canvas ref="effectsCanvas" class="maze-layer maze-effects-layer"></canvas>
@@ -28,7 +29,7 @@ import { clearCanvas } from '../logic/DrawHex';
 import { bfsMazePath } from '../logic/BFS';
 import { pixelToAxial } from '../logic/HexMath';
 import { CmdMazeMoveTo, CmdMazePlaceNexusItem } from '../logic/input/InputCommands';
-import { renderMazeBaseLayer } from '../logic/drawMaze';
+import { renderMazeTerrainLayer, renderMazeFurnitureLayer } from '../logic/drawMaze';
 import { renderMazePathOverlay } from '../logic/drawMazePath';
 import { useHexPaneInteraction } from '../logic/pane/useHexPaneInteraction';
 import { useHoverPathTransition } from '../logic/pane/useHoverPathTransition';
@@ -45,6 +46,7 @@ import type { MazeResourceHoverHint, MazeResourceKey } from '../logic/pane/MazeO
 
 const container = ref<HTMLDivElement | null>(null);
 const baseCanvas = ref<HTMLCanvasElement | null>(null);
+const furnitureCanvas = ref<HTMLCanvasElement | null>(null);
 const pathCanvas = ref<HTMLCanvasElement | null>(null);
 const avatarCanvas = ref<HTMLCanvasElement | null>(null);
 const refresherEffectsCanvas = ref<HTMLCanvasElement | null>(null);
@@ -91,7 +93,8 @@ const {
   dispose: disposeHoverPathTransition,
 } = useHoverPathTransition(renderPath, HOVER_PATH_TRANSITION_SPEED);
 
-let baseRafId: number | null = null;
+let terrainRafId: number | null = null;
+let furnitureRafId: number | null = null;
 let isMoving = () => false;
 
 function getDisplayAvatarCell(): Point2 {
@@ -134,7 +137,7 @@ const {
   hexSize: HEX_SIZE,
   origin,
   getGameState,
-  scheduleBaseRender,
+  scheduleBaseRender: scheduleFurnitureRender,
 });
 
 const resourceHighlights = useMazeResourceHighlights({
@@ -164,7 +167,7 @@ const {
     globalInputQueue.push(new CmdMazeMoveTo({ target }));
   },
   clearHoverPathImmediate,
-  scheduleBaseRender,
+  scheduleBaseRender: scheduleFurnitureRender,
   updateAvatarPosition,
   onSegmentComplete: (targetCell, takenBefore, segmentPath) => {
     onResourceSegmentComplete(targetCell, takenBefore, segmentPath);
@@ -213,7 +216,7 @@ const {
     globalInputQueue.push(new CmdMazePlaceNexusItem({ target, nexusItemId }));
   },
   onPreviewChanged: renderPath,
-  onPlacementCommitted: scheduleBaseRender,
+  onPlacementCommitted: scheduleFurnitureRender,
 });
 
 function emitHoverSignals(): void {
@@ -226,7 +229,8 @@ function emitResourceSignals(): void {
 }
 
 function syncViewportDependentRendering(): void {
-  scheduleBaseRender();
+  scheduleTerrainRender();
+  scheduleFurnitureRender();
   renderPath();
   updateAvatarPosition();
   ensureIdleFacingLoop();
@@ -236,7 +240,8 @@ function syncViewportDependentRendering(): void {
 onMounted(() => {
   setupCanvases();
   drawAvatar();
-  scheduleBaseRender();
+  scheduleTerrainRender();
+  scheduleFurnitureRender();
   updateAvatarPosition();
   overlaySignals.emitHoverResourceHint(null);
   overlaySignals.emitHoverResourceHintBatch();
@@ -253,9 +258,13 @@ onUnmounted(() => {
   window.removeEventListener('mouseup', onWindowMouseUp);
   window.removeEventListener(MAZE_DRAG_MOVE_EVENT, onMazeDragMove as EventListener);
   window.removeEventListener(MAZE_DRAG_END_EVENT, onMazeDragEnd as EventListener);
-  if (baseRafId != null) {
-    cancelAnimationFrame(baseRafId);
-    baseRafId = null;
+  if (terrainRafId != null) {
+    cancelAnimationFrame(terrainRafId);
+    terrainRafId = null;
+  }
+  if (furnitureRafId != null) {
+    cancelAnimationFrame(furnitureRafId);
+    furnitureRafId = null;
   }
   disposeAvatar();
   disposeMoveAnimation();
@@ -267,7 +276,8 @@ onUnmounted(() => {
 watch(
   () => [uiState.researchOwnedCount, uiState.discoveryCounter, uiState.credits],
   () => {
-    scheduleBaseRender();
+    scheduleTerrainRender();
+    scheduleFurnitureRender();
     emitHoverSignals();
   }
 );
@@ -277,7 +287,7 @@ watch(
   () => {
     pendingAvatarCell.value = null;
     clearVisualRefreshMask();
-    scheduleBaseRender();
+    scheduleFurnitureRender();
     updateAvatarPosition();
     emitHoverSignals();
   }
@@ -294,14 +304,15 @@ watch(
 watch(
   () => props.highlightResourceKey,
   () => {
-    scheduleBaseRender();
+    scheduleFurnitureRender();
     overlaySignals.emitHoverResourceHintBatch();
   }
 );
 
 function onResize(): void {
   setupCanvases();
-  scheduleBaseRender();
+  scheduleTerrainRender();
+  scheduleFurnitureRender();
   updateAvatarPosition();
   emitResourceSignals();
   overlaySignals.emitEntranceHover();
@@ -318,23 +329,55 @@ function setupCanvases(): void {
   canvasWidth.value = width;
   canvasHeight.value = height;
 
-  for (const c of [baseCanvas.value, pathCanvas.value, refresherEffectsCanvas.value, effectsCanvas.value]) {
+  for (const c of [baseCanvas.value, furnitureCanvas.value, pathCanvas.value, refresherEffectsCanvas.value, effectsCanvas.value]) {
     if (!c) continue;
     c.width = width;
     c.height = height;
   }
 }
 
-function scheduleBaseRender(): void {
-  if (baseRafId != null) return;
-  baseRafId = requestAnimationFrame(() => {
-    baseRafId = null;
-    renderBase();
+function scheduleTerrainRender(): void {
+  if (terrainRafId != null) return;
+  terrainRafId = requestAnimationFrame(() => {
+    terrainRafId = null;
+    renderTerrain();
   });
 }
 
-function renderBase(): void {
+function scheduleFurnitureRender(): void {
+  if (furnitureRafId != null) return;
+  furnitureRafId = requestAnimationFrame(() => {
+    furnitureRafId = null;
+    renderFurniture();
+  });
+}
+
+function renderTerrain(): void {
   const c = baseCanvas.value;
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  if (!ctx) return;
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  clearCanvas(ctx);
+
+  const z = zoom.value;
+  const off = offset.value;
+  ctx.setTransform(z, 0, 0, z, off.x, off.y);
+
+  const gs = getGameState();
+  const o = origin.value;
+  renderMazeTerrainLayer(
+    ctx,
+    gs,
+    o,
+    HEX_SIZE,
+    CELL_FILL_SIZE,
+  );
+}
+
+function renderFurniture(): void {
+  const c = furnitureCanvas.value;
   if (!c) return;
   const ctx = c.getContext('2d');
   if (!ctx) return;
@@ -350,12 +393,11 @@ function renderBase(): void {
   const o = origin.value;
   const highlightedResourceCellKeys = resourceHighlights.buildHighlightedResourceCellKeys();
   const visuallyTakenCellKeys = getVisuallyTakenCellKeys();
-  renderMazeBaseLayer(
+  renderMazeFurnitureLayer(
     ctx,
     gs,
     o,
     HEX_SIZE,
-    CELL_FILL_SIZE,
     gs.maze.takenCells,
     highlightedResourceCellKeys,
     visuallyTakenCellKeys,
@@ -400,7 +442,7 @@ function renderPath(): void {
 }
 
 function onHoverChanged(axial: Point2 | null): void {
-  scheduleBaseRender();
+  scheduleFurnitureRender();
 
   if (!axial) {
     queueHoverPathTransition([]);

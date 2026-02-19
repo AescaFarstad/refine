@@ -237,12 +237,4 @@ items have:
 
 
 
-If I was reset due to flux, show message
-ad radius info to nexus
 Enlarge maze around bonuses and resources
-dashed underline under pills
-move resources to separate layer
-
-
-
-cache canvas in MazeNexusMenu.vue

@@ -308,6 +308,11 @@ const nextClearCost = computed(() => {
   z-index: 25;
 }
 
+.hover-hint.hover-panel {
+  background: var(--hint-bg);
+  border: 1px solid var(--hint-border);
+}
+
 .hover-hint-above {
   transform: translate(-50%, -100%);
 }
@@ -317,10 +322,10 @@ const nextClearCost = computed(() => {
 }
 
 .hover-panel {
-  padding: 4px 10px;
+  padding: 10px 16px;
   border-radius: 4px;
-  background: rgba(15, 23, 42, 0.9);
-  border: 1px solid rgba(148, 163, 184, 0.7);
+  background: var(--panel-bg);
+  border: none;
   color: rgba(226, 232, 240, 0.95);
   font-size: 16px;
   font-weight: 600;
@@ -331,10 +336,10 @@ const nextClearCost = computed(() => {
 .info-panel {
   position: absolute;
   top: 12px;
-  padding: 6px 12px;
+  padding: 10px 16px;
   border-radius: 4px;
-  background: rgba(15, 23, 42, 0.9);
-  border: 1px solid rgba(148, 163, 184, 0.7);
+  background: var(--panel-bg);
+  border: none;
   color: rgba(226, 232, 240, 0.95);
   font-size: 14px;
   font-weight: 500;
@@ -362,10 +367,10 @@ const nextClearCost = computed(() => {
   position: absolute;
   bottom: 8px;
   right: 8px;
-  padding: 5px 10px;
+  padding: 10px 16px;
   border-radius: 5px;
-  background: rgba(15, 23, 42, 0.95);
-  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: var(--panel-bg);
+  border: none;
   color: var(--text-primary);
   font-size: 13.75px;
   pointer-events: none;

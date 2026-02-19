@@ -31,7 +31,7 @@ const MAZE_TAKEN_GLYPH_BG_STROKE_COLOR = 'rgba(140, 210, 205, 0.1)';
 const MAZE_GLYPH_BG_RADIUS_SCALE = 0.62;
 const MAZE_GLYPH_BG_STROKE_WIDTH = 1.2;
 const MAZE_ENTRANCE_ICON_SCALE = 0.72;
-const MAZE_NEXUS_ICON_SCALE = 0.72;
+const MAZE_NEXUS_ICON_SCALE = 1.1;
 const MAZE_NEXUS_ITEM_COLOR = 'rgba(248, 250, 252, 0.96)';
 const MAZE_NEXUS_ITEM_GLOW_COLOR = '#e2e8f0';
 const MAZE_STONE_SHRINK = 0.82;
@@ -151,17 +151,10 @@ function drawMazeNexusSymbol(
   }
 }
 
-export function renderMazeBaseLayer(
-  ctx: CanvasRenderingContext2D,
-  game: ReadonlyGameState,
-  origin: Point2,
-  hexSize: number,
-  cellFillSize: number,
+function buildTakenSet(
   takenCells: readonly { readonly x: number; readonly y: number }[],
-  highlightedResourceCellKeys?: ReadonlySet<string>,
   visuallyTakenCellKeys?: ReadonlySet<string>,
-): void {
-  const cells = game.researchCells;
+): Set<string> {
   const takenSet = new Set<string>();
   for (const t of takenCells) {
     takenSet.add(`${t.x},${t.y}`);
@@ -171,7 +164,17 @@ export function renderMazeBaseLayer(
       takenSet.add(key);
     }
   }
+  return takenSet;
+}
 
+export function renderMazeTerrainLayer(
+  ctx: CanvasRenderingContext2D,
+  game: ReadonlyGameState,
+  origin: Point2,
+  hexSize: number,
+  _cellFillSize: number,
+): void {
+  const cells = game.researchCells;
   const loops = computeOwnedResearchBoundary(cells);
   if (loops.length > 0) {
     // Shadow as one union shape, respecting holes.
@@ -215,6 +218,20 @@ export function renderMazeBaseLayer(
     ctx.stroke();
     ctx.restore();
   }
+
+}
+
+export function renderMazeFurnitureLayer(
+  ctx: CanvasRenderingContext2D,
+  game: ReadonlyGameState,
+  origin: Point2,
+  hexSize: number,
+  takenCells: readonly { readonly x: number; readonly y: number }[],
+  highlightedResourceCellKeys?: ReadonlySet<string>,
+  visuallyTakenCellKeys?: ReadonlySet<string>,
+): void {
+  const cells = game.researchCells;
+  const takenSet = buildTakenSet(takenCells, visuallyTakenCellKeys);
 
   const ownedEntrances = getOwnedMazeEntrances(game);
   for (const entrance of ownedEntrances) {
@@ -475,4 +492,26 @@ export function renderMazeBaseLayer(
     ctx.fillText(text, pixel.x, pixel.y + 1);
     ctx.restore();
   }
+}
+
+export function renderMazeBaseLayer(
+  ctx: CanvasRenderingContext2D,
+  game: ReadonlyGameState,
+  origin: Point2,
+  hexSize: number,
+  cellFillSize: number,
+  takenCells: readonly { readonly x: number; readonly y: number }[],
+  highlightedResourceCellKeys?: ReadonlySet<string>,
+  visuallyTakenCellKeys?: ReadonlySet<string>,
+): void {
+  renderMazeTerrainLayer(ctx, game, origin, hexSize, cellFillSize);
+  renderMazeFurnitureLayer(
+    ctx,
+    game,
+    origin,
+    hexSize,
+    takenCells,
+    highlightedResourceCellKeys,
+    visuallyTakenCellKeys,
+  );
 }

@@ -1,8 +1,7 @@
 <template>
   <div v-if="visible" class="maze-nexus-menu">
     <div class="nexus-panel">
-      <div class="nexus-title">Maze Nexus</div>
-      <div class="nexus-subtitle">Drag onto the maze</div>
+      <div class="nexus-header">MAZE NEXUS <span class="nexus-header-sep">-</span> Drag power-ups onto the maze:</div>
       <div class="nexus-items">
         <div
           v-for="[id, item] in items"
@@ -11,10 +10,12 @@
           :class="{ 'cannot-afford': !canAfford(id), 'impassable': !isPassable(item) }"
           @pointerdown="onItemPointerDown(item, $event)"
         >
-          <div v-if="previewCanvases[id]" class="nexus-item-preview" :ref="(el) => mountCanvas(el as HTMLElement | null, id)"></div>
+          <div v-if="hasPreview[id]" class="nexus-item-preview" :ref="(el) => mountCanvas(el as HTMLElement | null, id)"></div>
           <div class="nexus-item-text">
             <span class="nexus-item-name">{{ item.name }}</span>
             <div class="nexus-item-desc">{{ item.description }}</div>
+            <div v-if="item.effectRadius > 0" class="nexus-item-stat">Effect radius: {{ item.effectRadius }}</div>
+            <div v-if="item.limitRadius > 0" class="nexus-item-stat">Minimum separation: {{ item.limitRadius * 2 }}</div>
             <div v-if="!isPassable(item)" class="nexus-item-impassable">Impassable</div>
           </div>
           <div class="nexus-item-price-area">
@@ -30,7 +31,7 @@
 import { parseNexusItemDefinitions, type NexusItemDefinition } from '../logic/NexusLib';
 import rawNexusItems from '../data/nexus';
 import { startMazeManualDrag } from '../logic/MazeNexusDnd';
-import { createNexusPreviewCanvas } from '../logic/drawNexusPreview';
+import atlasStorage from '../logic/AtlasStorage';
 import { getGameState, uiState } from '../logic/UIState';
 
 defineProps<{
@@ -39,23 +40,32 @@ defineProps<{
 
 const items = parseNexusItemDefinitions(rawNexusItems);
 
-const PREVIEW_SIZE = 48;
+const PREVIEW_SIZE = 56;
 
-const previewCanvases: Record<string, HTMLCanvasElement> = {};
-for (const [id, def] of items) {
-  const cells = def.placableInstanceDescription.cells;
-  const canvas = createNexusPreviewCanvas(cells, PREVIEW_SIZE, def.placableInstanceDescription.image, def.glyph);
-  if (canvas) previewCanvases[id] = canvas;
+// Check which items have atlas frames available
+const hasPreview: Record<string, boolean> = {};
+for (const [id] of items) {
+  hasPreview[id] = !!atlasStorage.getNexusFrame(`nexus:${id}`);
 }
 
 function mountCanvas(el: HTMLElement | null, id: string): void {
   if (!el) return;
-  const canvas = previewCanvases[id];
-  if (!canvas) return;
-  if (el.firstChild !== canvas) {
-    el.textContent = '';
-    el.appendChild(canvas);
+  // Only mount once - check if canvas is already there
+  if (el.firstChild) return;
+  const frame = atlasStorage.getNexusFrame(`nexus:${id}`);
+  if (!frame) return;
+  const source = atlasStorage.getNexusSource();
+  const canvas = document.createElement('canvas');
+  const dpr = Math.max(2, window.devicePixelRatio || 2);
+  canvas.width = PREVIEW_SIZE * dpr;
+  canvas.height = PREVIEW_SIZE * dpr;
+  canvas.style.width = PREVIEW_SIZE + 'px';
+  canvas.style.height = PREVIEW_SIZE + 'px';
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.drawImage(source, frame.x, frame.y, frame.w, frame.h, 0, 0, PREVIEW_SIZE * dpr, PREVIEW_SIZE * dpr);
   }
+  el.appendChild(canvas);
 }
 
 function getLivePrice(itemId: string): number {
@@ -87,26 +97,26 @@ function onItemPointerDown(item: NexusItemDefinition, event: PointerEvent): void
 }
 
 .nexus-panel {
-  border: 1px solid rgba(148, 163, 184, 0.7);
+  border: none;
   border-radius: 4px;
-  background: rgba(15, 23, 42, 0.9);
   color: rgba(226, 232, 240, 0.95);
-  padding: 8px 14px;
-  min-width: 300px;
+  padding: 0;
+  min-width: 380px;
 }
 
-.nexus-title {
+.nexus-header {
   font-size: 14px;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
   color: rgba(226, 232, 240, 0.95);
-  margin-bottom: 2px;
+  background: var(--panel-bg);
+  border-radius: 8px;
+  padding: 10px 16px;
+  margin-bottom: 6px;
 }
 
-.nexus-subtitle {
-  font-size: 14px;
-  color: rgba(226, 232, 240, 0.85);
-  margin-bottom: 8px;
+.nexus-header-sep {
+  color: rgba(226, 232, 240, 0.4);
+  margin: 0 2px;
 }
 
 .nexus-items {
@@ -118,16 +128,16 @@ function onItemPointerDown(item: NexusItemDefinition, event: PointerEvent): void
 .nexus-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
+  gap: 10px;
+  padding: 10px 12px;
   cursor: grab;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  background: var(--panel-bg);
   transition: background 0.15s, transform 0.12s ease;
 }
 
 .nexus-item:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .nexus-item:active {
@@ -148,8 +158,8 @@ function onItemPointerDown(item: NexusItemDefinition, event: PointerEvent): void
 
 .nexus-item-preview {
   flex-shrink: 0;
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
 }
 
 .nexus-item-text {
@@ -158,13 +168,13 @@ function onItemPointerDown(item: NexusItemDefinition, event: PointerEvent): void
 }
 
 .nexus-item-name {
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 500;
   display: block;
 }
 
 .nexus-item-desc {
-  font-size: 13px;
+  font-size: 14px;
   color: rgba(148, 163, 184, 0.8);
   margin-top: 2px;
 }
@@ -172,21 +182,28 @@ function onItemPointerDown(item: NexusItemDefinition, event: PointerEvent): void
 .nexus-item-price-area {
   flex-shrink: 0;
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 3px;
-  padding: 4px 10px;
+  border-radius: 8px;
+  padding: 6px 14px;
   align-self: stretch;
   display: flex;
   align-items: center;
 }
 
 .nexus-item-price {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
   color: #48bb78;
 }
 
 .nexus-item-price-glyph {
   margin-right: 2px;
+}
+
+.nexus-item-stat {
+  font-size: 12px;
+  color: rgba(148, 163, 184, 0.65);
+  margin-top: 2px;
+  letter-spacing: 0.03em;
 }
 
 .nexus-item-impassable {

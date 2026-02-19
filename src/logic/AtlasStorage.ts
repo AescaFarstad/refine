@@ -20,7 +20,7 @@ export interface AtlasData {
   meta?: AtlasMeta;
 }
 
-export type AtlasKey = 'items' | 'locations' | 'molecules';
+export type AtlasKey = 'items' | 'locations' | 'molecules' | 'nexus';
 
 /**
  * Simple storage for sprite atlases.
@@ -168,6 +168,18 @@ export class AtlasStorage {
     return this.runtimeAtlases.get('molecules')!.frames.get(name);
   }
 
+  public getNexusSource(): AtlasSource {
+    return this.runtimeAtlases.get('nexus')!.source;
+  }
+
+  public getNexusMeta(): AtlasMeta | undefined {
+    return this.runtimeAtlases.get('nexus')!.meta;
+  }
+
+  public getNexusFrame(name: string): AtlasFrame | undefined {
+    return this.runtimeAtlases.get('nexus')!.frames.get(name);
+  }
+
   // Generic accessors for dev tooling
   public getFrames(key: AtlasKey): Map<string, AtlasFrame> {
     switch (key) {
@@ -176,6 +188,7 @@ export class AtlasStorage {
       case 'locations':
         return this.locationsAtlas.frames;
       case 'molecules':
+      case 'nexus':
         return this.runtimeAtlases.get(key)!.frames;
     }
   }
@@ -187,6 +200,7 @@ export class AtlasStorage {
       case 'locations':
         return this.locationsAtlas.source;
       case 'molecules':
+      case 'nexus':
         return this.runtimeAtlases.get(key)!.source;
     }
   }
@@ -198,6 +212,7 @@ export class AtlasStorage {
       case 'locations':
         return this.locationsAtlas.meta;
       case 'molecules':
+      case 'nexus':
         return this.runtimeAtlases.get(key)!.meta;
     }
   }
@@ -218,5 +233,5 @@ export default atlasStorage;
 
 // Helper to enumerate available atlases for tooling/dev UIs
 export function listAtlasKeys(): AtlasKey[] {
-  return ['items', 'locations', 'molecules'];
+  return ['items', 'locations', 'molecules', 'nexus'];
 }

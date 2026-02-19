@@ -10,6 +10,7 @@
     <template v-else>
       <MazePane
         :highlight-resource-key="hoveredPillResourceKey"
+        :class="{ 'maze-pane-blur': isPaneBlurred }"
         @resource-hover="onResourceHover"
         @resource-hover-batch="onResourceHoverBatch"
         @hover-path-cost="onHoverPathCost"
@@ -23,19 +24,19 @@
         :hover-path-cost="hoverPathCost"
         :is-hovering-entrance="isHoveringEntrance"
         :high-movement-used="highMovementUsed"
+        :nexus-menu-visible="uiState.mazeNexusMenuOpen"
+        :reset-reason="mazeResetReason"
         @resource-pill-hover="onResourcePillHover"
         @reset-high-movement="onResetHighMovement"
       />
-      <MazeNexusMenu :visible="uiState.mazeNexusMenuOpen" />
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onUnmounted } from 'vue';
 import MazePane from './MazePane.vue';
 import MazeOverlay from './MazeOverlay.vue';
-import MazeNexusMenu from './MazeNexusMenu.vue';
 import { uiState, getGameState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
 import { CmdMazeResetHighMovement } from '../logic/input/InputCommands';
@@ -91,6 +92,29 @@ watch(
   }
 );
 
+watch(
+  () => uiState.mazeMovementUsed,
+  (used) => {
+    if (used > 0) uiState.mazeResetReason = '';
+  }
+);
+
+const isPaneBlurred = ref(false);
+let blurTimer: ReturnType<typeof setTimeout> | null = null;
+
+watch(
+  () => uiState.mazeResetReason,
+  (reason) => {
+    if (blurTimer) { clearTimeout(blurTimer); blurTimer = null; }
+    if (reason) {
+      isPaneBlurred.value = true;
+      blurTimer = setTimeout(() => { isPaneBlurred.value = false; }, 2000);
+    }
+  }
+);
+
+onUnmounted(() => { if (blurTimer) clearTimeout(blurTimer); });
+
 const displayedResourceHints = computed<MazeResourceHoverHint[]>(() => {
   if (hoveredPillResourceKey.value) return hoverResourceHints.value;
   if (!hoverResourceHint.value) return [];
@@ -127,6 +151,8 @@ const highMovementUsed = computed(() => {
   return getGameState().mazeHighMovementUsed;
 });
 
+const mazeResetReason = computed(() => uiState.mazeResetReason as '' | 'warped' | 'banked');
+
 const remainingPool = computed(() => {
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   uiState.timeFlux;
@@ -144,6 +170,14 @@ const remainingPool = computed(() => {
   height: 100%;
   background: radial-gradient(circle at 50% 0%, rgba(15, 23, 42, 0.9), #020617);
   overflow: hidden;
+}
+
+:deep(.maze-pane-root) {
+  transition: filter 0.6s ease;
+}
+
+:deep(.maze-pane-root.maze-pane-blur) {
+  filter: blur(4px);
 }
 
 .maze-placeholder {

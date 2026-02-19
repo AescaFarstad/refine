@@ -493,6 +493,11 @@ handlersByName.set('CmdMazeMoveTo', (gs, cmd) => {
   } else if (moveResult.success) {
     uiState.mazeNexusMenuOpen = false;
   }
+  if (moveResult.forcedReset) {
+    uiState.mazeResetReason = 'warped';
+  } else if (moveResult.payout) {
+    uiState.mazeResetReason = 'banked';
+  }
   saveAutosave(gs);
 });
 

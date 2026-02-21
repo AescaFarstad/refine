@@ -4,6 +4,12 @@ const BOUNDARY_SMOOTHNESS = 0.8;
 const BOUNDARY_CONCAVE_BLEND = 0.7;
 const BOUNDARY_CONCAVE_BLEND_NU = 0.45;
 
+export interface SmoothBoundaryTraceOptions {
+  smoothness?: number;
+  concaveBlend?: number;
+  concaveBlendNu?: number;
+}
+
 function hashCoord01(x: number, y: number): number {
   const xi = Math.round(x * 1024);
   const yi = Math.round(y * 1024);
@@ -60,13 +66,17 @@ export function traceSmoothHexBoundary(
   origin: Point2,
   scale: number,
   offset: Point2 = { x: 0, y: 0 },
+  options: SmoothBoundaryTraceOptions = {},
 ): void {
+  const smoothness = options.smoothness ?? BOUNDARY_SMOOTHNESS;
+  const concaveBlend = options.concaveBlend ?? BOUNDARY_CONCAVE_BLEND;
+  const concaveBlendNu = options.concaveBlendNu ?? BOUNDARY_CONCAVE_BLEND_NU;
   ctx.beginPath();
   for (const loop of loops) {
     const points = preprocessConcaveLoop(
       loop,
-      BOUNDARY_CONCAVE_BLEND,
-      BOUNDARY_CONCAVE_BLEND_NU,
+      concaveBlend,
+      concaveBlendNu,
     );
     const pointCount = points.length;
     const first = points[0]!;
@@ -77,10 +87,10 @@ export function traceSmoothHexBoundary(
       const p2 = points[(i + 1) % pointCount]!;
       const p3 = points[(i + 2) % pointCount]!;
 
-      const c1x = p1.x + ((p2.x - p0.x) * BOUNDARY_SMOOTHNESS) / 6;
-      const c1y = p1.y + ((p2.y - p0.y) * BOUNDARY_SMOOTHNESS) / 6;
-      const c2x = p2.x - ((p3.x - p1.x) * BOUNDARY_SMOOTHNESS) / 6;
-      const c2y = p2.y - ((p3.y - p1.y) * BOUNDARY_SMOOTHNESS) / 6;
+      const c1x = p1.x + ((p2.x - p0.x) * smoothness) / 6;
+      const c1y = p1.y + ((p2.y - p0.y) * smoothness) / 6;
+      const c2x = p2.x - ((p3.x - p1.x) * smoothness) / 6;
+      const c2y = p2.y - ((p3.y - p1.y) * smoothness) / 6;
 
       ctx.bezierCurveTo(
         origin.x + offset.x + c1x * scale,

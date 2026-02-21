@@ -1,4 +1,4 @@
-import { indexToAxial } from './Research';
+import { indexToAxial, axialToIndex } from './Research';
 import type { Point2 } from './ItemLib';
 import type { ReadonlyGameState } from './UIState';
 import { computeOwnedResearchBoundary, computeHexBoundary } from './hexBoundary';
@@ -20,6 +20,11 @@ const VISION_STROKE = 'rgba(245, 255, 190, 0.72)';
 const VISION_STROKE_WIDTH = 2;
 const VISION_DEBUG_STROKE = 'rgba(255, 96, 96, 0.92)';
 const VISION_DEBUG_STROKE_WIDTH = 1.8;
+const VOID_FILL_COLOR = 'rgba(0, 0, 0, 0.18)';
+const VOID_NEAR_OWNED_RADIUS = 3;
+const VOID_BOUNDARY_SMOOTHNESS = 1.2;
+const VOID_BOUNDARY_CONCAVE_BLEND = 0.9;
+const VOID_BOUNDARY_CONCAVE_BLEND_NU = 0.25;
 
 const traceBoundaryPath = traceSmoothHexBoundary;
 
@@ -133,12 +138,68 @@ function drawZeroMoveCostOverlay(
   ctx.restore();
 }
 
+function drawVoidBoundary(
+  ctx: CanvasRenderingContext2D,
+  game: ReadonlyGameState,
+  origin: Point2,
+  hexSize: number,
+): void {
+  const voidCells: Point2[] = [];
+  for (let i = 0; i < game.researchCells.length; i++) {
+    const cell = game.researchCells[i]!;
+    if (!cell.blocked) continue;
+
+    const ax = indexToAxial(i);
+    let nearOwned = false;
+
+    for (let dx = -VOID_NEAR_OWNED_RADIUS; dx <= VOID_NEAR_OWNED_RADIUS; dx++) {
+      for (
+        let dy = Math.max(-VOID_NEAR_OWNED_RADIUS, -dx - VOID_NEAR_OWNED_RADIUS);
+        dy <= Math.min(VOID_NEAR_OWNED_RADIUS, -dx + VOID_NEAR_OWNED_RADIUS);
+        dy++
+      ) {
+        const nx = ax.x + dx;
+        const ny = ax.y + dy;
+        const nIdx = axialToIndex(nx, ny);
+        if (nIdx >= 0 && nIdx < game.researchCells.length) {
+          if (game.researchCells[nIdx]!.owned) {
+            nearOwned = true;
+            break;
+          }
+        }
+      }
+      if (nearOwned) break;
+    }
+
+    if (nearOwned) {
+      voidCells.push(ax);
+    }
+  }
+
+  if (voidCells.length === 0) return;
+
+  const loops = computeHexBoundary(voidCells);
+  if (loops.length === 0) return;
+
+  ctx.save();
+  traceSmoothHexBoundary(ctx, loops, origin, hexSize, undefined, {
+    smoothness: VOID_BOUNDARY_SMOOTHNESS,
+    concaveBlend: VOID_BOUNDARY_CONCAVE_BLEND,
+    concaveBlendNu: VOID_BOUNDARY_CONCAVE_BLEND_NU,
+  });
+  ctx.fillStyle = VOID_FILL_COLOR;
+  ctx.fill('evenodd');
+  ctx.restore();
+}
+
 export function renderMazeTerrainBaseLayer(
   ctx: CanvasRenderingContext2D,
   game: ReadonlyGameState,
   origin: Point2,
   hexSize: number,
 ): void {
+  drawVoidBoundary(ctx, game, origin, hexSize);
+
   const loops = computeOwnedResearchBoundary(game.researchCells);
   if (loops.length === 0) return;
 

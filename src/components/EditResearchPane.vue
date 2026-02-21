@@ -314,6 +314,7 @@ const mockHintCell = computed((): ResearchCell => {
     nexusId: '',
     nexusPlacementId: 0,
     passable: true,
+    mazeMoveCostMult: 1,
     revealed: true,
     owned: true, // Show owned state to reveal full info
     cost: 0,

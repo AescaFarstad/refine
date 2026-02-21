@@ -9,6 +9,10 @@ import {
 } from '../Maze';
 import { RESOURCE_SPECS } from '../Resources';
 import type { ReadonlyGameState } from '../UIState';
+import { computeHexBoundary } from '../hexBoundary';
+
+const NEXUS_PREVIEW_SIZE = 48;
+const NEXUS_PREVIEW_PADDING = 2;
 
 export interface MazeNexusPlacementPreviewRenderOptions {
   gs: ReadonlyGameState;
@@ -17,6 +21,35 @@ export interface MazeNexusPlacementPreviewRenderOptions {
   valid: boolean;
   origin: Point2;
   hexSize: number;
+}
+
+function getNexusPreviewDrawSize(gs: ReadonlyGameState, nexusItemId: string, hexSize: number): { w: number; h: number } {
+  const def = gs.lib.nexusItems.get(nexusItemId)!;
+  const loops = computeHexBoundary(def.placableInstanceDescription.cells);
+  if (loops.length === 0) {
+    const fallback = hexSize * 1.2;
+    return { w: fallback, h: fallback };
+  }
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const loop of loops) {
+    for (const p of loop) {
+      if (p.x < minX) minX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y > maxY) maxY = p.y;
+    }
+  }
+
+  const rawW = maxX - minX;
+  const rawH = maxY - minY;
+  const available = NEXUS_PREVIEW_SIZE - NEXUS_PREVIEW_PADDING * 2;
+  const previewHexSize = Math.min(available / (rawW || 1), available / (rawH || 1));
+  const scale = hexSize / previewHexSize;
+  return { w: NEXUS_PREVIEW_SIZE * scale, h: NEXUS_PREVIEW_SIZE * scale };
 }
 
 export function renderMazeNexusPlacementPreview(
@@ -97,6 +130,21 @@ export function renderMazeNexusPlacementPreview(
 
   if (!valid) return;
 
+  const nexusFrame = atlasStorage.getNexusFrame(`nexus:${nexusItemId}`);
+  if (nexusFrame) {
+    const source = atlasStorage.getNexusSource();
+    const drawSize = getNexusPreviewDrawSize(gs, nexusItemId, hexSize);
+    ctx.save();
+    ctx.globalAlpha = 0.95;
+    ctx.drawImage(
+      source,
+      nexusFrame.x, nexusFrame.y, nexusFrame.w, nexusFrame.h,
+      cx - drawSize.w / 2, cy - drawSize.h / 2, drawSize.w, drawSize.h,
+    );
+    ctx.restore();
+    return;
+  }
+
   const pid = def.placableInstanceDescription;
   const imageKey = pid.image;
   if (imageKey) {
@@ -122,6 +170,7 @@ export function renderMazeNexusPlacementPreview(
   const text = def.glyph || def.name.charAt(0);
   const glyphSize = Math.max(12, hexSize * 1.05);
   ctx.save();
+  ctx.globalAlpha = 0.95;
   ctx.font = `bold ${glyphSize}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';

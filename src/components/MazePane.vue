@@ -15,7 +15,6 @@
     <canvas ref="baseCanvas" class="maze-layer"></canvas>
     <canvas ref="furnitureCanvas" class="maze-layer"></canvas>
     <canvas ref="pathCanvas" class="maze-layer"></canvas>
-    <canvas ref="refresherEffectsCanvas" class="maze-layer maze-effects-layer"></canvas>
     <canvas ref="effectsCanvas" class="maze-layer maze-effects-layer"></canvas>
     <canvas ref="avatarCanvas" class="maze-avatar-canvas"></canvas>
   </div>
@@ -23,19 +22,24 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { uiState, getGameState } from '../logic/UIState';
+import { uiState, getGameState, getGameStateMutable } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
 import { clearCanvas } from '../logic/DrawHex';
-import { bfsMazePath } from '../logic/BFS';
+import { bfsMazePath } from '../logic/MazeBFS';
 import { pixelToAxial } from '../logic/HexMath';
+import { axialToIndex } from '../logic/Research';
 import { CmdMazeMoveTo, CmdMazePlaceNexusItem } from '../logic/input/InputCommands';
-import { renderMazeTerrainLayer, renderMazeFurnitureLayer } from '../logic/drawMaze';
+import { renderMazeTerrainLayer, renderMazeFurnitureLayer, renderMazeVisibilityOverlay } from '../logic/drawMaze';
 import { renderMazePathOverlay } from '../logic/drawMazePath';
+import {
+  buildMazeVisibilityHexBoundaryLoops,
+  computeMazeVisibilityFromAxial,
+} from '../logic/MazeVision';
 import { useHexPaneInteraction } from '../logic/pane/useHexPaneInteraction';
 import { useHoverPathTransition } from '../logic/pane/useHoverPathTransition';
 import { useMazeAvatar } from '../logic/pane/useMazeAvatar';
 import { useMazeMoveAnimation } from '../logic/pane/useMazeMoveAnimation';
-import { useMazeResourceEffects } from '../logic/pane/useMazeResourceEffects';
+import useMazeResourceEffects from '../logic/pane/useMazeResourceEffects';
 import { useMazeResourceHighlights } from '../logic/pane/useMazeResourceHighlights';
 import { renderMazeNexusPlacementPreview } from '../logic/pane/drawMazeNexusPlacementPreview';
 import { useMazeNexusDragPreview } from '../logic/pane/useMazeNexusDragPreview';
@@ -49,7 +53,6 @@ const baseCanvas = ref<HTMLCanvasElement | null>(null);
 const furnitureCanvas = ref<HTMLCanvasElement | null>(null);
 const pathCanvas = ref<HTMLCanvasElement | null>(null);
 const avatarCanvas = ref<HTMLCanvasElement | null>(null);
-const refresherEffectsCanvas = ref<HTMLCanvasElement | null>(null);
 const effectsCanvas = ref<HTMLCanvasElement | null>(null);
 
 const emit = defineEmits<{
@@ -64,14 +67,14 @@ const props = defineProps<{
 }>();
 
 const HEX_SIZE = 18;
-const CELL_SIZE = HEX_SIZE * 1;
-const CELL_FILL_SIZE = CELL_SIZE + 0.6;
 const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 3;
 const AVATAR_CANVAS_SIZE = 96;
 const AVATAR_MOVE_SPEED = 16; // cells per second
 const AVATAR_TURN_SPEED = 12; // radians per second
 const HOVER_PATH_TRANSITION_SPEED = 60; // cells per second
+const FREE_MOVE_PANEL_ID = 'free_move_panel';
+const DRAW_ALL_VISIBILITY_DEBUG_POLYGONS = false;
 
 const canvasWidth = ref(0);
 const canvasHeight = ref(0);
@@ -130,8 +133,7 @@ const {
   clearVisualRefreshMask,
   dispose: disposeResourceEffects,
 } = useMazeResourceEffects({
-  pickupCanvas: effectsCanvas,
-  refresherCanvas: refresherEffectsCanvas,
+  effectsCanvas,
   zoom,
   offset,
   hexSize: HEX_SIZE,
@@ -215,7 +217,7 @@ const {
   queuePlaceNexusItem: (target, nexusItemId) => {
     globalInputQueue.push(new CmdMazePlaceNexusItem({ target, nexusItemId }));
   },
-  onPreviewChanged: renderPath,
+  onPreviewChanged: onDragPreviewChanged,
   onPlacementCommitted: scheduleFurnitureRender,
 });
 
@@ -237,8 +239,65 @@ function syncViewportDependentRendering(): void {
   emitResourceSignals();
 }
 
+function isHoveringPlacedDoubleVisionPanel(axial: Point2 | null): boolean {
+  if (!axial) return false;
+  const idx = axialToIndex(axial.x, axial.y);
+  if (idx === -1) return false;
+  const gs = getGameState();
+  return gs.researchCells[idx]!.nexusId === FREE_MOVE_PANEL_ID;
+}
+
+function getVisibilityPreviewOriginCell(): Point2 | null {
+  if (
+    dragNexusItemId.value === FREE_MOVE_PANEL_ID
+    && dragNexusValid.value
+    && dragNexusAxial.value !== null
+  ) {
+    return dragNexusAxial.value;
+  }
+
+  const hoverCell = hoverAxial.value;
+  if (isHoveringPlacedDoubleVisionPanel(hoverCell)) {
+    return hoverCell;
+  }
+
+  return null;
+}
+
+function getMazeVisibilityRuntime() {
+  const runtime = getGameStateMutable().mazeVisibility.runtime;
+  if (runtime === null) {
+    throw new Error('Maze visibility runtime is not initialized by gameplay.');
+  }
+  return runtime;
+}
+
+function recomputeHoverVisibility(): void {
+  const mazeVisibility = getGameStateMutable().mazeVisibility;
+  mazeVisibility.result = null;
+  mazeVisibility.boundaryLoops = null;
+  const originCell = getVisibilityPreviewOriginCell();
+  if (originCell === null) {
+    return;
+  }
+
+  const runtime = getMazeVisibilityRuntime();
+  mazeVisibility.result = computeMazeVisibilityFromAxial(
+    runtime,
+    originCell.x,
+    originCell.y,
+  );
+  mazeVisibility.boundaryLoops = buildMazeVisibilityHexBoundaryLoops(runtime.aux, mazeVisibility.result);
+}
+
+function onDragPreviewChanged(): void {
+  recomputeHoverVisibility();
+  renderPath();
+}
+
 onMounted(() => {
   setupCanvases();
+  getMazeVisibilityRuntime();
   drawAvatar();
   scheduleTerrainRender();
   scheduleFurnitureRender();
@@ -287,6 +346,8 @@ watch(
   () => {
     pendingAvatarCell.value = null;
     clearVisualRefreshMask();
+    recomputeHoverVisibility();
+    scheduleTerrainRender();
     scheduleFurnitureRender();
     updateAvatarPosition();
     emitHoverSignals();
@@ -297,6 +358,8 @@ watch(
   () => uiState.mazeMovementUsed,
   () => {
     pendingAvatarCell.value = null;
+    recomputeHoverVisibility();
+    renderPath();
     emitHoverSignals();
   }
 );
@@ -329,7 +392,7 @@ function setupCanvases(): void {
   canvasWidth.value = width;
   canvasHeight.value = height;
 
-  for (const c of [baseCanvas.value, furnitureCanvas.value, pathCanvas.value, refresherEffectsCanvas.value, effectsCanvas.value]) {
+  for (const c of [baseCanvas.value, furnitureCanvas.value, pathCanvas.value, effectsCanvas.value]) {
     if (!c) continue;
     c.width = width;
     c.height = height;
@@ -372,7 +435,6 @@ function renderTerrain(): void {
     gs,
     o,
     HEX_SIZE,
-    CELL_FILL_SIZE,
   );
 }
 
@@ -416,13 +478,24 @@ function renderPath(): void {
   const hp = displayedHoverPath.value;
   const previewAxial = dragNexusAxial.value;
   const previewItemId = dragNexusItemId.value;
-  if (hp.length === 0 && !previewAxial) return;
+  const gs = getGameState();
+  const mazeVisibility = gs.mazeVisibility;
+  const hasDebugPolygons = DRAW_ALL_VISIBILITY_DEBUG_POLYGONS && mazeVisibility.result?.debugPolygons != null;
+  if (hp.length === 0 && !previewAxial && mazeVisibility.boundaryLoops === null && !hasDebugPolygons) return;
 
   const z = zoom.value;
   const off = offset.value;
   ctx.setTransform(z, 0, 0, z, off.x, off.y);
 
-  const gs = getGameState();
+  renderMazeVisibilityOverlay(
+    ctx,
+    origin.value,
+    HEX_SIZE,
+    mazeVisibility.boundaryLoops,
+    null,
+    DRAW_ALL_VISIBILITY_DEBUG_POLYGONS ? (mazeVisibility.result?.debugPolygons ?? null) : null,
+  );
+
   if (hp.length > 0) {
     const from = getQueuedAvatarCell();
     const remaining = Math.max(0, gs.timeFlux - getQueuedMovementUsed());
@@ -442,10 +515,12 @@ function renderPath(): void {
 }
 
 function onHoverChanged(axial: Point2 | null): void {
+  recomputeHoverVisibility();
   scheduleFurnitureRender();
 
   if (!axial) {
     queueHoverPathTransition([]);
+    renderPath();
     overlaySignals.emitHoverResourceHint(null);
     overlaySignals.emitHoverPathCost(null);
     overlaySignals.emitEntranceHover(null);
@@ -456,6 +531,7 @@ function onHoverChanged(axial: Point2 | null): void {
   const from = getQueuedAvatarCell();
   const result = bfsMazePath(gs, from, axial);
   queueHoverPathTransition(result.reachable ? result.path : []);
+  renderPath();
   ensureIdleFacingLoop();
   overlaySignals.emitHoverResourceHint(axial);
   overlaySignals.emitHoverPathCostValue(result.reachable ? result.cost : 0);

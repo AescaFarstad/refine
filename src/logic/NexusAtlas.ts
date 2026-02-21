@@ -49,7 +49,13 @@ export async function ensureNexusAtlas(): Promise<void> {
 
     for (const [id, def] of items) {
       const cells = def.placableInstanceDescription.cells;
-      const canvas = createNexusPreviewCanvas(cells, PREVIEW_SIZE, def.placableInstanceDescription.image, def.glyph);
+      const canvas = createNexusPreviewCanvas(
+        cells,
+        PREVIEW_SIZE,
+        def.placableInstanceDescription.image,
+        def.glyph,
+        def.placableInstanceDescription.glyphPlacement,
+      );
       if (canvas) {
         packed.push({
           key: `nexus:${id}`,

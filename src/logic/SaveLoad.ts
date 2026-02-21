@@ -48,6 +48,7 @@ function saveReplacer(key: string, value: unknown): unknown {
   if (key === "discoveryCounter") return undefined;
   // Maze transient + derived (not persisted)
   if (key === "maze") return undefined;
+  if (key === "mazeVisibility") return undefined;
   if (key === "mazeResourceSpawns") return undefined;
 
   if (key === "random" && value instanceof SeededRandom) {

@@ -56,7 +56,7 @@ function preprocessConcaveLoop(loop: readonly Point2[], blendK: number, blendNu:
 
 export function traceSmoothHexBoundary(
   ctx: CanvasRenderingContext2D,
-  loops: readonly Point2[][],
+  loops: readonly (readonly Point2[])[],
   origin: Point2,
   scale: number,
   offset: Point2 = { x: 0, y: 0 },

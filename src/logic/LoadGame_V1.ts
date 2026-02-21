@@ -221,7 +221,7 @@ function rehydrateGameState(input: AnonymousObject): GameState | false {
   const mutableGameState = gameState as unknown as AnonymousObject;
 
   for (const [k, v] of Object.entries(input)) {
-    if (k === "lib" || k === "version" || k === "researchCells" || k === RESEARCH_OWNED_CELLS_KEY || k === RESEARCH_NEXUS_IDS_KEY || k === "wafer" || k === "maze" || k === "rawRaidLib") continue;
+    if (k === "lib" || k === "version" || k === "researchCells" || k === RESEARCH_OWNED_CELLS_KEY || k === RESEARCH_NEXUS_IDS_KEY || k === "wafer" || k === "maze" || k === "mazeVisibility" || k === "rawRaidLib") continue;
     mutableGameState[k] = v;
   }
   gameState.discoveryCounter = 0;

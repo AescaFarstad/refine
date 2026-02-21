@@ -82,6 +82,10 @@ february 15
   Cave Maze rendering, resources, pick-up, nexus
 february 18
   nexus bonus logic, animations, refactoring
+february 19
+  maze visibility
+february 21
+  maze visuals, refactoring, nexus upgrades
 
 npx tsc --noEmit
 npx vue-tsc --noEmit
@@ -219,22 +223,10 @@ next 5 resources double their value
 get 1 credit for each timeflux spent on this trip by this point
 double all visible resources
 
-Create NexusLib.ts and nexus.ts for raw data. Their structure similar to the other libs. They will represent options available in maze nexus.
-
-items have:
-  name:string
-  description:string
-  price:number
-  price increase:number = 0
-  max count:number = -1 //meaning infinite
-  travelPriceIncrease
-  placableInstanceDescription{
-    passable:bool
-    cells Point2[]
-    image:string
-  }
 
 
 
 
 Enlarge maze around bonuses and resources
+
+movement in the visible area is free

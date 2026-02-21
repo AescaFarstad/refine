@@ -113,7 +113,7 @@ function createDefaultUIState() {
     hasEverHadShards: false,
 
     cheatOpen: false,
-    devAtlasKey: '' as '' | 'items' | 'locations' | 'molecules',
+    devAtlasKey: '' as '' | 'items' | 'locations' | 'molecules' | 'nexus',
     devMoleculeEditorOpen: false,
     editResearchOpen: false,
 

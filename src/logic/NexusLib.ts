@@ -2,8 +2,12 @@ import type { Point2 } from './core/math';
 
 export type PlacableInstanceDescription = {
   passable: boolean;
+  button: boolean;
   cells: Point2[];
   image: string;
+  opacity: number;
+  glyphPlacement: 'perCell' | 'center';
+  showStandardBackground: boolean;
 };
 
 export type NexusItemDefinition = {
@@ -27,7 +31,7 @@ export type RawNexusItemDefinition = Omit<NexusItemDefinition, 'id' | 'priceIncr
   travelPriceIncrease?: number;
   effectRadius?: number;
   limitRadius?: number;
-  placableInstanceDescription?: PlacableInstanceDescription;
+  placableInstanceDescription?: Partial<PlacableInstanceDescription>;
 };
 
 export function parseNexusItemDefinitions(
@@ -36,6 +40,8 @@ export function parseNexusItemDefinitions(
   const result = new Map<string, NexusItemDefinition>();
   for (const [id, def] of Object.entries(raw)) {
     const rawPlacable = def.placableInstanceDescription;
+    const passable = rawPlacable?.passable ?? true;
+    const button = passable ? (rawPlacable?.button ?? true) : false;
     const placementCells = rawPlacable?.cells;
     const normalizedCells = placementCells && placementCells.length > 0
       ? placementCells.map(cell => ({ x: cell.x, y: cell.y }))
@@ -53,9 +59,13 @@ export function parseNexusItemDefinitions(
       limitRadius: def.limitRadius ?? 0,
       glyph: def.glyph ?? '',
       placableInstanceDescription: {
-        passable: rawPlacable?.passable ?? true,
+        passable,
+        button,
         cells: normalizedCells,
         image: rawPlacable?.image ?? '',
+        opacity: rawPlacable?.opacity ?? 1,
+        glyphPlacement: rawPlacable?.glyphPlacement ?? 'perCell',
+        showStandardBackground: rawPlacable?.showStandardBackground ?? button,
       },
     });
   }

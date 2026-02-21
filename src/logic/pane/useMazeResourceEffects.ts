@@ -1,16 +1,42 @@
 import type { Ref, ComputedRef } from 'vue';
+import { axialToPixel } from '../HexMath';
+import { RESOURCE_SPECS } from '../Resources';
 import { resolveMazeRefresherStep } from '../MazeNexusBonuses';
 import { axialToIndex } from '../Research';
 import type { Point2 } from '../ItemLib';
+import type { MazeResourceSpawn } from '../GameState';
 import type { ReadonlyGameState } from '../UIState';
-import { useMazePickupAnimation } from './useMazePickupAnimation';
-import { useMazeRefresherAnimation } from './useMazeRefresherAnimation';
 
 const REFRESHER_DELAY_MS_PER_UNIT = 50; // 0.5 sec / 10 units
 
+const PICKUP_DURATION = 1200; // ms
+const PICKUP_FLOAT_DISTANCE = 32; // pixels (world space)
+const PICKUP_SCALE_START = 1.0;
+const PICKUP_SCALE_END = 1.5;
+const PICKUP_RING_MAX_RADIUS = 20;
+const PICKUP_RING_LINE_WIDTH = 1.5;
+
+const REFRESHER_PULSE_DURATION = 900; // ms
+const REFRESHER_RING_LINE_WIDTH = 2;
+const REFRESHER_COLOR = '56, 189, 248';
+
+interface PickupParticle {
+  wx: number;
+  wy: number;
+  glyph: string;
+  color: string;
+  amount: number;
+  startTime: number;
+}
+
+interface RefresherPulse {
+  wx: number;
+  wy: number;
+  startTime: number;
+}
+
 export interface MazeResourceEffectsOptions {
-  pickupCanvas: Ref<HTMLCanvasElement | null>;
-  refresherCanvas: Ref<HTMLCanvasElement | null>;
+  effectsCanvas: Ref<HTMLCanvasElement | null>;
   zoom: Ref<number>;
   offset: Ref<Point2>;
   hexSize: number;
@@ -49,27 +75,185 @@ function removeCell(cells: Point2[], target: Point2): void {
   }
 }
 
+function easeOutCubic(t: number): number {
+  return 1 - (1 - t) * (1 - t) * (1 - t);
+}
+
 export function useMazeResourceEffects(
   options: MazeResourceEffectsOptions,
 ): MazeResourceEffectsController {
   const pendingVisualTakenCellKeys = new Set<string>();
   const pendingRevealTimeoutIds = new Map<string, number>();
 
-  const pickupAnimation = useMazePickupAnimation({
-    effectsCanvas: options.pickupCanvas,
-    zoom: options.zoom,
-    offset: options.offset,
-    hexSize: options.hexSize,
-    origin: options.origin,
-  });
+  const pickupParticles: PickupParticle[] = [];
+  const refresherPulses: RefresherPulse[] = [];
+  let effectsRafId: number | null = null;
 
-  const refresherAnimation = useMazeRefresherAnimation({
-    effectsCanvas: options.refresherCanvas,
-    zoom: options.zoom,
-    offset: options.offset,
-    hexSize: options.hexSize,
-    origin: options.origin,
-  });
+  function ensureEffectsLoop(): void {
+    if (effectsRafId !== null) return;
+    effectsRafId = requestAnimationFrame(tickEffects);
+  }
+
+  function spawnPickupAt(cell: Point2, spawn: MazeResourceSpawn, delayMs: number = 0): void {
+    const pixel = axialToPixel(cell, options.hexSize, options.origin.value);
+    const spec = RESOURCE_SPECS[spawn.resourceKey];
+    pickupParticles.push({
+      wx: pixel.x,
+      wy: pixel.y,
+      glyph: spec.glyph,
+      color: spec.color,
+      amount: spawn.amount,
+      startTime: performance.now() + delayMs,
+    });
+    ensureEffectsLoop();
+  }
+
+  function spawnRefresherAt(cell: Point2, delayMs: number = 0): void {
+    const pixel = axialToPixel(cell, options.hexSize, options.origin.value);
+    refresherPulses.push({
+      wx: pixel.x,
+      wy: pixel.y,
+      startTime: performance.now() + delayMs,
+    });
+    ensureEffectsLoop();
+  }
+
+  function clearEffectsCanvas(): void {
+    const c = options.effectsCanvas.value;
+    if (!c) return;
+    const ctx = c.getContext('2d');
+    if (!ctx) return;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, c.width, c.height);
+  }
+
+  function renderRefresherPulses(ctx: CanvasRenderingContext2D, now: number, z: number, off: Point2): void {
+    const baseRadius = options.hexSize * z;
+
+    for (const pulse of refresherPulses) {
+      const elapsed = now - pulse.startTime;
+      if (elapsed < 0) continue;
+
+      const t = Math.min(1, elapsed / REFRESHER_PULSE_DURATION);
+      const ease = easeOutCubic(t);
+      const sx = off.x + pulse.wx * z;
+      const sy = off.y + pulse.wy * z;
+
+      const ringRadius = baseRadius * (0.5 + (1.8 * ease));
+      const ringAlpha = (1 - t) * 0.7;
+      const flashRadius = baseRadius * (1.4 - (0.8 * ease));
+      const flashAlpha = (1 - t) * (1 - t) * 0.45;
+
+      ctx.save();
+      const flash = ctx.createRadialGradient(sx, sy, 0, sx, sy, flashRadius);
+      flash.addColorStop(0, `rgba(${REFRESHER_COLOR}, ${flashAlpha})`);
+      flash.addColorStop(0.6, `rgba(${REFRESHER_COLOR}, ${flashAlpha * 0.35})`);
+      flash.addColorStop(1, `rgba(${REFRESHER_COLOR}, 0)`);
+      ctx.beginPath();
+      ctx.arc(sx, sy, flashRadius, 0, Math.PI * 2);
+      ctx.fillStyle = flash;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(sx, sy, ringRadius, 0, Math.PI * 2);
+      ctx.lineWidth = REFRESHER_RING_LINE_WIDTH * z;
+      ctx.strokeStyle = `rgba(${REFRESHER_COLOR}, ${ringAlpha})`;
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function renderPickupParticles(ctx: CanvasRenderingContext2D, now: number, z: number, off: Point2): void {
+    for (const p of pickupParticles) {
+      const elapsed = now - p.startTime;
+      if (elapsed < 0) continue;
+
+      const t = Math.min(1, elapsed / PICKUP_DURATION);
+      const ease = easeOutCubic(t);
+
+      const alpha = 1 - t;
+      const scale = PICKUP_SCALE_START + (PICKUP_SCALE_END - PICKUP_SCALE_START) * ease;
+      const floatY = -PICKUP_FLOAT_DISTANCE * ease;
+
+      const nodeSx = off.x + p.wx * z;
+      const nodeSy = off.y + p.wy * z;
+
+      const ringProgress = Math.min(1, t * 2.5);
+      if (ringProgress < 1) {
+        const ringAlpha = (1 - ringProgress) * 0.6;
+        const ringRadius = PICKUP_RING_MAX_RADIUS * easeOutCubic(ringProgress) * z;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(nodeSx, nodeSy, ringRadius, 0, Math.PI * 2);
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = PICKUP_RING_LINE_WIDTH * z;
+        ctx.globalAlpha = ringAlpha;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      const sx = nodeSx;
+      const sy = nodeSy + floatY * z;
+
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.scale(z * scale, z * scale);
+      ctx.globalAlpha = alpha;
+
+      const glyphSize = 14;
+      ctx.font = `bold ${glyphSize}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = p.color;
+      ctx.fillText(p.glyph, 0, 0);
+
+      const amountText = `+${p.amount}`;
+      ctx.font = `bold ${glyphSize * 0.7}px sans-serif`;
+      ctx.fillText(amountText, glyphSize * 0.9, 0);
+
+      ctx.restore();
+    }
+  }
+
+  function renderEffects(now: number): void {
+    const c = options.effectsCanvas.value;
+    if (!c) return;
+    const ctx = c.getContext('2d');
+    if (!ctx) return;
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, c.width, c.height);
+
+    const z = options.zoom.value;
+    const off = options.offset.value;
+
+    renderRefresherPulses(ctx, now, z, off);
+    renderPickupParticles(ctx, now, z, off);
+  }
+
+  function tickEffects(now: number): void {
+    effectsRafId = null;
+
+    for (let i = pickupParticles.length - 1; i >= 0; i--) {
+      if (now - pickupParticles[i]!.startTime > PICKUP_DURATION) {
+        pickupParticles.splice(i, 1);
+      }
+    }
+
+    for (let i = refresherPulses.length - 1; i >= 0; i--) {
+      if (now - refresherPulses[i]!.startTime > REFRESHER_PULSE_DURATION) {
+        refresherPulses.splice(i, 1);
+      }
+    }
+
+    if (pickupParticles.length === 0 && refresherPulses.length === 0) {
+      clearEffectsCanvas();
+      return;
+    }
+
+    renderEffects(now);
+    effectsRafId = requestAnimationFrame(tickEffects);
+  }
 
   function clearPendingReveal(cellKey: string): void {
     const existingTimeoutId = pendingRevealTimeoutIds.get(cellKey);
@@ -118,7 +302,7 @@ export function useMazeResourceEffects(
       const refreshedSpawns = resolveMazeRefresherStep(gs, steppedCell, simulatedTaken);
       for (const refreshed of refreshedSpawns) {
         const delayMs = refreshed.distanceUnit * REFRESHER_DELAY_MS_PER_UNIT;
-        refresherAnimation.spawnAt(refreshed.spawnCell, delayMs);
+        spawnRefresherAt(refreshed.spawnCell, delayMs);
         setVisualRefreshMask(toCellKey(refreshed.spawnCell), delayMs);
         removeCell(simulatedTaken, refreshed.spawnCell);
       }
@@ -142,7 +326,7 @@ export function useMazeResourceEffects(
       s => s.cell.x === targetCell.x && s.cell.y === targetCell.y,
     );
     if (spawn) {
-      pickupAnimation.spawnAt(targetCell, spawn);
+      spawnPickupAt(targetCell, spawn);
     }
   }
 
@@ -163,8 +347,13 @@ export function useMazeResourceEffects(
 
   function dispose(): void {
     clearVisualRefreshMask();
-    pickupAnimation.dispose();
-    refresherAnimation.dispose();
+    if (effectsRafId !== null) {
+      cancelAnimationFrame(effectsRafId);
+      effectsRafId = null;
+    }
+    pickupParticles.length = 0;
+    refresherPulses.length = 0;
+    clearEffectsCanvas();
   }
 
   return {
@@ -174,3 +363,5 @@ export function useMazeResourceEffects(
     dispose,
   };
 }
+
+export default useMazeResourceEffects;

@@ -8,6 +8,8 @@ import type { Wafer } from "./Wafer";
 import { createWafer } from "./Wafer";
 import { initResearchCells } from "./Research";
 import { computeMazeResourceSpawns } from "./Maze";
+import type { HexVisionAux } from './HexVisionAux';
+import type { MazeVisibilityResult, MazeVisibilityRuntime } from './MazeVision';
 import gearCategories from "../data/gear_categories";
 import type { RaidEventLog } from './RaidLog';
 import type { RaidMutation, MutationDescription } from './RaidMutation';
@@ -78,6 +80,7 @@ export class GameState {
 
   // Maze — transient (not saved, reset on load)
   public maze: MazeTransient = createMazeTransient();
+  public mazeVisibility: MazeVisibilityState = createMazeVisibilityState();
 
   // Maze — derived (computed on load + research purchase)
   public mazeResourceSpawns: MazeResourceSpawn[] = [];
@@ -269,6 +272,13 @@ export interface MazeTransient {
   version: number;
 }
 
+export interface MazeVisibilityState {
+  aux: HexVisionAux | null;
+  runtime: MazeVisibilityRuntime | null;
+  result: MazeVisibilityResult | null;
+  boundaryLoops: Point2[][] | null;
+}
+
 export function createMazeTransient(avatarCell: Point2 = { x: 0, y: 0 }): MazeTransient {
   return {
     avatarCell: { x: avatarCell.x, y: avatarCell.y },
@@ -281,12 +291,22 @@ export function createMazeTransient(avatarCell: Point2 = { x: 0, y: 0 }): MazeTr
   };
 }
 
+export function createMazeVisibilityState(): MazeVisibilityState {
+  return {
+    aux: null,
+    runtime: null,
+    result: null,
+    boundaryLoops: null,
+  };
+}
+
 export interface ResearchCell {
   nodeId: number;
   archetypeId: string;
   nexusId: string;
   nexusPlacementId: number;
   passable: boolean;
+  mazeMoveCostMult: number; // derived: movement cost to enter this cell (0 or 1)
   revealed: boolean;
   owned: boolean;
   cost: number;

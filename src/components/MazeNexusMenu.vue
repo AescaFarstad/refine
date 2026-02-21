@@ -83,6 +83,7 @@ function isPassable(item: NexusItemDefinition): boolean {
 function onItemPointerDown(item: NexusItemDefinition, event: PointerEvent): void {
   if (event.button !== 0) return;
   event.preventDefault();
+  if (!canAfford(item.id)) return;
   startMazeManualDrag(item, event);
 }
 </script>
@@ -146,14 +147,28 @@ function onItemPointerDown(item: NexusItemDefinition, event: PointerEvent): void
   transition: none;
 }
 
-.nexus-item.cannot-afford:hover .nexus-item-price {
-  animation: flash-red 0.4s ease;
+.nexus-item.cannot-afford {
+  cursor: not-allowed;
+}
+
+.nexus-item.cannot-afford:active {
+  cursor: not-allowed;
+  transform: none;
+}
+
+.nexus-item.cannot-afford:hover .nexus-item-price-area {
+  animation: flash-red 0.5s ease-in-out infinite;
 }
 
 @keyframes flash-red {
-  0% { color: #48bb78; }
-  40% { color: #f56565; }
-  100% { color: #48bb78; }
+  0%, 100% {
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: none;
+  }
+  50% {
+    background: rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+  }
 }
 
 .nexus-item-preview {
@@ -193,6 +208,10 @@ function onItemPointerDown(item: NexusItemDefinition, event: PointerEvent): void
   font-size: 20px;
   font-weight: 600;
   color: #48bb78;
+}
+
+.nexus-item.cannot-afford .nexus-item-price {
+  color: #ef4444;
 }
 
 .nexus-item-price-glyph {

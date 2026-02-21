@@ -507,6 +507,8 @@ handlersByName.set('CmdMazePlaceNexusItem', (gs, cmd) => {
   if (!placed) {
     return;
   }
+  gs.maze.version++;
+  uiState.mazeVersion = gs.maze.version;
   saveAutosave(gs);
 });
 

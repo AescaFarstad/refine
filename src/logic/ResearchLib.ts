@@ -72,7 +72,7 @@ export interface ResearchNodeInstance {
   nodeId: number;
   archetypeId: string;
   cells: Point2[];
-  centerCell: Point2;
+  centerCell?: Point2;
   initiallyOwned: boolean;
 }
 
@@ -111,38 +111,6 @@ function generateRadiusCells(centers: Point2[], radius: number): Point2[] {
   }
 
   return result;
-}
-
-function computeNodeCenterCell(cells: Point2[], inputCenterCell: Point2 | undefined): Point2 {
-  if (inputCenterCell) {
-    return copy(inputCenterCell);
-  }
-  if (cells.length === 1) {
-    return copy(cells[0]!);
-  }
-
-  let sumX = 0;
-  let sumY = 0;
-  for (const cell of cells) {
-    sumX += cell.x;
-    sumY += cell.y;
-  }
-  const avgX = sumX / cells.length;
-  const avgY = sumY / cells.length;
-
-  let bestCell = cells[0]!;
-  let bestDist = Infinity;
-  for (const cell of cells) {
-    const dx = cell.x - avgX;
-    const dy = cell.y - avgY;
-    const dist = dx * dx + dy * dy;
-    if (dist < bestDist) {
-      bestDist = dist;
-      bestCell = cell;
-    }
-  }
-
-  return copy(bestCell);
 }
 
 export class ResearchLib {
@@ -215,14 +183,20 @@ export class ResearchLib {
 
     placements.forEach((input) => {
       const baseCells = Array.isArray(input.cells) ? input.cells : [input.cells];
-      const cells = typeof input.radius === 'number'
-        ? generateRadiusCells(baseCells, input.radius)
+      const hasRadius = typeof input.radius === 'number';
+      const cells = hasRadius
+        ? generateRadiusCells(baseCells, input.radius ?? 0)
         : baseCells;
+      const centerCell = input.centerCell
+        ? copy(input.centerCell)
+        : hasRadius
+          ? copy(baseCells[0]!)
+          : undefined;
       const instance: ResearchNodeInstance = {
         nodeId: nodeIndex++,
         archetypeId: input.archetypeId,
         cells: cells,
-        centerCell: computeNodeCenterCell(cells, input.centerCell),
+        centerCell,
         initiallyOwned: input.initiallyOwned ?? false,
       };
 
@@ -239,7 +213,6 @@ export class ResearchLib {
           nodeId: nodeIndex++,
           archetypeId,
           cells: [{ x: p.x, y: p.y }],
-          centerCell: { x: p.x, y: p.y },
           initiallyOwned: false,
         };
 

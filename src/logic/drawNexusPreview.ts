@@ -2,7 +2,7 @@ import type { Point2 } from './ItemLib';
 import { axialToPixel } from './HexMath';
 import { computeHexBoundary } from './hexBoundary';
 import { traceSmoothHexBoundary } from './drawSmoothBoundary';
-import atlasStorage from './AtlasStorage';
+import { drawNexusItemVisuals, type NexusGlyphPlacement, type NexusVisualCell } from './drawNexusItemVisuals';
 
 const FILL_COLOR_TOP = 'rgb(34, 68, 74)';
 const FILL_COLOR_MID = 'rgb(44, 84, 88)';
@@ -16,6 +16,7 @@ export function createNexusPreviewCanvas(
   size: number,
   imageKey: string,
   glyph: string,
+  glyphPlacement: NexusGlyphPlacement,
 ): HTMLCanvasElement | null {
   const loops = computeHexBoundary(cells as Point2[]);
   if (loops.length === 0) return null;
@@ -80,38 +81,36 @@ export function createNexusPreviewCanvas(
   ctx.stroke();
   ctx.restore();
 
-  // Draw icon/glyph on each cell, matching maze rendering
   const glyphSize = Math.max(8, hexSize * 1.05);
+  let centerPixel: Point2 = { x: 0, y: 0 };
+  const visualCells: NexusVisualCell[] = [];
   for (const cell of cells) {
     const pixel = axialToPixel(cell, hexSize, origin);
-
-    if (imageKey) {
-      const frame = atlasStorage.getItemsFrame(imageKey);
-      if (frame) {
-        const source = atlasStorage.getItemsSource();
-        const iconMaxSize = hexSize * 1.2;
-        const scale = Math.min(iconMaxSize / frame.w, iconMaxSize / frame.h);
-        const drawW = frame.w * scale;
-        const drawH = frame.h * scale;
-        ctx.drawImage(
-          source,
-          frame.x, frame.y, frame.w, frame.h,
-          pixel.x - drawW / 2, pixel.y - drawH / 2, drawW, drawH,
-        );
-        continue;
-      }
-    }
-
-    if (glyph) {
-      ctx.save();
-      ctx.font = `bold ${glyphSize}px sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = ITEM_COLOR;
-      ctx.fillText(glyph, pixel.x, pixel.y + 1);
-      ctx.restore();
-    }
+    centerPixel.x += pixel.x;
+    centerPixel.y += pixel.y;
+    visualCells.push({
+      pixel,
+      glyphColor: ITEM_COLOR,
+      imageOpacityMul: 1,
+      glyphOpacityMul: 1,
+    });
   }
+  centerPixel.x /= cells.length;
+  centerPixel.y /= cells.length;
+
+  drawNexusItemVisuals({
+    ctx,
+    cells: visualCells,
+    centerPixel,
+    imageKey,
+    iconMaxSize: hexSize * 1.2,
+    glyphText: glyph,
+    glyphSize,
+    glyphPlacement,
+    opacity: 1,
+    centerGlyphColor: ITEM_COLOR,
+    centerGlyphOpacityMul: 1,
+  });
 
   return canvas;
 }

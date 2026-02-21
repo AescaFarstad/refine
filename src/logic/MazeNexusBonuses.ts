@@ -5,6 +5,7 @@ import { axialToIndex, indexToAxial } from './Research';
 import type { ReadonlyGameState } from './UIState';
 
 const DOUBLER_PANEL_ID = 'doubler_panel';
+const PLUS_ONE_PANEL_ID = 'plus_one_panel';
 const REFRESHER_PANEL_ID = 'refresher_panel';
 
 type MazeNexusPlacement = {
@@ -177,6 +178,14 @@ export function hasMazeNexusLimitRadiusConflict(
 
 export function applyMazeDoublerBonusesToSpawns(gs: ReadonlyGameState, spawns: MazeResourceSpawn[]): void {
   const placementsById = getMazeNexusPlacements(gs);
+
+  for (const placement of placementsById.values()) {
+    if (placement.itemId !== PLUS_ONE_PANEL_ID) continue;
+    for (let i = 0; i < spawns.length; i++) {
+      spawns[i]!.amount += 1;
+    }
+  }
+
   for (const placement of placementsById.values()) {
     if (placement.itemId !== DOUBLER_PANEL_ID) continue;
     const def = gs.lib.nexusItems.get(placement.itemId)!;

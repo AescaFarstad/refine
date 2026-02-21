@@ -531,14 +531,23 @@ function solidPillBackground(hexColor: string): string {
   pointer-events: none;
 }
 
+@keyframes bannerEnter {
+  0%   { transform: translateY(32px); opacity: 0; }
+  55%  { transform: translateY(-8px); opacity: 1; }
+  75%  { transform: translateY(4px);  opacity: 1; }
+  100% { transform: translateY(0);    opacity: 1; }
+}
+
 .reset-banner {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 12px 28px;
+  padding: 14px 34px;
   margin-top: 4px;
   opacity: 1;
+  background: rgb(23, 33, 47);
   transition: opacity 600ms ease;
+  animation: bannerEnter 0.5s ease-out;
 }
 
 .reset-banner.banner-fading {
@@ -546,7 +555,7 @@ function solidPillBackground(hexColor: string): string {
 }
 
 .reset-headline {
-  font-size: 32px;
+  font-size: 38px;
   font-weight: 800;
   letter-spacing: 0.04em;
 }
@@ -560,7 +569,7 @@ function solidPillBackground(hexColor: string): string {
 }
 
 .reset-subtitle {
-  font-size: 14px;
+  font-size: 17px;
   color: rgba(226, 232, 240, 0.55);
   margin-top: 2px;
 }

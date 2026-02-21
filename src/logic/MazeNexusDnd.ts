@@ -110,6 +110,26 @@ function createFollower(item: NexusItemDefinition): boolean {
   wrap.style.placeItems = 'center';
   wrap.style.transform = 'translate(-9999px, -9999px)';
 
+  const nexusFrame = atlasStorage.getNexusFrame(`nexus:${item.id}`);
+  if (nexusFrame) {
+    const source = atlasStorage.getNexusSource();
+    const canvas = document.createElement('canvas');
+    const dpr = Math.max(2, window.devicePixelRatio || 1);
+    canvas.width = FOLLOWER_SIZE * dpr;
+    canvas.height = FOLLOWER_SIZE * dpr;
+    canvas.style.width = `${FOLLOWER_SIZE}px`;
+    canvas.style.height = `${FOLLOWER_SIZE}px`;
+
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(
+        source,
+        nexusFrame.x, nexusFrame.y, nexusFrame.w, nexusFrame.h,
+        0, 0, FOLLOWER_SIZE * dpr, FOLLOWER_SIZE * dpr,
+      );
+      wrap.appendChild(canvas);
+    }
+  } else {
   const imageKey = item.placableInstanceDescription?.image;
   if (imageKey) {
     const frame = atlasStorage.getItemsFrame(imageKey);
@@ -155,6 +175,7 @@ function createFollower(item: NexusItemDefinition): boolean {
     glyph.style.color = 'rgba(248, 250, 252, 0.96)';
     glyph.style.textShadow = '0 2px 4px rgba(0,0,0,0.5)';
     wrap.appendChild(glyph);
+  }
   }
 
   document.body.appendChild(wrap);

@@ -1,5 +1,5 @@
 import type { Ref, ComputedRef } from 'vue';
-import { bfsMazePath } from '../BFS';
+import { bfsMazePath } from '../MazeBFS';
 import { axialToPixel } from '../HexMath';
 import type { Point2 } from '../ItemLib';
 import { isMazeEntranceCell } from '../Maze';

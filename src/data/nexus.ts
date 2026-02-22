@@ -127,6 +127,35 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
       imagePlacement: 'center',
     },
   },
+  antivoid_panel: {
+    name: 'Anti-Void Block',
+    description: 'Fills void gaps in its radius.',
+    effectRadius: 4,
+    price: 100,
+    priceIncrease: [10],
+    placableInstanceDescription: {
+      rotating: true,
+      passable: false,
+      button: false,
+      cells: [{ x: -1, y: 0 }, { x: 0, y: 0 }, { x: 1, y: 0 }],
+      glyph: '⬡',
+      glyphScale: 1.5,
+      glyphPlacement: 'center',
+    },
+  },
+  crystal_panel: {
+    name: 'Crystal Panel',
+    description: 'Spawns a crystal resource.',
+    price: 100,
+    priceIncrease: [10],
+    placableInstanceDescription: {
+      passable: true,
+      cells: [{ x: -1, y: 0 }, { x: 0, y: 0 }, { x: 1, y: 0 }],
+      image:'quartz',
+      imageScale: 1.5,
+      imagePlacement: 'center',
+    },
+  },
 
 };
 

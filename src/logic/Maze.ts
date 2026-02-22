@@ -3,12 +3,13 @@ import type { GameState, MazeResourceSpawn } from './GameState';
 import { createMazeTransient } from './GameState';
 import type { ResearchLib } from './ResearchLib';
 import { axialDistance } from './HexMath';
-import { axialToIndex } from './Research';
+import { axialToIndex, calculateVisibility } from './Research';
 import { bfsMazePath } from './MazeBFS';
 import type { ReadonlyGameState } from './UIState';
 import { createMazeVisionAux } from './createMazeVisionAux';
 import { computeMazeVisibilityFromIndex, createMazeVisibilityRuntime } from './MazeVision';
 import {
+  applyMazeAntiVoidBonuses,
   applyMazeNexusPanelPurchase,
   applyMazeDoublerBonusesToSpawns,
   applyMazeRefresherBonusOnStep,
@@ -139,6 +140,10 @@ export function computeMazeCellDerivedData(gs: GameState): void {
 }
 
 export function computeMazeResourceSpawns(gs: GameState, lib: ResearchLib): void {
+  if (applyMazeAntiVoidBonuses(gs)) {
+    calculateVisibility(gs, lib);
+  }
+
   rebuildMazeVisibilityState(gs);
   computeMazeCellDerivedData(gs);
 

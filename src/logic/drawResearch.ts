@@ -16,6 +16,7 @@ const RESEARCH_COLOR_OWNED_BG = 'rgb(50, 140, 80)';
 const RESEARCH_COLOR_UNOWNED_BG = 'rgb(35, 45, 70)';
 const RESEARCH_COLOR_SPECIAL_OVERT_UNOWNED_BG = 'rgb(140, 110, 25)'; // yellowish for special nodes
 const RESEARCH_COLOR_OBSTACLE_MARKER = '#444f60';
+const RESEARCH_COLOR_OBSTACLE_MARKER_ANTIVOID = '#2b3445';
 
 interface StatIconSpec {
   offsetX: number;
@@ -76,6 +77,7 @@ export interface ResearchCellInfo {
   owned: boolean;
   archetypeId: string;
   nodeId: number;
+  filledByAntiVoid: boolean;
   centerCell?: Point2;
 }
 
@@ -114,6 +116,7 @@ export function renderResearchBaseLayer(
       owned: cell.owned,
       archetypeId: cell.archetypeId,
       nodeId: cell.nodeId,
+      filledByAntiVoid: cell.filledByAntiVoid,
       centerCell: nodeInstance?.centerCell,
     };
 
@@ -342,9 +345,11 @@ function drawNodeOverlay(
   const radius = hexSize * 0.75;
 
   ctx.save();
-  ctx.fillStyle = RESEARCH_COLOR_OBSTACLE_MARKER; // gray circle
 
   for (const info of cells) {
+    ctx.fillStyle = info.filledByAntiVoid
+      ? RESEARCH_COLOR_OBSTACLE_MARKER_ANTIVOID
+      : RESEARCH_COLOR_OBSTACLE_MARKER;
     const p = axialToPixel(info.axial, hexSize, origin);
     ctx.beginPath();
     ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);

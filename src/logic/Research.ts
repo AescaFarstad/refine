@@ -54,7 +54,8 @@ export function initResearchCells(gs: GameState, lib: ResearchLib): void {
       revealed: false,
       owned: false,
       cost: 1,
-      blocked: false
+      blocked: false,
+      filledByAntiVoid: false,
     };
   }
 
@@ -99,7 +100,8 @@ export function initResearchCells(gs: GameState, lib: ResearchLib): void {
         revealed: false,
         owned: isOwned,
         cost: cellCost,
-        blocked: cellBlocked
+        blocked: cellBlocked,
+        filledByAntiVoid: false,
       };
 
       // Track how many paid (obstacle/covert) cells are already owned

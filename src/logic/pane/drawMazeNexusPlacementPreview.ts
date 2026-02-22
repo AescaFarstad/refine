@@ -1,6 +1,7 @@
 import atlasStorage from '../AtlasStorage';
 import { axialToPixel } from '../HexMath';
 import type { Point2 } from '../ItemLib';
+import { axialToIndex } from '../Research';
 import {
   getMazeNexusItemPlacementCells,
   getMazeNexusLimitBlockingDisks,
@@ -15,6 +16,9 @@ import {
   NEXUS_ATLAS_TILE_PADDING,
   NEXUS_ATLAS_TILE_SIZE,
 } from '../NexusPreviewCanvas';
+
+const ANTIVOID_PANEL_ID = 'antivoid_panel';
+const UNIT_ORIGIN: Point2 = { x: 0, y: 0 };
 
 export interface MazeNexusPlacementPreviewRenderOptions {
   gs: ReadonlyGameState;
@@ -60,6 +64,70 @@ function getNexusPreviewDrawSize(
   const previewHexSize = Math.min(available / (rawW || 1), available / (rawH || 1));
   const scale = hexSize / previewHexSize;
   return { w: NEXUS_ATLAS_TILE_SIZE * scale, h: NEXUS_ATLAS_TILE_SIZE * scale };
+}
+
+function traceBoundaryPath(
+  ctx: CanvasRenderingContext2D,
+  loops: readonly (readonly Point2[])[],
+  origin: Point2,
+  hexSize: number,
+): void {
+  ctx.beginPath();
+  for (const loop of loops) {
+    const first = loop[0]!;
+    ctx.moveTo(origin.x + first.x * hexSize, origin.y + first.y * hexSize);
+    for (let i = 1; i < loop.length; i++) {
+      const p = loop[i]!;
+      ctx.lineTo(origin.x + p.x * hexSize, origin.y + p.y * hexSize);
+    }
+    ctx.closePath();
+  }
+}
+
+function getAntiVoidAffectedCells(
+  gs: ReadonlyGameState,
+  anchor: Point2,
+  placementCells: readonly Point2[],
+  effectRadius: number,
+): Point2[] {
+  if (effectRadius <= 0) return [];
+
+  const centroid = getMazeNexusPlacementCentroidUnit(placementCells);
+  const radiusPx = effectRadius * Math.sqrt(3);
+  const radiusPxSq = radiusPx * radiusPx;
+  const hexRadius = Math.max(0, Math.ceil(effectRadius) + 1);
+
+  const affectedCells: Point2[] = [];
+  let hasOwnedNearby = false;
+
+  for (let dx = -hexRadius; dx <= hexRadius; dx++) {
+    const minDy = Math.max(-hexRadius, -dx - hexRadius);
+    const maxDy = Math.min(hexRadius, -dx + hexRadius);
+    for (let dy = minDy; dy <= maxDy; dy++) {
+      const axial = { x: anchor.x + dx, y: anchor.y + dy };
+      const idx = axialToIndex(axial.x, axial.y);
+      if (idx === -1) continue;
+
+      const cell = gs.researchCells[idx]!;
+      if (cell.owned) {
+        hasOwnedNearby = true;
+      }
+
+      const pixel = axialToPixel(axial, 1, UNIT_ORIGIN);
+      const px = pixel.x - centroid.x;
+      const py = pixel.y - centroid.y;
+      if (px * px + py * py > radiusPxSq) continue;
+      if (cell.blocked) {
+        affectedCells.push(axial);
+      }
+    }
+  }
+
+  if (!hasOwnedNearby) {
+    return [];
+  }
+
+  return affectedCells;
 }
 
 export function renderMazeNexusPlacementPreview(
@@ -115,6 +183,21 @@ export function renderMazeNexusPlacementPreview(
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.restore();
+
+    if (nexusItemId === ANTIVOID_PANEL_ID) {
+      const affectedCells = getAntiVoidAffectedCells(gs, anchor, cells, effectRadius);
+      if (affectedCells.length > 0) {
+        const loops = computeHexBoundary(affectedCells).map(loop => loop.points);
+        ctx.save();
+        traceBoundaryPath(ctx, loops, origin, hexSize);
+        ctx.fillStyle = valid ? 'rgba(220, 120, 80, 0.30)' : 'rgba(220, 120, 80, 0.16)';
+        ctx.fill('evenodd');
+        ctx.strokeStyle = valid ? 'rgba(255, 180, 130, 0.9)' : 'rgba(255, 180, 130, 0.5)';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
 
     if (valid) {
       const affectedSpawnIndexes = getMazeNexusPlacementAffectedSpawnIndexes(gs, nexusItemId, anchor);

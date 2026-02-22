@@ -315,7 +315,8 @@ export interface ResearchCell {
   revealed: boolean;
   owned: boolean;
   cost: number;
-  blocked: boolean; // the void cells
+  blocked: boolean; // true for void cells that cannot be owned or traversed
+  filledByAntiVoid: boolean;
 }
 
 

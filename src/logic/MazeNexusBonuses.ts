@@ -11,6 +11,7 @@ const PLUS_ONE_PANEL_ID = 'plus_one_panel';
 const REFRESHER_PANEL_ID = 'refresher_panel';
 const INCREMENTAL_PANEL_ID = 'incremental_panel';
 const SHARDS_REFRESHER_PANEL_ID = 'shards_refresher_panel';
+const ANTIVOID_PANEL_ID = 'antivoid_panel';
 
 export const REFRESHER_PANEL_PAUSE_MS = 200;
 
@@ -304,6 +305,43 @@ export function applyMazeRefresherBonusOnStep(gs: GameState, steppedCell: Point2
   gs.maze.takenCells = gs.maze.takenCells.filter(
     takenCell => !refreshedSpawns.some(refreshed => sameCell(refreshed.spawnCell, takenCell)),
   );
+}
+
+export function applyMazeAntiVoidBonuses(gs: GameState): boolean {
+  const placementsById = getMazeNexusPlacements(gs);
+  let topologyChanged = false;
+
+  for (const placement of placementsById.values()) {
+    if (placement.itemId !== ANTIVOID_PANEL_ID) continue;
+
+    const def = gs.lib.nexusItems.get(placement.itemId)!;
+    if (def.effectRadius <= 0) continue;
+
+    const centroid = getMazeNexusPlacementCentroidUnit(placement.cells);
+    const radiusPx = def.effectRadius * Math.sqrt(3);
+    const radiusPxSq = radiusPx * radiusPx;
+
+    for (let i = 0; i < gs.researchCells.length; i++) {
+      const cell = gs.researchCells[i]!;
+      if (!cell.blocked) continue;
+
+      const axial = indexToAxial(i);
+      const pixel = axialToPixel(axial, 1, UNIT_ORIGIN);
+      const dx = pixel.x - centroid.x;
+      const dy = pixel.y - centroid.y;
+      if (dx * dx + dy * dy > radiusPxSq) continue;
+
+      cell.nodeId = -1;
+      cell.archetypeId = 'obs';
+      cell.blocked = false;
+      cell.cost = 1;
+      cell.passable = true;
+      cell.filledByAntiVoid = true;
+      topologyChanged = true;
+    }
+  }
+
+  return topologyChanged;
 }
 
 export function applyMazeNexusPanelPurchase(gs: GameState, itemId: string): void {

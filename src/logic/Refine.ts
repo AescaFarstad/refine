@@ -107,6 +107,8 @@ export function resolveRefineryDone(gs: GameState): void {
     outcome.chronotracesGained = outputs.chrono;
     outcome.timeFluxGained = outputs.flux;
   } else {
+    discover(gs, DISCOVERY.REFINEMENT_FAILED);
+
     const shardAmount =
       Math.max(0, preview.expectedCredits || 0) +
       Math.max(0, preview.expectedChrono || 0) +

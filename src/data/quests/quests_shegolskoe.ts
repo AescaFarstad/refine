@@ -45,7 +45,7 @@ const quests: Record<string, RawQuestDefinition> = {
       { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 3 },
     ],
     rewards: [
-      { kind: 'raid_add_item', itemIds: ['red_rubber_ball', 'red_christmas_ball', 'ruined_ammo_cartridge'] },
+      { kind: 'raid_add_item', itemIds: ['red_rubber_ball', 'red_christmas_ball', 'ruined_ammo_cartridge', 'vintage_camera'] },
       { kind: 'raid_rarity_buff', delta: 10 },
     ],
   },

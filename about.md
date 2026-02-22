@@ -14,7 +14,7 @@ There are recipes i.e.
 etc.
 
 The player makes a haul. An assortment of items is extracted. Now they need to sort them into refineries.
-They choose a recipe, choose which items to refine (or click a button to do so automatically), and queue up the refinment, which takes time.
+They choose a recipe, choose which items to refine (or click a button to do so automatically), and queue up the refinement, which takes time.
 There are limited number of refinery slots, so one should choose recipes with lots of essences. But these are imballanced. Unrefined items stay until future hauls.
 Refinment gives chronotraces and money.
 You use money to organize a haul.

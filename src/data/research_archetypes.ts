@@ -90,7 +90,7 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     description: 'A mysterious opportunity of unclear nature.',
     ownedTitle: 'Maze navigation',
     ownedDescription: 'You are now able to enter the maze of time.',
-    revealingDiscovery: DISCOVERY.ESSENCE_RESEARCH_KNOWLEDGE,
+    revealingDiscovery: DISCOVERY.MAZE_NAVIGATION,
     revealedTitle: 'Alternative maze entrance',
     revealedDescription: 'This is another way to enter the maze.',
     revealedIcon: { kind: 'itemImage', key: 'maze_out', scale: 1.5, offset: { x: 0, y: 0 } },

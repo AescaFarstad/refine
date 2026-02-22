@@ -134,7 +134,7 @@ params //depend on kind
   refine_x_items: count
   refine_x_unique_items: count
   refine_x_essences: color, count
-  refine_x_resource: resource_name, count //refine that much in a single successfull refinment
+  refine_x_resource: resource_name, count //refine that much in a single successfull refinement
   refine_with_yield_bonus: bonus_value
   refine_together: list of item ids and their counts to be successfully refined at the same time
 

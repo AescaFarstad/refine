@@ -1,8 +1,14 @@
 <template>
   <div v-if="visible" class="maze-nexus-menu">
     <div class="nexus-panel">
-      <div class="nexus-header">MAZE NEXUS <span class="nexus-header-sep">-</span> Drag power-ups onto the maze:</div>
-      <div class="nexus-items">
+      <div v-if="canAccessNexus" class="nexus-header">MAZE NEXUS <span class="nexus-header-sep">-</span> Drag power-ups onto the maze:</div>
+      <div v-else class="nexus-header nexus-header-locked">
+        <div class="nexus-locked-title">NEXUS</div>
+        <button class="btn primary nexus-locked-message-btn" type="button" @click="goToRefineTab">
+          Fail items refinement at least once to access the Nexus
+        </button>
+      </div>
+      <div v-if="canAccessNexus" class="nexus-items">
         <div
           v-for="[id, item] in items"
           :key="id"
@@ -28,11 +34,15 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { parseNexusItemDefinitions, type NexusItemDefinition } from '../logic/NexusLib';
 import rawNexusItems from '../data/nexus';
 import { startMazeManualDrag } from '../logic/MazeNexusDnd';
 import atlasStorage from '../logic/AtlasStorage';
 import { getGameState, uiState } from '../logic/UIState';
+import { DISCOVERY } from '../logic/DiscoveryLib';
+import { globalInputQueue } from '../logic/Model';
+import { CmdSwitchTab } from '../logic/input/InputCommands';
 
 defineProps<{
   visible: boolean;
@@ -41,6 +51,11 @@ defineProps<{
 const items = parseNexusItemDefinitions(rawNexusItems);
 
 const PREVIEW_SIZE = 56;
+const canAccessNexus = computed(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.discoveryCounter;
+  return getGameState().discoveries[DISCOVERY.REFINEMENT_FAILED] === true;
+});
 
 // Check which items have atlas frames available
 const hasPreview: Record<string, boolean> = {};
@@ -83,8 +98,13 @@ function isPassable(item: NexusItemDefinition): boolean {
 function onItemPointerDown(item: NexusItemDefinition, event: PointerEvent): void {
   if (event.button !== 0) return;
   event.preventDefault();
+  if (!canAccessNexus.value) return;
   if (!canAfford(item.id)) return;
   startMazeManualDrag(item, event);
+}
+
+function goToRefineTab(): void {
+  globalInputQueue.push(new CmdSwitchTab({ tab: 'refine' }));
 }
 </script>
 
@@ -118,6 +138,33 @@ function onItemPointerDown(item: NexusItemDefinition, event: PointerEvent): void
 .nexus-header-sep {
   color: rgba(226, 232, 240, 0.4);
   margin: 0 2px;
+}
+
+.nexus-header-locked {
+  color: rgba(248, 113, 113, 0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.nexus-locked-title {
+  font-size: 22px;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  line-height: 1;
+  color: rgba(226, 232, 240, 0.95);
+}
+
+.btn { padding: 10px 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; border-radius: 4px; border: 1px solid var(--panel-border); cursor: pointer; background: rgba(255,255,255,0.03); color: inherit; }
+.btn:hover { background: rgba(255,255,255,0.08); }
+.btn.primary { background: rgba(79, 209, 197, 0.14); color: var(--accent); }
+.btn.primary:hover { background: rgba(79, 209, 197, 0.22); }
+
+.nexus-locked-message-btn {
+  max-width: 100%;
+  text-align: center;
 }
 
 .nexus-items {

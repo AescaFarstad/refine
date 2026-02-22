@@ -59,6 +59,10 @@ const props = defineProps<{
   wafer: Wafer;
 }>();
 
+const emit = defineEmits<{
+  (e: 'speedup'): void;
+}>();
+
 const canvas = ref<HTMLCanvasElement | null>(null);
 let ctx: CanvasRenderingContext2D | null = null;
 let animFrameId: number = 0;
@@ -337,6 +341,7 @@ function onMouseLeave() {
 function onClick() {
   if (isRefining.value) {
     globalInputQueue.push(new CmdSpeedUpRefining());
+    emit('speedup');
   }
 }
 

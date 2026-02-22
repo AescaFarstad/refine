@@ -44,6 +44,7 @@ const BASE_BUFFER_PADDING_PX = 768;
 
 const HEX_SIZE = 18;
 const BACKGROUND_HEX_SIZE = HEX_SIZE * 0.85;
+const OWNED_BACKGROUND_HEX_SIZE = HEX_SIZE * 0.9;
 const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 3;
 
@@ -218,7 +219,15 @@ function renderBaseLayer() {
   const lib = getGameLib();
   const o = origin.value;
 
-  renderResearchBaseLayer(ctx, gs, lib, o, HEX_SIZE, BACKGROUND_HEX_SIZE);
+  renderResearchBaseLayer(
+    ctx,
+    gs,
+    lib,
+    o,
+    HEX_SIZE,
+    BACKGROUND_HEX_SIZE,
+    OWNED_BACKGROUND_HEX_SIZE,
+  );
 
   baseBufferOffset = { x: off.x, y: off.y };
   baseBufferZoom = z || 1;

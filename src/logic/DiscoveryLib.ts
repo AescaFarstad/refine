@@ -29,6 +29,7 @@ const ids = [
   'UI_SIGNATURE_INFO',
   'MAGENTA_CRYSTALS',
   'MAZE_NEXUS',
+  'REFINEMENT_FAILED',
   'YOU_WON_SEEN',
   'DEV',
 ] as const;

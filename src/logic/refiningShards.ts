@@ -119,7 +119,9 @@ export function updateShardPhysics(dt: number) {
         const falloff = Math.max(0, rangeT);
 
         let resourceFactor = 1;
-        if (shard.resource === 'chronotraces') {
+        if (shard.resource === 'shards') {
+          resourceFactor = 5;
+        } else if (shard.resource === 'chronotraces') {
           resourceFactor = 0.66;
         } else if (shard.resource === 'timeFlux') {
           resourceFactor = 0.33;
@@ -208,44 +210,47 @@ export function checkShardPickups() {
   }
 
   const gs = getGameState();
-  if (!gs || gs.shardPickupGraceSec > 0) {
-    lastLocalMouseCoords = { ...localMouseCoords };
-    return;
+
+  // During grace period the mouse still attracts shards (handled by updateShardPhysics),
+  // but pickup is disabled. Skip only the pickup dispatch — tracking always continues.
+  const canPickup = gs != null && gs.shardPickupGraceSec <= 0;
+
+  if (canPickup) {
+    const gameShards = gs!.shards || [];
+    const physicsMap = uiState.shardPhysics;
+
+    for (const shard of gameShards) {
+      if (!shard || shard.triggered) continue;
+
+      const physics = physicsMap.get(shard.id);
+      if (!physics) continue;
+
+      const pickupRadius = shard.size * SHARD_RADIUS_MULT;
+
+      const dx = localMouseCoords.x - physics.pos.x;
+      const dy = localMouseCoords.y - physics.pos.y;
+      const distMouse = Math.sqrt(dx * dx + dy * dy);
+
+      const withinMousePickupRadius = distMouse < pickupRadius;
+      let intersectsMouseSweep = false;
+      if (lastLocalMouseCoords) {
+        const sweepLineWidth = pickupRadius * 2;
+        const sweepHalfWidth = sweepLineWidth * 0.5;
+        const sweepDistance = distancePointToSegment(
+          physics.pos,
+          lastLocalMouseCoords,
+          localMouseCoords,
+        );
+        intersectsMouseSweep = sweepDistance < sweepHalfWidth;
+      }
+
+      if (withinMousePickupRadius || intersectsMouseSweep) {
+        globalInputQueue.push(new CmdPickupShard({ shardId: shard.id }));
+      }
+    }
   }
 
-  const gameShards = gs.shards || [];
-  const physicsMap = uiState.shardPhysics;
-
-  for (const shard of gameShards) {
-    if (!shard || shard.triggered) continue;
-
-    const physics = physicsMap.get(shard.id);
-    if (!physics) continue;
-
-    const pickupRadius = shard.size * SHARD_RADIUS_MULT;
-
-    const dx = localMouseCoords.x - physics.pos.x;
-    const dy = localMouseCoords.y - physics.pos.y;
-    const distMouse = Math.sqrt(dx * dx + dy * dy);
-
-    const withinMousePickupRadius = distMouse < pickupRadius;
-    let intersectsMouseSweep = false;
-    if (lastLocalMouseCoords) {
-      const sweepLineWidth = pickupRadius * 2;
-      const sweepHalfWidth = sweepLineWidth * 0.5;
-      const sweepDistance = distancePointToSegment(
-        physics.pos,
-        lastLocalMouseCoords,
-        localMouseCoords,
-      );
-      intersectsMouseSweep = sweepDistance < sweepHalfWidth;
-    }
-
-    if (withinMousePickupRadius || intersectsMouseSweep) {
-      globalInputQueue.push(new CmdPickupShard({ shardId: shard.id }));
-    }
-  }
-
+  // Always update sweep history so pickup detection is accurate the moment grace ends.
   lastLocalMouseCoords = { ...localMouseCoords };
 }
 

@@ -64,7 +64,7 @@ export function useMazeResourceHighlights(
     const hoveredSpawn = gs.mazeResourceSpawns.find(
       spawn => spawn.cell.x === hoverCell.x && spawn.cell.y === hoverCell.y,
     );
-    if (hoveredSpawn) {
+    if (hoveredSpawn && !takenSet.has(toCellKey(hoveredSpawn.cell))) {
       highlighted.add(toCellKey(hoveredSpawn.cell));
     }
 
@@ -92,6 +92,7 @@ export function useMazeResourceHighlights(
     const effectRadiusUnitSq = effectRadiusUnit * effectRadiusUnit;
 
     for (const spawn of gs.mazeResourceSpawns) {
+      if (takenSet.has(toCellKey(spawn.cell))) continue;
       const spawnUnit = axialToPixel(spawn.cell, 1, UNIT_ORIGIN);
       const dx = spawnUnit.x - centerUnit.x;
       const dy = spawnUnit.y - centerUnit.y;

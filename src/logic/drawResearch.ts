@@ -7,6 +7,7 @@ import type { Point2 } from './ItemLib';
 import atlasStorage from './AtlasStorage';
 import { computeMaxSquareForHexNode, type MaxSquareResult } from './MaxSquareInHexNode';
 import { getResourceSpecByAnyKey } from './Resources';
+import { computeHexBoundary } from './hexBoundary';
 import type { ReadonlyGameState, ReadonlyLib, ReadonlyResearchArchetype } from './UIState';
 
 type GearIconDefinition = { readonly image: string };
@@ -14,7 +15,7 @@ type GearIconDefinition = { readonly image: string };
 const RESEARCH_COLOR_OWNED_BG = 'rgb(50, 140, 80)';
 const RESEARCH_COLOR_UNOWNED_BG = 'rgb(35, 45, 70)';
 const RESEARCH_COLOR_SPECIAL_OVERT_UNOWNED_BG = 'rgb(140, 110, 25)'; // yellowish for special nodes
-const RESEARCH_COLOR_OBSTACLE_MARKER = 'rgba(131, 145, 164, 0.9)';
+const RESEARCH_COLOR_OBSTACLE_MARKER = 'rgba(131, 145, 164, 0.4)';
 
 interface StatIconSpec {
   offsetX: number;
@@ -84,7 +85,8 @@ export function renderResearchBaseLayer(
   lib: ReadonlyLib,
   origin: Point2,
   hexSize: number,
-  backgroundHexSize: number
+  backgroundHexSize: number,
+  ownedBackgroundHexSize: number,
 ): void {
   const cells = game.researchCells;
   if (!cells || cells.length === 0) return;
@@ -132,12 +134,13 @@ export function renderResearchBaseLayer(
     const first = group[0];
     const archetype = lib.research.archetypes.get(first.archetypeId) || null;
     const isOwned = group.some(c => c.owned);
+    const groupBackgroundHexSize = isOwned ? ownedBackgroundHexSize : backgroundHexSize;
     const gearDef = getGearDefinitionForArchetype(lib, archetype);
 
     if (group.length > 1) {
-      drawMergedNode(ctx, game, group, archetype, isOwned, origin, hexSize, backgroundHexSize, gearDef);
+      drawMergedNode(ctx, game, group, archetype, isOwned, origin, hexSize, groupBackgroundHexSize, gearDef);
     } else {
-      drawSingleCell(ctx, game, group[0], archetype, isOwned, origin, hexSize, backgroundHexSize, gearDef);
+      drawSingleCell(ctx, game, group[0], archetype, isOwned, origin, hexSize, groupBackgroundHexSize, gearDef);
     }
   });
 
@@ -146,8 +149,9 @@ export function renderResearchBaseLayer(
     if (archetype && archetype.type === 'void') {
       continue;
     }
+    const cellBackgroundHexSize = info.owned ? ownedBackgroundHexSize : backgroundHexSize;
     const gearDef = getGearDefinitionForArchetype(lib, archetype);
-    drawSingleCell(ctx, game, info, archetype, info.owned, origin, hexSize, backgroundHexSize, gearDef);
+    drawSingleCell(ctx, game, info, archetype, info.owned, origin, hexSize, cellBackgroundHexSize, gearDef);
   }
 }
 
@@ -180,6 +184,24 @@ function getVisualStyle(archetype: ReadonlyResearchArchetype | null, owned: bool
   };
 }
 
+function traceHexBoundaryPath(
+  ctx: CanvasRenderingContext2D,
+  loops: readonly (readonly Point2[])[],
+  origin: Point2,
+  hexSize: number,
+): void {
+  ctx.beginPath();
+  for (const loop of loops) {
+    const first = loop[0]!;
+    ctx.moveTo(origin.x + first.x * hexSize, origin.y + first.y * hexSize);
+    for (let i = 1; i < loop.length; i++) {
+      const p = loop[i]!;
+      ctx.lineTo(origin.x + p.x * hexSize, origin.y + p.y * hexSize);
+    }
+    ctx.closePath();
+  }
+}
+
 function drawMergedNode(
   ctx: CanvasRenderingContext2D,
   game: ReadonlyGameState,
@@ -192,27 +214,62 @@ function drawMergedNode(
   gearDef: GearIconDefinition | null
 ): void {
   const style = getVisualStyle(archetype, owned);
+  const nodeId = cells[0].nodeId;
+  const specifiedCenterCell = cells[0].centerCell;
+  const axialCells: Point2[] = cells.map((cell) => cell.axial);
+  const loops = computeHexBoundary(cells.map((cell) => cell.axial));
+
+  let centerUnitX: number;
+  let centerUnitY: number;
+
+  let layout: MaxSquareResult | null | undefined = nodeId >= 0 ? nodeSquareCache.get(nodeId) : null;
+  if (!layout) {
+    layout = computeMaxSquareForHexNode(axialCells);
+    if (layout && nodeId >= 0) {
+      nodeSquareCache.set(nodeId, layout);
+    }
+  }
+
+  if (specifiedCenterCell) {
+    const centerUnit = axialToPixel(specifiedCenterCell, 1);
+    centerUnitX = centerUnit.x;
+    centerUnitY = centerUnit.y;
+  } else if (layout) {
+    centerUnitX = layout.center.x;
+    centerUnitY = layout.center.y;
+  } else {
+    let sumUnitX = 0;
+    let sumUnitY = 0;
+    for (const cell of cells) {
+      const unit = axialToPixel(cell.axial, 1);
+      sumUnitX += unit.x;
+      sumUnitY += unit.y;
+    }
+    centerUnitX = sumUnitX / cells.length;
+    centerUnitY = sumUnitY / cells.length;
+  }
+
+  const mergedOrigin: Point2 = {
+    x: origin.x + centerUnitX * (hexSize - backgroundHexSize),
+    y: origin.y + centerUnitY * (hexSize - backgroundHexSize),
+  };
+
   ctx.save();
   ctx.fillStyle = style.fillColor;
   ctx.globalAlpha = 1;
-  ctx.beginPath();
+  traceHexBoundaryPath(ctx, loops, mergedOrigin, backgroundHexSize);
+  ctx.fill('evenodd');
 
+  // Preserve original per-hex diminished footprint at the outer boundary
+  // while the merged boundary fill removes internal seams.
   for (const info of cells) {
     const center = axialToPixel(info.axial, hexSize, origin);
-    for (let i = 0; i < 6; i++) {
-      const angle = (Math.PI / 3) * i + Math.PI / 6;
-      const x = center.x + backgroundHexSize * Math.cos(angle);
-      const y = center.y + backgroundHexSize * Math.sin(angle);
-      if (i === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
-      }
-    }
-    ctx.closePath();
+    drawHexagon(ctx, center, backgroundHexSize, {
+      fillColor: style.fillColor,
+      strokeColor: 'rgba(0, 0, 0, 0)',
+      lineWidth: 0,
+    });
   }
-
-  ctx.fill();
   ctx.restore();
 
   drawNodeOverlay(ctx, game, cells, archetype, owned, origin, hexSize, gearDef);
@@ -231,12 +288,15 @@ function drawSingleCell(
 ): void {
   const style = getVisualStyle(archetype, owned);
   const center = axialToPixel(info.axial, hexSize, origin);
+  const isObstacleLike = !!archetype && (archetype.type === 'obstacle' || !!archetype.covert);
 
-  drawHexagon(ctx, center, backgroundHexSize, {
-    fillColor: style.fillColor,
-    strokeColor: 'rgba(0, 0, 0, 0)',
-    lineWidth: 0,
-  });
+  if (!isObstacleLike || owned) {
+    drawHexagon(ctx, center, backgroundHexSize, {
+      fillColor: style.fillColor,
+      strokeColor: 'rgba(0, 0, 0, 0)',
+      lineWidth: 0,
+    });
+  }
 
   drawNodeOverlay(ctx, game, [info], archetype, owned, origin, hexSize, gearDef);
 }
@@ -279,7 +339,7 @@ function drawNodeOverlay(
 
   if (owned || !isObstacleLike) return;
 
-  const radius = hexSize * 0.35;
+  const radius = hexSize * 0.75;
 
   ctx.save();
   ctx.fillStyle = RESEARCH_COLOR_OBSTACLE_MARKER; // gray circle

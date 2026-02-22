@@ -69,6 +69,8 @@ const props = defineProps<{
   connectMode?: boolean;
   failureBackdrop?: boolean;
   failureBackdropSoft?: boolean;
+  // Incremented each time a wafer-wide pulse should play (e.g. speed-up click during refining)
+  pulseVersion?: number;
 }>();
 
 const emit = defineEmits<{
@@ -90,6 +92,11 @@ const hoverItemIdx = ref<number | null>(null);
 const connectionStart = ref<Point2 | null>(null);
 const manualDragging = ref(false);
 
+// Pulse animation state
+let pulseStartTime = -1;
+const PULSE_DURATION_MS = 480;
+let pulseRafId = 0;
+
 
 onMounted(() => {
   setupCanvases();
@@ -104,6 +111,7 @@ onUnmounted(() => {
   window.removeEventListener(ManualDragEvents.End, onManualDragEnd as any);
   window.removeEventListener(ManualDragEvents.Move, onManualDragMove as any);
   window.removeEventListener('keydown', onKeyDown);
+  cancelAnimationFrame(pulseRafId);
 });
 
 watch(() => [props.wafer, props.version, props.hideMolecules, props.useEffectiveEssence], () => {
@@ -120,6 +128,53 @@ watch(() => props.highlightItemIdx, () => {
   // Parent requested highlight for a specific placed item (e.g., hovering list row)
   renderOverlay();
 });
+
+watch(() => props.pulseVersion, (v, prev) => {
+  if (v != null && v !== prev) triggerPulse();
+});
+
+function triggerPulse() {
+  cancelAnimationFrame(pulseRafId);
+  pulseStartTime = performance.now();
+  schedulePulseFrame();
+}
+
+function schedulePulseFrame() {
+  pulseRafId = requestAnimationFrame(() => {
+    renderOverlay();
+    const elapsed = performance.now() - pulseStartTime;
+    if (elapsed < PULSE_DURATION_MS) {
+      schedulePulseFrame();
+    } else {
+      pulseStartTime = -1;
+      renderOverlay();
+    }
+  });
+}
+
+function drawPulseRing(ctx: CanvasRenderingContext2D) {
+  if (pulseStartTime < 0) return;
+  const elapsed = performance.now() - pulseStartTime;
+  const t = Math.min(1, elapsed / PULSE_DURATION_MS);
+  // Ease out: fast start, gradual fade
+  const eased = 1 - Math.pow(1 - t, 2);
+  const maxRadius = Math.sqrt(
+    Math.pow(WAFER_CANVAS_WIDTH / 2, 2) + Math.pow(WAFER_CANVAS_HEIGHT / 2, 2),
+  ) + 20;
+  const radius = maxRadius * eased;
+  const alpha = (1 - t) * 0.72;
+  const lineWidth = 3 + (1 - t) * 9;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(origin.x, origin.y, radius, 0, Math.PI * 2);
+  ctx.strokeStyle = `rgba(79, 209, 197, ${alpha})`;
+  ctx.lineWidth = lineWidth;
+  ctx.shadowColor = 'rgba(79, 209, 197, 0.55)';
+  ctx.shadowBlur = 10;
+  ctx.stroke();
+  ctx.restore();
+}
 
 function lightenColor(color: string, amount: number): string {
   const clamp = (value: number) => Math.min(255, Math.max(0, Math.round(value)));
@@ -415,6 +470,8 @@ function renderOverlay() {
       });
     }
   }
+
+  drawPulseRing(ctx);
 }
 
 function onMouseDown(event: MouseEvent) {

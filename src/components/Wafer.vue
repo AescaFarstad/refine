@@ -18,6 +18,7 @@
         :show-upgrade-hints="showWaferUpgrades"
         :failure-backdrop="failedRefineWithShards"
         :failure-backdrop-soft="failedRefineBackdropSoft"
+        :pulse-version="waferPulseVersion"
         @hover="onHover"
         @click="onClick"
         @pickup="onPickup"
@@ -26,6 +27,7 @@
       <RefineAnim
         v-if="showRefineAnim"
         :wafer="wafer"
+        @speedup="waferPulseVersion++"
       />
       <div v-if="draggingItem && !showRefineAnim" class="rotate-hint">
         ⟳ Right-Click or Space to rotate ⟳
@@ -146,6 +148,7 @@ const lastHoverPos = ref<Point2 | null>(null);
 const rotation = ref(0);
 const upgradeHoverCells = ref<Point2[] | null>(null);
 const isRefineHovered = ref(false);
+const waferPulseVersion = ref(0);
 const shouldFlashFailure = computed(() => isRefineHovered.value && canRefine.value && preview.value.failureChancePct > 20);
 
 

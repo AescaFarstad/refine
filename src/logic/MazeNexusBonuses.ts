@@ -1,8 +1,9 @@
-import { axialRotateCW, axialToPixel } from './HexMath';
+import { axialRotateCW, axialRound, axialToPixel, pixelToAxialFloat } from './HexMath';
 import type { MazeResourceSpawn, GameState } from './GameState';
 import type { Point2 } from './core/math';
 import { axialToIndex, indexToAxial } from './Research';
 import type { ReadonlyGameState } from './UIState';
+import { computeHexBoundary } from './hexBoundary';
 
 const DOUBLER_PANEL_ID = 'doubler_panel';
 const CREDITS_DOUBLER_PANEL_ID = 'credits_doubler_panel';
@@ -121,6 +122,47 @@ export function getMazeNexusItemPlacementCells(gs: ReadonlyGameState, itemId: st
     const rotatedCell = axialRotateCW(cell, rotationStep);
     return { x: center.x + rotatedCell.x, y: center.y + rotatedCell.y };
   });
+}
+
+function getMazeNexusItemPlacementVisualCenterUnit(gs: ReadonlyGameState, itemId: string): Point2 {
+  const localCells = getMazeNexusItemPlacementCells(gs, itemId, UNIT_ORIGIN);
+  const loops = computeHexBoundary(localCells);
+  if (loops.length === 0) {
+    throw new Error(`Nexus item ${itemId} has no placement boundary.`);
+  }
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const loop of loops) {
+    for (const point of loop.points) {
+      if (point.x < minX) minX = point.x;
+      if (point.y < minY) minY = point.y;
+      if (point.x > maxX) maxX = point.x;
+      if (point.y > maxY) maxY = point.y;
+    }
+  }
+
+  return {
+    x: (minX + maxX) / 2,
+    y: (minY + maxY) / 2,
+  };
+}
+
+export function getMazeNexusPlacementAnchorFromHoverCenter(
+  gs: ReadonlyGameState,
+  itemId: string,
+  hoverCell: Point2,
+): Point2 {
+  const visualCenterUnit = getMazeNexusItemPlacementVisualCenterUnit(gs, itemId);
+  const hoverCenterUnit = axialToPixel(hoverCell, 1, UNIT_ORIGIN);
+  const anchorUnit = {
+    x: hoverCenterUnit.x - visualCenterUnit.x,
+    y: hoverCenterUnit.y - visualCenterUnit.y,
+  };
+
+  return axialRound(pixelToAxialFloat(anchorUnit, 1, UNIT_ORIGIN));
 }
 
 export function getMazeNexusItemPlacementRotationStep(gs: ReadonlyGameState, itemId: string): number {

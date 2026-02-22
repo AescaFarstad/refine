@@ -16,6 +16,7 @@ import {
   grantMazeIncrementalPickupBonus,
   getMazeNexusPlacementCountsByItem,
   getMazeNexusItemPlacementCells,
+  getMazeNexusPlacementAnchorFromHoverCenter,
   getMazeNexusItemPlacementRotationStep,
   hasMazeNexusLimitRadiusConflict,
   isMazeShardRefresherStep,
@@ -26,6 +27,7 @@ import {
 export {
   getMazeNexusLimitBlockingDisks,
   getMazeNexusItemPlacementCells,
+  getMazeNexusPlacementAnchorFromHoverCenter,
   getMazeNexusItemPlacementRotationStep,
   getMazeNexusLimitDisks,
   getMazeNexusPlacementAffectedSpawnIndexes,

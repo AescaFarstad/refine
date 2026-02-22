@@ -1,6 +1,6 @@
 import { ref, type Ref } from 'vue';
 import type { Point2 } from '../ItemLib';
-import { canPlaceMazeNexusItem } from '../Maze';
+import { canPlaceMazeNexusItem, getMazeNexusPlacementAnchorFromHoverCenter } from '../Maze';
 import {
   setMazeManualDragFollowerVisible,
   type MazeDragEndDetail,
@@ -57,7 +57,10 @@ export function useMazeNexusDragPreview(
     }
 
     const itemId = payload.item.id;
-    const axial = options.clientToAxial(clientX, clientY);
+    const hoverAxial = options.clientToAxial(clientX, clientY);
+    const axial = hoverAxial
+      ? getMazeNexusPlacementAnchorFromHoverCenter(options.getGameState(), itemId, hoverAxial)
+      : null;
     const valid = !!axial && canPlaceMazeNexusItem(options.getGameState(), itemId, axial);
 
     if (valid) {
@@ -83,7 +86,10 @@ export function useMazeNexusDragPreview(
     }
 
     const itemId = payload.item.id;
-    const axial = options.clientToAxial(clientX, clientY);
+    const hoverAxial = options.clientToAxial(clientX, clientY);
+    const axial = hoverAxial
+      ? getMazeNexusPlacementAnchorFromHoverCenter(options.getGameState(), itemId, hoverAxial)
+      : null;
 
     if (axial && canPlaceMazeNexusItem(options.getGameState(), itemId, axial)) {
       options.queuePlaceNexusItem(axial, itemId);

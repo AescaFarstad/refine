@@ -22,7 +22,8 @@ export type NexusItemDefinition = {
   description: string;
   price: number;
   placable: boolean;
-  specialAction: '' | 'refund_reset_regret';
+  specialAction: '' | 'refund_reset_regret' | 'time_singularity';
+  showMenuHint: boolean;
   minAcquiredUpgradesForOffer: number;
   priceIncrease: number[];
   maxCount: number;
@@ -33,9 +34,10 @@ export type NexusItemDefinition = {
   placableInstanceDescription: PlacableInstanceDescription;
 };
 
-export type RawNexusItemDefinition = Omit<NexusItemDefinition, 'id' | 'placable' | 'specialAction' | 'minAcquiredUpgradesForOffer' | 'priceIncrease' | 'maxCount' | 'travelPriceIncrease' | 'placedOnce' | 'effectRadius' | 'limitRadius' | 'placableInstanceDescription'> & {
+export type RawNexusItemDefinition = Omit<NexusItemDefinition, 'id' | 'placable' | 'specialAction' | 'showMenuHint' | 'minAcquiredUpgradesForOffer' | 'priceIncrease' | 'maxCount' | 'travelPriceIncrease' | 'placedOnce' | 'effectRadius' | 'limitRadius' | 'placableInstanceDescription'> & {
   placable?: boolean;
-  specialAction?: '' | 'refund_reset_regret';
+  specialAction?: '' | 'refund_reset_regret' | 'time_singularity';
+  showMenuHint?: boolean;
   priceIncrease?: number[];
   maxCount?: number;
   travelPriceIncrease?: number;
@@ -52,6 +54,7 @@ export function parseNexusItemDefinitions(
   const result = new Map<string, NexusItemDefinition>();
   for (const [id, def] of Object.entries(raw)) {
     const rawPlacable = def.placableInstanceDescription;
+    const specialAction = def.specialAction ?? '';
     const passable = rawPlacable?.passable ?? true;
     const button = passable ? (rawPlacable?.button ?? true) : false;
     const placementCells = rawPlacable?.cells;
@@ -65,7 +68,8 @@ export function parseNexusItemDefinitions(
       description: def.description,
       price: def.price,
       placable: def.placable ?? true,
-      specialAction: def.specialAction ?? '',
+      specialAction,
+      showMenuHint: def.showMenuHint ?? (specialAction === ''),
       minAcquiredUpgradesForOffer: def.minAcquiredUpgradesForOffer ?? 0,
       priceIncrease: def.priceIncrease ? def.priceIncrease.slice() : [0],
       maxCount: def.maxCount ?? -1,

@@ -12,14 +12,23 @@
         :ref="(el) => mountCanvas(el as HTMLElement | null, id, rotationStep)"
       ></div>
       <div class="nexus-item-text" :class="{ 'nexus-item-text-special': isSpecialAction }">
-        <span class="nexus-item-name">{{ item.name }}</span>
+        <button
+          v-if="isTimeSingularityAction"
+          class="nexus-item-special-btn"
+          type="button"
+          :disabled="!canAfford"
+          :style="timeSingularityButtonStyle"
+        >
+          Singularity {{ price }}<span class="nexus-item-special-btn-glyph">⧖</span>
+        </button>
+        <span v-else class="nexus-item-name">{{ item.name }}</span>
         <div v-if="!item.placableInstanceDescription.passable" class="nexus-item-impassable">Impassable</div>
         <div v-if="showNewBanner && !isSpecialAction" class="nexus-item-new">NEW</div>
         <span v-if="!isSpecialAction" class="nexus-item-price">{{ price }}<span class="nexus-item-price-glyph">∿</span></span>
       </div>
     </div>
     <div
-      v-if="!isSpecialAction"
+      v-if="showMenuHint"
       class="nexus-item-hint"
       :class="{ 'nexus-item-hint-top': hintPosition === 'top' }"
       role="tooltip"
@@ -62,6 +71,7 @@ import {
   NEXUS_UI_PREVIEW_SIZE,
 } from '../logic/NexusPreviewCanvas';
 import { computed } from 'vue';
+import { RESOURCE_SPECS } from '../logic/Resources';
 
 type UINexusItem = DeepReadonly<NexusItemDefinition>;
 
@@ -83,6 +93,12 @@ const emit = defineEmits<{
 
 const PREVIEW_SIZE = NEXUS_UI_PREVIEW_SIZE;
 const isSpecialAction = computed(() => props.item.specialAction !== '');
+const isTimeSingularityAction = computed(() => props.item.specialAction === 'time_singularity');
+const showMenuHint = computed(() => props.item.showMenuHint);
+const timeSingularityButtonStyle = {
+  '--time-singularity-disabled-color': RESOURCE_SPECS.chronotraces.color,
+  '--time-singularity-disabled-bg': RESOURCE_SPECS.chronotraces.bgColor,
+};
 
 function mountCanvas(el: HTMLElement | null, id: string, rotationStep: number): void {
   if (!el) return;
@@ -227,6 +243,30 @@ function onClick(): void {
   display: grid;
   place-items: center;
   margin-left: 0;
+}
+
+.nexus-item-special-btn {
+  border: 1px solid rgba(253, 224, 71, 0.45);
+  background: rgba(113, 63, 18, 0.45);
+  color: #fef08a;
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  border-radius: 8px;
+  padding: 13px 16px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.nexus-item-special-btn-glyph {
+  margin-left: 2px;
+}
+
+.nexus-item-special-btn:disabled {
+  color: var(--time-singularity-disabled-color);
+  border-color: var(--time-singularity-disabled-color);
+  background: var(--time-singularity-disabled-bg);
+  cursor: not-allowed;
 }
 
 .nexus-item-price {

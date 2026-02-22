@@ -297,11 +297,6 @@ function parseSavedRawNexusLib(value: unknown): Map<string, SavedNexusLibEntry> 
 }
 
 function applySavedRawRaidLib(gameState: GameState, savedRaids: Map<string, SavedRaidLibEntry>): boolean {
-  if (savedRaids.size !== gameState.lib.raids.size) return false;
-  for (const targetId of gameState.lib.raids.keys()) {
-    if (!savedRaids.has(targetId)) return false;
-  }
-
   for (const [sourceId, sourceRaid] of savedRaids.entries()) {
     const targetRaid = gameState.lib.raids.get(sourceId);
     if (!targetRaid) return false;
@@ -327,11 +322,6 @@ function applySavedRawRaidLib(gameState: GameState, savedRaids: Map<string, Save
 }
 
 function applySavedRawNexusLib(gameState: GameState, savedNexusItems: Map<string, SavedNexusLibEntry>): boolean {
-  if (savedNexusItems.size !== gameState.lib.nexusItems.size) return false;
-  for (const targetId of gameState.lib.nexusItems.keys()) {
-    if (!savedNexusItems.has(targetId)) return false;
-  }
-
   for (const [sourceId, sourceEntry] of savedNexusItems.entries()) {
     const targetEntry = gameState.lib.nexusItems.get(sourceId);
     if (!targetEntry) return false;

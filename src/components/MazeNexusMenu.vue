@@ -16,7 +16,7 @@
             :item="entry.item"
             :rotation-step="entry.rotationStep"
             :price="entry.price"
-            :can-afford="canAfford(entry.price)"
+            :can-afford="canAffordEntry(entry)"
             :show-new-banner="entry.showNewBanner"
             mode="drag"
             @drag-start="onItemDragStart(entry, $event)"
@@ -27,7 +27,7 @@
             :item="entry.item"
             :rotation-step="entry.rotationStep"
             :price="entry.price"
-            :can-afford="canAfford(entry.price)"
+            :can-afford="canAffordEntry(entry)"
             :show-new-banner="entry.showNewBanner"
             mode="select"
             @select="openSpecialUpgrade(entry)"
@@ -176,23 +176,33 @@ watch(showAddUpgradeAction, (showAdd) => {
   }
 });
 
-function canAfford(price: number): boolean {
-  return uiState.timeFlux >= price;
+function canAffordEntry(entry: UINexusMenuEntry): boolean {
+  if (entry.item.specialAction === 'time_singularity') {
+    return uiState.chronotraces >= entry.price;
+  }
+  return uiState.timeFlux >= entry.price;
 }
 
 function onItemDragStart(entry: UINexusMenuEntry, event: PointerEvent): void {
   if (!canAccessNexus.value) return;
   if (!entry.item.placable) return;
-  if (!canAfford(entry.price)) return;
+  if (!canAffordEntry(entry)) return;
   startMazeManualDrag({ id: entry.id, rotationStep: entry.rotationStep }, event);
 }
 
 function openSpecialUpgrade(entry: UINexusMenuEntry): void {
   if (!canAccessNexus.value) return;
-  if (entry.item.specialAction !== 'refund_reset_regret') return;
-  if (!canAfford(entry.price)) return;
-  selectedSpecialUpgradeId.value = entry.id;
-  refundResetRegretModalVisible.value = true;
+  if (!canAffordEntry(entry)) return;
+  if (entry.item.specialAction === 'refund_reset_regret') {
+    selectedSpecialUpgradeId.value = entry.id;
+    refundResetRegretModalVisible.value = true;
+    return;
+  }
+  if (entry.item.specialAction === 'time_singularity') {
+    globalInputQueue.push(new CmdMazeActivateNexusSpecialUpgrade({ nexusItemId: entry.id }));
+    return;
+  }
+  throw new Error(`Unsupported nexus special action: ${entry.item.specialAction}`);
 }
 
 function proceedSpecialUpgrade(): void {

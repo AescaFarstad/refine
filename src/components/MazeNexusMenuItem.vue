@@ -1,20 +1,30 @@
 <template>
   <div
     class="nexus-item"
-    :class="{ 'cannot-afford': !canAfford, 'mode-select': mode === 'select' }"
+    :class="{ 'cannot-afford': !canAfford, 'mode-select': mode === 'select', 'special-action': isSpecialAction }"
     @pointerdown.stop="onPointerDown"
     @click.stop="onClick"
   >
     <div class="nexus-item-main">
-      <div class="nexus-item-preview" :ref="(el) => mountCanvas(el as HTMLElement | null, id, rotationStep)"></div>
-      <div class="nexus-item-text">
+      <div
+        v-if="!isSpecialAction"
+        class="nexus-item-preview"
+        :ref="(el) => mountCanvas(el as HTMLElement | null, id, rotationStep)"
+      ></div>
+      <div class="nexus-item-text" :class="{ 'nexus-item-text-special': isSpecialAction }">
         <span class="nexus-item-name">{{ item.name }}</span>
         <div v-if="!item.placableInstanceDescription.passable" class="nexus-item-impassable">Impassable</div>
-        <div v-if="showNewBanner" class="nexus-item-new">NEW</div>
-        <span class="nexus-item-price">{{ price }}<span class="nexus-item-price-glyph">∿</span></span>
+        <div v-if="showNewBanner && !isSpecialAction" class="nexus-item-new">NEW</div>
+        <span v-if="!isSpecialAction" class="nexus-item-price">{{ price }}<span class="nexus-item-price-glyph">∿</span></span>
       </div>
     </div>
-    <div class="nexus-item-hint" :class="{ 'nexus-item-hint-top': hintPosition === 'top' }" role="tooltip" aria-hidden="true">
+    <div
+      v-if="!isSpecialAction"
+      class="nexus-item-hint"
+      :class="{ 'nexus-item-hint-top': hintPosition === 'top' }"
+      role="tooltip"
+      aria-hidden="true"
+    >
       <div class="hint-root">
         <div class="hint-body">
           <div class="hint-row hint-row-multiline">
@@ -51,6 +61,7 @@ import {
   createNexusPreviewFrameCanvas,
   NEXUS_UI_PREVIEW_SIZE,
 } from '../logic/NexusPreviewCanvas';
+import { computed } from 'vue';
 
 type UINexusItem = DeepReadonly<NexusItemDefinition>;
 
@@ -71,6 +82,7 @@ const emit = defineEmits<{
 }>();
 
 const PREVIEW_SIZE = NEXUS_UI_PREVIEW_SIZE;
+const isSpecialAction = computed(() => props.item.specialAction !== '');
 
 function mountCanvas(el: HTMLElement | null, id: string, rotationStep: number): void {
   if (!el) return;
@@ -173,12 +185,48 @@ function onClick(): void {
   padding-top: 18px;
 }
 
+.nexus-item-text-special {
+  padding-top: 4px;
+}
+
 .nexus-item-name {
   font-size: 16px;
   font-weight: 600;
   display: block;
   margin-top: 4px;
   margin-left: -10px;
+}
+
+.nexus-item.special-action .nexus-item-name {
+  margin: 0;
+  font-size: 30px;
+  line-height: 1.05;
+  text-align: center;
+  letter-spacing: 0.03em;
+}
+
+.nexus-item.special-action {
+  min-height: 76px;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.nexus-item.special-action .nexus-item-main {
+  width: 100%;
+  height: 100%;
+  justify-content: center;
+  align-items: center;
+  gap: 0;
+}
+
+.nexus-item.special-action .nexus-item-text {
+  width: 100%;
+  height: 100%;
+  padding-top: 0;
+  display: grid;
+  place-items: center;
+  margin-left: 0;
 }
 
 .nexus-item-price {

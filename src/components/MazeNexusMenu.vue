@@ -9,18 +9,30 @@
         </button>
       </div>
       <div v-if="canAccessNexus" class="nexus-items" :class="{ 'nexus-items-two-col': availableItems.length > 6 }">
-        <MazeNexusMenuItem
-          v-for="entry in availableItems"
-          :key="`${entry.id}:${entry.rotationStep}`"
-          :id="entry.id"
-          :item="entry.item"
-          :rotation-step="entry.rotationStep"
-          :price="entry.price"
-          :can-afford="canAfford(entry.price)"
-          :show-new-banner="entry.showNewBanner"
-          mode="drag"
-          @drag-start="onItemDragStart(entry, $event)"
-        />
+        <template v-for="entry in availableItems" :key="`${entry.id}:${entry.rotationStep}`">
+          <MazeNexusMenuItem
+            v-if="entry.item.specialAction === ''"
+            :id="entry.id"
+            :item="entry.item"
+            :rotation-step="entry.rotationStep"
+            :price="entry.price"
+            :can-afford="canAfford(entry.price)"
+            :show-new-banner="entry.showNewBanner"
+            mode="drag"
+            @drag-start="onItemDragStart(entry, $event)"
+          />
+          <MazeNexusMenuItem
+            v-else
+            :id="entry.id"
+            :item="entry.item"
+            :rotation-step="entry.rotationStep"
+            :price="entry.price"
+            :can-afford="canAfford(entry.price)"
+            :show-new-banner="entry.showNewBanner"
+            mode="select"
+            @select="openSpecialUpgrade(entry)"
+          />
+        </template>
 
         <div v-if="showAddUpgradeAction" class="nexus-add-upgrade" @click="openUpgradeSelection">
           Add an upgrade
@@ -34,6 +46,11 @@
     @select="selectUpgrade"
     @postpone="postponeUpgradeSelection"
   />
+  <RefundResetRegretModal
+    :visible="refundResetRegretModalVisible"
+    @proceed="proceedSpecialUpgrade"
+    @postpone="postponeSpecialUpgrade"
+  />
 </template>
 
 <script setup lang="ts">
@@ -45,6 +62,7 @@ import { getGameState, uiState } from '../logic/UIState';
 import { DISCOVERY } from '../logic/DiscoveryLib';
 import { globalInputQueue } from '../logic/Model';
 import {
+  CmdMazeActivateNexusSpecialUpgrade,
   CmdMazePrepareUpgradeOffer,
   CmdMazeSelectNexusUpgrade,
   CmdSwitchTab,
@@ -60,6 +78,7 @@ import {
 } from '../logic/MazeNexusUpgradeProgress';
 import MazeNexusMenuItem from './MazeNexusMenuItem.vue';
 import MazeNexusUpgradeModal from './MazeNexusUpgradeModal.vue';
+import RefundResetRegretModal from './RefundResetRegretModal.vue';
 
 defineProps<{
   visible: boolean;
@@ -75,6 +94,8 @@ type UINexusMenuEntry = {
 };
 
 const selectionModalOpen = ref(false);
+const refundResetRegretModalVisible = ref(false);
+const selectedSpecialUpgradeId = ref('');
 
 const canAccessNexus = computed(() => {
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions
@@ -161,8 +182,29 @@ function canAfford(price: number): boolean {
 
 function onItemDragStart(entry: UINexusMenuEntry, event: PointerEvent): void {
   if (!canAccessNexus.value) return;
+  if (!entry.item.placable) return;
   if (!canAfford(entry.price)) return;
   startMazeManualDrag({ id: entry.id, rotationStep: entry.rotationStep }, event);
+}
+
+function openSpecialUpgrade(entry: UINexusMenuEntry): void {
+  if (!canAccessNexus.value) return;
+  if (entry.item.specialAction !== 'refund_reset_regret') return;
+  if (!canAfford(entry.price)) return;
+  selectedSpecialUpgradeId.value = entry.id;
+  refundResetRegretModalVisible.value = true;
+}
+
+function proceedSpecialUpgrade(): void {
+  if (!selectedSpecialUpgradeId.value) return;
+  globalInputQueue.push(new CmdMazeActivateNexusSpecialUpgrade({ nexusItemId: selectedSpecialUpgradeId.value }));
+  selectedSpecialUpgradeId.value = '';
+  refundResetRegretModalVisible.value = false;
+}
+
+function postponeSpecialUpgrade(): void {
+  selectedSpecialUpgradeId.value = '';
+  refundResetRegretModalVisible.value = false;
 }
 
 function openUpgradeSelection(): void {

@@ -229,6 +229,14 @@ export class CmdMazePlaceNexusItem implements CmdInput {
   }
 }
 
+export class CmdMazeActivateNexusSpecialUpgrade implements CmdInput {
+  readonly name = 'CmdMazeActivateNexusSpecialUpgrade';
+  readonly nexusItemId: string;
+  constructor(args: { nexusItemId: string }) {
+    this.nexusItemId = args.nexusItemId;
+  }
+}
+
 export class CmdMazeResetHighMovement implements CmdInput {
   readonly name = 'CmdMazeResetHighMovement';
 }

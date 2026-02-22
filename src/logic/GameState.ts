@@ -83,6 +83,7 @@ export class GameState {
   public mazeNexusUpgradeOpportunityCount: number = 1;
   public mazeNexusUpgradeOfferSeed: number = -1;
   public mazeNexusUpgradeSeedCursor: number = 0;
+  public mazeNexusRefundResetRegretUsed: boolean = false;
   public mazeResetEntranceCell: Point2 = { x: 0, y: 0 };
   public mazeIncrementalBonusPerPickup: number = 0;
   public mazeHasShardsRefresherPanel: boolean = false;

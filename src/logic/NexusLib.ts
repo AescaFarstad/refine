@@ -21,6 +21,8 @@ export type NexusItemDefinition = {
   name: string;
   description: string;
   price: number;
+  placable: boolean;
+  specialAction: '' | 'refund_reset_regret';
   minAcquiredUpgradesForOffer: number;
   priceIncrease: number[];
   maxCount: number;
@@ -31,7 +33,9 @@ export type NexusItemDefinition = {
   placableInstanceDescription: PlacableInstanceDescription;
 };
 
-export type RawNexusItemDefinition = Omit<NexusItemDefinition, 'id' | 'minAcquiredUpgradesForOffer' | 'priceIncrease' | 'maxCount' | 'travelPriceIncrease' | 'placedOnce' | 'effectRadius' | 'limitRadius' | 'placableInstanceDescription'> & {
+export type RawNexusItemDefinition = Omit<NexusItemDefinition, 'id' | 'placable' | 'specialAction' | 'minAcquiredUpgradesForOffer' | 'priceIncrease' | 'maxCount' | 'travelPriceIncrease' | 'placedOnce' | 'effectRadius' | 'limitRadius' | 'placableInstanceDescription'> & {
+  placable?: boolean;
+  specialAction?: '' | 'refund_reset_regret';
   priceIncrease?: number[];
   maxCount?: number;
   travelPriceIncrease?: number;
@@ -60,6 +64,8 @@ export function parseNexusItemDefinitions(
       name: def.name,
       description: def.description,
       price: def.price,
+      placable: def.placable ?? true,
+      specialAction: def.specialAction ?? '',
       minAcquiredUpgradesForOffer: def.minAcquiredUpgradesForOffer ?? 0,
       priceIncrease: def.priceIncrease ? def.priceIncrease.slice() : [0],
       maxCount: def.maxCount ?? -1,

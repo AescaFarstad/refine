@@ -100,6 +100,16 @@ function getMazeNexusPlacements(gs: ReadonlyGameState): Map<number, MazeNexusPla
   return placementsById;
 }
 
+export function getMazeNexusPlacementCountsByItem(gs: ReadonlyGameState): Map<string, number> {
+  const countsByItem = new Map<string, number>();
+  const placementsById = getMazeNexusPlacements(gs);
+  for (const placement of placementsById.values()) {
+    const currentCount = countsByItem.get(placement.itemId) ?? 0;
+    countsByItem.set(placement.itemId, currentCount + 1);
+  }
+  return countsByItem;
+}
+
 export function getMazeNexusItemPlacementCells(gs: ReadonlyGameState, itemId: string, center: Point2): Point2[] {
   const def = gs.lib.nexusItems.get(itemId)!;
   const rotationStep = getMazeNexusItemPlacementRotationStep(gs, itemId);
@@ -374,6 +384,25 @@ export function applyMazeNexusPanelPurchase(gs: GameState, itemId: string): void
   }
   if (itemId === SHARDS_REFRESHER_PANEL_ID) {
     gs.mazeHasShardsRefresherPanel = true;
+  }
+}
+
+export function refundMazeNexusPanelPurchase(gs: GameState, itemId: string, count: number): void {
+  if (count <= 0) return;
+
+  if (itemId === INCREMENTAL_PANEL_ID) {
+    gs.mazeIncrementalBonusPerPickup -= count;
+    if (gs.mazeIncrementalBonusPerPickup < 0) {
+      throw new Error(`Negative incremental pickup bonus while refunding "${itemId}"`);
+    }
+    if (gs.mazeIncrementalBonusPerPickup === 0) {
+      gs.maze.incrementalBonusCounter = 0;
+    }
+    return;
+  }
+
+  if (itemId === SHARDS_REFRESHER_PANEL_ID) {
+    gs.mazeHasShardsRefresherPanel = false;
   }
 }
 

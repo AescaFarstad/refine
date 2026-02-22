@@ -1,7 +1,7 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdReviewQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro, CmdPickupShard, CmdSpeedUpRefining, CmdClearShardPickupGrace, CmdMazeMoveTo, CmdMazePrepareUpgradeOffer, CmdMazeSelectNexusUpgrade, CmdMazePlaceNexusItem, CmdMazeResetHighMovement } from './InputCommands';
+import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdReviewQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro, CmdPickupShard, CmdSpeedUpRefining, CmdClearShardPickupGrace, CmdMazeMoveTo, CmdMazePrepareUpgradeOffer, CmdMazeSelectNexusUpgrade, CmdMazePlaceNexusItem, CmdMazeActivateNexusSpecialUpgrade, CmdMazeResetHighMovement } from './InputCommands';
 import { SHARD_PICKUP_DELAY_SEC } from '../Model';
 import { discover, discoverRefineTab, ensureSignatureDiscoveryFromWafer } from '../Discover';
 import { DISCOVERY } from '../DiscoveryLib';
@@ -15,7 +15,7 @@ import { startRefining } from '../Refine';
 import { applyReward } from '../Reward';
 import { saveAutosave } from '../SaveLoad';
 import { handleMazeMoveTo, computeMazeResourceSpawns, syncMazeResetEntranceCell, placeMazeNexusItem, isMazeEntranceCell } from '../Maze';
-import { prepareMazeNexusUpgradeOffer, selectMazeNexusUpgrade, onMazeNexusUpgradePlaced } from '../MazeNexusUpgradeProgress';
+import { prepareMazeNexusUpgradeOffer, selectMazeNexusUpgrade, onMazeNexusUpgradePlaced, activateMazeNexusSpecialUpgrade } from '../MazeNexusUpgradeProgress';
 import { uiState } from '../UIState';
 
 
@@ -526,6 +526,15 @@ handlersByName.set('CmdMazePlaceNexusItem', (gs, cmd) => {
     return;
   }
   onMazeNexusUpgradePlaced(gs, c.nexusItemId);
+  gs.maze.version++;
+  uiState.mazeVersion = gs.maze.version;
+  saveAutosave(gs);
+});
+
+handlersByName.set('CmdMazeActivateNexusSpecialUpgrade', (gs, cmd) => {
+  const c = cmd as CmdMazeActivateNexusSpecialUpgrade;
+  const activated = activateMazeNexusSpecialUpgrade(gs, c.nexusItemId);
+  if (!activated) return;
   gs.maze.version++;
   uiState.mazeVersion = gs.maze.version;
   saveAutosave(gs);

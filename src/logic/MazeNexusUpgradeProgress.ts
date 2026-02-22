@@ -2,6 +2,8 @@ import type { GameState } from './GameState';
 import type { ReadonlyGameState } from './UIState';
 import SeededRandom from './core/SeededRandom';
 import { advanceSeed } from './core/mathUtils';
+import { refundAllPlacedMazeNexusItems } from './Maze';
+import { getMazeNexusPlacementCountsByItem } from './MazeNexusBonuses';
 
 const MAZE_NEXUS_UPGRADE_CHOICE_COUNT = 3;
 export const MAZE_NEXUS_NO_UPGRADE_OFFER_SEED = -1;
@@ -16,6 +18,7 @@ function hasPlacedMazeNexusItem(gs: ReadonlyGameState, itemId: string): boolean 
 function canOfferMazeNexusUpgrade(gs: ReadonlyGameState, itemId: string): boolean {
   if (gs.mazeNexusAvailableUpgradeIds.includes(itemId)) return false;
   const def = gs.lib.nexusItems.get(itemId)!;
+  if (def.placedOnce && gs.mazeNexusPlacedUpgradeIds.includes(itemId)) return false;
   if (gs.mazeNexusAvailableUpgradeIds.length < def.minAcquiredUpgradesForOffer) return false;
   if (!def.placedOnce) return true;
   return !hasPlacedMazeNexusItem(gs, itemId);
@@ -73,9 +76,43 @@ export function selectMazeNexusUpgrade(gs: GameState, nexusItemId: string): bool
 }
 
 export function onMazeNexusUpgradePlaced(gs: GameState, nexusItemId: string): boolean {
+  const alreadyPlaced = gs.mazeNexusPlacedUpgradeIds.includes(nexusItemId);
+  if (!alreadyPlaced) {
+    gs.mazeNexusPlacedUpgradeIds.push(nexusItemId);
+    gs.mazeNexusUpgradeOpportunityCount++;
+  }
+
+  const def = gs.lib.nexusItems.get(nexusItemId)!;
+  if (def.placedOnce) {
+    const availableIndex = gs.mazeNexusAvailableUpgradeIds.indexOf(nexusItemId);
+    if (availableIndex !== -1) {
+      gs.mazeNexusAvailableUpgradeIds.splice(availableIndex, 1);
+    }
+  }
+  return !alreadyPlaced;
+}
+
+export function activateMazeNexusSpecialUpgrade(gs: GameState, nexusItemId: string): boolean {
+  const availableIndex = gs.mazeNexusAvailableUpgradeIds.indexOf(nexusItemId);
+  if (availableIndex === -1) return false;
+
+  const def = gs.lib.nexusItems.get(nexusItemId)!;
+  if (def.specialAction === '') return false;
+  if (gs.mazeNexusRefundResetRegretUsed) return false;
   if (gs.mazeNexusPlacedUpgradeIds.includes(nexusItemId)) return false;
-  gs.mazeNexusPlacedUpgradeIds.push(nexusItemId);
-  gs.mazeNexusUpgradeOpportunityCount++;
+
+  const refundedPlacementItemIds = Array.from(getMazeNexusPlacementCountsByItem(gs).keys());
+  gs.mazeNexusAvailableUpgradeIds.splice(availableIndex, 1);
+  if (def.specialAction === 'refund_reset_regret') {
+    refundAllPlacedMazeNexusItems(gs);
+    for (const refundedItemId of refundedPlacementItemIds) {
+      if (!gs.mazeNexusAvailableUpgradeIds.includes(refundedItemId)) {
+        gs.mazeNexusAvailableUpgradeIds.push(refundedItemId);
+      }
+    }
+    gs.mazeNexusRefundResetRegretUsed = true;
+  }
+  onMazeNexusUpgradePlaced(gs, nexusItemId);
   return true;
 }
 

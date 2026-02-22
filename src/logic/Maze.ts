@@ -3,7 +3,7 @@ import type { GameState, MazeResourceSpawn } from './GameState';
 import { createMazeTransient } from './GameState';
 import type { ResearchLib } from './ResearchLib';
 import { axialDistance } from './HexMath';
-import { axialToIndex, calculateVisibility, indexToAxial } from './Research';
+import { axialToIndex, calculateVisibility, indexToAxial, initResearchCells } from './Research';
 import { bfsMazePath } from './MazeBFS';
 import type { ReadonlyGameState } from './UIState';
 import { createMazeVisionAux } from './createMazeVisionAux';
@@ -14,10 +14,12 @@ import {
   applyMazeDoublerBonusesToSpawns,
   applyMazeRefresherBonusOnStep,
   grantMazeIncrementalPickupBonus,
+  getMazeNexusPlacementCountsByItem,
   getMazeNexusItemPlacementCells,
   getMazeNexusItemPlacementRotationStep,
   hasMazeNexusLimitRadiusConflict,
   isMazeShardRefresherStep,
+  refundMazeNexusPanelPurchase,
   resolveMazeRefresherStep,
 } from './MazeNexusBonuses';
 
@@ -224,6 +226,83 @@ export function resetMazeTransient(gs: GameState): void {
   gs.maze = m;
 }
 
+function rollbackMazeNexusItemPurchase(def: { price: number; priceIncrease: number[] }): number {
+  const rolledPriceIncrease = def.priceIncrease.slice();
+  for (let i = rolledPriceIncrease.length - 2; i >= 0; i--) {
+    rolledPriceIncrease[i]! -= rolledPriceIncrease[i + 1]!;
+  }
+
+  const paidPrice = def.price - rolledPriceIncrease[0]!;
+  def.price = paidPrice;
+  def.priceIncrease = rolledPriceIncrease;
+  return paidPrice;
+}
+
+function rollbackMazeNexusPlacementRotationStep(gs: GameState, itemId: string, count: number): void {
+  const def = gs.lib.nexusItems.get(itemId)!;
+  if (!def.placableInstanceDescription.rotating) return;
+
+  const currentStep = gs.mazeNexusPlacementRotationSteps[itemId] ?? 0;
+  const stepDelta = count % 6;
+  const rolledStep = ((currentStep - stepDelta) % 6 + 6) % 6;
+  gs.mazeNexusPlacementRotationSteps[itemId] = rolledStep;
+}
+
+function resetMazeResearchCellsAfterNexusRefund(gs: GameState): void {
+  const ownedIndexes: number[] = [];
+  for (let i = 0; i < gs.researchCells.length; i++) {
+    if (gs.researchCells[i]!.owned) {
+      ownedIndexes.push(i);
+    }
+  }
+
+  initResearchCells(gs, gs.lib.research);
+  for (const cell of gs.researchCells) {
+    if (!cell.blocked) {
+      cell.owned = false;
+    }
+  }
+
+  for (const idx of ownedIndexes) {
+    const cell = gs.researchCells[idx]!;
+    if (!cell.blocked) {
+      cell.owned = true;
+    }
+  }
+
+  let ownedPaidCount = 0;
+  for (const cell of gs.researchCells) {
+    if (cell.owned && cell.cost > 0) {
+      ownedPaidCount++;
+    }
+  }
+  gs.researchOwnedCount = ownedPaidCount;
+
+  calculateVisibility(gs, gs.lib.research);
+  syncMazeResetEntranceCell(gs);
+}
+
+export function refundAllPlacedMazeNexusItems(gs: GameState): number {
+  const placementCountsByItem = getMazeNexusPlacementCountsByItem(gs);
+  let refundedTimeFlux = 0;
+
+  for (const [itemId, placementCount] of placementCountsByItem.entries()) {
+    const def = gs.lib.nexusItems.get(itemId)!;
+    for (let i = 0; i < placementCount; i++) {
+      refundedTimeFlux += rollbackMazeNexusItemPurchase(def);
+    }
+    rollbackMazeNexusPlacementRotationStep(gs, itemId, placementCount);
+    refundMazeNexusPanelPurchase(gs, itemId, placementCount);
+  }
+
+  gs.timeFlux += refundedTimeFlux;
+  gs.mazeNextNexusPlacementId = 1;
+  resetMazeResearchCellsAfterNexusRefund(gs);
+  computeMazeResourceSpawns(gs, gs.lib.research);
+
+  return refundedTimeFlux;
+}
+
 function getMazeNexusPlacementCellFailureReason(gs: ReadonlyGameState, cell: Point2): string {
   const idx = axialToIndex(cell.x, cell.y);
   if (idx === -1) return 'out_of_bounds';
@@ -280,6 +359,11 @@ export function placeMazeNexusItem(gs: GameState, itemId: string, center: Point2
     return false;
   }
 
+  const def = gs.lib.nexusItems.get(itemId)!;
+  if (!def.placable) {
+    return false;
+  }
+
   if (!isMazeNexusCell(gs, gs.maze.avatarCell)) {
     return false;
   }
@@ -289,7 +373,6 @@ export function placeMazeNexusItem(gs: GameState, itemId: string, center: Point2
     return false;
   }
 
-  const def = gs.lib.nexusItems.get(itemId)!;
   if (gs.timeFlux < def.price) {
     return false;
   }

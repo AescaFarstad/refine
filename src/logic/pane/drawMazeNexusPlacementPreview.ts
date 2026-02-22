@@ -6,6 +6,7 @@ import {
   getMazeNexusLimitBlockingDisks,
   getMazeNexusPlacementAffectedSpawnIndexes,
   getMazeNexusPlacementCentroidUnit,
+  getMazeNexusItemPlacementRotationStep,
 } from '../Maze';
 import { RESOURCE_SPECS } from '../Resources';
 import type { ReadonlyGameState } from '../UIState';
@@ -24,11 +25,19 @@ export interface MazeNexusPlacementPreviewRenderOptions {
   hexSize: number;
 }
 
-function getNexusPreviewDrawSize(gs: ReadonlyGameState, nexusItemId: string, hexSize: number): { w: number; h: number } {
+function getNexusPreviewDrawSize(
+  gs: ReadonlyGameState,
+  nexusItemId: string,
+  hexSize: number,
+): { w: number; h: number } {
   const def = gs.lib.nexusItems.get(nexusItemId)!;
   const loops = computeHexBoundary(def.placableInstanceDescription.cells).map(loop => loop.points);
   if (loops.length === 0) {
-    const fallback = hexSize * 1.2;
+    const fallbackScale = Math.max(
+      def.placableInstanceDescription.glyphScale,
+      def.placableInstanceDescription.imageScale,
+    );
+    const fallback = hexSize * 1.2 * fallbackScale;
     return { w: fallback, h: fallback };
   }
 
@@ -60,6 +69,7 @@ export function renderMazeNexusPlacementPreview(
   const { gs, nexusItemId, anchor, valid, origin, hexSize } = options;
   const cells = getMazeNexusItemPlacementCells(gs, nexusItemId, anchor);
   const def = gs.lib.nexusItems.get(nexusItemId)!;
+  const rotationStep = getMazeNexusItemPlacementRotationStep(gs, nexusItemId);
 
   const centroidUnit = getMazeNexusPlacementCentroidUnit(cells);
   const cx = origin.x + centroidUnit.x * hexSize;
@@ -135,10 +145,14 @@ export function renderMazeNexusPlacementPreview(
   const source = atlasStorage.getNexusSource();
   const drawSize = getNexusPreviewDrawSize(gs, nexusItemId, hexSize);
   ctx.save();
+  ctx.translate(cx, cy);
+  if (rotationStep !== 0) {
+    ctx.rotate(rotationStep * Math.PI / 3);
+  }
   ctx.drawImage(
     source,
     nexusFrame.x, nexusFrame.y, nexusFrame.w, nexusFrame.h,
-    cx - drawSize.w / 2, cy - drawSize.h / 2, drawSize.w, drawSize.h,
+    -drawSize.w / 2, -drawSize.h / 2, drawSize.w, drawSize.h,
   );
   ctx.restore();
 }

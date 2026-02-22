@@ -3,12 +3,16 @@ import type { Point2 } from './core/math';
 export type PlacableInstanceDescription = {
   passable: boolean;
   button: boolean;
+  rotating: boolean;
   cells: Point2[];
+  glyph: string;
   image: string;
   opacity: number;
   glyphPlacement: 'perCell' | 'center';
+  imagePlacement: 'perCell' | 'center';
   showStandardBackground: boolean;
-  iconScale: number;
+  glyphScale: number;
+  imageScale: number;
 };
 
 export type NexusItemDefinition = {
@@ -19,17 +23,17 @@ export type NexusItemDefinition = {
   priceIncrease: number[];
   maxCount: number;
   travelPriceIncrease: number;
+  placedOnce: boolean;
   effectRadius: number;
   limitRadius: number;
-  glyph: string;
   placableInstanceDescription: PlacableInstanceDescription;
 };
 
-export type RawNexusItemDefinition = Omit<NexusItemDefinition, 'id' | 'priceIncrease' | 'maxCount' | 'travelPriceIncrease' | 'effectRadius' | 'limitRadius' | 'glyph' | 'placableInstanceDescription'> & {
-  glyph?: string;
+export type RawNexusItemDefinition = Omit<NexusItemDefinition, 'id' | 'priceIncrease' | 'maxCount' | 'travelPriceIncrease' | 'placedOnce' | 'effectRadius' | 'limitRadius' | 'placableInstanceDescription'> & {
   priceIncrease?: number[];
   maxCount?: number;
   travelPriceIncrease?: number;
+  placedOnce?: boolean;
   effectRadius?: number;
   limitRadius?: number;
   placableInstanceDescription?: Partial<PlacableInstanceDescription>;
@@ -56,18 +60,22 @@ export function parseNexusItemDefinitions(
       priceIncrease: def.priceIncrease ? def.priceIncrease.slice() : [0],
       maxCount: def.maxCount ?? -1,
       travelPriceIncrease: def.travelPriceIncrease ?? 0,
+      placedOnce: def.placedOnce ?? false,
       effectRadius: def.effectRadius ?? 0,
       limitRadius: def.limitRadius ?? 0,
-      glyph: def.glyph ?? '',
       placableInstanceDescription: {
         passable,
         button,
+        rotating: rawPlacable?.rotating ?? false,
         cells: normalizedCells,
+        glyph: rawPlacable?.glyph ?? '',
         image: rawPlacable?.image ?? '',
         opacity: rawPlacable?.opacity ?? 1,
         glyphPlacement: rawPlacable?.glyphPlacement ?? 'perCell',
+        imagePlacement: rawPlacable?.imagePlacement ?? 'perCell',
         showStandardBackground: rawPlacable?.showStandardBackground ?? button,
-        iconScale: rawPlacable?.iconScale ?? 1,
+        glyphScale: rawPlacable?.glyphScale ?? 1,
+        imageScale: rawPlacable?.imageScale ?? 1,
       },
     });
   }

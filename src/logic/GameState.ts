@@ -76,8 +76,10 @@ export class GameState {
   public mazeHighShardDust: number = 0;
   public mazeHighMovementUsed: number = 0;
   public mazeNextNexusPlacementId: number = 1;
+  public mazeNexusPlacementRotationSteps: Record<string, number> = {};
   public mazeResetEntranceCell: Point2 = { x: 0, y: 0 };
   public mazeIncrementalBonusPerPickup: number = 0;
+  public mazeHasShardsRefresherPanel: boolean = false;
 
   // Maze — transient (not saved, reset on load)
   public maze: MazeTransient = createMazeTransient();

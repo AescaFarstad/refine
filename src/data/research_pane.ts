@@ -22,6 +22,7 @@ export const researchPane: ResearchPlacementInput[] = [
   { archetypeId: 'stat_hp', cells: { x: -1, y: 3 } },
   { archetypeId: 'res_skillPoint', cells: { x: -2, y: -1 } },
   { archetypeId: 'stat_volume', cells: { x: -3, y: 2 } },
+  { archetypeId: 'res_shards', cells: { x: -3, y: 4 } },
 
 
   { archetypeId: 'gear_machete', cells: { x: 1, y: 5 }, radius: 1 },

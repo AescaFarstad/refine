@@ -10,22 +10,22 @@
       </div>
       <div v-if="canAccessNexus" class="nexus-items">
         <div
-          v-for="[id, item] in items"
-          :key="id"
+          v-for="entry in items"
+          :key="`${entry.id}:${entry.rotationStep}`"
           class="nexus-item"
-          :class="{ 'cannot-afford': !canAfford(id) }"
-          @pointerdown="onItemPointerDown(item, $event)"
+          :class="{ 'cannot-afford': !canAfford(entry.id) }"
+          @pointerdown="onItemPointerDown(entry, $event)"
         >
-          <div class="nexus-item-preview" :ref="(el) => mountCanvas(el as HTMLElement | null, id)"></div>
+          <div class="nexus-item-preview" :ref="(el) => mountCanvas(el as HTMLElement | null, entry.id, entry.rotationStep)"></div>
           <div class="nexus-item-text">
-            <span class="nexus-item-name">{{ item.name }}</span>
-            <div class="nexus-item-desc" v-html="item.description"></div>
-            <div v-if="item.effectRadius > 0" class="nexus-item-stat">Effect radius: {{ item.effectRadius }}</div>
-            <div v-if="item.limitRadius > 0" class="nexus-item-stat">Minimum separation: {{ item.limitRadius * 2 }}</div>
-            <div v-if="!isPassable(item)" class="nexus-item-impassable">Impassable</div>
+            <span class="nexus-item-name">{{ entry.item.name }}</span>
+            <div class="nexus-item-desc" v-html="entry.item.description"></div>
+            <div v-if="entry.item.effectRadius > 0" class="nexus-item-stat">Effect radius: {{ entry.item.effectRadius }}</div>
+            <div v-if="entry.item.limitRadius > 0" class="nexus-item-stat">Minimum separation: {{ entry.item.limitRadius * 2 }}</div>
+            <div v-if="!isPassable(entry.item)" class="nexus-item-impassable">Impassable</div>
           </div>
           <div class="nexus-item-price-area">
-            <span class="nexus-item-price">{{ getLivePrice(id) }}<span class="nexus-item-price-glyph">∿</span></span>
+            <span class="nexus-item-price">{{ getLivePrice(entry.id) }}<span class="nexus-item-price-glyph">∿</span></span>
           </div>
         </div>
       </div>
@@ -37,10 +37,12 @@
 import { computed } from 'vue';
 import type { NexusItemDefinition } from '../logic/NexusLib';
 import { startMazeManualDrag } from '../logic/MazeNexusDnd';
+import type { DeepReadonly } from '../logic/UIState';
 import { getGameState, uiState } from '../logic/UIState';
 import { DISCOVERY } from '../logic/DiscoveryLib';
 import { globalInputQueue } from '../logic/Model';
 import { CmdSwitchTab } from '../logic/input/InputCommands';
+import { getMazeNexusItemPlacementRotationStep } from '../logic/Maze';
 import {
   createNexusPreviewFrameCanvas,
   NEXUS_UI_PREVIEW_SIZE,
@@ -50,12 +52,28 @@ defineProps<{
   visible: boolean;
 }>();
 
-type UINexusItem = Readonly<NexusItemDefinition>;
+type UINexusItem = DeepReadonly<NexusItemDefinition>;
+type UINexusMenuEntry = {
+  id: string;
+  item: UINexusItem;
+  rotationStep: number;
+};
 
 const items = computed(() => {
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   uiState.lib;
-  return Array.from(getGameState().lib.nexusItems.entries());
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.mazeVersion;
+
+  const gs = getGameState();
+  const isPlaced = (itemId: string): boolean => gs.researchCells.some(cell => cell.nexusId === itemId);
+  return Array.from(gs.lib.nexusItems.entries())
+    .filter(([, item]) => !item.placedOnce || !isPlaced(item.id))
+    .map(([id, item]): UINexusMenuEntry => ({
+      id,
+      item,
+      rotationStep: getMazeNexusItemPlacementRotationStep(gs, id),
+    }));
 });
 
 const PREVIEW_SIZE = NEXUS_UI_PREVIEW_SIZE;
@@ -65,11 +83,12 @@ const canAccessNexus = computed(() => {
   return getGameState().discoveries[DISCOVERY.REFINEMENT_FAILED] === true;
 });
 
-function mountCanvas(el: HTMLElement | null, id: string): void {
+function mountCanvas(el: HTMLElement | null, id: string, rotationStep: number): void {
   if (!el) return;
-  // Only mount once - check if canvas is already there
-  if (el.firstChild) return;
-  el.appendChild(createNexusPreviewFrameCanvas(id, PREVIEW_SIZE));
+  const renderedStep = Number(el.dataset.rotationStep ?? -1);
+  if (el.firstChild && renderedStep === rotationStep) return;
+  el.replaceChildren(createNexusPreviewFrameCanvas(id, PREVIEW_SIZE, rotationStep));
+  el.dataset.rotationStep = String(rotationStep);
 }
 
 function getLivePrice(itemId: string): number {
@@ -84,12 +103,12 @@ function isPassable(item: UINexusItem): boolean {
   return item.placableInstanceDescription.passable;
 }
 
-function onItemPointerDown(item: UINexusItem, event: PointerEvent): void {
+function onItemPointerDown(entry: UINexusMenuEntry, event: PointerEvent): void {
   if (event.button !== 0) return;
   event.preventDefault();
   if (!canAccessNexus.value) return;
-  if (!canAfford(item.id)) return;
-  startMazeManualDrag(item, event);
+  if (!canAfford(entry.id)) return;
+  startMazeManualDrag({ id: entry.id, rotationStep: entry.rotationStep }, event);
 }
 
 function goToRefineTab(): void {

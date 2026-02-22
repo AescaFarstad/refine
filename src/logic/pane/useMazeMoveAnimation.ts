@@ -1,14 +1,11 @@
 import { ref, type Ref, type ComputedRef, onUnmounted } from 'vue';
 import { axialToPixel } from '../HexMath';
 import { createMazeEnterProjection, planMazeMoveSegments, projectMazeMoveTo, type MazeEnterProjection } from '../Maze';
-import { axialToIndex } from '../Research';
+import { REFRESHER_PANEL_PAUSE_MS, isMazeRefresherStep } from '../MazeNexusBonuses';
 import type { Point2 } from '../ItemLib';
 import type { ReadonlyGameState } from '../UIState';
 
 type Point2Ref = Ref<Point2> | ComputedRef<Point2>;
-
-const REFRESHER_PANEL_ID = 'refresher_panel';
-const REFRESHER_PANEL_PAUSE_MS = 200;
 
 interface MoveSegment {
   path: Point2[];
@@ -71,9 +68,7 @@ export function useMazeMoveAnimation(options: MazeMoveAnimationOptions): MazeMov
   }
 
   function isRefresherPanelCell(gs: ReadonlyGameState, cell: Point2): boolean {
-    const idx = axialToIndex(cell.x, cell.y);
-    if (idx === -1) return false;
-    return gs.researchCells[idx]!.nexusId === REFRESHER_PANEL_ID;
+    return isMazeRefresherStep(gs, cell);
   }
 
   function cloneProjection(projection: MazeEnterProjection): MazeEnterProjection {

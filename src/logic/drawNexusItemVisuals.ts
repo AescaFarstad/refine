@@ -2,6 +2,7 @@ import type { Point2 } from './ItemLib';
 import atlasStorage from './AtlasStorage';
 
 export type NexusGlyphPlacement = 'perCell' | 'center';
+export type NexusImagePlacement = 'perCell' | 'center';
 
 export type NexusVisualCell = {
   pixel: Point2;
@@ -19,6 +20,7 @@ export type DrawNexusItemVisualsOptions = {
   glyphText: string;
   glyphSize: number;
   glyphPlacement: NexusGlyphPlacement;
+  imagePlacement: NexusImagePlacement;
   opacity: number;
   centerGlyphColor: string;
   centerGlyphOpacityMul: number;
@@ -86,22 +88,36 @@ export function drawNexusItemVisuals(options: DrawNexusItemVisualsOptions): void
     glyphText,
     glyphSize,
     glyphPlacement,
+    imagePlacement,
     opacity,
     centerGlyphColor,
     centerGlyphOpacityMul,
   } = options;
 
-  let anyImageDrawn = false;
-  for (const cell of cells) {
-    const imageDrawn = drawNexusItemImage(
+  if (imagePlacement === 'perCell') {
+    for (const cell of cells) {
+      drawNexusItemImage(
+        ctx,
+        imageKey,
+        cell.pixel,
+        iconMaxSize,
+        opacity * cell.imageOpacityMul,
+      );
+    }
+  } else {
+    drawNexusItemImage(
       ctx,
       imageKey,
-      cell.pixel,
+      centerPixel,
       iconMaxSize,
-      opacity * cell.imageOpacityMul,
+      opacity,
     );
-    anyImageDrawn ||= imageDrawn;
-    if (!imageDrawn && glyphPlacement === 'perCell' && glyphText) {
+  }
+
+  if (!glyphText) return;
+
+  if (glyphPlacement === 'perCell') {
+    for (const cell of cells) {
       drawNexusItemGlyph(
         ctx,
         glyphText,
@@ -111,9 +127,7 @@ export function drawNexusItemVisuals(options: DrawNexusItemVisualsOptions): void
         opacity * cell.glyphOpacityMul,
       );
     }
-  }
-
-  if (!anyImageDrawn && glyphPlacement === 'center' && glyphText) {
+  } else {
     drawNexusItemGlyph(
       ctx,
       glyphText,
@@ -124,4 +138,3 @@ export function drawNexusItemVisuals(options: DrawNexusItemVisualsOptions): void
     );
   }
 }
-

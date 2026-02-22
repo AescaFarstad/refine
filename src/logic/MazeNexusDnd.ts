@@ -4,7 +4,7 @@ import {
   NEXUS_UI_PREVIEW_SIZE,
 } from './NexusPreviewCanvas';
 
-export type MazeDragNexusItem = Readonly<Pick<NexusItemDefinition, 'id'>>;
+export type MazeDragNexusItem = Readonly<Pick<NexusItemDefinition, 'id'> & { rotationStep: number }>;
 
 export type MazeDragPayload = {
   item: MazeDragNexusItem;
@@ -115,7 +115,7 @@ function createFollower(item: MazeDragNexusItem): void {
   wrap.style.placeItems = 'center';
   wrap.style.transform = 'translate(-9999px, -9999px)';
 
-  wrap.appendChild(createNexusPreviewFrameCanvas(item.id, FOLLOWER_SIZE));
+  wrap.appendChild(createNexusPreviewFrameCanvas(item.id, FOLLOWER_SIZE, item.rotationStep));
 
   document.body.appendChild(wrap);
   follower = wrap;

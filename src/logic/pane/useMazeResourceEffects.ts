@@ -1,7 +1,10 @@
 import type { Ref, ComputedRef } from 'vue';
 import { axialToPixel } from '../HexMath';
 import { RESOURCE_SPECS } from '../Resources';
-import { getMazeNextIncrementalPickupBonus, resolveMazeRefresherStep } from '../MazeNexusBonuses';
+import {
+  getMazeNextIncrementalPickupBonus,
+  resolveMazeRefresherStep,
+} from '../MazeNexusBonuses';
 import { axialToIndex } from '../Research';
 import type { Point2 } from '../ItemLib';
 import type { MazeResourceSpawn } from '../GameState';
@@ -320,6 +323,13 @@ export function useMazeResourceEffects(
       );
       if (spawnAtCell) {
         simulatedTaken.push({ x: steppedCell.x, y: steppedCell.y });
+        const refreshedSpawns = resolveMazeRefresherStep(gs, steppedCell, simulatedTaken);
+        for (const refreshed of refreshedSpawns) {
+          const delayMs = refreshed.distanceUnit * REFRESHER_DELAY_MS_PER_UNIT;
+          spawnRefresherAt(refreshed.spawnCell, delayMs);
+          setVisualRefreshMask(toCellKey(refreshed.spawnCell), delayMs);
+          removeCell(simulatedTaken, refreshed.spawnCell);
+        }
         continue;
       }
 

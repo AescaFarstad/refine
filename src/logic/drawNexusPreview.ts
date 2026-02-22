@@ -2,7 +2,12 @@ import type { Point2 } from './ItemLib';
 import { axialToPixel } from './HexMath';
 import { computeHexBoundary } from './hexBoundary';
 import { traceSmoothHexBoundary } from './drawSmoothBoundary';
-import { drawNexusItemVisuals, type NexusGlyphPlacement, type NexusVisualCell } from './drawNexusItemVisuals';
+import {
+  drawNexusItemVisuals,
+  type NexusGlyphPlacement,
+  type NexusImagePlacement,
+  type NexusVisualCell,
+} from './drawNexusItemVisuals';
 
 const FILL_COLOR_TOP = 'rgb(34, 68, 74)';
 const FILL_COLOR_MID = 'rgb(44, 84, 88)';
@@ -18,7 +23,9 @@ export function createNexusPreviewCanvas(
   imageKey: string,
   glyph: string,
   glyphPlacement: NexusGlyphPlacement,
-  iconScale: number = 1,
+  imagePlacement: NexusImagePlacement = 'perCell',
+  glyphScale: number = 1,
+  imageScale: number = 1,
   passable: boolean = true,
 ): HTMLCanvasElement | null {
   const loops = computeHexBoundary(cells as Point2[]).map(loop => loop.points);
@@ -85,7 +92,7 @@ export function createNexusPreviewCanvas(
   ctx.stroke();
   ctx.restore();
 
-  const glyphSize = Math.max(8, hexSize * 1.05 * iconScale);
+  const glyphSize = Math.max(8, hexSize * 1.05 * glyphScale);
   let centerPixel: Point2 = { x: 0, y: 0 };
   const visualCells: NexusVisualCell[] = [];
   for (const cell of cells) {
@@ -107,10 +114,11 @@ export function createNexusPreviewCanvas(
     cells: visualCells,
     centerPixel,
     imageKey,
-    iconMaxSize: hexSize * 1.2 * iconScale,
+    iconMaxSize: hexSize * 1.2 * imageScale,
     glyphText: glyph,
     glyphSize,
     glyphPlacement,
+    imagePlacement,
     opacity: 1,
     centerGlyphColor: ITEM_COLOR,
     centerGlyphOpacityMul: 1,

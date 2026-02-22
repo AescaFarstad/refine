@@ -9,18 +9,21 @@ import type { ReadonlyGameState } from './UIState';
 import { createMazeVisionAux } from './createMazeVisionAux';
 import { computeMazeVisibilityFromIndex, createMazeVisibilityRuntime } from './MazeVision';
 import {
-  applyMazeIncrementalPanelPurchase,
+  applyMazeNexusPanelPurchase,
   applyMazeDoublerBonusesToSpawns,
   applyMazeRefresherBonusOnStep,
   grantMazeIncrementalPickupBonus,
   getMazeNexusItemPlacementCells,
+  getMazeNexusItemPlacementRotationStep,
   hasMazeNexusLimitRadiusConflict,
+  isMazeShardRefresherStep,
   resolveMazeRefresherStep,
 } from './MazeNexusBonuses';
 
 export {
   getMazeNexusLimitBlockingDisks,
   getMazeNexusItemPlacementCells,
+  getMazeNexusItemPlacementRotationStep,
   getMazeNexusLimitDisks,
   getMazeNexusPlacementAffectedSpawnIndexes,
   getMazeNexusPlacementCentroidUnit,
@@ -29,6 +32,7 @@ export {
 const MAZE_ENTRANCE_ARCHETYPE_ID = 'disc_maze_navigation';
 const MAZE_NEXUS_ARCHETYPE_ID = 'disc_maze_nexus';
 const FREE_MOVE_PANEL_ID = 'free_move_panel';
+const SHARDS_REFRESHER_PANEL_ID = 'shards_refresher_panel';
 
 export function isMazeEntranceCell(gs: ReadonlyGameState, cell: Point2): boolean {
   const idx = axialToIndex(cell.x, cell.y);
@@ -106,12 +110,17 @@ function rebuildMazeVisibilityState(gs: GameState): void {
 
 export function computeMazeCellDerivedData(gs: GameState): void {
   let hasFreeMovePanel = false;
+  let hasShardsRefresherPanel = false;
   for (const cell of gs.researchCells) {
     cell.mazeMoveCostMult = 1;
     if (cell.nexusId === FREE_MOVE_PANEL_ID) {
       hasFreeMovePanel = true;
     }
+    if (cell.nexusId === SHARDS_REFRESHER_PANEL_ID) {
+      hasShardsRefresherPanel = true;
+    }
   }
+  gs.mazeHasShardsRefresherPanel = hasShardsRefresherPanel;
 
   if (!hasFreeMovePanel) return;
 
@@ -197,11 +206,17 @@ function getMazeNexusPlacementCellFailureReason(gs: ReadonlyGameState, cell: Poi
   return '';
 }
 
-function isMazeNexusPlacementCellValid(gs: ReadonlyGameState, cell: Point2): boolean {
-  return getMazeNexusPlacementCellFailureReason(gs, cell) === '';
+function hasPlacedMazeNexusItem(gs: ReadonlyGameState, itemId: string): boolean {
+  for (const researchCell of gs.researchCells) {
+    if (researchCell.nexusId === itemId) return true;
+  }
+  return false;
 }
 
 export function getMazeNexusPlacementFailureReason(gs: ReadonlyGameState, itemId: string, center: Point2): string {
+  const def = gs.lib.nexusItems.get(itemId)!;
+  if (def.placedOnce && hasPlacedMazeNexusItem(gs, itemId)) return 'already_placed_once';
+
   const cells = getMazeNexusItemPlacementCells(gs, itemId, center);
   for (const cell of cells) {
     const reason = getMazeNexusPlacementCellFailureReason(gs, cell);
@@ -212,12 +227,7 @@ export function getMazeNexusPlacementFailureReason(gs: ReadonlyGameState, itemId
 }
 
 export function canPlaceMazeNexusItem(gs: ReadonlyGameState, itemId: string, center: Point2): boolean {
-  const cells = getMazeNexusItemPlacementCells(gs, itemId, center);
-  for (const cell of cells) {
-    if (!isMazeNexusPlacementCellValid(gs, cell)) return false;
-  }
-  if (hasMazeNexusLimitRadiusConflict(gs, itemId, center)) return false;
-  return true;
+  return getMazeNexusPlacementFailureReason(gs, itemId, center) === '';
 }
 
 export function applyMazeNexusPlacementAtCell(gs: GameState, itemId: string, placementId: number, cell: Point2): void {
@@ -251,7 +261,11 @@ export function placeMazeNexusItem(gs: GameState, itemId: string, center: Point2
   for (const cell of cells) {
     applyMazeNexusPlacementAtCell(gs, itemId, placementId, cell);
   }
-  applyMazeIncrementalPanelPurchase(gs, itemId);
+  applyMazeNexusPanelPurchase(gs, itemId);
+  if (def.placableInstanceDescription.rotating) {
+    const currentStep = gs.mazeNexusPlacementRotationSteps[itemId] ?? 0;
+    gs.mazeNexusPlacementRotationSteps[itemId] = (currentStep + 1) % 6;
+  }
 
   def.price += def.priceIncrease[0] ?? 0;
   for (let i = 0; i < def.priceIncrease.length - 1; i++) {
@@ -287,6 +301,9 @@ function collectResourceAtCell(gs: GameState, cell: Point2): void {
     }
 
     grantMazeIncrementalPickupBonus(gs, spawn.resourceKey);
+    if (isMazeShardRefresherStep(gs, cell)) {
+      applyMazeRefresherBonusOnStep(gs, cell);
+    }
     return;
   }
 
@@ -369,6 +386,12 @@ function collectProjectionResourceAtCell(gs: ReadonlyGameState, projection: Maze
   const spawn = gs.mazeResourceSpawns.find(s => s.cell.x === cell.x && s.cell.y === cell.y);
   if (spawn) {
     projection.takenCells.push(copy(cell));
+    if (isMazeShardRefresherStep(gs, cell)) {
+      const refreshed = resolveMazeRefresherStep(gs, cell, projection.takenCells);
+      for (const refresh of refreshed) {
+        removeProjectionTakenCell(projection, refresh.spawnCell);
+      }
+    }
     return;
   }
 

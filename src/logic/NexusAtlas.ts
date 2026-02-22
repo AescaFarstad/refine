@@ -7,13 +7,15 @@ let nexusAtlasReady = false;
 let nexusAtlasLoading: Promise<void> | null = null;
 
 type NexusAtlasItemSource = {
-  glyph: string;
   placableInstanceDescription: {
     passable: boolean;
     cells: readonly Point2[];
+    glyph: string;
     image: string;
     glyphPlacement: 'perCell' | 'center';
-    iconScale: number;
+    imagePlacement: 'perCell' | 'center';
+    glyphScale: number;
+    imageScale: number;
   };
 };
 
@@ -64,9 +66,11 @@ export async function ensureNexusAtlas(nexusItems: ReadonlyMap<string, NexusAtla
         cells,
         NEXUS_ATLAS_TILE_SIZE,
         def.placableInstanceDescription.image,
-        def.glyph,
+        def.placableInstanceDescription.glyph,
         def.placableInstanceDescription.glyphPlacement,
-        def.placableInstanceDescription.iconScale,
+        def.placableInstanceDescription.imagePlacement,
+        def.placableInstanceDescription.glyphScale,
+        def.placableInstanceDescription.imageScale,
         def.placableInstanceDescription.passable,
       );
       if (canvas) {

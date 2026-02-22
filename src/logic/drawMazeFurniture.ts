@@ -289,9 +289,9 @@ const defaultNexusItemRenderer: MazeNexusItemRenderer = {
     const { ctx, game, origin, hexSize, glyphSize, group, takenSet } = args;
     const def = game.lib.nexusItems.get(group.nexusId)!;
     const pid = def.placableInstanceDescription;
-    const scaledGlyphSize = glyphSize * pid.iconScale;
+    const scaledGlyphSize = glyphSize * pid.glyphScale;
     const bgRadius = scaledGlyphSize * GLYPH_BG_RADIUS_SCALE;
-    const text = def.glyph || def.name.charAt(0);
+    const text = pid.glyph;
     const centerUnit = getGroupCenterUnit(group.cells);
     const centerPixel = { x: origin.x + centerUnit.x * hexSize, y: origin.y + centerUnit.y * hexSize };
 
@@ -322,10 +322,11 @@ const defaultNexusItemRenderer: MazeNexusItemRenderer = {
       cells: visualCells,
       centerPixel,
       imageKey: pid.image,
-      iconMaxSize: hexSize * 1.2 * pid.iconScale,
+      iconMaxSize: hexSize * 1.2 * pid.imageScale,
       glyphText: text,
       glyphSize: scaledGlyphSize,
       glyphPlacement: pid.glyphPlacement,
+      imagePlacement: pid.imagePlacement,
       opacity: pid.opacity,
       centerGlyphColor: anyTaken ? TAKEN_GLYPH_COLOR : NEXUS_ITEM_COLOR,
       centerGlyphOpacityMul: 1,
@@ -340,8 +341,8 @@ const defaultNexusItemRenderer: MazeNexusItemRenderer = {
 
     const def = game.lib.nexusItems.get(group.nexusId)!;
     const pid = def.placableInstanceDescription;
-    const text = def.glyph || def.name.charAt(0);
-    const glyphSize = Math.max(12, stoneHexSize * 1.05 * pid.iconScale);
+    const text = pid.glyph;
+    const glyphSize = Math.max(12, stoneHexSize * 1.05 * pid.glyphScale);
 
     let anyTaken = false;
     const visualCells: NexusVisualCell[] = [];
@@ -363,10 +364,11 @@ const defaultNexusItemRenderer: MazeNexusItemRenderer = {
       cells: visualCells,
       centerPixel: shell.centerPixel,
       imageKey: pid.image,
-      iconMaxSize: stoneHexSize * 1.2 * pid.iconScale,
+      iconMaxSize: stoneHexSize * 1.2 * pid.imageScale,
       glyphText: text,
       glyphSize,
       glyphPlacement: pid.glyphPlacement,
+      imagePlacement: pid.imagePlacement,
       opacity: pid.opacity,
       centerGlyphColor: anyTaken ? TAKEN_GLYPH_COLOR : NEXUS_ITEM_COLOR,
       centerGlyphOpacityMul: 1,

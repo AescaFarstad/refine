@@ -1,4 +1,4 @@
-import { axialToPixel } from './HexMath';
+import { axialRotateCW, axialToPixel } from './HexMath';
 import type { MazeResourceSpawn, GameState } from './GameState';
 import type { Point2 } from './core/math';
 import { axialToIndex, indexToAxial } from './Research';
@@ -10,6 +10,9 @@ const CHRONOTRACES_DOUBLER_PANEL_ID = 'chronotraces_doubler_panel';
 const PLUS_ONE_PANEL_ID = 'plus_one_panel';
 const REFRESHER_PANEL_ID = 'refresher_panel';
 const INCREMENTAL_PANEL_ID = 'incremental_panel';
+const SHARDS_REFRESHER_PANEL_ID = 'shards_refresher_panel';
+
+export const REFRESHER_PANEL_PAUSE_MS = 200;
 
 type MazeNexusPlacement = {
   itemId: string;
@@ -30,6 +33,7 @@ export type MazeRefresherRefresh = {
 };
 
 const UNIT_ORIGIN: Point2 = { x: 0, y: 0 };
+const HEX_ROTATION_STEP_COUNT = 6;
 
 function sameCell(a: Point2, b: Point2): boolean {
   return a.x === b.x && a.y === b.y;
@@ -40,6 +44,29 @@ function containsCell(cells: readonly Point2[], target: Point2): boolean {
     if (sameCell(cell, target)) return true;
   }
   return false;
+}
+
+function getSpawnAtCell(gs: ReadonlyGameState, cell: Point2): MazeResourceSpawn | null {
+  const spawn = gs.mazeResourceSpawns.find(s => sameCell(s.cell, cell));
+  return spawn ?? null;
+}
+
+export function isMazeShardRefresherStep(gs: ReadonlyGameState, steppedCell: Point2): boolean {
+  if (!gs.mazeHasShardsRefresherPanel) return false;
+  const steppedSpawn = getSpawnAtCell(gs, steppedCell);
+  if (steppedSpawn === null) return false;
+  return steppedSpawn.resourceKey === 'shardDust';
+}
+
+function isMazeRefresherPanelStep(gs: ReadonlyGameState, steppedCell: Point2): boolean {
+  const idx = axialToIndex(steppedCell.x, steppedCell.y);
+  if (idx === -1) return false;
+  const steppedResearchCell = gs.researchCells[idx]!;
+  return steppedResearchCell.nexusId === REFRESHER_PANEL_ID;
+}
+
+export function isMazeRefresherStep(gs: ReadonlyGameState, steppedCell: Point2): boolean {
+  return isMazeRefresherPanelStep(gs, steppedCell) || isMazeShardRefresherStep(gs, steppedCell);
 }
 
 function getMazeNexusPlacements(gs: ReadonlyGameState): Map<number, MazeNexusPlacement> {
@@ -72,7 +99,26 @@ function getMazeNexusPlacements(gs: ReadonlyGameState): Map<number, MazeNexusPla
 
 export function getMazeNexusItemPlacementCells(gs: ReadonlyGameState, itemId: string, center: Point2): Point2[] {
   const def = gs.lib.nexusItems.get(itemId)!;
-  return def.placableInstanceDescription.cells.map(cell => ({ x: center.x + cell.x, y: center.y + cell.y }));
+  const rotationStep = getMazeNexusItemPlacementRotationStep(gs, itemId);
+  if (rotationStep === 0) {
+    return def.placableInstanceDescription.cells.map(cell => ({ x: center.x + cell.x, y: center.y + cell.y }));
+  }
+
+  return def.placableInstanceDescription.cells.map(cell => {
+    const rotatedCell = axialRotateCW(cell, rotationStep);
+    return { x: center.x + rotatedCell.x, y: center.y + rotatedCell.y };
+  });
+}
+
+export function getMazeNexusItemPlacementRotationStep(gs: ReadonlyGameState, itemId: string): number {
+  const def = gs.lib.nexusItems.get(itemId)!;
+  if (!def.placableInstanceDescription.rotating) return 0;
+  return normalizeHexRotationStep(gs.mazeNexusPlacementRotationSteps[itemId] ?? 0);
+}
+
+function normalizeHexRotationStep(step: number): number {
+  const normalized = step % HEX_ROTATION_STEP_COUNT;
+  return normalized >= 0 ? normalized : normalized + HEX_ROTATION_STEP_COUNT;
 }
 
 export function getMazeNexusPlacementCentroidUnit(cells: readonly Point2[]): Point2 {
@@ -222,11 +268,9 @@ export function resolveMazeRefresherStep(
   steppedCell: Point2,
   takenCells: readonly Point2[],
 ): MazeRefresherRefresh[] {
-  const idx = axialToIndex(steppedCell.x, steppedCell.y);
-  if (idx === -1) return [];
-
-  const steppedResearchCell = gs.researchCells[idx]!;
-  if (steppedResearchCell.nexusId !== REFRESHER_PANEL_ID) return [];
+  const isRefresherPanelStep = isMazeRefresherPanelStep(gs, steppedCell);
+  const isShardRefresherStep = isMazeShardRefresherStep(gs, steppedCell);
+  if (!isRefresherPanelStep && !isShardRefresherStep) return [];
 
   const def = gs.lib.nexusItems.get(REFRESHER_PANEL_ID)!;
   if (def.effectRadius <= 0) return [];
@@ -238,6 +282,7 @@ export function resolveMazeRefresherStep(
   const refreshed: MazeRefresherRefresh[] = [];
   for (const spawn of gs.mazeResourceSpawns) {
     if (!containsCell(takenCells, spawn.cell)) continue;
+    if (isShardRefresherStep && sameCell(spawn.cell, steppedCell)) continue;
     const spawnUnit = axialToPixel(spawn.cell, 1, UNIT_ORIGIN);
     const dx = spawnUnit.x - centerUnit.x;
     const dy = spawnUnit.y - centerUnit.y;
@@ -261,9 +306,13 @@ export function applyMazeRefresherBonusOnStep(gs: GameState, steppedCell: Point2
   );
 }
 
-export function applyMazeIncrementalPanelPurchase(gs: GameState, itemId: string): void {
-  if (itemId !== INCREMENTAL_PANEL_ID) return;
-  gs.mazeIncrementalBonusPerPickup += 1;
+export function applyMazeNexusPanelPurchase(gs: GameState, itemId: string): void {
+  if (itemId === INCREMENTAL_PANEL_ID) {
+    gs.mazeIncrementalBonusPerPickup += 1;
+  }
+  if (itemId === SHARDS_REFRESHER_PANEL_ID) {
+    gs.mazeHasShardsRefresherPanel = true;
+  }
 }
 
 export function getMazeNextIncrementalPickupBonus(gs: ReadonlyGameState): number {

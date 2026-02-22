@@ -13,6 +13,13 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
   res_timeFlux: { type: 'resource', rewards: [{ kind: 'resource', resource: 'timeFlux', amount: 50 }] },
   res_shards: { type: 'resource', rewards: [{ kind: 'resource', resource: 'shardDust', amount: 100 }] },
   res_skillPoint: { type: 'resource', rewards: [{ kind: 'resource', resource: 'skillPoints', amount: 1 }] },
+  disc_nexus_upgrade_opportunity: {
+    type: 'discovery',
+    title: 'Nexus upgrade option',
+    description: 'Allows to choose another nexus upgrade earlier',
+    icon: { kind: 'itemImage', key: 'fast_forward', scale: 1.2, offset: { x: 0, y: 1 } },
+    rewards: [{ kind: 'maze_nexus_upgrade_opportunity', amount: 1 }],
+  },
 
   // Stats
   stat_dmg: { type: 'stat', rewards: [{ kind: 'stat', stat: 'damage', value: 1 }] },

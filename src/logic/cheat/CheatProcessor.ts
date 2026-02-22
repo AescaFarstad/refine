@@ -1,12 +1,13 @@
 import { type GameState, Raid } from '../GameState';
 import type { CheatInput } from './CheatCommands';
-import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources, CheatUnlockAllRaids, CheatLoadResearchState, CheatUnlockAllQuests, CheatDisableQuestPrereqs, CheatGrantDiscoveries, CheatGrantRewards, CheatLearnSignatures, CheatCompleteSignatures, CheatAddItemBans } from './CheatCommands';
+import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources, CheatUnlockAllRaids, CheatLoadResearchState, CheatUnlockAllQuests, CheatDisableQuestPrereqs, CheatGrantDiscoveries, CheatGrantRewards, CheatLearnSignatures, CheatCompleteSignatures, CheatAddItemBans, CheatUnlockAllNexusUpgrades } from './CheatCommands';
 import type { EncounterDef } from '../RaidLib';
 import { applyResearchNodeEffect, axialToIndex, calculateVisibility } from '../Research';
 import { setEnableQuestPrereqs } from '../Const';
 import { discover } from '../Discover';
 import { applyReward } from '../Reward';
 import { undoRewards } from '../RewardsUndo';
+import { MAZE_NEXUS_NO_UPGRADE_OFFER_SEED } from '../MazeNexusUpgradeProgress';
 
 type Handler = (gs: GameState, cheat: CheatInput) => void;
 const handlersByName = new Map<string, Handler>();
@@ -180,6 +181,12 @@ handlersByName.set('CheatCompleteSignatures', (gs, cheat) => {
 handlersByName.set('CheatAddItemBans', (gs, cheat) => {
   const c = cheat as CheatAddItemBans;
   gs.itemBans += c.amount;
+});
+
+handlersByName.set('CheatUnlockAllNexusUpgrades', (gs) => {
+  gs.mazeNexusAvailableUpgradeIds = Array.from(gs.lib.nexusItems.keys());
+  gs.mazeNexusUpgradeOpportunityCount = 0;
+  gs.mazeNexusUpgradeOfferSeed = MAZE_NEXUS_NO_UPGRADE_OFFER_SEED;
 });
 
 export function processCheats(gs: GameState): void {

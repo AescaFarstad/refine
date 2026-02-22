@@ -162,6 +162,10 @@ function createDefaultUIState() {
     mazeMovementUsed: 0,
     mazeVersion: 0,
     mazeNexusMenuOpen: false,
+    mazeNexusAvailableUpgradeIds: [] as string[],
+    mazeNexusPlacedUpgradeIds: [] as string[],
+    mazeNexusUpgradeOpportunityCount: 1,
+    mazeNexusUpgradeOfferSeed: -1,
     mazeResetReason: '' as '' | 'warped' | 'banked',
 
     questPrereqsVersion: 0,
@@ -513,6 +517,10 @@ export function SyncUIFromGameState(game: GameState): void {
 
   uiState.mazeMovementUsed = game.maze.movementUsed;
   uiState.mazeVersion = game.maze.version;
+  uiState.mazeNexusAvailableUpgradeIds = [...game.mazeNexusAvailableUpgradeIds];
+  uiState.mazeNexusPlacedUpgradeIds = [...game.mazeNexusPlacedUpgradeIds];
+  uiState.mazeNexusUpgradeOpportunityCount = game.mazeNexusUpgradeOpportunityCount;
+  uiState.mazeNexusUpgradeOfferSeed = game.mazeNexusUpgradeOfferSeed;
 
   uiState.activeTab = game.activeTab;
 

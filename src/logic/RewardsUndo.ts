@@ -1,5 +1,6 @@
 import type { GameState } from './GameState';
 import type { Reward } from './Reward';
+import { grantMazeNexusUpgradeOpportunities } from './MazeNexusUpgradeProgress';
 
 export function undoReward(gs: GameState, reward: Reward): boolean {
   switch (reward.kind) {
@@ -27,6 +28,10 @@ export function undoReward(gs: GameState, reward: Reward): boolean {
 
     case 'countable_gear':
       gs.countableGear[reward.gearId] = (gs.countableGear[reward.gearId] || 0) - reward.amount;
+      return true;
+
+    case 'maze_nexus_upgrade_opportunity':
+      grantMazeNexusUpgradeOpportunities(gs, -reward.amount);
       return true;
 
     case 'unlock_gear':

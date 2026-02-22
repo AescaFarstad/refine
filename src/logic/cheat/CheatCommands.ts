@@ -101,3 +101,8 @@ export class CheatAddItemBans implements CheatInput {
     this.amount = args.amount;
   }
 }
+
+export class CheatUnlockAllNexusUpgrades implements CheatInput {
+  readonly name = 'CheatUnlockAllNexusUpgrades';
+  constructor() {}
+}

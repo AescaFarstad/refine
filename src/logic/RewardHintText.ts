@@ -41,6 +41,8 @@ export function formatRewardHintText(reward: Reward, lib: ReadonlyLib): string {
       return `Learn ${reward.count} random signatures`;
     case 'countable_gear':
       return `${signed(reward.amount)} ${lib.gear.get(reward.gearId)!.name}`;
+    case 'maze_nexus_upgrade_opportunity':
+      return `${signed(reward.amount)} Nexus upgrade opportunities`;
     case 'stat': {
       const statName = STAT_LABELS[reward.stat] ?? reward.stat;
       return `${signed(reward.value)} ${statName}`;

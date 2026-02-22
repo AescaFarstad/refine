@@ -15,6 +15,7 @@ export const researchPane: ResearchPlacementInput[] = [
   { archetypeId: 'disc_maze_navigation', cells: [{ x: 12, y: -15 },{ x: 13, y: -16 },{ x: 11, y: -15 },{ x: 12, y: -14 },], centerCell: { x: 12, y: -15 } },
   { archetypeId: 'disc_maze_navigation', cells: [{ x: 5, y: 13 },{ x: 4, y: 13 },{ x: 6, y: 12 },{ x: 5, y: 14 },], centerCell: { x: 5, y: 13 } },
   { archetypeId: 'disc_maze_nexus', cells: [{ x: -4, y: -18 },{ x: -3, y: -19 },{ x: -4, y: -17 },{ x: -5, y: -18 }], centerCell: { x: -4, y: -18 } },
+  { archetypeId: 'disc_nexus_upgrade_opportunity', cells: { x: 8, y: -15 } },
 
   { archetypeId: 'stat_weight', cells: { x: 1, y: -3 } },
   { archetypeId: 'res_credits', cells: { x: 3, y: -2 } },

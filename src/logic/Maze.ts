@@ -276,6 +276,10 @@ export function applyMazeNexusPlacementAtCell(gs: GameState, itemId: string, pla
 }
 
 export function placeMazeNexusItem(gs: GameState, itemId: string, center: Point2): boolean {
+  if (!gs.mazeNexusAvailableUpgradeIds.includes(itemId)) {
+    return false;
+  }
+
   if (!isMazeNexusCell(gs, gs.maze.avatarCell)) {
     return false;
   }

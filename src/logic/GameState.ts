@@ -78,6 +78,11 @@ export class GameState {
   public mazeHighMovementUsed: number = 0;
   public mazeNextNexusPlacementId: number = 1;
   public mazeNexusPlacementRotationSteps: Record<string, number> = {};
+  public mazeNexusAvailableUpgradeIds: string[] = [];
+  public mazeNexusPlacedUpgradeIds: string[] = [];
+  public mazeNexusUpgradeOpportunityCount: number = 1;
+  public mazeNexusUpgradeOfferSeed: number = -1;
+  public mazeNexusUpgradeSeedCursor: number = 0;
   public mazeResetEntranceCell: Point2 = { x: 0, y: 0 };
   public mazeIncrementalBonusPerPickup: number = 0;
   public mazeHasShardsRefresherPanel: boolean = false;
@@ -140,6 +145,7 @@ export class GameState {
     const normalizedSeed = seed >>> 0;
     this.seed = normalizedSeed;
     this.random = new SeededRandom(normalizedSeed);
+    this.mazeNexusUpgradeSeedCursor = (normalizedSeed ^ 0x9e3779b9) >>> 0;
 
     for (const categoryId of Object.keys(gearCategories)) {
       this.gearLevels[categoryId] = 1;

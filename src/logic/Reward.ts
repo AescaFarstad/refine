@@ -3,6 +3,7 @@ import type { RaidMutation } from './RaidMutation';
 import { applyPermanentRaidMutation } from './RaidMutation';
 import { discover, ensureResearchTabDiscovery, ensureMazeTabDiscovery } from './Discover';
 import { DISCOVERY } from './DiscoveryLib';
+import { grantMazeNexusUpgradeOpportunities } from './MazeNexusUpgradeProgress';
 
 export interface RefiningRewardBonus {
   refiningYieldPctBonus: number;
@@ -28,6 +29,7 @@ export type Reward =
   | { kind: 'learn_signatures'; signatureIds: readonly string[] }
   | { kind: 'learn_n_signatures'; count: number }
   | { kind: 'countable_gear'; gearId: string; amount: number }
+  | { kind: 'maze_nexus_upgrade_opportunity'; amount: number }
 
   | { kind: 'stat'; stat: string; value: number }
   | { kind: 'refining_yield_pct_bonus'; amount: number }
@@ -130,6 +132,10 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
       if (!gs.unlockedGear.includes(reward.gearId)) {
         gs.unlockedGear.push(reward.gearId);
       }
+      break;
+
+    case 'maze_nexus_upgrade_opportunity':
+      grantMazeNexusUpgradeOpportunities(gs, reward.amount);
       break;
 
     case 'raid_mutation': {

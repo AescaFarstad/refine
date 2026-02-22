@@ -207,6 +207,18 @@ export class CmdMazeMoveTo implements CmdInput {
   }
 }
 
+export class CmdMazePrepareUpgradeOffer implements CmdInput {
+  readonly name = 'CmdMazePrepareUpgradeOffer';
+}
+
+export class CmdMazeSelectNexusUpgrade implements CmdInput {
+  readonly name = 'CmdMazeSelectNexusUpgrade';
+  readonly nexusItemId: string;
+  constructor(args: { nexusItemId: string }) {
+    this.nexusItemId = args.nexusItemId;
+  }
+}
+
 export class CmdMazePlaceNexusItem implements CmdInput {
   readonly name = 'CmdMazePlaceNexusItem';
   readonly target: Point2;

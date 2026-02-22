@@ -98,6 +98,7 @@ function verifyRewardRefs(reward: Reward, context: string, lib: Lib, errors: Ver
       }
       return;
     case 'resource':
+    case 'maze_nexus_upgrade_opportunity':
     case 'refining_yield_pct_bonus':
     case 'refining_success_chance_bonus':
     case 'refining_speed_pct_bonus':

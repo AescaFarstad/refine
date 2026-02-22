@@ -40,8 +40,16 @@
               </span>
               <button class="btn" @click="setResource(res.key, 0)">0</button>
               <button class="btn" @click="grantResource(res.key, 10)">+10</button>
+              <button class="btn" @click="grantResource(res.key, 100)">+100</button>
               <button class="btn" @click="grantResource(res.key, 1000)">+1k</button>
               <button class="btn" @click="grantResource(res.key, 100000)">+100k</button>
+            </div>
+            <div class="resource-row">
+              <span class="resource-label">Nexus</span>
+              <button class="btn" type="button" @click="setNexusUpgradeOpportunities(0)">0</button>
+              <button class="btn" type="button" @click="grantNexusUpgradeOpportunities(1)">+1</button>
+              <button class="btn" type="button" @click="grantNexusUpgradeOpportunities(10)">+10</button>
+              <button class="btn primary" type="button" @click="unlockAllNexusUpgrades">Unlock all</button>
             </div>
           </div>
 
@@ -128,7 +136,7 @@ import { DISCOVERY, type DiscoveryId } from '../logic/DiscoveryLib';
 import { discover } from '../logic/Discover';
 import { REWARD_UI_KEYS } from './rewardUI/RewardUIRegistry';
 import atlasStorage from '../logic/AtlasStorage';
-import { CheatCompleteSignatures } from '../logic/cheat/CheatCommands';
+import { CheatCompleteSignatures, CheatUnlockAllNexusUpgrades } from '../logic/cheat/CheatCommands';
 import { processCheats } from '../logic/cheat/CheatProcessor';
 
 const open = computed(() => uiState.cheatOpen);
@@ -270,6 +278,22 @@ function grantResource(key: ResourceKey, amount: number) {
 
 function setResource(key: ResourceKey, amount: number) {
   getGameStateMutable()[key] = amount;
+}
+
+function unlockAllNexusUpgrades(): void {
+  const gs = getGameStateMutable();
+  gs.cheats.push(new CheatUnlockAllNexusUpgrades());
+  processCheats(gs);
+}
+
+function grantNexusUpgradeOpportunities(amount: number): void {
+  const gs = getGameStateMutable();
+  gs.mazeNexusUpgradeOpportunityCount += amount;
+}
+
+function setNexusUpgradeOpportunities(amount: number): void {
+  const gs = getGameStateMutable();
+  gs.mazeNexusUpgradeOpportunityCount = amount;
 }
 
 function isDiscovered(id: DiscoveryId): boolean {

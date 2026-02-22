@@ -1,6 +1,6 @@
 import type { Ref } from 'vue';
 import { axialToPixel } from '../HexMath';
-import { getMazeNexusPlacementCentroidUnit } from '../Maze';
+import { getMazeNexusItemEffectiveRadius, getMazeNexusPlacementCentroidUnit } from '../Maze';
 import { axialToIndex, indexToAxial } from '../Research';
 import type { Point2 } from '../ItemLib';
 import type { ReadonlyGameState } from '../UIState';
@@ -81,14 +81,14 @@ export function useMazeResourceHighlights(
       throw new Error(`Invalid nexus placement id at cell index ${hoveredIdx}`);
     }
 
-    const def = gs.lib.nexusItems.get(hoveredResearchCell.nexusId)!;
-    if (def.effectRadius <= 0) {
+    const effectiveRadius = getMazeNexusItemEffectiveRadius(gs, hoveredResearchCell.nexusId);
+    if (effectiveRadius <= 0) {
       return highlighted;
     }
 
     const placementCells = buildPlacementCells(gs, hoveredResearchCell.nexusPlacementId, hoveredResearchCell.nexusId);
     const centerUnit = getMazeNexusPlacementCentroidUnit(placementCells);
-    const effectRadiusUnit = def.effectRadius * Math.sqrt(3);
+    const effectRadiusUnit = effectiveRadius * Math.sqrt(3);
     const effectRadiusUnitSq = effectRadiusUnit * effectRadiusUnit;
 
     for (const spawn of gs.mazeResourceSpawns) {

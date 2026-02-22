@@ -9,6 +9,7 @@ const DOUBLER_PANEL_ID = 'doubler_panel';
 const CREDITS_DOUBLER_PANEL_ID = 'credits_doubler_panel';
 const CHRONOTRACES_DOUBLER_PANEL_ID = 'chronotraces_doubler_panel';
 const PLUS_ONE_PANEL_ID = 'plus_one_panel';
+const PLUS_ONE_RADIUS_PANEL_ID = 'plus_one_radius_panel';
 const REFRESHER_PANEL_ID = 'refresher_panel';
 const INCREMENTAL_PANEL_ID = 'incremental_panel';
 const SHARDS_REFRESHER_PANEL_ID = 'shards_refresher_panel';
@@ -215,14 +216,42 @@ function getPlacementAffectedSpawnIndexes(
   return affected;
 }
 
+function getRefreshersAndMultipliersRadiusBonusFromPlacements(
+  placementsById: ReadonlyMap<number, MazeNexusPlacement>,
+): number {
+  let bonus = 0;
+  for (const placement of placementsById.values()) {
+    if (placement.itemId !== PLUS_ONE_RADIUS_PANEL_ID) continue;
+    bonus += 1;
+  }
+  return bonus;
+}
+
+function getRefreshersAndMultipliersRadiusBonus(gs: ReadonlyGameState): number {
+  const placementsById = getMazeNexusPlacements(gs);
+  return getRefreshersAndMultipliersRadiusBonusFromPlacements(placementsById);
+}
+
+function getEffectiveRefresherOrMultiplierRadius(itemId: string, baseRadius: number, bonus: number): number {
+  if (baseRadius <= 0) return baseRadius;
+  if (itemId !== REFRESHER_PANEL_ID && itemId !== DOUBLER_PANEL_ID) return baseRadius;
+  return baseRadius + bonus;
+}
+
+export function getMazeNexusItemEffectiveRadius(gs: ReadonlyGameState, itemId: string): number {
+  const def = gs.lib.nexusItems.get(itemId)!;
+  const radiusBonus = getRefreshersAndMultipliersRadiusBonus(gs);
+  return getEffectiveRefresherOrMultiplierRadius(itemId, def.effectRadius, radiusBonus);
+}
+
 export function getMazeNexusPlacementAffectedSpawnIndexes(
   gs: ReadonlyGameState,
   itemId: string,
   center: Point2,
 ): number[] {
-  const def = gs.lib.nexusItems.get(itemId)!;
   const placementCells = getMazeNexusItemPlacementCells(gs, itemId, center);
-  return getPlacementAffectedSpawnIndexes(gs.mazeResourceSpawns, placementCells, def.effectRadius);
+  const effectiveRadius = getMazeNexusItemEffectiveRadius(gs, itemId);
+  return getPlacementAffectedSpawnIndexes(gs.mazeResourceSpawns, placementCells, effectiveRadius);
 }
 
 function circlesOverlap(a: Point2, ar: number, b: Point2, br: number): boolean {
@@ -304,6 +333,7 @@ export function hasMazeNexusLimitRadiusConflict(
 
 export function applyMazeDoublerBonusesToSpawns(gs: ReadonlyGameState, spawns: MazeResourceSpawn[]): void {
   const placementsById = getMazeNexusPlacements(gs);
+  const radiusBonus = getRefreshersAndMultipliersRadiusBonusFromPlacements(placementsById);
 
   for (const placement of placementsById.values()) {
     if (placement.itemId !== PLUS_ONE_PANEL_ID) continue;
@@ -333,7 +363,8 @@ export function applyMazeDoublerBonusesToSpawns(gs: ReadonlyGameState, spawns: M
   for (const placement of placementsById.values()) {
     if (placement.itemId !== DOUBLER_PANEL_ID) continue;
     const def = gs.lib.nexusItems.get(placement.itemId)!;
-    const affectedSpawnIndexes = getPlacementAffectedSpawnIndexes(spawns, placement.cells, def.effectRadius);
+    const effectiveRadius = getEffectiveRefresherOrMultiplierRadius(placement.itemId, def.effectRadius, radiusBonus);
+    const affectedSpawnIndexes = getPlacementAffectedSpawnIndexes(spawns, placement.cells, effectiveRadius);
     for (const spawnIndex of affectedSpawnIndexes) {
       spawns[spawnIndex]!.amount *= 2;
     }
@@ -349,11 +380,11 @@ export function resolveMazeRefresherStep(
   const isShardRefresherStep = isMazeShardRefresherStep(gs, steppedCell);
   if (!isRefresherPanelStep && !isShardRefresherStep) return [];
 
-  const def = gs.lib.nexusItems.get(REFRESHER_PANEL_ID)!;
-  if (def.effectRadius <= 0) return [];
+  const effectiveRadius = getMazeNexusItemEffectiveRadius(gs, REFRESHER_PANEL_ID);
+  if (effectiveRadius <= 0) return [];
 
   const centerUnit = axialToPixel(steppedCell, 1, UNIT_ORIGIN);
-  const effectRadiusUnit = def.effectRadius * Math.sqrt(3);
+  const effectRadiusUnit = effectiveRadius * Math.sqrt(3);
   const effectRadiusUnitSq = effectRadiusUnit * effectRadiusUnit;
 
   const refreshed: MazeRefresherRefresh[] = [];

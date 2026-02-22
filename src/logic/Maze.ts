@@ -26,6 +26,7 @@ import {
 
 export {
   getMazeNexusLimitBlockingDisks,
+  getMazeNexusItemEffectiveRadius,
   getMazeNexusItemPlacementCells,
   getMazeNexusPlacementAnchorFromHoverCenter,
   getMazeNexusItemPlacementRotationStep,

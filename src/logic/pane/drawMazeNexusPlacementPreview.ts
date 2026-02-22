@@ -3,6 +3,7 @@ import { axialToPixel } from '../HexMath';
 import type { Point2 } from '../ItemLib';
 import { axialToIndex } from '../Research';
 import {
+  getMazeNexusItemEffectiveRadius,
   getMazeNexusItemPlacementCells,
   getMazeNexusLimitBlockingDisks,
   getMazeNexusPlacementAffectedSpawnIndexes,
@@ -31,6 +32,9 @@ export interface MazeNexusPlacementPreviewRenderOptions {
   valid: boolean;
   origin: Point2;
   hexSize: number;
+  showLimitRadiusConflicts?: boolean;
+  showPlacementSprite?: boolean;
+  showAffectedSpawnGlow?: boolean;
 }
 
 function getNexusPreviewDrawSize(
@@ -121,6 +125,9 @@ export function renderMazeNexusPlacementPreview(
   options: MazeNexusPlacementPreviewRenderOptions,
 ): void {
   const { gs, nexusItemId, anchor, valid, origin, hexSize } = options;
+  const showLimitRadiusConflicts = options.showLimitRadiusConflicts ?? true;
+  const showPlacementSprite = options.showPlacementSprite ?? true;
+  const showAffectedSpawnGlow = options.showAffectedSpawnGlow ?? true;
   const cells = getMazeNexusItemPlacementCells(gs, nexusItemId, anchor);
   const def = gs.lib.nexusItems.get(nexusItemId)!;
   const rotationStep = getMazeNexusItemPlacementRotationStep(gs, nexusItemId);
@@ -130,7 +137,7 @@ export function renderMazeNexusPlacementPreview(
   const cy = origin.y + centroidUnit.y * hexSize;
 
   const limitRadius = def.limitRadius;
-  if (limitRadius > 0) {
+  if (showLimitRadiusConflicts && limitRadius > 0) {
     const limitRadiusPx = limitRadius * hexSize * Math.sqrt(3);
     const blockingDisks = getMazeNexusLimitBlockingDisks(gs, nexusItemId, anchor);
 
@@ -149,7 +156,7 @@ export function renderMazeNexusPlacementPreview(
     ctx.restore();
   }
 
-  const effectRadius = def.effectRadius;
+  const effectRadius = getMazeNexusItemEffectiveRadius(gs, nexusItemId);
   if (effectRadius > 0) {
     const radiusPx = effectRadius * hexSize * Math.sqrt(3);
 
@@ -189,7 +196,7 @@ export function renderMazeNexusPlacementPreview(
       }
     }
 
-    if (valid) {
+    if (showAffectedSpawnGlow && valid) {
       const affectedSpawnIndexes = getMazeNexusPlacementAffectedSpawnIndexes(gs, nexusItemId, anchor);
       for (const spawnIndex of affectedSpawnIndexes) {
         const spawn = gs.mazeResourceSpawns[spawnIndex]!;
@@ -212,7 +219,7 @@ export function renderMazeNexusPlacementPreview(
     }
   }
 
-  if (!valid) return;
+  if (!valid || !showPlacementSprite) return;
 
   const nexusFrame = atlasStorage.getNexusFrame(`nexus:${nexusItemId}`)!;
   const source = atlasStorage.getNexusSource();

@@ -22,7 +22,6 @@
           Singularity {{ price }}<span class="nexus-item-special-btn-glyph">⧖</span>
         </button>
         <span v-else class="nexus-item-name">{{ item.name }}</span>
-        <div v-if="!item.placableInstanceDescription.passable" class="nexus-item-impassable">Impassable</div>
         <div v-if="showNewBanner && !isSpecialAction" class="nexus-item-new">NEW</div>
         <span v-if="!isSpecialAction" class="nexus-item-price">{{ price }}<span class="nexus-item-price-glyph">∿</span></span>
       </div>
@@ -37,7 +36,22 @@
       <div class="hint-root">
         <div class="hint-body">
           <div class="hint-row hint-row-multiline">
-            <span class="hint-value nexus-item-hint-desc" v-html="item.description"></span>
+            <span class="hint-value nexus-item-hint-desc">
+              <template v-for="(line, lineIndex) in parsedDescriptionLines" :key="`line-${lineIndex}`">
+                <template v-for="(token, tokenIndex) in line" :key="`line-${lineIndex}-token-${tokenIndex}`">
+                  <span v-if="token.kind === 'text'">{{ token.text }}</span>
+                  <span
+                    v-else
+                    class="hint-inline-upgrade-image"
+                    :ref="(el) => mountHintPreviewCanvas(el as HTMLElement | null, token.itemId)"
+                  ></span>
+                </template>
+                <br v-if="lineIndex < parsedDescriptionLines.length - 1" />
+              </template>
+            </span>
+          </div>
+          <div v-if="!item.placableInstanceDescription.passable" class="hint-row hint-row-impassable">
+            <span class="hint-impassable-badge">IMPASSABLE</span>
           </div>
           <div v-if="item.effectRadius > 0" class="hint-row">
             <span class="hint-label">Effect radius</span>
@@ -47,9 +61,9 @@
             <span class="hint-label">Minimum separation</span>
             <span class="hint-value">{{ item.limitRadius * 2 }}</span>
           </div>
-          <div v-if="item.priceIncrease[0] > 0" class="hint-row">
+          <div v-if="item.priceIncrease[0] > 0" class="hint-row hint-row-price-increase">
             <span class="hint-label">Price increase</span>
-            <span class="hint-value">+{{ item.priceIncrease[0] }}<span class="nexus-item-price-glyph">∿</span></span>
+            <span class="hint-value hint-value-price-increase">+{{ item.priceIncrease[0] }}<span class="nexus-item-price-glyph">∿</span></span>
           </div>
           <div v-if="showNewBanner" class="hint-separator"></div>
           <div v-if="showNewBanner" class="hint-new-line">
@@ -74,6 +88,9 @@ import { computed } from 'vue';
 import { RESOURCE_SPECS } from '../logic/Resources';
 
 type UINexusItem = DeepReadonly<NexusItemDefinition>;
+type DescriptionToken =
+  | { kind: 'text'; text: string }
+  | { kind: 'upgradeImage'; itemId: string };
 
 const props = defineProps<{
   id: string;
@@ -92,9 +109,13 @@ const emit = defineEmits<{
 }>();
 
 const PREVIEW_SIZE = NEXUS_UI_PREVIEW_SIZE;
+const HINT_PREVIEW_SIZE = 22;
+const DESCRIPTION_LINE_BREAK_REGEX = /<br\s*\/?>/gi;
+const DESCRIPTION_UPGRADE_IMAGE_TAG_REGEX = /<upgrade:([a-z0-9_]+)>/g;
 const isSpecialAction = computed(() => props.item.specialAction !== '');
 const isTimeSingularityAction = computed(() => props.item.specialAction === 'time_singularity');
 const showMenuHint = computed(() => props.item.showMenuHint);
+const parsedDescriptionLines = computed<DescriptionToken[][]>(() => parseDescription(props.item.description));
 const timeSingularityButtonStyle = {
   '--time-singularity-disabled-color': RESOURCE_SPECS.chronotraces.color,
   '--time-singularity-disabled-bg': RESOURCE_SPECS.chronotraces.bgColor,
@@ -106,6 +127,62 @@ function mountCanvas(el: HTMLElement | null, id: string, rotationStep: number): 
   if (el.firstChild && renderedStep === rotationStep) return;
   el.replaceChildren(createNexusPreviewFrameCanvas(id, PREVIEW_SIZE, rotationStep));
   el.dataset.rotationStep = String(rotationStep);
+}
+
+function mountHintPreviewCanvas(el: HTMLElement | null, id: string): void {
+  if (!el) return;
+  if (el.firstChild && el.dataset.nexusItemId === id) return;
+  el.replaceChildren(createNexusPreviewFrameCanvas(id, HINT_PREVIEW_SIZE, 0));
+  el.dataset.nexusItemId = id;
+}
+
+function parseDescription(input: string): DescriptionToken[][] {
+  const lines = input.split(DESCRIPTION_LINE_BREAK_REGEX);
+  return lines.map(parseDescriptionLine);
+}
+
+function parseDescriptionLine(line: string): DescriptionToken[] {
+  const tokens: DescriptionToken[] = [];
+  let cursor = 0;
+  DESCRIPTION_UPGRADE_IMAGE_TAG_REGEX.lastIndex = 0;
+
+  let match = DESCRIPTION_UPGRADE_IMAGE_TAG_REGEX.exec(line);
+  while (match) {
+    const fullMatch = match[0]!;
+    const itemId = match[1]!;
+    const matchStart = match.index;
+
+    if (matchStart > cursor) {
+      tokens.push({
+        kind: 'text',
+        text: line.slice(cursor, matchStart),
+      });
+    }
+
+    tokens.push({
+      kind: 'upgradeImage',
+      itemId,
+    });
+
+    cursor = matchStart + fullMatch.length;
+    match = DESCRIPTION_UPGRADE_IMAGE_TAG_REGEX.exec(line);
+  }
+
+  if (cursor < line.length) {
+    tokens.push({
+      kind: 'text',
+      text: line.slice(cursor),
+    });
+  }
+
+  if (tokens.length === 0) {
+    tokens.push({
+      kind: 'text',
+      text: '',
+    });
+  }
+
+  return tokens;
 }
 
 function onPointerDown(event: PointerEvent): void {
@@ -126,8 +203,8 @@ function onClick(): void {
   position: relative;
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: 8px;
+  padding: 6px 10px 10px;
   cursor: grab;
   border-radius: 8px;
   background: var(--panel-bg);
@@ -186,7 +263,7 @@ function onClick(): void {
   flex-shrink: 0;
   align-self: center;
   width: 56px;
-  height: 56px;
+  height: 52px;
 }
 
 .nexus-item-preview canvas {
@@ -202,7 +279,7 @@ function onClick(): void {
 }
 
 .nexus-item-text-special {
-  padding-top: 4px;
+  padding-top: 2px;
 }
 
 .nexus-item-name {
@@ -222,7 +299,7 @@ function onClick(): void {
 }
 
 .nexus-item.special-action {
-  min-height: 76px;
+  min-height: 60px;
   padding: 0;
   align-items: center;
   justify-content: center;
@@ -249,11 +326,11 @@ function onClick(): void {
   border: 1px solid rgba(253, 224, 71, 0.45);
   background: rgba(113, 63, 18, 0.45);
   color: #fef08a;
-  font-size: 23px;
+  font-size: 20px;
   font-weight: 800;
   letter-spacing: 0.02em;
   border-radius: 8px;
-  padding: 13px 16px;
+  padding: 11px 14px;
   cursor: pointer;
   line-height: 1;
 }
@@ -273,7 +350,7 @@ function onClick(): void {
   position: absolute;
   right: 0;
   top: 0;
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 800;
   color: #48bb78;
   line-height: 1;
@@ -285,7 +362,7 @@ function onClick(): void {
   border-top-right-radius: 8px;
   border-bottom-right-radius: 0;
   border-bottom-left-radius: 8px;
-  padding: 4px 10px;
+  padding: 3px 6px;
   z-index: 1;
 }
 
@@ -298,22 +375,6 @@ function onClick(): void {
   margin-left: 2px;
 }
 
-.nexus-item-impassable {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  font-size: 12px;
-  color: rgba(168, 162, 150, 0.9);
-  letter-spacing: 0.03em;
-  line-height: 1.1;
-  background: rgba(148, 163, 184, 0.16);
-  border-top-left-radius: 8px;
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 8px;
-  border-bottom-left-radius: 0;
-  padding: 3px 8px;
-  z-index: 1;
-}
 
 .nexus-item-new {
   position: absolute;
@@ -418,6 +479,14 @@ function onClick(): void {
   white-space: normal;
 }
 
+.hint-row-price-increase {
+  margin-top: 8px;
+}
+
+.hint-value-price-increase {
+  color: #48bb78;
+}
+
 .hint-separator {
   border-top: 1px solid var(--hint-border, rgba(148, 163, 184, 0.25));
   margin: 8px 0 6px;
@@ -456,6 +525,18 @@ function onClick(): void {
   color: rgba(226, 232, 240, 0.95);
 }
 
+.hint-inline-upgrade-image {
+  width: 22px;
+  height: 22px;
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 2px;
+}
+
+.hint-inline-upgrade-image canvas {
+  display: block;
+}
+
 .hint-new-word {
   display: inline-block;
   font-size: 11px;
@@ -466,5 +547,21 @@ function onClick(): void {
   border-radius: 4px;
   padding: 1px 5px;
   vertical-align: baseline;
+}
+
+.hint-row-impassable {
+  display: block;
+  margin-top: 6px;
+}
+
+.hint-impassable-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.18);
+  border-radius: 4px;
+  padding: 2px 6px;
 }
 </style>

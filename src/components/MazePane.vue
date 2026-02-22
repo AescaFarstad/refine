@@ -27,7 +27,8 @@ import { globalInputQueue } from '../logic/Model';
 import { clearCanvas } from '../logic/DrawHex';
 import { bfsMazePath } from '../logic/MazeBFS';
 import { pixelToAxial } from '../logic/HexMath';
-import { axialToIndex } from '../logic/Research';
+import { getMazeNexusItemEffectiveRadius, getMazeNexusItemPlacementCells } from '../logic/Maze';
+import { axialToIndex, indexToAxial } from '../logic/Research';
 import { CmdMazeMoveTo, CmdMazePlaceNexusItem } from '../logic/input/InputCommands';
 import { renderMazeTerrainLayer, renderMazeFurnitureLayer, renderMazeVisibilityOverlay } from '../logic/drawMaze';
 import { renderMazePathOverlay } from '../logic/drawMazePath';
@@ -74,6 +75,7 @@ const AVATAR_MOVE_SPEED = 16; // cells per second
 const AVATAR_TURN_SPEED = 12; // radians per second
 const HOVER_PATH_TRANSITION_SPEED = 60; // cells per second
 const FREE_MOVE_PANEL_ID = 'free_move_panel';
+const REFRESHER_PANEL_ID = 'refresher_panel';
 const DRAW_ALL_VISIBILITY_DEBUG_POLYGONS = false;
 
 const canvasWidth = ref(0);
@@ -295,6 +297,106 @@ function onDragPreviewChanged(): void {
   renderPath();
 }
 
+function toCellKey(cell: Point2): string {
+  return `${cell.x},${cell.y}`;
+}
+
+function buildPlacedNexusPlacementCells(gs: ReturnType<typeof getGameState>, placementId: number, nexusId: string): Point2[] {
+  const cells: Point2[] = [];
+  for (let i = 0; i < gs.researchCells.length; i++) {
+    const cell = gs.researchCells[i]!;
+    if (!cell.nexusId) continue;
+    if (!Number.isInteger(cell.nexusPlacementId) || cell.nexusPlacementId <= 0) {
+      throw new Error(`Invalid nexus placement id at cell index ${i}`);
+    }
+    if (cell.nexusPlacementId !== placementId) continue;
+    if (cell.nexusId !== nexusId) {
+      throw new Error(`Mixed nexus ids for placement id ${placementId}`);
+    }
+    const axial = indexToAxial(i);
+    cells.push({ x: axial.x, y: axial.y });
+  }
+  return cells;
+}
+
+function resolvePlacedNexusAnchor(gs: ReturnType<typeof getGameState>, nexusId: string, placementCells: readonly Point2[]): Point2 {
+  const localCells = getMazeNexusItemPlacementCells(gs, nexusId, { x: 0, y: 0 });
+  const expectedKeys = new Set(placementCells.map(toCellKey));
+
+  for (const placementCell of placementCells) {
+    for (const localCell of localCells) {
+      const anchor = {
+        x: placementCell.x - localCell.x,
+        y: placementCell.y - localCell.y,
+      };
+      const candidateCells = getMazeNexusItemPlacementCells(gs, nexusId, anchor);
+      if (candidateCells.length !== placementCells.length) continue;
+
+      let matches = true;
+      for (const candidateCell of candidateCells) {
+        if (!expectedKeys.has(toCellKey(candidateCell))) {
+          matches = false;
+          break;
+        }
+      }
+      if (matches) {
+        return anchor;
+      }
+    }
+  }
+
+  throw new Error(`Failed to resolve placement anchor for nexus item "${nexusId}"`);
+}
+
+function isHoveringShardRefresherCell(gs: ReturnType<typeof getGameState>, hoverCell: Point2): boolean {
+  if (!gs.mazeHasShardsRefresherPanel) return false;
+  const spawn = gs.mazeResourceSpawns.find(
+    s => s.cell.x === hoverCell.x && s.cell.y === hoverCell.y,
+  );
+  return spawn?.resourceKey === 'shardDust';
+}
+
+function getHoverNexusRadiusPreview(): { nexusItemId: string; anchor: Point2 } | null {
+  const hoverCell = hoverAxial.value;
+  if (!hoverCell) return null;
+
+  const gs = getGameState();
+  const hoveredIdx = axialToIndex(hoverCell.x, hoverCell.y);
+  if (hoveredIdx !== -1) {
+    const hoveredResearchCell = gs.researchCells[hoveredIdx]!;
+    if (hoveredResearchCell.nexusId) {
+      if (!Number.isInteger(hoveredResearchCell.nexusPlacementId) || hoveredResearchCell.nexusPlacementId <= 0) {
+        throw new Error(`Invalid nexus placement id at cell index ${hoveredIdx}`);
+      }
+      const effectiveRadius = getMazeNexusItemEffectiveRadius(gs, hoveredResearchCell.nexusId);
+      if (effectiveRadius > 0) {
+        const placementCells = buildPlacedNexusPlacementCells(
+          gs,
+          hoveredResearchCell.nexusPlacementId,
+          hoveredResearchCell.nexusId,
+        );
+        const anchor = resolvePlacedNexusAnchor(gs, hoveredResearchCell.nexusId, placementCells);
+        return {
+          nexusItemId: hoveredResearchCell.nexusId,
+          anchor,
+        };
+      }
+    }
+  }
+
+  if (isHoveringShardRefresherCell(gs, hoverCell)) {
+    const refresherRadius = getMazeNexusItemEffectiveRadius(gs, REFRESHER_PANEL_ID);
+    if (refresherRadius > 0) {
+      return {
+        nexusItemId: REFRESHER_PANEL_ID,
+        anchor: hoverCell,
+      };
+    }
+  }
+
+  return null;
+}
+
 onMounted(() => {
   setupCanvases();
   getMazeVisibilityRuntime();
@@ -479,9 +581,10 @@ function renderPath(): void {
   const previewAxial = dragNexusAxial.value;
   const previewItemId = dragNexusItemId.value;
   const gs = getGameState();
+  const hoverRadiusPreview = previewItemId ? null : getHoverNexusRadiusPreview();
   const mazeVisibility = gs.mazeVisibility;
   const hasDebugPolygons = DRAW_ALL_VISIBILITY_DEBUG_POLYGONS && mazeVisibility.result?.debugPolygons != null;
-  if (hp.length === 0 && !previewAxial && mazeVisibility.boundaryLoops === null && !hasDebugPolygons) return;
+  if (hp.length === 0 && !previewAxial && hoverRadiusPreview === null && mazeVisibility.boundaryLoops === null && !hasDebugPolygons) return;
 
   const z = zoom.value;
   const off = offset.value;
@@ -500,6 +603,20 @@ function renderPath(): void {
     const from = getQueuedAvatarCell();
     const remaining = Math.max(0, gs.timeFlux - getQueuedMovementUsed());
     renderMazePathOverlay(ctx, hp, from, origin.value, HEX_SIZE, remaining);
+  }
+
+  if (hoverRadiusPreview) {
+    renderMazeNexusPlacementPreview(ctx, {
+      gs,
+      nexusItemId: hoverRadiusPreview.nexusItemId,
+      anchor: hoverRadiusPreview.anchor,
+      valid: true,
+      origin: origin.value,
+      hexSize: HEX_SIZE,
+      showLimitRadiusConflicts: false,
+      showPlacementSprite: false,
+      showAffectedSpawnGlow: false,
+    });
   }
 
   if (previewAxial && previewItemId) {

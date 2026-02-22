@@ -8,7 +8,7 @@
           Fail items refinement at least once to access the Nexus
         </button>
       </div>
-      <div v-if="canAccessNexus" class="nexus-items">
+      <div v-if="canAccessNexus" class="nexus-items" :class="{ 'nexus-items-two-col': items.length > 6 }">
         <div
           v-for="entry in items"
           :key="`${entry.id}:${entry.rotationStep}`"
@@ -16,16 +16,30 @@
           :class="{ 'cannot-afford': !canAfford(entry.id) }"
           @pointerdown="onItemPointerDown(entry, $event)"
         >
-          <div class="nexus-item-preview" :ref="(el) => mountCanvas(el as HTMLElement | null, entry.id, entry.rotationStep)"></div>
-          <div class="nexus-item-text">
-            <span class="nexus-item-name">{{ entry.item.name }}</span>
-            <div class="nexus-item-desc" v-html="entry.item.description"></div>
-            <div v-if="entry.item.effectRadius > 0" class="nexus-item-stat">Effect radius: {{ entry.item.effectRadius }}</div>
-            <div v-if="entry.item.limitRadius > 0" class="nexus-item-stat">Minimum separation: {{ entry.item.limitRadius * 2 }}</div>
-            <div v-if="!isPassable(entry.item)" class="nexus-item-impassable">Impassable</div>
+          <div class="nexus-item-main">
+            <div class="nexus-item-preview" :ref="(el) => mountCanvas(el as HTMLElement | null, entry.id, entry.rotationStep)"></div>
+            <div class="nexus-item-text">
+              <span class="nexus-item-name">{{ entry.item.name }}</span>
+              <div v-if="!isPassable(entry.item)" class="nexus-item-impassable">Impassable</div>
+              <span class="nexus-item-price">{{ getLivePrice(entry.id) }}<span class="nexus-item-price-glyph">∿</span></span>
+            </div>
           </div>
-          <div class="nexus-item-price-area">
-            <span class="nexus-item-price">{{ getLivePrice(entry.id) }}<span class="nexus-item-price-glyph">∿</span></span>
+          <div class="nexus-item-hint" role="tooltip" aria-hidden="true">
+            <div class="hint-root">
+              <div class="hint-body">
+                <div class="hint-row hint-row-multiline">
+                  <span class="hint-value nexus-item-hint-desc" v-html="entry.item.description"></span>
+                </div>
+                <div v-if="entry.item.effectRadius > 0" class="hint-row">
+                  <span class="hint-label">Effect radius</span>
+                  <span class="hint-value">{{ entry.item.effectRadius }}</span>
+                </div>
+                <div v-if="entry.item.limitRadius > 0" class="hint-row">
+                  <span class="hint-label">Minimum separation</span>
+                  <span class="hint-value">{{ entry.item.limitRadius * 2 }}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -130,7 +144,7 @@ function goToRefineTab(): void {
   border-radius: 4px;
   color: rgba(226, 232, 240, 0.95);
   padding: 0;
-  min-width: 380px;
+  min-width: 320px;
 }
 
 .nexus-header {
@@ -181,13 +195,20 @@ function goToRefineTab(): void {
   gap: 4px;
 }
 
+.nexus-items-two-col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
 .nexus-item {
+  position: relative;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   padding: 10px 12px;
   cursor: grab;
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--panel-bg);
   transition: background 0.15s, transform 0.12s ease;
 }
@@ -211,80 +232,184 @@ function goToRefineTab(): void {
   transform: none;
 }
 
-.nexus-item.cannot-afford:hover .nexus-item-price-area {
-  animation: flash-red 0.5s ease-in-out infinite;
+.nexus-item.cannot-afford:hover .nexus-item-price {
+  animation: flash-red-bg 0.55s ease-in-out infinite;
 }
 
-@keyframes flash-red {
+@keyframes flash-red-bg {
   0%, 100% {
-    background: rgba(255, 255, 255, 0.05);
-    box-shadow: none;
+    background: rgba(239, 68, 68, 0.14);
   }
   50% {
-    background: rgba(239, 68, 68, 0.4);
-    box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+    background: rgba(239, 68, 68, 0.32);
   }
+}
+
+.nexus-item-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  min-width: 0;
+  flex: 1;
 }
 
 .nexus-item-preview {
   flex-shrink: 0;
+  align-self: center;
   width: 56px;
   height: 56px;
 }
 
-.nexus-item-text {
-  flex: 1;
-  min-width: 0;
-}
-
-.nexus-item-name {
-  font-size: 17px;
-  font-weight: 500;
+.nexus-item-preview canvas {
   display: block;
 }
 
-.nexus-item-desc {
-  font-size: 14px;
-  color: rgba(148, 163, 184, 0.8);
-  margin-top: 2px;
+.nexus-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding-top: 18px;
 }
 
-.nexus-item-price-area {
-  flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  padding: 6px 14px;
-  align-self: stretch;
-  display: flex;
-  align-items: center;
+.nexus-item-name {
+  font-size: 16px;
+  font-weight: 600;
+  display: block;
+  margin-top: 4px;
+  margin-left: -10px;
 }
 
 .nexus-item-price {
-  font-size: 20px;
-  font-weight: 600;
+  position: absolute;
+  right: 0;
+  top: 0;
+  font-size: 18px;
+  font-weight: 800;
   color: #48bb78;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  background: rgba(72, 187, 120, 0.16);
+  border-top-left-radius: 0;
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 8px;
+  padding: 4px 10px;
+  z-index: 1;
 }
 
 .nexus-item.cannot-afford .nexus-item-price {
   color: #ef4444;
+  background: rgba(239, 68, 68, 0.14);
 }
 
 .nexus-item-price-glyph {
-  margin-right: 2px;
-}
-
-.nexus-item-stat {
-  font-size: 12px;
-  color: rgba(148, 163, 184, 0.65);
-  margin-top: 2px;
-  letter-spacing: 0.03em;
+  margin-left: 2px;
 }
 
 .nexus-item-impassable {
-  font-size: 11px;
-  color: rgba(168, 162, 150, 0.8);
-  margin-top: 2px;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  font-size: 12px;
+  color: rgba(168, 162, 150, 0.9);
   letter-spacing: 0.03em;
+  line-height: 1.1;
+  background: rgba(148, 163, 184, 0.16);
+  border-top-left-radius: 8px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 8px;
+  border-bottom-left-radius: 0;
+  padding: 3px 8px;
+  z-index: 1;
+}
+
+.nexus-item-hint {
+  position: absolute;
+  right: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--hint-bg, rgba(10, 14, 20, 0.95));
+  border: 1px solid var(--hint-border, rgba(148, 163, 184, 0.25));
+  border-radius: 4px;
+  padding: 8px 10px;
+  min-width: 220px;
+  max-width: 280px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 35;
+  transition: opacity 0.12s ease;
+}
+
+.nexus-item-hint::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -6px;
+  width: 10px;
+  height: 10px;
+  background: var(--hint-bg, rgba(10, 14, 20, 0.95));
+  border-right: 1px solid var(--hint-border, rgba(148, 163, 184, 0.25));
+  border-top: 1px solid var(--hint-border, rgba(148, 163, 184, 0.25));
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.nexus-item:hover .nexus-item-hint {
+  opacity: 1;
+  visibility: visible;
+}
+
+.nexus-item:active .nexus-item-hint {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.hint-root {
+  text-align: left;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.hint-body {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.hint-row {
+  white-space: nowrap;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 8px;
+  align-items: baseline;
+  margin: 2px 0;
+}
+
+.hint-row-multiline {
+  white-space: normal;
+}
+
+.hint-label {
+  color: var(--text-secondary);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  font-weight: 800;
+}
+
+.hint-value {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 800;
+  white-space: pre-line;
+}
+
+.nexus-item-hint-desc {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(226, 232, 240, 0.95);
 }
 
 </style>

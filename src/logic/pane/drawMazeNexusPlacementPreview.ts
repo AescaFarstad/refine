@@ -16,9 +16,13 @@ import {
   NEXUS_ATLAS_TILE_PADDING,
   NEXUS_ATLAS_TILE_SIZE,
 } from '../NexusPreviewCanvas';
+import { traceSmoothHexBoundary } from '../drawSmoothBoundary';
 
 const ANTIVOID_PANEL_ID = 'antivoid_panel';
 const UNIT_ORIGIN: Point2 = { x: 0, y: 0 };
+const ANTIVOID_PREVIEW_SMOOTHNESS = 1.15;
+const ANTIVOID_PREVIEW_CONCAVE_BLEND = 0.85;
+const ANTIVOID_PREVIEW_CONCAVE_BLEND_NU = 0.35;
 
 export interface MazeNexusPlacementPreviewRenderOptions {
   gs: ReadonlyGameState;
@@ -64,24 +68,6 @@ function getNexusPreviewDrawSize(
   const previewHexSize = Math.min(available / (rawW || 1), available / (rawH || 1));
   const scale = hexSize / previewHexSize;
   return { w: NEXUS_ATLAS_TILE_SIZE * scale, h: NEXUS_ATLAS_TILE_SIZE * scale };
-}
-
-function traceBoundaryPath(
-  ctx: CanvasRenderingContext2D,
-  loops: readonly (readonly Point2[])[],
-  origin: Point2,
-  hexSize: number,
-): void {
-  ctx.beginPath();
-  for (const loop of loops) {
-    const first = loop[0]!;
-    ctx.moveTo(origin.x + first.x * hexSize, origin.y + first.y * hexSize);
-    for (let i = 1; i < loop.length; i++) {
-      const p = loop[i]!;
-      ctx.lineTo(origin.x + p.x * hexSize, origin.y + p.y * hexSize);
-    }
-    ctx.closePath();
-  }
 }
 
 function getAntiVoidAffectedCells(
@@ -189,7 +175,11 @@ export function renderMazeNexusPlacementPreview(
       if (affectedCells.length > 0) {
         const loops = computeHexBoundary(affectedCells).map(loop => loop.points);
         ctx.save();
-        traceBoundaryPath(ctx, loops, origin, hexSize);
+        traceSmoothHexBoundary(ctx, loops, origin, hexSize, undefined, {
+          smoothness: ANTIVOID_PREVIEW_SMOOTHNESS,
+          concaveBlend: ANTIVOID_PREVIEW_CONCAVE_BLEND,
+          concaveBlendNu: ANTIVOID_PREVIEW_CONCAVE_BLEND_NU,
+        });
         ctx.fillStyle = valid ? 'rgba(220, 120, 80, 0.30)' : 'rgba(220, 120, 80, 0.16)';
         ctx.fill('evenodd');
         ctx.strokeStyle = valid ? 'rgba(255, 180, 130, 0.9)' : 'rgba(255, 180, 130, 0.5)';

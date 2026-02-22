@@ -35,6 +35,8 @@ const MAZE_NEXUS_ARCHETYPE_ID = 'disc_maze_nexus';
 const FREE_MOVE_PANEL_ID = 'free_move_panel';
 const SHARDS_REFRESHER_PANEL_ID = 'shards_refresher_panel';
 const CRYSTAL_PANEL_ID = 'crystal_panel';
+const CREDITS_PANEL_ID = 'credits_panel';
+const CHRONOTRACES_PANEL_ID = 'chronotraces_panel';
 
 export function isMazeEntranceCell(gs: ReadonlyGameState, cell: Point2): boolean {
   const idx = axialToIndex(cell.x, cell.y);
@@ -185,14 +187,28 @@ export function computeMazeResourceSpawns(gs: GameState, lib: ResearchLib): void
 
   for (let i = 0; i < gs.researchCells.length; i++) {
     const cell = gs.researchCells[i]!;
-    if (!cell.owned || cell.nexusId !== CRYSTAL_PANEL_ID) continue;
+    if (!cell.owned) continue;
 
     const center = indexToAxial(i);
-    const amount = 1;
+    let resourceKey: MazeResourceSpawn['resourceKey'] | null = null;
+    let amount = 0;
+
+    if (cell.nexusId === CRYSTAL_PANEL_ID) {
+      resourceKey = 'zone_crystal';
+      amount = 1;
+    } else if (cell.nexusId === CREDITS_PANEL_ID) {
+      resourceKey = 'credits';
+      amount = Math.max(1, axialDistance(center, origin));
+    } else if (cell.nexusId === CHRONOTRACES_PANEL_ID) {
+      resourceKey = 'chronotraces';
+      amount = Math.max(1, axialDistance(center, origin));
+    }
+
+    if (!resourceKey) continue;
 
     spawns.push({
       cell: { x: center.x, y: center.y },
-      resourceKey: 'zone_crystal',
+      resourceKey,
       amount,
     });
   }

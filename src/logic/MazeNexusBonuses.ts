@@ -12,6 +12,8 @@ const REFRESHER_PANEL_ID = 'refresher_panel';
 const INCREMENTAL_PANEL_ID = 'incremental_panel';
 const SHARDS_REFRESHER_PANEL_ID = 'shards_refresher_panel';
 const ANTIVOID_PANEL_ID = 'antivoid_panel';
+const CREDITS_PANEL_ID = 'credits_panel';
+const CHRONOTRACES_PANEL_ID = 'chronotraces_panel';
 
 export const REFRESHER_PANEL_PAUSE_MS = 200;
 
@@ -178,9 +180,31 @@ function circlesOverlap(a: Point2, ar: number, b: Point2, br: number): boolean {
   return dx * dx + dy * dy < r * r;
 }
 
+function getLimitResourceKeyForItem(itemId: string): MazeResourceSpawn['resourceKey'] | null {
+  if (itemId === CREDITS_PANEL_ID) return 'credits';
+  if (itemId === CHRONOTRACES_PANEL_ID) return 'chronotraces';
+  return null;
+}
+
 export function getMazeNexusLimitDisks(gs: ReadonlyGameState, itemId: string): MazeNexusLimitDisk[] {
   const def = gs.lib.nexusItems.get(itemId)!;
   if (def.limitRadius <= 0) return [];
+
+  const limitResourceKey = getLimitResourceKeyForItem(itemId);
+  if (limitResourceKey !== null) {
+    const disks: MazeNexusLimitDisk[] = [];
+    for (let i = 0; i < gs.mazeResourceSpawns.length; i++) {
+      const spawn = gs.mazeResourceSpawns[i]!;
+      if (spawn.resourceKey !== limitResourceKey) continue;
+      disks.push({
+        itemId,
+        placementId: i + 1,
+        centerUnit: axialToPixel(spawn.cell, 1, UNIT_ORIGIN),
+        radiusUnit: 0,
+      });
+    }
+    return disks;
+  }
 
   const radiusUnit = def.limitRadius * Math.sqrt(3);
   const disks: MazeNexusLimitDisk[] = [];

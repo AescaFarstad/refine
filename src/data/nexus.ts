@@ -4,7 +4,7 @@ import { RESOURCE_SPECS } from '../logic/Resources';
 
 const nexusItems: Record<string, RawNexusItemDefinition> = {
   free_move_panel: {
-    name: 'Favorable Glyph',
+    name: 'Free movement',
     description: 'No movement cost within vision.',
     price: 10,
     priceIncrease: [10],
@@ -17,7 +17,7 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
     },
   },
   refresher_panel: {
-    name: 'Refresher Panel',
+    name: 'Refresher',
     description: 'Refreshes resources in it radius.',
     effectRadius: 7,
     limitRadius: 7,
@@ -26,7 +26,7 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
     placableInstanceDescription: { passable: true, button: true, cells: [{ x: 0, y: 0 }], image: 'recycle_2' },
   },
   doubler_panel: {
-    name: 'Doubler Block',
+    name: 'Doubler',
     description: 'Doubles resources in its radius.',
     effectRadius: 5,
     limitRadius: 5,
@@ -35,7 +35,7 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
     placableInstanceDescription: { passable: false, button: false, cells: [{ x: 0, y: 0 }], glyph: 'x2', image: '' },
   },
   plus_one_panel: {
-    name: 'Plus One Block',
+    name: 'Plus One',
     description: '+1 to all resources globally.<br>Applied before multipliers',
     price: 100,
     priceIncrease: [10],
@@ -52,8 +52,8 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
     },
   },
   incremental_panel: {
-    name: 'Incremental Block',
-    description: 'Accumulating +1 bonus for each<br>resource pick-up in this run<br>Unaffected by multipliers',
+    name: 'Incremental',
+    description: 'Receive a stacking bonus for each<br>resource pick-up in this run.<br>Unaffected by multipliers.',
     price: 100,
     priceIncrease: [10],
     placableInstanceDescription: {
@@ -68,8 +68,8 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
     },
   },
   credits_doubler_panel: {
-    name: 'Credits Block',
-    description: 'Doubles all credit nodes globally.',
+    name: 'Credits X',
+    description: 'Doubles all credit nodes.',
     price: 100,
     priceIncrease: [10],
     placableInstanceDescription: {
@@ -89,8 +89,8 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
     },
   },
   chronotraces_doubler_panel: {
-    name: 'Chronotraces Block',
-    description: 'Doubles all chronotrace nodes globally.',
+    name: 'Chronotraces X',
+    description: 'Doubles all chronotrace nodes.',
     price: 100,
     priceIncrease: [10],
     placableInstanceDescription: {
@@ -110,8 +110,8 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
     },
   },
   shards_refresher_panel: {
-    name: 'Shards Block',
-    description: 'Shards also act as a refresher.<br>(Doesn\'t affect self)',
+    name: 'Shards Refresher',
+    description: '⌁ Shards also act as a refresher.<br>(But don\'t affect self)',
     price: 100,
     priceIncrease: [10],
     placedOnce: true,
@@ -128,8 +128,8 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
     },
   },
   antivoid_panel: {
-    name: 'Anti-Void Block',
-    description: 'Fills void gaps in its radius.',
+    name: 'Anti-Void',
+    description: 'Converts void gaps in its radius into<br>simple obstacles.',
     effectRadius: 4,
     price: 100,
     priceIncrease: [10],
@@ -144,7 +144,7 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
     },
   },
   crystal_panel: {
-    name: 'Crystal Panel',
+    name: 'Crystals',
     description: 'Spawns a crystal resource.',
     price: 100,
     priceIncrease: [10],
@@ -156,6 +156,36 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
       image:'quartz',
       imageScale: 1.2,
       imagePlacement: 'center',
+    },
+  },
+  credits_panel: {
+    name: 'Credits',
+    description: 'Spawns a credits resource.',
+    price: 100,
+    priceIncrease: [10],
+    limitRadius: 2,
+    placableInstanceDescription: {
+      passable: true,
+      button: false,
+      showInMaze: false,
+      cells: [{ x: 0, y: 0 }],
+      glyph: RESOURCE_SPECS.credits.glyph,
+      glyphPlacement: 'center',
+    },
+  },
+  chronotraces_panel: {
+    name: 'Chronotraces',
+    description: 'Spawns a chronotraces resource.',
+    price: 100,
+    priceIncrease: [10],
+    limitRadius: 3,
+    placableInstanceDescription: {
+      passable: true,
+      button: false,
+      showInMaze: false,
+      cells: [{ x: 0, y: 0 }],
+      glyph: RESOURCE_SPECS.chronotraces.glyph,
+      glyphPlacement: 'center',
     },
   },
 

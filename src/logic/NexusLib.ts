@@ -8,6 +8,7 @@ export type PlacableInstanceDescription = {
   opacity: number;
   glyphPlacement: 'perCell' | 'center';
   showStandardBackground: boolean;
+  iconScale: number;
 };
 
 export type NexusItemDefinition = {
@@ -66,6 +67,7 @@ export function parseNexusItemDefinitions(
         opacity: rawPlacable?.opacity ?? 1,
         glyphPlacement: rawPlacable?.glyphPlacement ?? 'perCell',
         showStandardBackground: rawPlacable?.showStandardBackground ?? button,
+        iconScale: rawPlacable?.iconScale ?? 1,
       },
     });
   }

@@ -24,6 +24,8 @@
         :hover-path-cost="hoverPathCost"
         :is-hovering-entrance="isHoveringEntrance"
         :high-movement-used="highMovementUsed"
+        :accumulated-pickup-bonus="accumulatedPickupBonus"
+        :pickup-bonus-per-pickup="pickupBonusPerPickup"
         :nexus-menu-visible="uiState.mazeNexusMenuOpen"
         :reset-reason="mazeResetReason"
         @resource-pill-hover="onResourcePillHover"
@@ -150,6 +152,20 @@ const highMovementUsed = computed(() => {
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   uiState.mazeVersion;
   return getGameState().mazeHighMovementUsed;
+});
+
+const accumulatedPickupBonus = computed(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.mazeMovementUsed;
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.mazeVersion;
+  return getGameState().maze.incrementalBonusCounter;
+});
+
+const pickupBonusPerPickup = computed(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.mazeVersion;
+  return getGameState().mazeIncrementalBonusPerPickup;
 });
 
 const mazeResetReason = computed(() => uiState.mazeResetReason as '' | 'warped' | 'banked');

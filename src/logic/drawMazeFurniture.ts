@@ -289,7 +289,8 @@ const defaultNexusItemRenderer: MazeNexusItemRenderer = {
     const { ctx, game, origin, hexSize, glyphSize, group, takenSet } = args;
     const def = game.lib.nexusItems.get(group.nexusId)!;
     const pid = def.placableInstanceDescription;
-    const bgRadius = glyphSize * GLYPH_BG_RADIUS_SCALE;
+    const scaledGlyphSize = glyphSize * pid.iconScale;
+    const bgRadius = scaledGlyphSize * GLYPH_BG_RADIUS_SCALE;
     const text = def.glyph || def.name.charAt(0);
     const centerUnit = getGroupCenterUnit(group.cells);
     const centerPixel = { x: origin.x + centerUnit.x * hexSize, y: origin.y + centerUnit.y * hexSize };
@@ -321,9 +322,9 @@ const defaultNexusItemRenderer: MazeNexusItemRenderer = {
       cells: visualCells,
       centerPixel,
       imageKey: pid.image,
-      iconMaxSize: hexSize * 1.2,
+      iconMaxSize: hexSize * 1.2 * pid.iconScale,
       glyphText: text,
-      glyphSize,
+      glyphSize: scaledGlyphSize,
       glyphPlacement: pid.glyphPlacement,
       opacity: pid.opacity,
       centerGlyphColor: anyTaken ? TAKEN_GLYPH_COLOR : NEXUS_ITEM_COLOR,
@@ -340,7 +341,7 @@ const defaultNexusItemRenderer: MazeNexusItemRenderer = {
     const def = game.lib.nexusItems.get(group.nexusId)!;
     const pid = def.placableInstanceDescription;
     const text = def.glyph || def.name.charAt(0);
-    const glyphSize = Math.max(12, stoneHexSize * 1.05);
+    const glyphSize = Math.max(12, stoneHexSize * 1.05 * pid.iconScale);
 
     let anyTaken = false;
     const visualCells: NexusVisualCell[] = [];
@@ -362,7 +363,7 @@ const defaultNexusItemRenderer: MazeNexusItemRenderer = {
       cells: visualCells,
       centerPixel: shell.centerPixel,
       imageKey: pid.image,
-      iconMaxSize: stoneHexSize * 1.2,
+      iconMaxSize: stoneHexSize * 1.2 * pid.iconScale,
       glyphText: text,
       glyphSize,
       glyphPlacement: pid.glyphPlacement,

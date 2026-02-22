@@ -52,7 +52,7 @@ getHypRepresentation(2000);
   await atlasStorage.loadItemsAtlas();
   await atlasStorage.loadLocationsAtlas();
   await ensureMoleculeAtlas();
-  await ensureNexusAtlas();
+  await ensureNexusAtlas(initialGameState.lib.nexusItems);
 
   // Sync UI immediately so initial values render before mounting
   replaceGameState(initialGameState);

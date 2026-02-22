@@ -9,8 +9,10 @@ import type { ReadonlyGameState } from './UIState';
 import { createMazeVisionAux } from './createMazeVisionAux';
 import { computeMazeVisibilityFromIndex, createMazeVisibilityRuntime } from './MazeVision';
 import {
+  applyMazeIncrementalPanelPurchase,
   applyMazeDoublerBonusesToSpawns,
   applyMazeRefresherBonusOnStep,
+  grantMazeIncrementalPickupBonus,
   getMazeNexusItemPlacementCells,
   hasMazeNexusLimitRadiusConflict,
   resolveMazeRefresherStep,
@@ -249,6 +251,7 @@ export function placeMazeNexusItem(gs: GameState, itemId: string, center: Point2
   for (const cell of cells) {
     applyMazeNexusPlacementAtCell(gs, itemId, placementId, cell);
   }
+  applyMazeIncrementalPanelPurchase(gs, itemId);
 
   def.price += def.priceIncrease[0] ?? 0;
   for (let i = 0; i < def.priceIncrease.length - 1; i++) {
@@ -282,6 +285,8 @@ function collectResourceAtCell(gs: GameState, cell: Point2): void {
         gs.maze.collectedShardDust += spawn.amount;
         break;
     }
+
+    grantMazeIncrementalPickupBonus(gs, spawn.resourceKey);
     return;
   }
 

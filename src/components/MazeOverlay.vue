@@ -101,6 +101,11 @@
           </span>
         </div>
       </div>
+      <div v-if="showAccumulatedBonusPanel" class="maze-panel panel-center accumulated-bonus-panel">
+        <span>Bonus on resource pick-up:</span>
+        <span class="accumulated-bonus-value">{{ props.accumulatedPickupBonus }}</span>
+        <span class="accumulated-bonus-growth">(+{{ props.pickupBonusPerPickup }} per pick-up)</span>
+      </div>
 
       <div v-if="showResetBanner" class="maze-panel panel-center reset-banner" :class="{ 'banner-fading': bannerFading }">
         <div class="reset-headline" :class="bannerReasonSnapshot === 'warped' ? 'headline-red' : 'headline-green'">Warped!</div>
@@ -143,6 +148,8 @@ const props = defineProps<{
   hoverPathCost: number;
   isHoveringEntrance: boolean;
   highMovementUsed: number;
+  accumulatedPickupBonus: number;
+  pickupBonusPerPickup: number;
   nexusMenuVisible: boolean;
   resetReason: '' | 'warped' | 'banked';
 }>();
@@ -171,6 +178,7 @@ const highEntries = computed(() => buildEntries(props.highResources));
 const hasAttemptResources = computed(() => attemptEntries.value.some((entry) => entry.amount > 0));
 const hasAnyHighResources = computed(() => highEntries.value.some((entry) => entry.amount > 0));
 const showLeftPanel = computed(() => hasAttemptResources.value || hasAnyHighResources.value || props.highMovementUsed > 0);
+const showAccumulatedBonusPanel = computed(() => props.accumulatedPickupBonus > 0);
 const depositPreviewEntries = computed<ResourceEntry[]>(() => MAZE_RESOURCE_KEYS
   .map((key) => ({
     key,
@@ -305,6 +313,30 @@ function solidPillBackground(hexColor: string): string {
   backdrop-filter: none;
   padding: 2px 4px;
   pointer-events: auto;
+}
+
+.accumulated-bonus-panel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 28px;
+  font-size: 16px;
+  line-height: 1;
+  color: rgba(226, 232, 240, 0.95);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.accumulated-bonus-value {
+  color: rgba(226, 232, 240, 0.99);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.accumulated-bonus-growth {
+  color: rgba(226, 232, 240, 0.56);
+  font-weight: 500;
+  text-decoration: none;
 }
 
 .movement-panel {

@@ -1,7 +1,7 @@
 import type { Ref, ComputedRef } from 'vue';
 import { axialToPixel } from '../HexMath';
 import { RESOURCE_SPECS } from '../Resources';
-import { resolveMazeRefresherStep } from '../MazeNexusBonuses';
+import { getMazeNextIncrementalPickupBonus, resolveMazeRefresherStep } from '../MazeNexusBonuses';
 import { axialToIndex } from '../Research';
 import type { Point2 } from '../ItemLib';
 import type { MazeResourceSpawn } from '../GameState';
@@ -9,12 +9,15 @@ import type { ReadonlyGameState } from '../UIState';
 
 const REFRESHER_DELAY_MS_PER_UNIT = 50; // 0.5 sec / 10 units
 
-const PICKUP_DURATION = 1200; // ms
+const PICKUP_DURATION = 1500; // ms
 const PICKUP_FLOAT_DISTANCE = 32; // pixels (world space)
 const PICKUP_SCALE_START = 1.0;
 const PICKUP_SCALE_END = 1.5;
 const PICKUP_RING_MAX_RADIUS = 20;
 const PICKUP_RING_LINE_WIDTH = 1.5;
+const PICKUP_PAIR_OFFSET_X = 22;
+const PICKUP_PAIR_SCALE_OFFSET_COMPENSATION = 0.45;
+const PICKUP_OPAQUE_PORTION = 0.7;
 
 const REFRESHER_PULSE_DURATION = 900; // ms
 const REFRESHER_RING_LINE_WIDTH = 2;
@@ -23,6 +26,7 @@ const REFRESHER_COLOR = '56, 189, 248';
 interface PickupParticle {
   wx: number;
   wy: number;
+  screenOffsetX: number;
   glyph: string;
   color: string;
   amount: number;
@@ -79,6 +83,12 @@ function easeOutCubic(t: number): number {
   return 1 - (1 - t) * (1 - t) * (1 - t);
 }
 
+function computePickupAlpha(t: number): number {
+  if (t <= PICKUP_OPAQUE_PORTION) return 1;
+  const fadeProgress = (t - PICKUP_OPAQUE_PORTION) / (1 - PICKUP_OPAQUE_PORTION);
+  return 1 - fadeProgress;
+}
+
 export function useMazeResourceEffects(
   options: MazeResourceEffectsOptions,
 ): MazeResourceEffectsController {
@@ -94,18 +104,29 @@ export function useMazeResourceEffects(
     effectsRafId = requestAnimationFrame(tickEffects);
   }
 
-  function spawnPickupAt(cell: Point2, spawn: MazeResourceSpawn, delayMs: number = 0): void {
+  function spawnPickupResourceAmountAt(
+    cell: Point2,
+    resourceKey: MazeResourceSpawn['resourceKey'],
+    amount: number,
+    delayMs: number = 0,
+    screenOffsetX: number = 0,
+  ): void {
     const pixel = axialToPixel(cell, options.hexSize, options.origin.value);
-    const spec = RESOURCE_SPECS[spawn.resourceKey];
+    const spec = RESOURCE_SPECS[resourceKey];
     pickupParticles.push({
       wx: pixel.x,
       wy: pixel.y,
+      screenOffsetX,
       glyph: spec.glyph,
       color: spec.color,
-      amount: spawn.amount,
+      amount,
       startTime: performance.now() + delayMs,
     });
     ensureEffectsLoop();
+  }
+
+  function spawnPickupAt(cell: Point2, spawn: MazeResourceSpawn, delayMs: number = 0, screenOffsetX: number = 0): void {
+    spawnPickupResourceAmountAt(cell, spawn.resourceKey, spawn.amount, delayMs, screenOffsetX);
   }
 
   function spawnRefresherAt(cell: Point2, delayMs: number = 0): void {
@@ -171,11 +192,12 @@ export function useMazeResourceEffects(
       const t = Math.min(1, elapsed / PICKUP_DURATION);
       const ease = easeOutCubic(t);
 
-      const alpha = 1 - t;
+      const alpha = computePickupAlpha(t);
       const scale = PICKUP_SCALE_START + (PICKUP_SCALE_END - PICKUP_SCALE_START) * ease;
       const floatY = -PICKUP_FLOAT_DISTANCE * ease;
+      const scaledPairOffsetX = p.screenOffsetX * (1 + ((scale - 1) * PICKUP_PAIR_SCALE_OFFSET_COMPENSATION));
 
-      const nodeSx = off.x + p.wx * z;
+      const nodeSx = off.x + p.wx * z + scaledPairOffsetX;
       const nodeSy = off.y + p.wy * z;
 
       const ringProgress = Math.min(1, t * 2.5);
@@ -195,21 +217,23 @@ export function useMazeResourceEffects(
       const sx = nodeSx;
       const sy = nodeSy + floatY * z;
 
-      ctx.save();
-      ctx.translate(sx, sy);
-      ctx.scale(z * scale, z * scale);
-      ctx.globalAlpha = alpha;
+      const renderScale = z * scale;
+      const glyphBaseSize = 14;
+      const glyphSizePx = Math.max(1, glyphBaseSize * renderScale);
+      const amountSizePx = Math.max(1, glyphSizePx * 0.7);
+      const amountOffsetPx = glyphBaseSize * 0.9 * renderScale;
 
-      const glyphSize = 14;
-      ctx.font = `bold ${glyphSize}px sans-serif`;
+      ctx.save();
+      ctx.globalAlpha = alpha;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = p.color;
-      ctx.fillText(p.glyph, 0, 0);
+      ctx.font = `bold ${glyphSizePx}px sans-serif`;
+      ctx.fillText(p.glyph, sx, sy);
 
       const amountText = `+${p.amount}`;
-      ctx.font = `bold ${glyphSize * 0.7}px sans-serif`;
-      ctx.fillText(amountText, glyphSize * 0.9, 0);
+      ctx.font = `bold ${amountSizePx}px sans-serif`;
+      ctx.fillText(amountText, sx + amountOffsetPx, sy);
 
       ctx.restore();
     }
@@ -326,6 +350,12 @@ export function useMazeResourceEffects(
       s => s.cell.x === targetCell.x && s.cell.y === targetCell.y,
     );
     if (spawn) {
+      const bonusAmount = getMazeNextIncrementalPickupBonus(gs);
+      if (bonusAmount > 0) {
+        spawnPickupAt(targetCell, spawn, 0, -PICKUP_PAIR_OFFSET_X);
+        spawnPickupResourceAmountAt(targetCell, spawn.resourceKey, bonusAmount, 0, PICKUP_PAIR_OFFSET_X);
+        return;
+      }
       spawnPickupAt(targetCell, spawn);
     }
   }

@@ -9,6 +9,7 @@ const CREDITS_DOUBLER_PANEL_ID = 'credits_doubler_panel';
 const CHRONOTRACES_DOUBLER_PANEL_ID = 'chronotraces_doubler_panel';
 const PLUS_ONE_PANEL_ID = 'plus_one_panel';
 const REFRESHER_PANEL_ID = 'refresher_panel';
+const INCREMENTAL_PANEL_ID = 'incremental_panel';
 
 type MazeNexusPlacement = {
   itemId: string;
@@ -258,4 +259,35 @@ export function applyMazeRefresherBonusOnStep(gs: GameState, steppedCell: Point2
   gs.maze.takenCells = gs.maze.takenCells.filter(
     takenCell => !refreshedSpawns.some(refreshed => sameCell(refreshed.spawnCell, takenCell)),
   );
+}
+
+export function applyMazeIncrementalPanelPurchase(gs: GameState, itemId: string): void {
+  if (itemId !== INCREMENTAL_PANEL_ID) return;
+  gs.mazeIncrementalBonusPerPickup += 1;
+}
+
+export function getMazeNextIncrementalPickupBonus(gs: ReadonlyGameState): number {
+  if (gs.mazeIncrementalBonusPerPickup <= 0) return 0;
+  return gs.maze.incrementalBonusCounter;
+}
+
+export function grantMazeIncrementalPickupBonus(gs: GameState, resourceKey: MazeResourceSpawn['resourceKey']): number {
+  if (gs.mazeIncrementalBonusPerPickup <= 0) return 0;
+
+  const bonusAmount = gs.maze.incrementalBonusCounter;
+
+  switch (resourceKey) {
+    case 'credits':
+      gs.maze.collectedCredits += bonusAmount;
+      break;
+    case 'chronotraces':
+      gs.maze.collectedChronotraces += bonusAmount;
+      break;
+    case 'shardDust':
+      gs.maze.collectedShardDust += bonusAmount;
+      break;
+  }
+
+  gs.maze.incrementalBonusCounter += gs.mazeIncrementalBonusPerPickup;
+  return bonusAmount;
 }

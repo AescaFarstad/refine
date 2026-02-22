@@ -1,18 +1,30 @@
-import { parseNexusItemDefinitions } from './NexusLib';
-import rawNexusItems from '../data/nexus';
+import type { Point2 } from './ItemLib';
 import { createNexusPreviewCanvas } from './drawNexusPreview';
 import atlasStorage from './AtlasStorage';
+import { NEXUS_ATLAS_TILE_SIZE } from './NexusPreviewCanvas';
 
 let nexusAtlasReady = false;
 let nexusAtlasLoading: Promise<void> | null = null;
 
-const PREVIEW_SIZE = 48;
+type NexusAtlasItemSource = {
+  glyph: string;
+  placableInstanceDescription: {
+    passable: boolean;
+    cells: readonly Point2[];
+    image: string;
+    glyphPlacement: 'perCell' | 'center';
+    iconScale: number;
+  };
+};
 
 async function imageFromBlob(blob: Blob): Promise<HTMLImageElement> {
   const url = URL.createObjectURL(blob);
   const img = new Image();
   await new Promise<void>((resolve, reject) => {
-    img.onload = () => resolve();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve();
+    };
     img.onerror = () => {
       URL.revokeObjectURL(url);
       reject(new Error('Failed to load nexus atlas image'));
@@ -22,7 +34,7 @@ async function imageFromBlob(blob: Blob): Promise<HTMLImageElement> {
   return img;
 }
 
-export async function ensureNexusAtlas(): Promise<void> {
+export async function ensureNexusAtlas(nexusItems: ReadonlyMap<string, NexusAtlasItemSource>): Promise<void> {
   if (nexusAtlasReady) return;
   if (nexusAtlasLoading) return nexusAtlasLoading;
 
@@ -35,7 +47,6 @@ export async function ensureNexusAtlas(): Promise<void> {
       // Allow fallback drawing if items atlas fails to load.
     }
 
-    const items = parseNexusItemDefinitions(rawNexusItems);
     const dpr = Math.max(2, (typeof window !== 'undefined' ? window.devicePixelRatio : 2) || 2);
 
     type PackedEntry = {
@@ -47,20 +58,22 @@ export async function ensureNexusAtlas(): Promise<void> {
 
     const packed: PackedEntry[] = [];
 
-    for (const [id, def] of items) {
+    for (const [id, def] of nexusItems) {
       const cells = def.placableInstanceDescription.cells;
       const canvas = createNexusPreviewCanvas(
         cells,
-        PREVIEW_SIZE,
+        NEXUS_ATLAS_TILE_SIZE,
         def.placableInstanceDescription.image,
         def.glyph,
         def.placableInstanceDescription.glyphPlacement,
+        def.placableInstanceDescription.iconScale,
+        def.placableInstanceDescription.passable,
       );
       if (canvas) {
         packed.push({
           key: `nexus:${id}`,
-          w: PREVIEW_SIZE,
-          h: PREVIEW_SIZE,
+          w: NEXUS_ATLAS_TILE_SIZE,
+          h: NEXUS_ATLAS_TILE_SIZE,
           canvas,
         });
       }
@@ -104,10 +117,15 @@ export async function ensureNexusAtlas(): Promise<void> {
     if (ctx) {
       const frames = new Map<string, { x: number; y: number; w: number; h: number }>();
       for (const p of placed) {
-        // Source canvas is PREVIEW_SIZE*dpr pixels representing PREVIEW_SIZE logical pixels
+        // Source canvas is NEXUS_ATLAS_TILE_SIZE*dpr pixels representing NEXUS_ATLAS_TILE_SIZE logical pixels
         // Draw it into the atlas at the dpr-scaled position
         ctx.drawImage(p.canvas, p.x * dpr, p.y * dpr);
-        frames.set(p.key, { x: p.x * dpr, y: p.y * dpr, w: PREVIEW_SIZE * dpr, h: PREVIEW_SIZE * dpr });
+        frames.set(p.key, {
+          x: p.x * dpr,
+          y: p.y * dpr,
+          w: NEXUS_ATLAS_TILE_SIZE * dpr,
+          h: NEXUS_ATLAS_TILE_SIZE * dpr,
+        });
       }
 
       const blob = await new Promise<Blob>((resolve, reject) => {

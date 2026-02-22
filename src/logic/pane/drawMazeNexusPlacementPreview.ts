@@ -10,9 +10,10 @@ import {
 import { RESOURCE_SPECS } from '../Resources';
 import type { ReadonlyGameState } from '../UIState';
 import { computeHexBoundary } from '../hexBoundary';
-
-const NEXUS_PREVIEW_SIZE = 48;
-const NEXUS_PREVIEW_PADDING = 2;
+import {
+  NEXUS_ATLAS_TILE_PADDING,
+  NEXUS_ATLAS_TILE_SIZE,
+} from '../NexusPreviewCanvas';
 
 export interface MazeNexusPlacementPreviewRenderOptions {
   gs: ReadonlyGameState;
@@ -46,10 +47,10 @@ function getNexusPreviewDrawSize(gs: ReadonlyGameState, nexusItemId: string, hex
 
   const rawW = maxX - minX;
   const rawH = maxY - minY;
-  const available = NEXUS_PREVIEW_SIZE - NEXUS_PREVIEW_PADDING * 2;
+  const available = NEXUS_ATLAS_TILE_SIZE - NEXUS_ATLAS_TILE_PADDING * 2;
   const previewHexSize = Math.min(available / (rawW || 1), available / (rawH || 1));
   const scale = hexSize / previewHexSize;
-  return { w: NEXUS_PREVIEW_SIZE * scale, h: NEXUS_PREVIEW_SIZE * scale };
+  return { w: NEXUS_ATLAS_TILE_SIZE * scale, h: NEXUS_ATLAS_TILE_SIZE * scale };
 }
 
 export function renderMazeNexusPlacementPreview(
@@ -130,51 +131,14 @@ export function renderMazeNexusPlacementPreview(
 
   if (!valid) return;
 
-  const nexusFrame = atlasStorage.getNexusFrame(`nexus:${nexusItemId}`);
-  if (nexusFrame) {
-    const source = atlasStorage.getNexusSource();
-    const drawSize = getNexusPreviewDrawSize(gs, nexusItemId, hexSize);
-    ctx.save();
-    ctx.globalAlpha = 0.95;
-    ctx.drawImage(
-      source,
-      nexusFrame.x, nexusFrame.y, nexusFrame.w, nexusFrame.h,
-      cx - drawSize.w / 2, cy - drawSize.h / 2, drawSize.w, drawSize.h,
-    );
-    ctx.restore();
-    return;
-  }
-
-  const pid = def.placableInstanceDescription;
-  const imageKey = pid.image;
-  if (imageKey) {
-    const frame = atlasStorage.getItemsFrame(imageKey);
-    if (frame) {
-      const source = atlasStorage.getItemsSource();
-      const iconMaxSize = hexSize * 1.2;
-      const scale = Math.min(iconMaxSize / frame.w, iconMaxSize / frame.h);
-      const drawW = frame.w * scale;
-      const drawH = frame.h * scale;
-      ctx.save();
-      ctx.globalAlpha = 0.95;
-      ctx.drawImage(
-        source,
-        frame.x, frame.y, frame.w, frame.h,
-        cx - drawW / 2, cy - drawH / 2, drawW, drawH,
-      );
-      ctx.restore();
-      return;
-    }
-  }
-
-  const text = def.glyph || def.name.charAt(0);
-  const glyphSize = Math.max(12, hexSize * 1.05);
+  const nexusFrame = atlasStorage.getNexusFrame(`nexus:${nexusItemId}`)!;
+  const source = atlasStorage.getNexusSource();
+  const drawSize = getNexusPreviewDrawSize(gs, nexusItemId, hexSize);
   ctx.save();
-  ctx.globalAlpha = 0.95;
-  ctx.font = `bold ${glyphSize}px sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = 'rgba(248, 250, 252, 0.96)';
-  ctx.fillText(text, cx, cy + 1);
+  ctx.drawImage(
+    source,
+    nexusFrame.x, nexusFrame.y, nexusFrame.w, nexusFrame.h,
+    cx - drawSize.w / 2, cy - drawSize.h / 2, drawSize.w, drawSize.h,
+  );
   ctx.restore();
 }

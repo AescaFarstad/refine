@@ -13,10 +13,10 @@
           v-for="[id, item] in items"
           :key="id"
           class="nexus-item"
-          :class="{ 'cannot-afford': !canAfford(id), 'impassable': !isPassable(item) }"
+          :class="{ 'cannot-afford': !canAfford(id) }"
           @pointerdown="onItemPointerDown(item, $event)"
         >
-          <div v-if="hasPreview[id]" class="nexus-item-preview" :ref="(el) => mountCanvas(el as HTMLElement | null, id)"></div>
+          <div class="nexus-item-preview" :ref="(el) => mountCanvas(el as HTMLElement | null, id)"></div>
           <div class="nexus-item-text">
             <span class="nexus-item-name">{{ item.name }}</span>
             <div class="nexus-item-desc" v-html="item.description"></div>
@@ -35,52 +35,41 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { parseNexusItemDefinitions, type NexusItemDefinition } from '../logic/NexusLib';
-import rawNexusItems from '../data/nexus';
+import type { NexusItemDefinition } from '../logic/NexusLib';
 import { startMazeManualDrag } from '../logic/MazeNexusDnd';
-import atlasStorage from '../logic/AtlasStorage';
 import { getGameState, uiState } from '../logic/UIState';
 import { DISCOVERY } from '../logic/DiscoveryLib';
 import { globalInputQueue } from '../logic/Model';
 import { CmdSwitchTab } from '../logic/input/InputCommands';
+import {
+  createNexusPreviewFrameCanvas,
+  NEXUS_UI_PREVIEW_SIZE,
+} from '../logic/NexusPreviewCanvas';
 
 defineProps<{
   visible: boolean;
 }>();
 
-const items = parseNexusItemDefinitions(rawNexusItems);
+type UINexusItem = Readonly<NexusItemDefinition>;
 
-const PREVIEW_SIZE = 56;
+const items = computed(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.lib;
+  return Array.from(getGameState().lib.nexusItems.entries());
+});
+
+const PREVIEW_SIZE = NEXUS_UI_PREVIEW_SIZE;
 const canAccessNexus = computed(() => {
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   uiState.discoveryCounter;
   return getGameState().discoveries[DISCOVERY.REFINEMENT_FAILED] === true;
 });
 
-// Check which items have atlas frames available
-const hasPreview: Record<string, boolean> = {};
-for (const [id] of items) {
-  hasPreview[id] = !!atlasStorage.getNexusFrame(`nexus:${id}`);
-}
-
 function mountCanvas(el: HTMLElement | null, id: string): void {
   if (!el) return;
   // Only mount once - check if canvas is already there
   if (el.firstChild) return;
-  const frame = atlasStorage.getNexusFrame(`nexus:${id}`);
-  if (!frame) return;
-  const source = atlasStorage.getNexusSource();
-  const canvas = document.createElement('canvas');
-  const dpr = Math.max(2, window.devicePixelRatio || 2);
-  canvas.width = PREVIEW_SIZE * dpr;
-  canvas.height = PREVIEW_SIZE * dpr;
-  canvas.style.width = PREVIEW_SIZE + 'px';
-  canvas.style.height = PREVIEW_SIZE + 'px';
-  const ctx = canvas.getContext('2d');
-  if (ctx) {
-    ctx.drawImage(source, frame.x, frame.y, frame.w, frame.h, 0, 0, PREVIEW_SIZE * dpr, PREVIEW_SIZE * dpr);
-  }
-  el.appendChild(canvas);
+  el.appendChild(createNexusPreviewFrameCanvas(id, PREVIEW_SIZE));
 }
 
 function getLivePrice(itemId: string): number {
@@ -91,11 +80,11 @@ function canAfford(itemId: string): boolean {
   return uiState.timeFlux >= getLivePrice(itemId);
 }
 
-function isPassable(item: NexusItemDefinition): boolean {
+function isPassable(item: UINexusItem): boolean {
   return item.placableInstanceDescription.passable;
 }
 
-function onItemPointerDown(item: NexusItemDefinition, event: PointerEvent): void {
+function onItemPointerDown(item: UINexusItem, event: PointerEvent): void {
   if (event.button !== 0) return;
   event.preventDefault();
   if (!canAccessNexus.value) return;
@@ -279,7 +268,4 @@ function goToRefineTab(): void {
   letter-spacing: 0.03em;
 }
 
-.nexus-item.impassable .nexus-item-preview {
-  filter: sepia(0.4) saturate(0.5) brightness(0.85);
-}
 </style>

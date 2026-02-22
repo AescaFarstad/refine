@@ -10,6 +10,7 @@ const FILL_COLOR_BOT = 'rgb(28, 56, 64)';
 const INNER_STROKE_COLOR = 'rgba(140, 220, 210, 0.32)';
 const INNER_STROKE_WIDTH = 1.5;
 const ITEM_COLOR = 'rgba(248, 250, 252, 0.96)';
+const IMPASSABLE_PREVIEW_FILTER = 'sepia(0.4) saturate(0.5) brightness(0.85)';
 
 export function createNexusPreviewCanvas(
   cells: readonly Point2[],
@@ -17,6 +18,8 @@ export function createNexusPreviewCanvas(
   imageKey: string,
   glyph: string,
   glyphPlacement: NexusGlyphPlacement,
+  iconScale: number = 1,
+  passable: boolean = true,
 ): HTMLCanvasElement | null {
   const loops = computeHexBoundary(cells as Point2[]).map(loop => loop.points);
   if (loops.length === 0) return null;
@@ -29,6 +32,7 @@ export function createNexusPreviewCanvas(
   canvas.style.height = size + 'px';
   const ctx = canvas.getContext('2d')!;
   ctx.scale(dpr, dpr);
+  ctx.filter = passable ? 'none' : IMPASSABLE_PREVIEW_FILTER;
 
   // Compute pixel bounds of boundary at hexSize=1
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -81,7 +85,7 @@ export function createNexusPreviewCanvas(
   ctx.stroke();
   ctx.restore();
 
-  const glyphSize = Math.max(8, hexSize * 1.05);
+  const glyphSize = Math.max(8, hexSize * 1.05 * iconScale);
   let centerPixel: Point2 = { x: 0, y: 0 };
   const visualCells: NexusVisualCell[] = [];
   for (const cell of cells) {
@@ -103,7 +107,7 @@ export function createNexusPreviewCanvas(
     cells: visualCells,
     centerPixel,
     imageKey,
-    iconMaxSize: hexSize * 1.2,
+    iconMaxSize: hexSize * 1.2 * iconScale,
     glyphText: glyph,
     glyphSize,
     glyphPlacement,

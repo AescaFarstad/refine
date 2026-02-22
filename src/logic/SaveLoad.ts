@@ -4,7 +4,7 @@ import { loadGame_V1 } from "./LoadGame_V1";
 import type { Wafer } from "./Wafer";
 import { getPivotHex } from "./MoleculeUtils";
 import { indexToAxial } from "./Research";
-import type { RawRaidDefinition } from "./RaidLib";
+import type { EncounterDef } from "./RaidLib";
 
 type AnonymousObject = Record<string, unknown>;
 const RESEARCH_OWNED_CELLS_KEY = "researchOwnedCells";
@@ -33,6 +33,18 @@ interface SavedWaferItem {
 interface SerializedWafer {
   enabledCells: string;
   placedItems: SavedWaferItem[];
+}
+
+interface SerializedNexusOverride {
+  price: number;
+  priceIncrease: number[];
+}
+
+interface SerializedRaidOverride {
+  baseLootChance: number;
+  items: string[];
+  encounters: Array<{ count: number; encounter: EncounterDef }>;
+  zoneCollapseSec: number;
 }
 
 function isObjectRecord(value: unknown): value is AnonymousObject {
@@ -109,22 +121,32 @@ function collectResearchNexusIdsString(gameState: GameState): string {
   return out.join(CELL_PAIR_SEPARATOR);
 }
 
-function serializeRawRaidLib(gameState: GameState): Record<string, RawRaidDefinition> {
-  const out: Record<string, RawRaidDefinition> = {};
+function cloneSerializable<T>(value: T): T {
+  return structuredClone(value);
+}
+
+function serializeRawRaidLib(gameState: GameState): Record<string, SerializedRaidOverride> {
+  const out: Record<string, SerializedRaidOverride> = {};
   for (const raid of gameState.lib.raids.values()) {
     out[raid.id] = {
-      name: raid.name,
-      locationImageId: raid.locationImageId,
-      description: raid.description,
       baseLootChance: raid.baseLootChance,
       items: raid.items.slice(),
       encounters: raid.encounters.map(step => ({
         count: step.count,
-        encounter: { ...step.encounter },
+        encounter: cloneSerializable(step.encounter),
       })),
       zoneCollapseSec: raid.zoneCollapseSec,
-      zoneCollapseStepPerMutation: raid.zoneCollapseStepPerMutation,
-      initialMutations: raid.initialMutations.map(mutation => ({ ...mutation })),
+    };
+  }
+  return out;
+}
+
+function serializeRawNexusLib(gameState: GameState): Record<string, SerializedNexusOverride> {
+  const out: Record<string, SerializedNexusOverride> = {};
+  for (const nexusItem of gameState.lib.nexusItems.values()) {
+    out[nexusItem.id] = {
+      price: nexusItem.price,
+      priceIncrease: nexusItem.priceIncrease.slice(),
     };
   }
   return out;
@@ -136,6 +158,7 @@ function serializeGameState(gameState: GameState): AnonymousObject {
   out[RESEARCH_NEXUS_IDS_KEY] = collectResearchNexusIdsString(gameState);
   out.wafer = serializeWafer(gameState.wafer);
   out.rawRaidLib = serializeRawRaidLib(gameState);
+  out.rawNexusLib = serializeRawNexusLib(gameState);
   return out;
 }
 

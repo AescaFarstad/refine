@@ -4,8 +4,7 @@ import { clearWafer, getCell, placeMolecule } from "./Wafer";
 import { computeEffectiveEssences } from "./RefinePreview";
 import { axialToIndex, calculateVisibility, indexToAxial, initResearchCells } from "./Research";
 import { getPivotHex, rotateMolecule, translateMolecule } from "./MoleculeUtils";
-import { parseRaidDefinitions } from "./RaidLib";
-import type { RaidDefinition, RawRaidDefinition } from "./RaidLib";
+import type { EncounterDef } from "./RaidLib";
 import { recomputeActiveRaidEstimates, recomputeActiveRaidParams } from "./Raid";
 import { applyMazeNexusPlacementAtCell, computeMazeResourceSpawns, resetMazeTransient } from "./Maze";
 
@@ -43,6 +42,7 @@ const REQUIRED_KEYS: readonly string[] = [
   RESEARCH_NEXUS_IDS_KEY,
   "unlockedRaids",
   "items",
+  "rawNexusLib",
 ];
 
 function isObjectRecord(value: unknown): value is AnonymousObject {
@@ -126,6 +126,18 @@ interface SavedNexusPlacement {
   idx: number;
 }
 
+interface SavedNexusLibEntry {
+  price: number;
+  priceIncrease: number[];
+}
+
+interface SavedRaidLibEntry {
+  baseLootChance: number;
+  items: string[];
+  encounters: Array<{ count: number; encounter: EncounterDef }>;
+  zoneCollapseSec: number;
+}
+
 function parseResearchNexusIds(value: unknown): SavedNexusPlacement[] | false {
   if (typeof value !== "string") return false;
   if (value.length === 0) return [];
@@ -148,55 +160,183 @@ function parseResearchNexusIds(value: unknown): SavedNexusPlacement[] | false {
   return out;
 }
 
-function isRawRaidDefinitionRecord(value: unknown): value is Record<string, RawRaidDefinition> {
+function isEncounterDef(value: unknown): value is EncounterDef {
+  if (!isObjectRecord(value)) return false;
+  const type = value.type;
+  if (typeof type !== "string") return false;
+  switch (type) {
+    case "PreparationEncounter":
+      if (typeof value.timeSpentSec !== "number" || !Number.isFinite(value.timeSpentSec)) return false;
+      if (typeof value.damageBonus !== "number" || !Number.isFinite(value.damageBonus)) return false;
+      if (typeof value.hpBonus !== "number" || !Number.isFinite(value.hpBonus)) return false;
+      if (typeof value.blockChanceBonus !== "number" || !Number.isFinite(value.blockChanceBonus)) return false;
+      if (!Array.isArray(value.tacticNames)) return false;
+      for (const tacticName of value.tacticNames) {
+        if (typeof tacticName !== "string") return false;
+      }
+      if (typeof value.gearId !== "string") return false;
+      if (typeof value.gearImage !== "string") return false;
+      return true;
+    case "WalkEncounter":
+      return true;
+    case "LootEncounter":
+      return true;
+    case "MonsterLootEncounter":
+      return typeof value.monsterId === "string";
+    case "FightEncounter":
+      return typeof value.monsterId === "string";
+    case "QuestEncounter":
+      return typeof value.questId === "string";
+    default:
+      return false;
+  }
+}
+
+function isSavedRaidLibRecord(value: unknown): value is Record<string, SavedRaidLibEntry> {
   if (!isObjectRecord(value)) return false;
   for (const rawRaid of Object.values(value)) {
     if (!isObjectRecord(rawRaid)) return false;
+    if (typeof rawRaid.baseLootChance !== "number" || !Number.isFinite(rawRaid.baseLootChance)) return false;
+    if (!Array.isArray(rawRaid.items)) return false;
+    for (const itemId of rawRaid.items) {
+      if (typeof itemId !== "string") return false;
+    }
+    if (!Array.isArray(rawRaid.encounters)) return false;
+    for (const step of rawRaid.encounters) {
+      if (!isObjectRecord(step)) return false;
+      if (typeof step.count !== "number" || !Number.isFinite(step.count)) return false;
+      if (!isEncounterDef(step.encounter)) return false;
+    }
+    if (typeof rawRaid.zoneCollapseSec !== "number" || !Number.isFinite(rawRaid.zoneCollapseSec)) return false;
   }
   return true;
 }
 
-function parseSavedRawRaidLib(value: unknown): Map<string, RaidDefinition> | false {
-  if (value === undefined) return new Map<string, RaidDefinition>();
-  if (!isRawRaidDefinitionRecord(value)) return false;
-
-  try {
-    const parsed = parseRaidDefinitions(value);
-    return parsed.raids;
-  } catch {
-    return false;
+function copyEncounterDef(source: EncounterDef): EncounterDef {
+  switch (source.type) {
+    case "PreparationEncounter":
+      return {
+        type: source.type,
+        timeSpentSec: source.timeSpentSec,
+        damageBonus: source.damageBonus,
+        hpBonus: source.hpBonus,
+        blockChanceBonus: source.blockChanceBonus,
+        tacticNames: source.tacticNames.slice(),
+        gearId: source.gearId,
+        gearImage: source.gearImage,
+      };
+    case "WalkEncounter":
+      return { type: source.type };
+    case "LootEncounter":
+      return { type: source.type };
+    case "MonsterLootEncounter":
+      return {
+        type: source.type,
+        monsterId: source.monsterId,
+        injected: source.injected,
+      };
+    case "FightEncounter":
+      return {
+        type: source.type,
+        monsterId: source.monsterId,
+        injected: source.injected,
+      };
+    case "QuestEncounter":
+      return {
+        type: source.type,
+        questId: source.questId,
+      };
   }
 }
 
-function applySavedRawRaidLib(gameState: GameState, savedRaids: Map<string, RaidDefinition>): boolean {
+function copySavedRaidEncounters(encounters: SavedRaidLibEntry["encounters"]): SavedRaidLibEntry["encounters"] {
+  return encounters.map(step => ({
+    count: step.count,
+    encounter: copyEncounterDef(step.encounter),
+  }));
+}
+
+function parseSavedRawRaidLib(value: unknown): Map<string, SavedRaidLibEntry> | false {
+  if (value === undefined) return new Map<string, SavedRaidLibEntry>();
+  if (!isSavedRaidLibRecord(value)) return false;
+  const out = new Map<string, SavedRaidLibEntry>();
+  for (const [id, rawRaid] of Object.entries(value)) {
+    out.set(id, {
+      baseLootChance: rawRaid.baseLootChance,
+      items: rawRaid.items.slice(),
+      encounters: copySavedRaidEncounters(rawRaid.encounters),
+      zoneCollapseSec: rawRaid.zoneCollapseSec,
+    });
+  }
+  return out;
+}
+
+function isSavedNexusLibRecord(value: unknown): value is Record<string, SavedNexusLibEntry> {
+  if (!isObjectRecord(value)) return false;
+  for (const rawNexusItem of Object.values(value)) {
+    if (!isObjectRecord(rawNexusItem)) return false;
+    if (typeof rawNexusItem.price !== "number" || !Number.isFinite(rawNexusItem.price)) return false;
+    if (!Array.isArray(rawNexusItem.priceIncrease)) return false;
+    for (const priceIncreaseValue of rawNexusItem.priceIncrease) {
+      if (typeof priceIncreaseValue !== "number" || !Number.isFinite(priceIncreaseValue)) return false;
+    }
+  }
+  return true;
+}
+
+function parseSavedRawNexusLib(value: unknown): Map<string, SavedNexusLibEntry> | false {
+  if (!isSavedNexusLibRecord(value)) return false;
+  const out = new Map<string, SavedNexusLibEntry>();
+  for (const [id, rawNexusItem] of Object.entries(value)) {
+    out.set(id, {
+      price: rawNexusItem.price,
+      priceIncrease: rawNexusItem.priceIncrease.slice(),
+    });
+  }
+  return out;
+}
+
+function applySavedRawRaidLib(gameState: GameState, savedRaids: Map<string, SavedRaidLibEntry>): boolean {
   if (savedRaids.size !== gameState.lib.raids.size) return false;
-  for (const raidId of gameState.lib.raids.keys()) {
-    if (!savedRaids.has(raidId)) return false;
+  for (const targetId of gameState.lib.raids.keys()) {
+    if (!savedRaids.has(targetId)) return false;
   }
 
-  for (const [raidId, savedRaid] of savedRaids.entries()) {
-    const raid = gameState.lib.raids.get(raidId);
-    if (!raid) return false;
-
-    raid.name = savedRaid.name;
-    raid.locationImageId = savedRaid.locationImageId;
-    raid.description = savedRaid.description;
-    raid.order = savedRaid.order;
-    raid.baseLootChance = savedRaid.baseLootChance;
-    raid.zoneCollapseSec = savedRaid.zoneCollapseSec;
-    raid.zoneCollapseStepPerMutation = savedRaid.zoneCollapseStepPerMutation;
-    raid.items = savedRaid.items.slice();
-    raid.encounters = savedRaid.encounters.map(step => ({
+  for (const [sourceId, sourceRaid] of savedRaids.entries()) {
+    const targetRaid = gameState.lib.raids.get(sourceId);
+    if (!targetRaid) return false;
+    targetRaid.baseLootChance = sourceRaid.baseLootChance;
+    targetRaid.items = sourceRaid.items.slice();
+    targetRaid.encounters = sourceRaid.encounters.map(step => ({
       count: step.count,
-      encounter: { ...step.encounter },
+      encounter: copyEncounterDef(step.encounter),
     }));
-    raid.initialMutations = savedRaid.initialMutations.map(mutation => ({ ...mutation }));
-    for (const itemId of raid.items) {
-      if (!raid.allPotentialItems.includes(itemId)) {
-        raid.allPotentialItems.push(itemId);
-      }
+    targetRaid.zoneCollapseSec = sourceRaid.zoneCollapseSec;
+    const allPotentialItems = new Set(targetRaid.allPotentialItems);
+    for (const itemId of targetRaid.items) {
+      allPotentialItems.add(itemId);
     }
+    targetRaid.allPotentialItems = Array.from(allPotentialItems);
+  }
+
+  for (const raid of gameState.lib.raids.values()) {
     raid.itemPoolsByRarity = gameState.lib.buildItemPoolsByRarity(raid.items);
+  }
+
+  return true;
+}
+
+function applySavedRawNexusLib(gameState: GameState, savedNexusItems: Map<string, SavedNexusLibEntry>): boolean {
+  if (savedNexusItems.size !== gameState.lib.nexusItems.size) return false;
+  for (const targetId of gameState.lib.nexusItems.keys()) {
+    if (!savedNexusItems.has(targetId)) return false;
+  }
+
+  for (const [sourceId, sourceEntry] of savedNexusItems.entries()) {
+    const targetEntry = gameState.lib.nexusItems.get(sourceId);
+    if (!targetEntry) return false;
+    targetEntry.price = sourceEntry.price;
+    targetEntry.priceIncrease = sourceEntry.priceIncrease.slice();
   }
 
   return true;
@@ -214,14 +354,17 @@ function rehydrateGameState(input: AnonymousObject): GameState | false {
   if (savedWafer === false) return false;
   const savedRawRaidLib = parseSavedRawRaidLib(input.rawRaidLib);
   if (savedRawRaidLib === false) return false;
+  const savedRawNexusLib = parseSavedRawNexusLib(input.rawNexusLib);
+  if (savedRawNexusLib === false) return false;
   const nexusPlacements = parseResearchNexusIds(input[RESEARCH_NEXUS_IDS_KEY]);
   if (nexusPlacements === false) return false;
 
   const gameState = new GameState();
+  if (!applySavedRawNexusLib(gameState, savedRawNexusLib)) return false;
   const mutableGameState = gameState as unknown as AnonymousObject;
 
   for (const [k, v] of Object.entries(input)) {
-    if (k === "lib" || k === "version" || k === "researchCells" || k === RESEARCH_OWNED_CELLS_KEY || k === RESEARCH_NEXUS_IDS_KEY || k === "wafer" || k === "maze" || k === "mazeVisibility" || k === "rawRaidLib") continue;
+    if (k === "lib" || k === "version" || k === "researchCells" || k === RESEARCH_OWNED_CELLS_KEY || k === RESEARCH_NEXUS_IDS_KEY || k === "wafer" || k === "maze" || k === "mazeVisibility" || k === "rawRaidLib" || k === "rawNexusLib") continue;
     mutableGameState[k] = v;
   }
   gameState.discoveryCounter = 0;

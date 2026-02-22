@@ -21,6 +21,7 @@ export type NexusItemDefinition = {
   name: string;
   description: string;
   price: number;
+  minAcquiredUpgradesForOffer: number;
   priceIncrease: number[];
   maxCount: number;
   travelPriceIncrease: number;
@@ -30,11 +31,12 @@ export type NexusItemDefinition = {
   placableInstanceDescription: PlacableInstanceDescription;
 };
 
-export type RawNexusItemDefinition = Omit<NexusItemDefinition, 'id' | 'priceIncrease' | 'maxCount' | 'travelPriceIncrease' | 'placedOnce' | 'effectRadius' | 'limitRadius' | 'placableInstanceDescription'> & {
+export type RawNexusItemDefinition = Omit<NexusItemDefinition, 'id' | 'minAcquiredUpgradesForOffer' | 'priceIncrease' | 'maxCount' | 'travelPriceIncrease' | 'placedOnce' | 'effectRadius' | 'limitRadius' | 'placableInstanceDescription'> & {
   priceIncrease?: number[];
   maxCount?: number;
   travelPriceIncrease?: number;
   placedOnce?: boolean;
+  minAcquiredUpgradesForOffer?: number;
   effectRadius?: number;
   limitRadius?: number;
   placableInstanceDescription?: Partial<PlacableInstanceDescription>;
@@ -58,6 +60,7 @@ export function parseNexusItemDefinitions(
       name: def.name,
       description: def.description,
       price: def.price,
+      minAcquiredUpgradesForOffer: def.minAcquiredUpgradesForOffer ?? 0,
       priceIncrease: def.priceIncrease ? def.priceIncrease.slice() : [0],
       maxCount: def.maxCount ?? -1,
       travelPriceIncrease: def.travelPriceIncrease ?? 0,

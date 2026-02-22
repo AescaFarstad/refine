@@ -16,6 +16,7 @@ function hasPlacedMazeNexusItem(gs: ReadonlyGameState, itemId: string): boolean 
 function canOfferMazeNexusUpgrade(gs: ReadonlyGameState, itemId: string): boolean {
   if (gs.mazeNexusAvailableUpgradeIds.includes(itemId)) return false;
   const def = gs.lib.nexusItems.get(itemId)!;
+  if (gs.mazeNexusAvailableUpgradeIds.length < def.minAcquiredUpgradesForOffer) return false;
   if (!def.placedOnce) return true;
   return !hasPlacedMazeNexusItem(gs, itemId);
 }

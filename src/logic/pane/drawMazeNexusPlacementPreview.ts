@@ -11,6 +11,7 @@ import {
   getMazeNexusItemPlacementRotationStep,
 } from '../Maze';
 import { MAZE_RESOURCE_SPECS } from '../MazeResourceVisuals';
+import { ANTIVOID_PANEL_ID } from '../NexusLib';
 import type { ReadonlyGameState } from '../UIState';
 import { computeHexBoundary } from '../hexBoundary';
 import {
@@ -19,7 +20,6 @@ import {
 } from '../NexusPreviewCanvas';
 import { traceSmoothHexBoundary } from '../drawSmoothBoundary';
 
-const ANTIVOID_PANEL_ID = 'antivoid_panel';
 const UNIT_ORIGIN: Point2 = { x: 0, y: 0 };
 const ANTIVOID_PREVIEW_SMOOTHNESS = 1.15;
 const ANTIVOID_PREVIEW_CONCAVE_BLEND = 0.85;

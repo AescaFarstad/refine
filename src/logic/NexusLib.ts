@@ -1,5 +1,19 @@
 import type { Point2 } from './core/math';
 
+export const FREE_MOVE_PANEL_ID = 'free_move_panel';
+export const REFRESHER_PANEL_ID = 'refresher_panel';
+export const SHARDS_REFRESHER_PANEL_ID = 'shards_refresher_panel';
+export const PLUS_ONE_PANEL_ID = 'plus_one_panel';
+export const PLUS_ONE_RADIUS_PANEL_ID = 'plus_one_radius_panel';
+export const DOUBLER_PANEL_ID = 'doubler_panel';
+export const CREDITS_DOUBLER_PANEL_ID = 'credits_doubler_panel';
+export const CHRONOTRACES_DOUBLER_PANEL_ID = 'chronotraces_doubler_panel';
+export const INCREMENTAL_PANEL_ID = 'incremental_panel';
+export const ANTIVOID_PANEL_ID = 'antivoid_panel';
+export const CREDITS_PANEL_ID = 'credits_panel';
+export const CHRONOTRACES_PANEL_ID = 'chronotraces_panel';
+export const CRYSTAL_PANEL_ID = 'crystal_panel';
+
 export type PlacableInstanceDescription = {
   passable: boolean;
   button: boolean;

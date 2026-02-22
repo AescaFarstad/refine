@@ -27,17 +27,13 @@ import { globalInputQueue } from '../logic/Model';
 import { clearCanvas } from '../logic/DrawHex';
 import { bfsMazePath } from '../logic/MazeBFS';
 import { pixelToAxial } from '../logic/HexMath';
-import { getMazeNexusItemEffectiveRadius, getMazeNexusItemPlacementCells } from '../logic/Maze';
-import { axialToIndex, indexToAxial } from '../logic/Research';
 import { CmdMazeMoveTo, CmdMazePlaceNexusItem } from '../logic/input/InputCommands';
 import { renderMazeTerrainLayer, renderMazeFurnitureLayer, renderMazeVisibilityOverlay } from '../logic/drawMaze';
 import { renderMazePathOverlay } from '../logic/drawMazePath';
-import {
-  buildMazeVisibilityHexBoundaryLoops,
-  computeMazeVisibilityFromAxial,
-} from '../logic/MazeVision';
 import { useHexPaneInteraction } from '../logic/pane/useHexPaneInteraction';
 import { useHoverPathTransition } from '../logic/pane/useHoverPathTransition';
+import { useMazeVisibilityPreview } from '../logic/pane/useMazeVisibilityPreview';
+import { useMazeHoverRadiusPreview } from '../logic/pane/useMazeHoverRadiusPreview';
 import { useMazeAvatar } from '../logic/pane/useMazeAvatar';
 import { useMazeMoveAnimation } from '../logic/pane/useMazeMoveAnimation';
 import useMazeResourceEffects from '../logic/pane/useMazeResourceEffects';
@@ -74,8 +70,6 @@ const AVATAR_CANVAS_SIZE = 96;
 const AVATAR_MOVE_SPEED = 16; // cells per second
 const AVATAR_TURN_SPEED = 12; // radians per second
 const HOVER_PATH_TRANSITION_SPEED = 60; // cells per second
-const FREE_MOVE_PANEL_ID = 'free_move_panel';
-const REFRESHER_PANEL_ID = 'refresher_panel';
 const DRAW_ALL_VISIBILITY_DEBUG_POLYGONS = false;
 
 const canvasWidth = ref(0);
@@ -241,160 +235,23 @@ function syncViewportDependentRendering(): void {
   emitResourceSignals();
 }
 
-function isHoveringPlacedDoubleVisionPanel(axial: Point2 | null): boolean {
-  if (!axial) return false;
-  const idx = axialToIndex(axial.x, axial.y);
-  if (idx === -1) return false;
-  const gs = getGameState();
-  return gs.researchCells[idx]!.nexusId === FREE_MOVE_PANEL_ID;
-}
+const { recomputeHoverVisibility, getMazeVisibilityRuntime } = useMazeVisibilityPreview({
+  hoverAxial,
+  dragNexusItemId,
+  dragNexusAxial,
+  dragNexusValid,
+  getGameState,
+  getGameStateMutable,
+});
 
-function getVisibilityPreviewOriginCell(): Point2 | null {
-  if (
-    dragNexusItemId.value === FREE_MOVE_PANEL_ID
-    && dragNexusValid.value
-    && dragNexusAxial.value !== null
-  ) {
-    return dragNexusAxial.value;
-  }
-
-  const hoverCell = hoverAxial.value;
-  if (isHoveringPlacedDoubleVisionPanel(hoverCell)) {
-    return hoverCell;
-  }
-
-  return null;
-}
-
-function getMazeVisibilityRuntime() {
-  const runtime = getGameStateMutable().mazeVisibility.runtime;
-  if (runtime === null) {
-    throw new Error('Maze visibility runtime is not initialized by gameplay.');
-  }
-  return runtime;
-}
-
-function recomputeHoverVisibility(): void {
-  const mazeVisibility = getGameStateMutable().mazeVisibility;
-  mazeVisibility.result = null;
-  mazeVisibility.boundaryLoops = null;
-  const originCell = getVisibilityPreviewOriginCell();
-  if (originCell === null) {
-    return;
-  }
-
-  const runtime = getMazeVisibilityRuntime();
-  mazeVisibility.result = computeMazeVisibilityFromAxial(
-    runtime,
-    originCell.x,
-    originCell.y,
-  );
-  mazeVisibility.boundaryLoops = buildMazeVisibilityHexBoundaryLoops(runtime.aux, mazeVisibility.result);
-}
+const { getHoverNexusRadiusPreview } = useMazeHoverRadiusPreview({
+  hoverAxial,
+  getGameState,
+});
 
 function onDragPreviewChanged(): void {
   recomputeHoverVisibility();
   renderPath();
-}
-
-function toCellKey(cell: Point2): string {
-  return `${cell.x},${cell.y}`;
-}
-
-function buildPlacedNexusPlacementCells(gs: ReturnType<typeof getGameState>, placementId: number, nexusId: string): Point2[] {
-  const cells: Point2[] = [];
-  for (let i = 0; i < gs.researchCells.length; i++) {
-    const cell = gs.researchCells[i]!;
-    if (!cell.nexusId) continue;
-    if (!Number.isInteger(cell.nexusPlacementId) || cell.nexusPlacementId <= 0) {
-      throw new Error(`Invalid nexus placement id at cell index ${i}`);
-    }
-    if (cell.nexusPlacementId !== placementId) continue;
-    if (cell.nexusId !== nexusId) {
-      throw new Error(`Mixed nexus ids for placement id ${placementId}`);
-    }
-    const axial = indexToAxial(i);
-    cells.push({ x: axial.x, y: axial.y });
-  }
-  return cells;
-}
-
-function resolvePlacedNexusAnchor(gs: ReturnType<typeof getGameState>, nexusId: string, placementCells: readonly Point2[]): Point2 {
-  const localCells = getMazeNexusItemPlacementCells(gs, nexusId, { x: 0, y: 0 });
-  const expectedKeys = new Set(placementCells.map(toCellKey));
-
-  for (const placementCell of placementCells) {
-    for (const localCell of localCells) {
-      const anchor = {
-        x: placementCell.x - localCell.x,
-        y: placementCell.y - localCell.y,
-      };
-      const candidateCells = getMazeNexusItemPlacementCells(gs, nexusId, anchor);
-      if (candidateCells.length !== placementCells.length) continue;
-
-      let matches = true;
-      for (const candidateCell of candidateCells) {
-        if (!expectedKeys.has(toCellKey(candidateCell))) {
-          matches = false;
-          break;
-        }
-      }
-      if (matches) {
-        return anchor;
-      }
-    }
-  }
-
-  throw new Error(`Failed to resolve placement anchor for nexus item "${nexusId}"`);
-}
-
-function isHoveringShardRefresherCell(gs: ReturnType<typeof getGameState>, hoverCell: Point2): boolean {
-  if (!gs.mazeHasShardsRefresherPanel) return false;
-  const spawn = gs.mazeResourceSpawns.find(
-    s => s.cell.x === hoverCell.x && s.cell.y === hoverCell.y,
-  );
-  return spawn?.resourceKey === 'shardDust';
-}
-
-function getHoverNexusRadiusPreview(): { nexusItemId: string; anchor: Point2 } | null {
-  const hoverCell = hoverAxial.value;
-  if (!hoverCell) return null;
-
-  const gs = getGameState();
-  const hoveredIdx = axialToIndex(hoverCell.x, hoverCell.y);
-  if (hoveredIdx !== -1) {
-    const hoveredResearchCell = gs.researchCells[hoveredIdx]!;
-    if (hoveredResearchCell.nexusId) {
-      if (!Number.isInteger(hoveredResearchCell.nexusPlacementId) || hoveredResearchCell.nexusPlacementId <= 0) {
-        throw new Error(`Invalid nexus placement id at cell index ${hoveredIdx}`);
-      }
-      const effectiveRadius = getMazeNexusItemEffectiveRadius(gs, hoveredResearchCell.nexusId);
-      if (effectiveRadius > 0) {
-        const placementCells = buildPlacedNexusPlacementCells(
-          gs,
-          hoveredResearchCell.nexusPlacementId,
-          hoveredResearchCell.nexusId,
-        );
-        const anchor = resolvePlacedNexusAnchor(gs, hoveredResearchCell.nexusId, placementCells);
-        return {
-          nexusItemId: hoveredResearchCell.nexusId,
-          anchor,
-        };
-      }
-    }
-  }
-
-  if (isHoveringShardRefresherCell(gs, hoverCell)) {
-    const refresherRadius = getMazeNexusItemEffectiveRadius(gs, REFRESHER_PANEL_ID);
-    if (refresherRadius > 0) {
-      return {
-        nexusItemId: REFRESHER_PANEL_ID,
-        anchor: hoverCell,
-      };
-    }
-  }
-
-  return null;
 }
 
 onMounted(() => {

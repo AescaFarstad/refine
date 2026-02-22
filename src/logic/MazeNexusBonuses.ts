@@ -4,18 +4,19 @@ import type { Point2 } from './core/math';
 import { axialToIndex, indexToAxial } from './Research';
 import type { ReadonlyGameState } from './UIState';
 import { computeHexBoundary } from './hexBoundary';
-
-const DOUBLER_PANEL_ID = 'doubler_panel';
-const CREDITS_DOUBLER_PANEL_ID = 'credits_doubler_panel';
-const CHRONOTRACES_DOUBLER_PANEL_ID = 'chronotraces_doubler_panel';
-const PLUS_ONE_PANEL_ID = 'plus_one_panel';
-const PLUS_ONE_RADIUS_PANEL_ID = 'plus_one_radius_panel';
-const REFRESHER_PANEL_ID = 'refresher_panel';
-const INCREMENTAL_PANEL_ID = 'incremental_panel';
-const SHARDS_REFRESHER_PANEL_ID = 'shards_refresher_panel';
-const ANTIVOID_PANEL_ID = 'antivoid_panel';
-const CREDITS_PANEL_ID = 'credits_panel';
-const CHRONOTRACES_PANEL_ID = 'chronotraces_panel';
+import {
+  ANTIVOID_PANEL_ID,
+  CHRONOTRACES_DOUBLER_PANEL_ID,
+  CHRONOTRACES_PANEL_ID,
+  CREDITS_DOUBLER_PANEL_ID,
+  CREDITS_PANEL_ID,
+  DOUBLER_PANEL_ID,
+  INCREMENTAL_PANEL_ID,
+  PLUS_ONE_PANEL_ID,
+  PLUS_ONE_RADIUS_PANEL_ID,
+  REFRESHER_PANEL_ID,
+  SHARDS_REFRESHER_PANEL_ID,
+} from './NexusLib';
 
 export const REFRESHER_PANEL_PAUSE_MS = 200;
 

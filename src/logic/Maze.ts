@@ -9,6 +9,13 @@ import type { ReadonlyGameState } from './UIState';
 import { createMazeVisionAux } from './createMazeVisionAux';
 import { computeMazeVisibilityFromIndex, createMazeVisibilityRuntime } from './MazeVision';
 import {
+  CREDITS_PANEL_ID,
+  CHRONOTRACES_PANEL_ID,
+  CRYSTAL_PANEL_ID,
+  FREE_MOVE_PANEL_ID,
+  SHARDS_REFRESHER_PANEL_ID,
+} from './NexusLib';
+import {
   applyMazeAntiVoidBonuses,
   applyMazeNexusPanelPurchase,
   applyMazeDoublerBonusesToSpawns,
@@ -37,11 +44,6 @@ export {
 
 const MAZE_ENTRANCE_ARCHETYPE_ID = 'disc_maze_navigation';
 const MAZE_NEXUS_ARCHETYPE_ID = 'disc_maze_nexus';
-const FREE_MOVE_PANEL_ID = 'free_move_panel';
-const SHARDS_REFRESHER_PANEL_ID = 'shards_refresher_panel';
-const CRYSTAL_PANEL_ID = 'crystal_panel';
-const CREDITS_PANEL_ID = 'credits_panel';
-const CHRONOTRACES_PANEL_ID = 'chronotraces_panel';
 
 export function isMazeEntranceCell(gs: ReadonlyGameState, cell: Point2): boolean {
   const idx = axialToIndex(cell.x, cell.y);

@@ -15,7 +15,7 @@ type GearIconDefinition = { readonly image: string };
 const RESEARCH_COLOR_OWNED_BG = 'rgb(50, 140, 80)';
 const RESEARCH_COLOR_UNOWNED_BG = 'rgb(35, 45, 70)';
 const RESEARCH_COLOR_SPECIAL_OVERT_UNOWNED_BG = 'rgb(140, 110, 25)'; // yellowish for special nodes
-const RESEARCH_COLOR_OBSTACLE_MARKER = 'rgba(131, 145, 164, 0.4)';
+const RESEARCH_COLOR_OBSTACLE_MARKER = '#444f60';
 
 interface StatIconSpec {
   offsetX: number;
@@ -217,7 +217,7 @@ function drawMergedNode(
   const nodeId = cells[0].nodeId;
   const specifiedCenterCell = cells[0].centerCell;
   const axialCells: Point2[] = cells.map((cell) => cell.axial);
-  const loops = computeHexBoundary(cells.map((cell) => cell.axial));
+  const loops = computeHexBoundary(cells.map((cell) => cell.axial)).map(loop => loop.points);
 
   let centerUnitX: number;
   let centerUnitY: number;

@@ -580,5 +580,5 @@ export function buildMazeVisibilityHexBoundaryLoops(
       y: aux.axialYByIndex[cellIndex]!,
     };
   }
-  return computeHexBoundary(visibleCells);
+  return computeHexBoundary(visibleCells).map(loop => loop.points);
 }

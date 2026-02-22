@@ -13,6 +13,11 @@ type BoundaryEdge = {
   b: number;
 };
 
+export interface HexBoundaryLoop {
+  points: Point2[];
+  edgeOwnerCells: Point2[];
+}
+
 // Hex corners for pointy-top orientation, mapped onto an integer lattice:
 // u = (2 / sqrt(3)) * x
 // v = 2 * y
@@ -69,7 +74,7 @@ function toPixelVertex(v: LatticeVertex): Point2 {
   return axialToPixel({ x: q, y: r }, 1);
 }
 
-export function computeHexBoundary(ownedCells: readonly Point2[]): Point2[][] {
+export function computeHexBoundary(ownedCells: readonly Point2[]): HexBoundaryLoop[] {
   if (ownedCells.length === 0) return [];
 
   const ownedSet = new Set<number>();
@@ -78,6 +83,7 @@ export function computeHexBoundary(ownedCells: readonly Point2[]): Point2[][] {
   }
 
   const edges: BoundaryEdge[] = [];
+  const edgeOwnerCells: Point2[] = [];
   const byVertex = new Map<number, number[]>();
   const vertices = new Map<number, LatticeVertex>();
 
@@ -105,6 +111,7 @@ export function computeHexBoundary(ownedCells: readonly Point2[]): Point2[][] {
 
       const idx = edges.length;
       edges.push({ a: from, b: to });
+      edgeOwnerCells.push({ x: cell.x, y: cell.y });
 
       const arrA = byVertex.get(from);
       if (arrA) arrA.push(idx);
@@ -119,6 +126,7 @@ export function computeHexBoundary(ownedCells: readonly Point2[]): Point2[][] {
   const halfCount = edges.length * 2;
   const visitedHalf = new Uint8Array(halfCount);
   const loops: LatticeVertex[][] = [];
+  const loopEdgeOwnerCells: Point2[][] = [];
   const seenLoopKeys = new Set<string>();
 
   function halfFrom(half: number): number {
@@ -135,6 +143,7 @@ export function computeHexBoundary(ownedCells: readonly Point2[]): Point2[][] {
     if (visitedHalf[start] === 1) continue;
 
     const loop: LatticeVertex[] = [];
+    const edgeOwners: Point2[] = [];
     const edgeKeys: string[] = [];
     let current = start;
     let steps = 0;
@@ -155,6 +164,7 @@ export function computeHexBoundary(ownedCells: readonly Point2[]): Point2[][] {
         loop.push({ u: from.u, v: from.v });
       }
       loop.push({ u: to.u, v: to.v });
+      edgeOwners.push(edgeOwnerCells[current >> 1]!);
 
       const undirectedEdge = edges[current >> 1]!;
       const minKey = undirectedEdge.a < undirectedEdge.b ? undirectedEdge.a : undirectedEdge.b;
@@ -212,13 +222,22 @@ export function computeHexBoundary(ownedCells: readonly Point2[]): Point2[][] {
     edgeKeys.sort();
     const loopKey = edgeKeys.join('|');
     if (!seenLoopKeys.has(loopKey)) {
+      if (edgeOwners.length !== loop.length - 1) {
+        throw new Error(
+          `Boundary graph is invalid: loop segment-owner mismatch, segments=${loop.length - 1}, owners=${edgeOwners.length}.`
+        );
+      }
       seenLoopKeys.add(loopKey);
       loops.push(loop);
+      loopEdgeOwnerCells.push(edgeOwners);
     }
   }
 
   if (loops.length === 1) {
-    return [loops[0]!.map(toPixelVertex)];
+    return [{
+      points: loops[0]!.map(toPixelVertex),
+      edgeOwnerCells: loopEdgeOwnerCells[0]!,
+    }];
   }
 
   let outerIdx = 0;
@@ -231,10 +250,16 @@ export function computeHexBoundary(ownedCells: readonly Point2[]): Point2[][] {
     }
   }
 
-  const ordered: Point2[][] = [loops[outerIdx]!.map(toPixelVertex)];
+  const ordered: HexBoundaryLoop[] = [{
+    points: loops[outerIdx]!.map(toPixelVertex),
+    edgeOwnerCells: loopEdgeOwnerCells[outerIdx]!,
+  }];
   for (let i = 0; i < loops.length; i++) {
     if (i === outerIdx) continue;
-    ordered.push(loops[i]!.map(toPixelVertex));
+    ordered.push({
+      points: loops[i]!.map(toPixelVertex),
+      edgeOwnerCells: loopEdgeOwnerCells[i]!,
+    });
   }
 
   return ordered;
@@ -242,7 +267,7 @@ export function computeHexBoundary(ownedCells: readonly Point2[]): Point2[][] {
 
 export function computeOwnedResearchBoundary(
   researchCells: readonly { readonly owned: boolean }[]
-): Point2[][] {
+): HexBoundaryLoop[] {
   const owned: Point2[] = [];
   for (let i = 0; i < researchCells.length; i++) {
     if (!researchCells[i]!.owned) continue;

@@ -18,7 +18,7 @@ export function createNexusPreviewCanvas(
   glyph: string,
   glyphPlacement: NexusGlyphPlacement,
 ): HTMLCanvasElement | null {
-  const loops = computeHexBoundary(cells as Point2[]);
+  const loops = computeHexBoundary(cells as Point2[]).map(loop => loop.points);
   if (loops.length === 0) return null;
 
   const canvas = document.createElement('canvas');

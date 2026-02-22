@@ -230,6 +230,7 @@ function drawImpassableStoneShell(
 ): { centerPixel: Point2 } | null {
   const loops = computeHexBoundary(group.cells);
   if (loops.length === 0) return null;
+  const loopPoints = loops.map(loop => loop.points);
 
   const centerUnit = getGroupCenterUnit(group.cells);
   const stoneOrigin = {
@@ -238,17 +239,17 @@ function drawImpassableStoneShell(
   };
 
   ctx.save();
-  traceBoundaryPath(ctx, loops, stoneOrigin, stoneHexSize, STONE_SHADOW_OFFSET);
+  traceBoundaryPath(ctx, loopPoints, stoneOrigin, stoneHexSize, STONE_SHADOW_OFFSET);
   ctx.fillStyle = STONE_SHADOW_COLOR;
   ctx.fill('evenodd');
   ctx.restore();
 
   ctx.save();
-  traceBoundaryPath(ctx, loops, stoneOrigin, stoneHexSize);
+  traceBoundaryPath(ctx, loopPoints, stoneOrigin, stoneHexSize);
 
   let minY = Infinity;
   let maxY = -Infinity;
-  for (const loop of loops) {
+  for (const loop of loopPoints) {
     for (const p of loop) {
       const py = stoneOrigin.y + p.y * stoneHexSize;
       if (py < minY) minY = py;
@@ -262,14 +263,14 @@ function drawImpassableStoneShell(
   ctx.fillStyle = stoneGrad;
   ctx.fill('evenodd');
 
-  traceBoundaryPath(ctx, loops, stoneOrigin, stoneHexSize);
+  traceBoundaryPath(ctx, loopPoints, stoneOrigin, stoneHexSize);
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
   ctx.strokeStyle = STONE_OUTER_STROKE_COLOR;
   ctx.lineWidth = STONE_OUTER_STROKE_WIDTH;
   ctx.stroke();
 
-  traceBoundaryPath(ctx, loops, stoneOrigin, stoneHexSize);
+  traceBoundaryPath(ctx, loopPoints, stoneOrigin, stoneHexSize);
   ctx.strokeStyle = STONE_INNER_STROKE_COLOR;
   ctx.lineWidth = STONE_INNER_STROKE_WIDTH;
   ctx.stroke();

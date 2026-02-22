@@ -25,7 +25,7 @@ export interface MazeNexusPlacementPreviewRenderOptions {
 
 function getNexusPreviewDrawSize(gs: ReadonlyGameState, nexusItemId: string, hexSize: number): { w: number; h: number } {
   const def = gs.lib.nexusItems.get(nexusItemId)!;
-  const loops = computeHexBoundary(def.placableInstanceDescription.cells);
+  const loops = computeHexBoundary(def.placableInstanceDescription.cells).map(loop => loop.points);
   if (loops.length === 0) {
     const fallback = hexSize * 1.2;
     return { w: fallback, h: fallback };

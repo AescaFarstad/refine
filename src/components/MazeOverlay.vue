@@ -202,7 +202,7 @@ watch(() => props.resetReason, (reason) => {
       bannerHideTimer = setTimeout(() => {
         showResetBanner.value = false;
         bannerFading.value = false;
-      }, 600);
+      }, 350);
     }, 2400);
   } else {
     showResetBanner.value = false;
@@ -546,7 +546,7 @@ function solidPillBackground(hexColor: string): string {
   margin-top: 4px;
   opacity: 1;
   background: rgb(23, 33, 47);
-  transition: opacity 600ms ease;
+  transition: opacity 150ms ease;
   animation: bannerEnter 0.5s ease-out;
 }
 

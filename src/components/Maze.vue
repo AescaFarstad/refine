@@ -109,7 +109,7 @@ watch(
     if (blurTimer) { clearTimeout(blurTimer); blurTimer = null; }
     if (reason) {
       isPaneBlurred.value = true;
-      blurTimer = setTimeout(() => { isPaneBlurred.value = false; }, 2000);
+      blurTimer = setTimeout(() => { isPaneBlurred.value = false; }, 900);
     }
   }
 );

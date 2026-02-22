@@ -14,7 +14,7 @@ import { applyResearchPurchase } from '../Research';
 import { startRefining } from '../Refine';
 import { applyReward } from '../Reward';
 import { saveAutosave } from '../SaveLoad';
-import { handleMazeMoveTo, computeMazeResourceSpawns, syncMazeResetEntranceCell, placeMazeNexusItem } from '../Maze';
+import { handleMazeMoveTo, computeMazeResourceSpawns, syncMazeResetEntranceCell, placeMazeNexusItem, isMazeEntranceCell } from '../Maze';
 import { uiState } from '../UIState';
 
 
@@ -367,6 +367,7 @@ handlersByName.set('CmdGrowWafer', (gs, cmd) => {
 handlersByName.set('CmdResearchNode', (gs, cmd) => {
   const c = cmd as CmdResearchNode;
   const lib = gs.lib.research;
+  const hadMazeEntrance = isMazeEntranceCell(gs, gs.mazeResetEntranceCell);
   const result = applyResearchPurchase(gs, lib, c.pos.x, c.pos.y);
   if (result.success && gs.raid.id) {
     recomputeActiveRaidParams(gs, gs.raid.id);
@@ -375,6 +376,9 @@ handlersByName.set('CmdResearchNode', (gs, cmd) => {
   if (result.success) {
     computeMazeResourceSpawns(gs, lib);
     syncMazeResetEntranceCell(gs);
+    if (!hadMazeEntrance && isMazeEntranceCell(gs, gs.mazeResetEntranceCell)) {
+      gs.maze.avatarCell = { x: gs.mazeResetEntranceCell.x, y: gs.mazeResetEntranceCell.y };
+    }
     saveAutosave(gs);
   }
 });

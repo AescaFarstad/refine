@@ -1,7 +1,7 @@
 import { indexToAxial, axialToIndex } from './Research';
 import type { Point2 } from './ItemLib';
 import type { ReadonlyGameState } from './UIState';
-import { computeOwnedResearchBoundary, computeHexBoundary } from './hexBoundary';
+import { computeOwnedResearchBoundary, computeHexBoundary, type HexBoundaryLoop } from './hexBoundary';
 import { traceSmoothHexBoundary } from './drawSmoothBoundary';
 import type { MazeVisibilityDebugPolygons, MazeVisibilityPolygon } from './MazeVision';
 
@@ -25,8 +25,141 @@ const VOID_NEAR_OWNED_RADIUS = 3;
 const VOID_BOUNDARY_SMOOTHNESS = 1.2;
 const VOID_BOUNDARY_CONCAVE_BLEND = 0.9;
 const VOID_BOUNDARY_CONCAVE_BLEND_NU = 0.25;
+const MAZE_NEXUS_ARCHETYPE_ID = 'disc_maze_nexus';
+const SPECIAL_RESOURCE_PUSH_WEIGHT = 1.2;
+const SPECIAL_NEXUS_PUSH_WEIGHT = 1;
+const SPECIAL_BOUNDARY_PUSH_AMOUNT = 0.15;
+const NORMAL_EPS = 1e-8;
 
 const traceBoundaryPath = traceSmoothHexBoundary;
+
+function getLoopSignedArea(loop: readonly Point2[]): number {
+  const segmentCount = loop.length - 1;
+  let area2 = 0;
+  for (let i = 0; i < segmentCount; i++) {
+    const a = loop[i]!;
+    const b = loop[i + 1]!;
+    area2 += a.x * b.y - a.y * b.x;
+  }
+  return area2 * 0.5;
+}
+
+function buildSpecialBoundaryPushByCell(game: ReadonlyGameState): Map<string, number> {
+  const pushByCell = new Map<string, number>();
+
+  for (const spawn of game.mazeResourceSpawns) {
+    const key = `${spawn.cell.x},${spawn.cell.y}`;
+    const existing = pushByCell.get(key) ?? 0;
+    if (SPECIAL_RESOURCE_PUSH_WEIGHT > existing) {
+      pushByCell.set(key, SPECIAL_RESOURCE_PUSH_WEIGHT);
+    }
+  }
+
+  for (let i = 0; i < game.researchCells.length; i++) {
+    const cell = game.researchCells[i]!;
+    if (!cell.owned) continue;
+
+    let pushWeight = 0;
+    if (cell.nexusId) {
+      pushWeight = SPECIAL_NEXUS_PUSH_WEIGHT;
+    } else if (cell.nodeId >= 0) {
+      const node = game.lib.research.nodes.get(cell.nodeId)!;
+      if (node.archetypeId === MAZE_NEXUS_ARCHETYPE_ID) {
+        pushWeight = SPECIAL_NEXUS_PUSH_WEIGHT;
+      }
+    }
+    if (pushWeight <= 0) continue;
+
+    const axial = indexToAxial(i);
+    const key = `${axial.x},${axial.y}`;
+    const existing = pushByCell.get(key) ?? 0;
+    if (pushWeight > existing) {
+      pushByCell.set(key, pushWeight);
+    }
+  }
+
+  return pushByCell;
+}
+
+function deformBoundaryLoopOutward(loop: HexBoundaryLoop, pushByCell: ReadonlyMap<string, number>): Point2[] {
+  const points = loop.points;
+  const segmentCount = points.length - 1;
+  if (segmentCount < 3) {
+    return points.map(p => ({ x: p.x, y: p.y }));
+  }
+  if (segmentCount !== loop.edgeOwnerCells.length) {
+    throw new Error(
+      `deformBoundaryLoopOutward: segment-owner mismatch, segments=${segmentCount}, owners=${loop.edgeOwnerCells.length}.`
+    );
+  }
+
+  const orientationArea = getLoopSignedArea(points);
+  const orientationSign = orientationArea >= 0 ? 1 : -1;
+
+  const normalX = new Array<number>(segmentCount);
+  const normalY = new Array<number>(segmentCount);
+  for (let i = 0; i < segmentCount; i++) {
+    const a = points[i]!;
+    const b = points[i + 1]!;
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    let nx = orientationSign > 0 ? dy : -dy;
+    let ny = orientationSign > 0 ? -dx : dx;
+    const mag = Math.hypot(nx, ny);
+    if (mag > NORMAL_EPS) {
+      nx /= mag;
+      ny /= mag;
+    } else {
+      nx = 0;
+      ny = 0;
+    }
+    normalX[i] = nx;
+    normalY[i] = ny;
+  }
+
+  const output = new Array<Point2>(segmentCount + 1);
+  for (let i = 0; i < segmentCount; i++) {
+    const prevSegment = (i - 1 + segmentCount) % segmentCount;
+    const nextSegment = i;
+    const prevOwner = loop.edgeOwnerCells[prevSegment]!;
+    const nextOwner = loop.edgeOwnerCells[nextSegment]!;
+    const prevPush = pushByCell.get(`${prevOwner.x},${prevOwner.y}`) ?? 0;
+    const nextPush = pushByCell.get(`${nextOwner.x},${nextOwner.y}`) ?? 0;
+    const push = Math.max(prevPush, nextPush);
+    if (push <= 0) {
+      const base = points[i]!;
+      output[i] = { x: base.x, y: base.y };
+      continue;
+    }
+
+    let nx = normalX[prevSegment]! + normalX[nextSegment]!;
+    let ny = normalY[prevSegment]! + normalY[nextSegment]!;
+    const nMag = Math.hypot(nx, ny);
+    if (nMag > NORMAL_EPS) {
+      nx /= nMag;
+      ny /= nMag;
+    } else {
+      nx = normalX[nextSegment]!;
+      ny = normalY[nextSegment]!;
+    }
+
+    const base = points[i]!;
+    const dist = SPECIAL_BOUNDARY_PUSH_AMOUNT * push;
+    output[i] = { x: base.x + nx * dist, y: base.y + ny * dist };
+  }
+  output[segmentCount] = { x: output[0]!.x, y: output[0]!.y };
+  return output;
+}
+
+function buildOwnedBoundaryLoopPoints(game: ReadonlyGameState): Point2[][] {
+  const loops = computeOwnedResearchBoundary(game.researchCells);
+  if (loops.length === 0) return [];
+  const pushByCell = buildSpecialBoundaryPushByCell(game);
+  if (pushByCell.size === 0) {
+    return loops.map(loop => loop.points);
+  }
+  return loops.map(loop => deformBoundaryLoopOutward(loop, pushByCell));
+}
 
 function drawVisibleHexBoundary(
   ctx: CanvasRenderingContext2D,
@@ -130,9 +263,10 @@ function drawZeroMoveCostOverlay(
 
   const loops = computeHexBoundary(zeroCostCells);
   if (loops.length === 0) return;
+  const loopPoints = loops.map(loop => loop.points);
 
   ctx.save();
-  traceBoundaryPath(ctx, loops, origin, hexSize);
+  traceBoundaryPath(ctx, loopPoints, origin, hexSize);
   ctx.fillStyle = ZERO_MOVE_COST_FILL_COLOR;
   ctx.fill('evenodd');
   ctx.restore();
@@ -180,9 +314,10 @@ function drawVoidBoundary(
 
   const loops = computeHexBoundary(voidCells);
   if (loops.length === 0) return;
+  const loopPoints = loops.map(loop => loop.points);
 
   ctx.save();
-  traceSmoothHexBoundary(ctx, loops, origin, hexSize, undefined, {
+  traceSmoothHexBoundary(ctx, loopPoints, origin, hexSize, undefined, {
     smoothness: VOID_BOUNDARY_SMOOTHNESS,
     concaveBlend: VOID_BOUNDARY_CONCAVE_BLEND,
     concaveBlendNu: VOID_BOUNDARY_CONCAVE_BLEND_NU,
@@ -200,21 +335,21 @@ export function renderMazeTerrainBaseLayer(
 ): void {
   drawVoidBoundary(ctx, game, origin, hexSize);
 
-  const loops = computeOwnedResearchBoundary(game.researchCells);
-  if (loops.length === 0) return;
+  const loopPoints = buildOwnedBoundaryLoopPoints(game);
+  if (loopPoints.length === 0) return;
 
   ctx.save();
-  traceBoundaryPath(ctx, loops, origin, hexSize, SHADOW_OFFSET);
+  traceBoundaryPath(ctx, loopPoints, origin, hexSize, SHADOW_OFFSET);
   ctx.fillStyle = SHADOW_COLOR;
   ctx.fill('evenodd');
   ctx.restore();
 
   ctx.save();
-  traceBoundaryPath(ctx, loops, origin, hexSize);
+  traceBoundaryPath(ctx, loopPoints, origin, hexSize);
 
   let minY = Infinity;
   let maxY = -Infinity;
-  for (const loop of loops) {
+  for (const loop of loopPoints) {
     for (const p of loop) {
       const py = origin.y + p.y * hexSize;
       if (py < minY) minY = py;
@@ -232,14 +367,14 @@ export function renderMazeTerrainBaseLayer(
   drawZeroMoveCostOverlay(ctx, game, origin, hexSize);
 
   ctx.save();
-  traceBoundaryPath(ctx, loops, origin, hexSize);
+  traceBoundaryPath(ctx, loopPoints, origin, hexSize);
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
   ctx.strokeStyle = CELL_OUTER_STROKE_COLOR;
   ctx.lineWidth = CELL_OUTER_STROKE_WIDTH;
   ctx.stroke();
 
-  traceBoundaryPath(ctx, loops, origin, hexSize);
+  traceBoundaryPath(ctx, loopPoints, origin, hexSize);
   ctx.strokeStyle = CELL_INNER_STROKE_COLOR;
   ctx.lineWidth = CELL_INNER_STROKE_WIDTH;
   ctx.stroke();

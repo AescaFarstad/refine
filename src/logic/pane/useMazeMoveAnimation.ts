@@ -8,7 +8,7 @@ import type { ReadonlyGameState } from '../UIState';
 type Point2Ref = Ref<Point2> | ComputedRef<Point2>;
 
 const REFRESHER_PANEL_ID = 'refresher_panel';
-const REFRESHER_PANEL_PAUSE_MS = 500;
+const REFRESHER_PANEL_PAUSE_MS = 200;
 
 interface MoveSegment {
   path: Point2[];

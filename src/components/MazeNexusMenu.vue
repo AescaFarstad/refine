@@ -19,7 +19,7 @@
           <div v-if="hasPreview[id]" class="nexus-item-preview" :ref="(el) => mountCanvas(el as HTMLElement | null, id)"></div>
           <div class="nexus-item-text">
             <span class="nexus-item-name">{{ item.name }}</span>
-            <div class="nexus-item-desc">{{ item.description }}</div>
+            <div class="nexus-item-desc" v-html="item.description"></div>
             <div v-if="item.effectRadius > 0" class="nexus-item-stat">Effect radius: {{ item.effectRadius }}</div>
             <div v-if="item.limitRadius > 0" class="nexus-item-stat">Minimum separation: {{ item.limitRadius * 2 }}</div>
             <div v-if="!isPassable(item)" class="nexus-item-impassable">Impassable</div>

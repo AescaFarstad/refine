@@ -5,6 +5,8 @@ import { axialToIndex, indexToAxial } from './Research';
 import type { ReadonlyGameState } from './UIState';
 
 const DOUBLER_PANEL_ID = 'doubler_panel';
+const CREDITS_DOUBLER_PANEL_ID = 'credits_doubler_panel';
+const CHRONOTRACES_DOUBLER_PANEL_ID = 'chronotraces_doubler_panel';
 const PLUS_ONE_PANEL_ID = 'plus_one_panel';
 const REFRESHER_PANEL_ID = 'refresher_panel';
 
@@ -183,6 +185,24 @@ export function applyMazeDoublerBonusesToSpawns(gs: ReadonlyGameState, spawns: M
     if (placement.itemId !== PLUS_ONE_PANEL_ID) continue;
     for (let i = 0; i < spawns.length; i++) {
       spawns[i]!.amount += 1;
+    }
+  }
+
+  for (const placement of placementsById.values()) {
+    if (placement.itemId !== CREDITS_DOUBLER_PANEL_ID) continue;
+    for (let i = 0; i < spawns.length; i++) {
+      const spawn = spawns[i]!;
+      if (spawn.resourceKey !== 'credits') continue;
+      spawn.amount *= 2;
+    }
+  }
+
+  for (const placement of placementsById.values()) {
+    if (placement.itemId !== CHRONOTRACES_DOUBLER_PANEL_ID) continue;
+    for (let i = 0; i < spawns.length; i++) {
+      const spawn = spawns[i]!;
+      if (spawn.resourceKey !== 'chronotraces') continue;
+      spawn.amount *= 2;
     }
   }
 

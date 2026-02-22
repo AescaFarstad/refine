@@ -13,6 +13,10 @@ const EXCLUDED_KEYS = new Set([
   'raidSimulation',
   'acknowledgedRaidOutcome',
   'discoveryCounter',
+  // Maze transient + derived state (not part of save format)
+  'maze',
+  'mazeVisibility',
+  'mazeResourceSpawns',
   // Runtime/visual-only state (not part of save format)
   'lastMoveError',
   'lastMoveErrorUntil',

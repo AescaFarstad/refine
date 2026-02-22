@@ -132,6 +132,7 @@ const attemptResources = computed<MazeResourceTotals>(() => {
     credits: m.collectedCredits,
     chronotraces: m.collectedChronotraces,
     shardDust: m.collectedShardDust,
+    zone_crystal: m.collectedZoneCrystal,
   };
 });
 
@@ -145,6 +146,7 @@ const highResources = computed<MazeResourceTotals>(() => {
     credits: gs.mazeHighCredits,
     chronotraces: gs.mazeHighChronotraces,
     shardDust: gs.mazeHighShardDust,
+    zone_crystal: gs.mazeHighZoneCrystal,
   };
 });
 

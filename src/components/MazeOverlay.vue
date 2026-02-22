@@ -2,22 +2,30 @@
   <div class="maze-overlay-root">
     <div v-if="showLeftPanel" class="maze-panel panel-left">
       <div v-if="hasAnyHighResources" class="panel-title">Highest picked up:</div>
-      <div v-if="hasAnyHighResources" class="resource-row">
-        <span
-          v-for="entry in highEntries"
-          :key="`high-${entry.key}`"
-          class="resource-slot"
+      <div v-if="hasAnyHighResources">
+        <div
+          v-for="(row, rowIdx) in highEntryRows"
+          :key="`high-row-${rowIdx}`"
+          class="resource-row"
         >
           <span
-            v-if="entry.amount > 0"
-            class="resource-chip"
-            :style="resourceChipStyle(entry.key)"
-            @mouseenter="onResourcePillEnter(entry.key)"
-            @mouseleave="onResourcePillLeave"
+            v-for="entry in row"
+            :key="`high-${entry.key}`"
+            class="resource-slot"
           >
-            {{ entry.amount }}{{ entry.spec.glyph }}
+            <span
+              v-if="entry.amount > 0"
+              class="resource-chip"
+              :style="resourceChipStyle(entry.key)"
+              @mouseenter="onResourcePillEnter(entry.key)"
+              @mouseleave="onResourcePillLeave"
+            >
+              {{ entry.amount }}
+              <span v-if="entry.spec.iconImage.length === 0">{{ entry.spec.glyph }}</span>
+              <span v-else class="resource-chip-icon" :style="resourceChipIconStyle(entry.key)" />
+            </span>
           </span>
-        </span>
+        </div>
       </div>
       <div v-if="hasAttemptResources" class="deposit-hint">
         Return to the entrance to deposit resources.
@@ -26,16 +34,24 @@
       </div>
       <div
         v-if="isHoveringEntrance && depositPreviewEntries.length > 0"
-        class="resource-row banked-row"
+        class="banked-rows"
       >
-        <span
-          v-for="entry in depositPreviewEntries"
-          :key="`banked-${entry.key}`"
-          class="resource-chip banked-chip"
-          :style="resourceChipStyle(entry.key)"
+        <div
+          v-for="(row, rowIdx) in depositPreviewEntryRows"
+          :key="`banked-row-${rowIdx}`"
+          class="resource-row banked-row"
         >
-          +{{ entry.amount }}{{ entry.spec.glyph }}
-        </span>
+          <span
+            v-for="entry in row"
+            :key="`banked-${entry.key}`"
+            class="resource-chip banked-chip"
+            :style="resourceChipStyle(entry.key)"
+          >
+            +{{ entry.amount }}
+            <span v-if="entry.spec.iconImage.length === 0">{{ entry.spec.glyph }}</span>
+            <span v-else class="resource-chip-icon" :style="resourceChipIconStyle(entry.key)" />
+          </span>
+        </div>
       </div>
       <div v-if="props.highMovementUsed > 0" class="journey-cost-line">
         Highest completed journey cost: <span class="movement-value">{{ props.highMovementUsed }}∿</span>
@@ -83,9 +99,13 @@
       </div>
 
       <div class="maze-panel panel-center attempt-panel">
-        <div class="resource-row">
+        <div
+          v-for="(row, rowIdx) in attemptEntryRows"
+          :key="`attempt-row-${rowIdx}`"
+          class="resource-row"
+        >
           <span
-            v-for="entry in attemptEntries"
+            v-for="entry in row"
             :key="`attempt-${entry.key}`"
             class="resource-slot"
           >
@@ -96,7 +116,9 @@
               @mouseenter="onResourcePillEnter(entry.key)"
               @mouseleave="onResourcePillLeave"
             >
-              {{ entry.amount }}{{ entry.spec.glyph }}
+              {{ entry.amount }}
+              <span v-if="entry.spec.iconImage.length === 0">{{ entry.spec.glyph }}</span>
+              <span v-else class="resource-chip-icon" :style="resourceChipIconStyle(entry.key)" />
             </span>
           </span>
         </div>
@@ -121,8 +143,10 @@
       class="resource-hover-hint map-hint"
       :style="resourceHintStyle(hint)"
     >
-      <span class="hint-amount" :style="{ color: RESOURCE_SPECS[hint.resourceKey].color }">
-        {{ hint.amount }}{{ RESOURCE_SPECS[hint.resourceKey].glyph }}
+      <span class="hint-amount" :style="{ color: MAZE_RESOURCE_SPECS[hint.resourceKey].color }">
+        {{ hint.amount }}
+        <span v-if="MAZE_RESOURCE_SPECS[hint.resourceKey].iconImage.length === 0">{{ MAZE_RESOURCE_SPECS[hint.resourceKey].glyph }}</span>
+        <span v-else class="resource-hint-icon" :style="resourceHintIconStyle(hint.resourceKey)" />
       </span>
     </div>
     <MazeNexusMenu :visible="nexusMenuVisible" />
@@ -131,7 +155,9 @@
 
 <script setup lang="ts">
 import { computed, ref, watch, onUnmounted } from 'vue';
-import { RESOURCE_SPECS } from '../logic/Resources';
+import atlasStorage from '../logic/AtlasStorage';
+import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
+import { MAZE_RESOURCE_SPECS } from '../logic/MazeResourceVisuals';
 import type {
   MazeResourceHoverHint,
   MazeResourceKey,
@@ -162,19 +188,37 @@ const emit = defineEmits<{
 interface ResourceEntry {
   key: MazeResourceKey;
   amount: number;
-  spec: (typeof RESOURCE_SPECS)[MazeResourceKey];
+  spec: (typeof MAZE_RESOURCE_SPECS)[MazeResourceKey];
 }
 
 function buildEntries(resources: MazeResourceTotals): ResourceEntry[] {
   return MAZE_RESOURCE_KEYS.map((key) => ({
     key,
     amount: resources[key],
-    spec: RESOURCE_SPECS[key],
+    spec: MAZE_RESOURCE_SPECS[key],
   }));
+}
+
+function buildEntryRows(entries: readonly ResourceEntry[]): ResourceEntry[][] {
+  const rows = new Map<number, ResourceEntry[]>();
+  for (const entry of entries) {
+    const row = entry.spec.pillRow;
+    const existing = rows.get(row);
+    if (existing) {
+      existing.push(entry);
+      continue;
+    }
+    rows.set(row, [entry]);
+  }
+  return Array.from(rows.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([, row]) => row);
 }
 
 const attemptEntries = computed(() => buildEntries(props.attemptResources));
 const highEntries = computed(() => buildEntries(props.highResources));
+const attemptEntryRows = computed(() => buildEntryRows(attemptEntries.value).filter((row) => row.some((entry) => entry.amount > 0)));
+const highEntryRows = computed(() => buildEntryRows(highEntries.value).filter((row) => row.some((entry) => entry.amount > 0)));
 const hasAttemptResources = computed(() => attemptEntries.value.some((entry) => entry.amount > 0));
 const hasAnyHighResources = computed(() => highEntries.value.some((entry) => entry.amount > 0));
 const showLeftPanel = computed(() => hasAttemptResources.value || hasAnyHighResources.value || props.highMovementUsed > 0);
@@ -183,9 +227,10 @@ const depositPreviewEntries = computed<ResourceEntry[]>(() => MAZE_RESOURCE_KEYS
   .map((key) => ({
     key,
     amount: Math.max(0, props.attemptResources[key] - props.highResources[key]),
-    spec: RESOURCE_SPECS[key],
+    spec: MAZE_RESOURCE_SPECS[key],
   }))
   .filter((entry) => props.attemptResources[entry.key] > 0));
+const depositPreviewEntryRows = computed(() => buildEntryRows(depositPreviewEntries.value));
 
 // --- Reset banner (auto-hide after 3s) ---
 const showResetBanner = ref(false);
@@ -221,11 +266,27 @@ watch(() => props.resetReason, (reason) => {
 onUnmounted(clearBannerTimers);
 
 function resourceChipStyle(key: MazeResourceKey): Record<string, string> {
-  const spec = RESOURCE_SPECS[key];
+  const spec = MAZE_RESOURCE_SPECS[key];
   return {
     color: spec.color,
     background: solidPillBackground(spec.color),
   };
+}
+
+function resourceChipIconStyle(key: MazeResourceKey): Record<string, string> {
+  return resourceIconStyle(key, 16);
+}
+
+function resourceHintIconStyle(key: MazeResourceKey): Record<string, string> {
+  return resourceIconStyle(key, 14);
+}
+
+function resourceIconStyle(key: MazeResourceKey, size: number): Record<string, string> {
+  const spec = MAZE_RESOURCE_SPECS[key];
+  if (spec.iconImage.length === 0) return {};
+  const source = atlasStorage.getItemsSource();
+  const frame = atlasStorage.getItemsFrame(spec.iconImage)!;
+  return atlasSpriteStyle(source, frame, { size, mode: 'fit' });
 }
 
 function resourceHintStyle(hint: MazeResourceHoverHint): Record<string, string> {
@@ -446,6 +507,10 @@ function solidPillBackground(hexColor: string): string {
   align-items: center;
 }
 
+.resource-row + .resource-row {
+  margin-top: 6px;
+}
+
 .deposit-hint {
   margin-top: 6px;
   font-size: 14px;
@@ -476,6 +541,12 @@ function solidPillBackground(hexColor: string): string {
   text-underline-offset: 3px;
   text-decoration-thickness: 1px;
   cursor: default;
+}
+
+.resource-chip-icon {
+  display: inline-block;
+  margin-left: 4px;
+  transform: translateY(1px);
 }
 
 .banked-row {
@@ -555,7 +626,14 @@ function solidPillBackground(hexColor: string): string {
 }
 
 .hint-amount {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-weight: 700;
+}
+
+.resource-hint-icon {
+  display: inline-block;
 }
 
 .map-hint {

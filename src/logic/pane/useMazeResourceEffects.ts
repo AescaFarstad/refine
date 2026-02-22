@@ -1,6 +1,6 @@
 import type { Ref, ComputedRef } from 'vue';
 import { axialToPixel } from '../HexMath';
-import { RESOURCE_SPECS } from '../Resources';
+import { MAZE_RESOURCE_SPECS } from '../MazeResourceVisuals';
 import {
   getMazeNextIncrementalPickupBonus,
   resolveMazeRefresherStep,
@@ -9,6 +9,7 @@ import { axialToIndex } from '../Research';
 import type { Point2 } from '../ItemLib';
 import type { MazeResourceSpawn } from '../GameState';
 import type { ReadonlyGameState } from '../UIState';
+import { drawMazeResourceMarker } from '../drawMazeResourceMarker';
 
 const REFRESHER_DELAY_MS_PER_UNIT = 50; // 0.5 sec / 10 units
 
@@ -31,6 +32,7 @@ interface PickupParticle {
   wy: number;
   screenOffsetX: number;
   glyph: string;
+  imageKey: string;
   color: string;
   amount: number;
   startTime: number;
@@ -115,12 +117,13 @@ export function useMazeResourceEffects(
     screenOffsetX: number = 0,
   ): void {
     const pixel = axialToPixel(cell, options.hexSize, options.origin.value);
-    const spec = RESOURCE_SPECS[resourceKey];
+    const spec = MAZE_RESOURCE_SPECS[resourceKey];
     pickupParticles.push({
       wx: pixel.x,
       wy: pixel.y,
       screenOffsetX,
       glyph: spec.glyph,
+      imageKey: spec.iconImage,
       color: spec.color,
       amount,
       startTime: performance.now() + delayMs,
@@ -230,11 +233,18 @@ export function useMazeResourceEffects(
       ctx.globalAlpha = alpha;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = p.color;
-      ctx.font = `bold ${glyphSizePx}px sans-serif`;
-      ctx.fillText(p.glyph, sx, sy);
+      drawMazeResourceMarker(ctx, {
+        glyph: p.glyph,
+        iconImage: p.imageKey,
+        color: p.color,
+        centerX: sx,
+        centerY: sy,
+        glyphSizePx,
+        iconScale: 1.2,
+      });
 
       const amountText = `+${p.amount}`;
+      ctx.fillStyle = p.color;
       ctx.font = `bold ${amountSizePx}px sans-serif`;
       ctx.fillText(amountText, sx + amountOffsetPx, sy);
 

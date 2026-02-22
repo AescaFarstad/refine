@@ -4,6 +4,7 @@ export type PlacableInstanceDescription = {
   passable: boolean;
   button: boolean;
   rotating: boolean;
+  showInMaze: boolean;
   cells: Point2[];
   glyph: string;
   image: string;
@@ -67,6 +68,7 @@ export function parseNexusItemDefinitions(
         passable,
         button,
         rotating: rawPlacable?.rotating ?? false,
+        showInMaze: rawPlacable?.showInMaze ?? true,
         cells: normalizedCells,
         glyph: rawPlacable?.glyph ?? '',
         image: rawPlacable?.image ?? '',

@@ -86,6 +86,8 @@ february 19
   maze visibility
 february 21
   maze visuals, refactoring, nexus upgrades
+february 22
+  nexus upgrades
 
 npx tsc --noEmit
 npx vue-tsc --noEmit
@@ -225,11 +227,6 @@ double all visible resources
 
 
 
-
-
-Enlarge maze around bonuses and resources
-
-movement in the visible area is free
 
 reset and regret
 destroy void

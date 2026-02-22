@@ -1,8 +1,9 @@
 import { type Ref, type ComputedRef, onUnmounted } from 'vue';
 import { axialToPixel } from '../HexMath';
-import { RESOURCE_SPECS } from '../Resources';
+import { MAZE_RESOURCE_SPECS } from '../MazeResourceVisuals';
 import type { Point2 } from '../ItemLib';
 import type { MazeResourceSpawn } from '../GameState';
+import { drawMazeResourceMarker } from '../drawMazeResourceMarker';
 
 const PICKUP_DURATION = 1200; // ms
 const PICKUP_FLOAT_DISTANCE = 32; // pixels (world space)
@@ -15,6 +16,7 @@ interface PickupParticle {
   wx: number; // world-space pixel x
   wy: number; // world-space pixel y
   glyph: string;
+  imageKey: string;
   color: string;
   amount: number;
   startTime: number;
@@ -45,11 +47,12 @@ export function useMazePickupAnimation(
 
   function spawnAt(cell: Point2, spawn: MazeResourceSpawn, delayMs: number = 0): void {
     const pixel = axialToPixel(cell, options.hexSize, options.origin.value);
-    const spec = RESOURCE_SPECS[spawn.resourceKey];
+    const spec = MAZE_RESOURCE_SPECS[spawn.resourceKey];
     particles.push({
       wx: pixel.x,
       wy: pixel.y,
       glyph: spec.glyph,
+      imageKey: spec.iconImage,
       color: spec.color,
       amount: spawn.amount,
       startTime: performance.now() + delayMs,
@@ -141,15 +144,22 @@ export function useMazePickupAnimation(
 
       // Glyph
       const glyphSize = 14;
-      ctx.font = `bold ${glyphSize}px sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = p.color;
-      ctx.fillText(p.glyph, 0, 0);
+      drawMazeResourceMarker(ctx, {
+        glyph: p.glyph,
+        iconImage: p.imageKey,
+        color: p.color,
+        centerX: 0,
+        centerY: 0,
+        glyphSizePx: glyphSize,
+        iconScale: 1.2,
+      });
 
       // Amount text
       const amountText = `+${p.amount}`;
       ctx.font = `bold ${glyphSize * 0.7}px sans-serif`;
+      ctx.fillStyle = p.color;
       ctx.fillText(amountText, glyphSize * 0.9, 0);
 
       ctx.restore();

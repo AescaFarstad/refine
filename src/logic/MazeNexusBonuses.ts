@@ -373,6 +373,9 @@ export function grantMazeIncrementalPickupBonus(gs: GameState, resourceKey: Maze
     case 'shardDust':
       gs.maze.collectedShardDust += bonusAmount;
       break;
+    case 'zone_crystal':
+      gs.maze.collectedZoneCrystal += bonusAmount;
+      break;
   }
 
   gs.maze.incrementalBonusCounter += gs.mazeIncrementalBonusPerPickup;

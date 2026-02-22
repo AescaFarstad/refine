@@ -150,9 +150,11 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
     priceIncrease: [10],
     placableInstanceDescription: {
       passable: true,
-      cells: [{ x: -1, y: 0 }, { x: 0, y: 0 }, { x: 1, y: 0 }],
+      button: false,
+      showInMaze: false,
+      cells: [{ x: 0, y: 0 }],
       image:'quartz',
-      imageScale: 1.5,
+      imageScale: 1.2,
       imagePlacement: 'center',
     },
   },

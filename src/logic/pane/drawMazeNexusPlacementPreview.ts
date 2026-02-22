@@ -9,7 +9,7 @@ import {
   getMazeNexusPlacementCentroidUnit,
   getMazeNexusItemPlacementRotationStep,
 } from '../Maze';
-import { RESOURCE_SPECS } from '../Resources';
+import { MAZE_RESOURCE_SPECS } from '../MazeResourceVisuals';
 import type { ReadonlyGameState } from '../UIState';
 import { computeHexBoundary } from '../hexBoundary';
 import {
@@ -205,7 +205,7 @@ export function renderMazeNexusPlacementPreview(
         const spawn = gs.mazeResourceSpawns[spawnIndex]!;
         const pixel = axialToPixel(spawn.cell, hexSize, origin);
 
-        const spec = RESOURCE_SPECS[spawn.resourceKey];
+        const spec = MAZE_RESOURCE_SPECS[spawn.resourceKey];
         const glowR = hexSize * 1.6;
 
         ctx.save();

@@ -3,7 +3,7 @@ import type { GameState, MazeResourceSpawn } from './GameState';
 import { createMazeTransient } from './GameState';
 import type { ResearchLib } from './ResearchLib';
 import { axialDistance } from './HexMath';
-import { axialToIndex, calculateVisibility } from './Research';
+import { axialToIndex, calculateVisibility, indexToAxial } from './Research';
 import { bfsMazePath } from './MazeBFS';
 import type { ReadonlyGameState } from './UIState';
 import { createMazeVisionAux } from './createMazeVisionAux';
@@ -34,6 +34,7 @@ const MAZE_ENTRANCE_ARCHETYPE_ID = 'disc_maze_navigation';
 const MAZE_NEXUS_ARCHETYPE_ID = 'disc_maze_nexus';
 const FREE_MOVE_PANEL_ID = 'free_move_panel';
 const SHARDS_REFRESHER_PANEL_ID = 'shards_refresher_panel';
+const CRYSTAL_PANEL_ID = 'crystal_panel';
 
 export function isMazeEntranceCell(gs: ReadonlyGameState, cell: Point2): boolean {
   const idx = axialToIndex(cell.x, cell.y);
@@ -161,7 +162,7 @@ export function computeMazeResourceSpawns(gs: GameState, lib: ResearchLib): void
     const archetype = lib.archetypes.get(node.archetypeId);
     if (!archetype) continue;
 
-    let resourceKey: 'credits' | 'chronotraces' | 'shardDust' | null = null;
+    let resourceKey: MazeResourceSpawn['resourceKey'] | null = null;
 
     if (archetype.type === 'gear') {
       resourceKey = 'chronotraces';
@@ -169,7 +170,7 @@ export function computeMazeResourceSpawns(gs: GameState, lib: ResearchLib): void
       resourceKey = 'credits';
     } else if (archetype.type === 'resource') {
       const isShardResource = archetype.rewards.some(
-        r => r.kind === 'resource' && (r as { resource?: string }).resource === 'shardDust'
+        r => r.kind === 'resource' && r.resource === 'shardDust'
       );
       resourceKey = isShardResource ? 'shardDust' : 'credits';
     }
@@ -180,6 +181,20 @@ export function computeMazeResourceSpawns(gs: GameState, lib: ResearchLib): void
     const amount = Math.max(1, dist);
 
     spawns.push({ cell: { x: center.x, y: center.y }, resourceKey, amount });
+  }
+
+  for (let i = 0; i < gs.researchCells.length; i++) {
+    const cell = gs.researchCells[i]!;
+    if (!cell.owned || cell.nexusId !== CRYSTAL_PANEL_ID) continue;
+
+    const center = indexToAxial(i);
+    const amount = 1;
+
+    spawns.push({
+      cell: { x: center.x, y: center.y },
+      resourceKey: 'zone_crystal',
+      amount,
+    });
   }
 
   applyMazeDoublerBonusesToSpawns(gs, spawns);
@@ -303,6 +318,9 @@ function collectResourceAtCell(gs: GameState, cell: Point2): void {
       case 'shardDust':
         gs.maze.collectedShardDust += spawn.amount;
         break;
+      case 'zone_crystal':
+        gs.maze.collectedZoneCrystal += spawn.amount;
+        break;
     }
 
     grantMazeIncrementalPickupBonus(gs, spawn.resourceKey);
@@ -330,16 +348,24 @@ function applyMazePayout(gs: GameState): void {
   const payoutCredits = Math.max(0, m.collectedCredits - gs.mazeHighCredits);
   const payoutChronotraces = Math.max(0, m.collectedChronotraces - gs.mazeHighChronotraces);
   const payoutShardDust = Math.max(0, m.collectedShardDust - gs.mazeHighShardDust);
+  const payoutZoneCrystal = Math.max(0, m.collectedZoneCrystal - gs.mazeHighZoneCrystal);
 
   // Update persistent highs
   gs.mazeHighCredits = Math.max(gs.mazeHighCredits, m.collectedCredits);
   gs.mazeHighChronotraces = Math.max(gs.mazeHighChronotraces, m.collectedChronotraces);
   gs.mazeHighShardDust = Math.max(gs.mazeHighShardDust, m.collectedShardDust);
+  gs.mazeHighZoneCrystal = Math.max(gs.mazeHighZoneCrystal, m.collectedZoneCrystal);
 
   // Apply payouts to actual resources
   gs.credits += payoutCredits;
   gs.chronotraces += payoutChronotraces;
   gs.shardDust += payoutShardDust;
+  if (payoutZoneCrystal > 0) {
+    gs.countableGear.zone_crystal = (gs.countableGear.zone_crystal || 0) + payoutZoneCrystal;
+    if (!gs.unlockedGear.includes('zone_crystal')) {
+      gs.unlockedGear.push('zone_crystal');
+    }
+  }
 }
 
 export interface MazeMoveResult {

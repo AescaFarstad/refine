@@ -1,5 +1,5 @@
 import { axialToPixel } from './HexMath';
-import { RESOURCE_SPECS } from './Resources';
+import { MAZE_RESOURCE_SPECS } from './MazeResourceVisuals';
 import { getOwnedMazeEntrances, getOwnedMazeNexuses } from './Maze';
 import type { Point2 } from './ItemLib';
 import type { ReadonlyGameState } from './UIState';
@@ -8,6 +8,7 @@ import atlasStorage from './AtlasStorage';
 import { indexToAxial } from './Research';
 import { traceSmoothHexBoundary } from './drawSmoothBoundary';
 import { drawNexusItemVisuals, type NexusVisualCell } from './drawNexusItemVisuals';
+import { drawMazeResourceMarker } from './drawMazeResourceMarker';
 
 const RESOURCE_GLOW_RADIUS_SCALE = 1.8;
 const RESOURCE_GLOW_ALPHA = 0.18;
@@ -157,6 +158,7 @@ function buildNexusPlacementGroups(
     if (!cell.owned || !cell.nexusId) continue;
 
     const def = game.lib.nexusItems.get(cell.nexusId)!;
+    if (!def.placableInstanceDescription.showInMaze) continue;
     if (def.placableInstanceDescription.passable !== passable) continue;
 
     if (!Number.isInteger(cell.nexusPlacementId) || cell.nexusPlacementId <= 0) {
@@ -412,7 +414,7 @@ export function renderMazeFurnitureLayer(
     const pixel = axialToPixel(spawn.cell, hexSize, origin);
     const taken = takenSet.has(cellKey);
     const highlighted = highlightedResourceCellKeys?.has(cellKey) === true;
-    const spec = RESOURCE_SPECS[spawn.resourceKey];
+    const spec = MAZE_RESOURCE_SPECS[spawn.resourceKey];
     const scale = highlighted ? RESOURCE_HIGHLIGHT_SCALE : 1;
     const bgRadius = glyphSize * GLYPH_BG_RADIUS_SCALE * scale;
     const glyphYOffset = spawn.resourceKey === 'credits' ? 2 : 1;
@@ -446,11 +448,17 @@ export function renderMazeFurnitureLayer(
       ctx.stroke();
     }
 
-    ctx.font = `bold ${glyphSize * scale}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = taken ? TAKEN_GLYPH_COLOR : spec.color;
-    ctx.fillText(spec.glyph, pixel.x, pixel.y + glyphYOffset);
+    drawMazeResourceMarker(ctx, {
+      glyph: spec.glyph,
+      iconImage: spec.iconImage,
+      color: taken ? TAKEN_GLYPH_COLOR : spec.color,
+      centerX: pixel.x,
+      centerY: pixel.y,
+      glyphSizePx: glyphSize * scale,
+      glyphYOffsetPx: glyphYOffset,
+      iconScale: 1.1,
+      iconAlpha: taken ? 0.45 : 1,
+    });
     ctx.restore();
   }
 

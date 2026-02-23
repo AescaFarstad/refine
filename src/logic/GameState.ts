@@ -62,6 +62,10 @@ export class GameState {
   public refiningYieldPctBonus: number = 0;
   public refiningSuccessChanceBonus: number = 0;
   public refiningSpeedPctBonus: number = 0;
+  public refiningRedEssenceResourceBonus: number = 0;
+  public refiningGreenEssenceResourceBonus: number = 0;
+  public refiningBlueEssenceResourceBonus: number = 0;
+  public refiningYellowNeighborBonus: number = 0;
   public shards: Array<Shard> = [];
   public raid: ActiveRaid = new ActiveRaid();
 

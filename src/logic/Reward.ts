@@ -9,6 +9,10 @@ export interface RefiningRewardBonus {
   refiningYieldPctBonus: number;
   refiningSuccessChanceBonus: number;
   refiningSpeedPctBonus: number;
+  refiningRedEssenceResourceBonus: number;
+  refiningGreenEssenceResourceBonus: number;
+  refiningBlueEssenceResourceBonus: number;
+  refiningYellowNeighborBonus: number;
 }
 
 export function createRefiningRewardBonus(): RefiningRewardBonus {
@@ -16,6 +20,10 @@ export function createRefiningRewardBonus(): RefiningRewardBonus {
     refiningYieldPctBonus: 0,
     refiningSuccessChanceBonus: 0,
     refiningSpeedPctBonus: 0,
+    refiningRedEssenceResourceBonus: 0,
+    refiningGreenEssenceResourceBonus: 0,
+    refiningBlueEssenceResourceBonus: 0,
+    refiningYellowNeighborBonus: 0,
   };
 }
 
@@ -35,6 +43,10 @@ export type Reward =
   | { kind: 'refining_yield_pct_bonus'; amount: number }
   | { kind: 'refining_success_chance_bonus'; amount: number }
   | { kind: 'refining_speed_pct_bonus'; amount: number }
+  | { kind: 'refining_red_essence_resource_bonus'; amount: number }
+  | { kind: 'refining_green_essence_resource_bonus'; amount: number }
+  | { kind: 'refining_blue_essence_resource_bonus'; amount: number }
+  | { kind: 'refining_yellow_neighbor_bonus'; amount: number }
 
   // Raid Modifications (Context-sensitive or targeted)
   // If targetRaidId is undefined, it applies to the "current" raid context (e.g. for Quest completion rewards)
@@ -84,6 +96,22 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
 
     case 'refining_speed_pct_bonus':
       gs.refiningSpeedPctBonus += reward.amount;
+      break;
+
+    case 'refining_red_essence_resource_bonus':
+      gs.refiningRedEssenceResourceBonus += reward.amount;
+      break;
+
+    case 'refining_green_essence_resource_bonus':
+      gs.refiningGreenEssenceResourceBonus += reward.amount;
+      break;
+
+    case 'refining_blue_essence_resource_bonus':
+      gs.refiningBlueEssenceResourceBonus += reward.amount;
+      break;
+
+    case 'refining_yellow_neighbor_bonus':
+      gs.refiningYellowNeighborBonus += reward.amount;
       break;
 
     case 'unlock_gear':

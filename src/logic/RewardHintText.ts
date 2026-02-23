@@ -53,6 +53,14 @@ export function formatRewardHintText(reward: Reward, lib: ReadonlyLib): string {
       return `${signed(reward.amount)}% refining success chance`;
     case 'refining_speed_pct_bonus':
       return `${signed(reward.amount)}% refining speed`;
+    case 'refining_red_essence_resource_bonus':
+      return `${signed(reward.amount)} credits per red essence`;
+    case 'refining_green_essence_resource_bonus':
+      return `${signed(reward.amount)} timeFlux per green essence`;
+    case 'refining_blue_essence_resource_bonus':
+      return `${signed(reward.amount)} chronotraces per blue essence`;
+    case 'refining_yellow_neighbor_bonus':
+      return `${signed(reward.amount)} yellow adjacency bonus`;
     case 'raid_mutation':
       return 'Raid mutation';
     case 'raid_loot_chance':

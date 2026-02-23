@@ -374,7 +374,7 @@ function drawPanelHighlightLayer(
 
     const archetype = lib.research.archetypes.get(cell.archetypeId)!;
     const matches = highlight.kind === 'discovery'
-      ? archetype.type === 'discovery'
+      ? (archetype.type === 'discovery' || archetype.type === 'refining')
       : cell.archetypeId === highlight.archetypeId;
     if (!matches) continue;
 

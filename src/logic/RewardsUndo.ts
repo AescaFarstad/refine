@@ -26,6 +26,22 @@ export function undoReward(gs: GameState, reward: Reward): boolean {
       gs.refiningSpeedPctBonus -= reward.amount;
       return true;
 
+    case 'refining_red_essence_resource_bonus':
+      gs.refiningRedEssenceResourceBonus -= reward.amount;
+      return true;
+
+    case 'refining_green_essence_resource_bonus':
+      gs.refiningGreenEssenceResourceBonus -= reward.amount;
+      return true;
+
+    case 'refining_blue_essence_resource_bonus':
+      gs.refiningBlueEssenceResourceBonus -= reward.amount;
+      return true;
+
+    case 'refining_yellow_neighbor_bonus':
+      gs.refiningYellowNeighborBonus -= reward.amount;
+      return true;
+
     case 'countable_gear':
       gs.countableGear[reward.gearId] = (gs.countableGear[reward.gearId] || 0) - reward.amount;
       return true;

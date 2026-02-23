@@ -224,8 +224,16 @@ const showHintPanel = computed(() => {
     if (reward.kind === 'refining_yield_pct_bonus') return true;
     if (reward.kind === 'refining_success_chance_bonus') return true;
     if (reward.kind === 'refining_speed_pct_bonus') return true;
+    if (reward.kind === 'refining_red_essence_resource_bonus') return true;
+    if (reward.kind === 'refining_green_essence_resource_bonus') return true;
+    if (reward.kind === 'refining_blue_essence_resource_bonus') return true;
+    if (reward.kind === 'refining_yellow_neighbor_bonus') return true;
   }
-  return hn.archetype?.type === 'gear' || hn.archetype?.type === 'resource' || hn.archetype?.type === 'stat' || hn.archetype?.type === 'discovery';
+  return hn.archetype?.type === 'gear'
+    || hn.archetype?.type === 'resource'
+    || hn.archetype?.type === 'stat'
+    || hn.archetype?.type === 'discovery'
+    || hn.archetype?.type === 'refining';
 });
 
 const showHoverPreviewPanel = computed(() => {

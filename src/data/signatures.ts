@@ -161,7 +161,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     name: 'Formulate',
     group: 'starter',
     layout: 'shelf_right',
-    colors: ['green'],
+    colors: ['yellow'],
     rewards: [
       { kind: 'refining_yield_pct_bonus', amount: 9 },
       { kind: 'refining_success_chance_bonus', amount: 7 },

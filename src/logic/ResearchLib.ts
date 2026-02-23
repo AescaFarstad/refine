@@ -2,7 +2,7 @@ import { copy, type Point2 } from './core/math';
 import type { Reward } from './Reward';
 import type { DiscoveryId } from './DiscoveryLib';
 
-export type ResearchNodeType = 'obstacle' | 'empty' | 'stat' | 'gear' | 'resource' | 'discovery' | 'void';
+export type ResearchNodeType = 'obstacle' | 'empty' | 'stat' | 'gear' | 'resource' | 'discovery' | 'refining' | 'void';
 
 export type ResearchArchetypeIcon =
   | { kind: 'none' }

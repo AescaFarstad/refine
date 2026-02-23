@@ -180,7 +180,7 @@ function getVisualStyle(archetype: ReadonlyResearchArchetype | null, owned: bool
   const isSpecialOvert =
     !!archetype &&
     !archetype.covert &&
-    (archetype.type === 'stat' || archetype.type === 'gear' || archetype.type === 'resource' || archetype.type === 'discovery');
+    (archetype.type === 'stat' || archetype.type === 'gear' || archetype.type === 'resource' || archetype.type === 'discovery' || archetype.type === 'refining');
 
   return {
     fillColor: isSpecialOvert ? RESEARCH_COLOR_SPECIAL_OVERT_UNOWNED_BG : RESEARCH_COLOR_UNOWNED_BG,

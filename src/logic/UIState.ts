@@ -200,6 +200,10 @@ interface UISyncCache {
   lastRefiningYieldPctBonus: number;
   lastRefiningSuccessChanceBonus: number;
   lastRefiningSpeedPctBonus: number;
+  lastRefiningRedEssenceResourceBonus: number;
+  lastRefiningGreenEssenceResourceBonus: number;
+  lastRefiningBlueEssenceResourceBonus: number;
+  lastRefiningYellowNeighborBonus: number;
   lastRaidFoundItemsVersion: number;
   lastUnlockedRaidIdsKey: string;
   lastInventoryItemCount: number;
@@ -215,6 +219,10 @@ const SYNC_CACHE_DEFAULTS: UISyncCache = {
   lastRefiningYieldPctBonus: Number.NaN,
   lastRefiningSuccessChanceBonus: Number.NaN,
   lastRefiningSpeedPctBonus: Number.NaN,
+  lastRefiningRedEssenceResourceBonus: Number.NaN,
+  lastRefiningGreenEssenceResourceBonus: Number.NaN,
+  lastRefiningBlueEssenceResourceBonus: Number.NaN,
+  lastRefiningYellowNeighborBonus: Number.NaN,
   lastRaidFoundItemsVersion: -1,
   lastUnlockedRaidIdsKey: '',
   lastInventoryItemCount: -1,
@@ -490,12 +498,20 @@ export function SyncUIFromGameState(game: GameState): void {
   if (
     game.refiningYieldPctBonus !== syncCache.lastRefiningYieldPctBonus ||
     game.refiningSuccessChanceBonus !== syncCache.lastRefiningSuccessChanceBonus ||
-    game.refiningSpeedPctBonus !== syncCache.lastRefiningSpeedPctBonus
+    game.refiningSpeedPctBonus !== syncCache.lastRefiningSpeedPctBonus ||
+    game.refiningRedEssenceResourceBonus !== syncCache.lastRefiningRedEssenceResourceBonus ||
+    game.refiningGreenEssenceResourceBonus !== syncCache.lastRefiningGreenEssenceResourceBonus ||
+    game.refiningBlueEssenceResourceBonus !== syncCache.lastRefiningBlueEssenceResourceBonus ||
+    game.refiningYellowNeighborBonus !== syncCache.lastRefiningYellowNeighborBonus
   ) {
     uiState.refinePreviewVersion++;
     syncCache.lastRefiningYieldPctBonus = game.refiningYieldPctBonus;
     syncCache.lastRefiningSuccessChanceBonus = game.refiningSuccessChanceBonus;
     syncCache.lastRefiningSpeedPctBonus = game.refiningSpeedPctBonus;
+    syncCache.lastRefiningRedEssenceResourceBonus = game.refiningRedEssenceResourceBonus;
+    syncCache.lastRefiningGreenEssenceResourceBonus = game.refiningGreenEssenceResourceBonus;
+    syncCache.lastRefiningBlueEssenceResourceBonus = game.refiningBlueEssenceResourceBonus;
+    syncCache.lastRefiningYellowNeighborBonus = game.refiningYellowNeighborBonus;
   }
 
   if (game.wafer) {

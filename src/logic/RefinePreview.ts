@@ -382,7 +382,7 @@ export function computeEffectiveEssences(wafer: Wafer): void {
     }
 }
 
-function computeEffectiveEssenceTotals(wafer: ReadonlyWafer): {
+function computeEffectiveEssenceTotals(wafer: ReadonlyWafer, yellowNeighborBonus: number): {
     essenceTotals: Record<string, number>;
     cellEffectiveCounts: Record<string, number>;
 } {
@@ -431,7 +431,8 @@ function computeEffectiveEssenceTotals(wafer: ReadonlyWafer): {
 
         const waferBuff = getWaferBuffAt(cell.x, cell.y);
 
-        const base = 1 + yellowNeighbors + waferBuff.additive; // Yellow + built-in additive buffs
+        const yellowNeighborStrength = 1 + yellowNeighborBonus;
+        const base = 1 + yellowNeighbors * yellowNeighborStrength + waferBuff.additive; // Yellow + built-in additive buffs
         const multiplier = Math.pow(2, orangeNeighbors) * waferBuff.multiplier; // Orange + built-in multiplicative buffs
         const effectiveCount = base * multiplier;
 
@@ -449,14 +450,6 @@ function computeEffectiveEssenceTotals(wafer: ReadonlyWafer): {
 }
 
 export function computeRefinePreviewChem(gs: ReadonlyGameState): RefinePreviewChem {
-
-    const { essenceTotals, cellEffectiveCounts } = computeEffectiveEssenceTotals(gs.wafer);
-
-    const cyanCount = essenceTotals['cyan'] || 0;
-    const cyanReduction = cyanCount * CYAN_SUCCESS_BONUS_PCT;
-    const magentaCount = essenceTotals['magenta'] || 0;
-    const magentaPenalty = magentaCount * MAGENTA_SUCCESS_PENALTY_PCT;
-
     const completedIdSet = new Set(gs.completedSignatureIds);
     const signatureDefsForLevel = Array.from(gs.lib.signatures.values()).filter(s => s.level === gs.signatureLevel);
     const { newlyCompletedSignatureIds, newSignatureMatches } = scanWaferForNewSignatures(
@@ -474,6 +467,17 @@ export function computeRefinePreviewChem(gs: ReadonlyGameState): RefinePreviewCh
     const newSignatureSuccessChanceBonus = newSignatureRewards.refiningSuccessChanceBonus;
     const signatureSpeedBonus = gs.refiningSpeedPctBonus;
     const newSignatureSpeedBonus = newSignatureRewards.refiningSpeedPctBonus;
+    const redEssenceResourceBonus = gs.refiningRedEssenceResourceBonus + newSignatureRewards.refiningRedEssenceResourceBonus;
+    const greenEssenceResourceBonus = gs.refiningGreenEssenceResourceBonus + newSignatureRewards.refiningGreenEssenceResourceBonus;
+    const blueEssenceResourceBonus = gs.refiningBlueEssenceResourceBonus + newSignatureRewards.refiningBlueEssenceResourceBonus;
+    const yellowNeighborBonus = gs.refiningYellowNeighborBonus + newSignatureRewards.refiningYellowNeighborBonus;
+
+    const { essenceTotals, cellEffectiveCounts } = computeEffectiveEssenceTotals(gs.wafer, yellowNeighborBonus);
+
+    const cyanCount = essenceTotals['cyan'] || 0;
+    const cyanReduction = cyanCount * CYAN_SUCCESS_BONUS_PCT;
+    const magentaCount = essenceTotals['magenta'] || 0;
+    const magentaPenalty = magentaCount * MAGENTA_SUCCESS_PENALTY_PCT;
 
     const baseFailureChance = gs.wafer.emptyCount * FAILURE_PER_EMPTY_CELL;
     const failureChancePct = Math.min(
@@ -504,9 +508,12 @@ export function computeRefinePreviewChem(gs: ReadonlyGameState): RefinePreviewCh
     const blue = essenceTotals['blue'] || 0;
 
     const yieldMultiplier = totalYieldPct / 100;
-    const expectedCredits = Math.round(red * yieldMultiplier * ESSENCE_CREDITS);
-    const expectedChrono = Math.round(blue * yieldMultiplier * ESSENCE_CHRONOTRACES);
-    const expectedFlux = Math.round(green * yieldMultiplier * ESSENCE_TEMPORAL_FLUX);
+    const creditsPerRed = ESSENCE_CREDITS + redEssenceResourceBonus;
+    const chronoPerBlue = ESSENCE_CHRONOTRACES + blueEssenceResourceBonus;
+    const fluxPerGreen = ESSENCE_TEMPORAL_FLUX + greenEssenceResourceBonus;
+    const expectedCredits = Math.round(red * yieldMultiplier * creditsPerRed);
+    const expectedChrono = Math.round(blue * yieldMultiplier * chronoPerBlue);
+    const expectedFlux = Math.round(green * yieldMultiplier * fluxPerGreen);
 
     const gearOutputs: GearOutput[] = [];
 

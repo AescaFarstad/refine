@@ -37,7 +37,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
-import { uiState } from '../logic/UIState';
+import { getGameState, uiState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
 import { CmdMarkEssencesSeen } from '../logic/input/InputCommands';
 import atlasStorage from '../logic/AtlasStorage';
@@ -79,6 +79,31 @@ const encounteredEssenceKeys = computed<string[]>(() => {
   });
 });
 
+const redEssenceCredits = computed<number>(() => {
+  // Track refinePreviewVersion so values refresh when refining bonuses change.
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.refinePreviewVersion;
+  return ESSENCE_CREDITS + getGameState().refiningRedEssenceResourceBonus;
+});
+
+const greenEssenceFlux = computed<number>(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.refinePreviewVersion;
+  return ESSENCE_TEMPORAL_FLUX + getGameState().refiningGreenEssenceResourceBonus;
+});
+
+const blueEssenceChrono = computed<number>(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.refinePreviewVersion;
+  return ESSENCE_CHRONOTRACES + getGameState().refiningBlueEssenceResourceBonus;
+});
+
+const yellowAdjacencyBonus = computed<number>(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.refinePreviewVersion;
+  return 1 + getGameState().refiningYellowNeighborBonus;
+});
+
 function essenceDisplayName(k: string): string {
   const name: Record<string, string> = {
     red: 'Red',
@@ -105,13 +130,13 @@ function resourceHtml(amount: number, resourceKey: 'credits' | 'chronotraces' | 
 function essenceEffectHtml(k: string): string {
   switch (k) {
     case 'red':
-      return `gives ${resourceHtml(ESSENCE_CREDITS, 'credits')}`;
+      return `gives ${resourceHtml(redEssenceCredits.value, 'credits')}`;
     case 'blue':
-      return `gives ${resourceHtml(ESSENCE_CHRONOTRACES, 'chronotraces')}`;
+      return `gives ${resourceHtml(blueEssenceChrono.value, 'chronotraces')}`;
     case 'green':
-      return `gives ${resourceHtml(ESSENCE_TEMPORAL_FLUX, 'timeFlux')}`;
+      return `gives ${resourceHtml(greenEssenceFlux.value, 'timeFlux')}`;
     case 'yellow':
-      return '+1 effective count for adjacent';
+      return `+${yellowAdjacencyBonus.value} effective count for adjacent`;
     case 'orange':
       return 'Doubles adjacent';
     case 'cyan':

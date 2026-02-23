@@ -16,6 +16,10 @@ export const researchPane: ResearchPlacementInput[] = [
   { archetypeId: 'disc_maze_navigation', cells: [{ x: 5, y: 13 },{ x: 4, y: 13 },{ x: 6, y: 12 },{ x: 5, y: 14 },], centerCell: { x: 5, y: 13 } },
   { archetypeId: 'disc_maze_nexus', cells: [{ x: -4, y: -18 },{ x: -3, y: -19 },{ x: -4, y: -17 },{ x: -5, y: -18 }], centerCell: { x: -4, y: -18 } },
   { archetypeId: 'disc_nexus_upgrade_opportunity', cells: { x: 8, y: -15 } },
+  { archetypeId: 'disc_essence_anomaly_blue', cells: { x: -25, y: 22 } },
+  { archetypeId: 'disc_essence_anomaly_green', cells: { x: -29, y: 24 } },
+  { archetypeId: 'disc_essence_anomaly_red', cells: { x: -27, y: 26 } },
+  { archetypeId: 'disc_essence_anomaly_yellow', cells: { x: -22, y: 25 } },
 
   { archetypeId: 'stat_weight', cells: { x: 1, y: -3 } },
   { archetypeId: 'res_credits', cells: { x: 3, y: -2 } },
@@ -262,11 +266,11 @@ export const researchPaneEmptyCells: Point2[] = [
   { x: -3, y: -5 }, { x: 3, y: -5 }, { x: -4, y: -4 }, { x: -1, y: -4 }, { x: 1, y: -4 }, { x: -9, y: -3 },
   { x: 10, y: -1 }, { x: 11, y: -1 }, { x: -16, y: 0 }, { x: 2, y: 0 }, { x: 19, y: 0 }, { x: 13, y: 1 },
   { x: 14, y: 1 }, { x: -13, y: 2 }, { x: -13, y: 3 }, { x: -3, y: 8 }, { x: -20, y: 9 }, { x: -21, y: 10 },
-  { x: 8, y: 10 }, { x: 7, y: 11 }, { x: 17, y: 12 }, { x: -17, y: 13 }, { x: -16, y: 13 },
-  { x: 17, y: 13 }, { x: -21, y: 14 }, { x: -20, y: 14 }, { x: -17, y: 14 }, { x: 4, y: 14 },
-  { x: 17, y: 14 }, { x: 3, y: 15 }, { x: -20, y: 16 }, { x: -19, y: 16 }, { x: 2, y: 16 }, { x: -8, y: 19 },
-  { x: -7, y: 19 }, { x: -6, y: 19 }, { x: -9, y: 20 }, { x: -8, y: 20 }, { x: -7, y: 20 }, { x: -6, y: 20 },
-  { x: 8, y: 20 }, { x: -9, y: 21 }, { x: -8, y: 21 }, { x: -7, y: 21 }, { x: -9, y: 22 }, { x: -8, y: 22 },
+  { x: 8, y: 10 }, { x: 7, y: 11 }, { x: 17, y: 12 }, { x: -17, y: 13 }, { x: -16, y: 13 }, { x: 17, y: 13 },
+  { x: -21, y: 14 }, { x: -20, y: 14 }, { x: -17, y: 14 }, { x: 4, y: 14 }, { x: 17, y: 14 }, { x: 3, y: 15 },
+  { x: -20, y: 16 }, { x: -19, y: 16 }, { x: 2, y: 16 }, { x: -8, y: 19 }, { x: -7, y: 19 }, { x: -6, y: 19 },
+  { x: -9, y: 20 }, { x: -8, y: 20 }, { x: -7, y: 20 }, { x: -6, y: 20 }, { x: 8, y: 20 }, { x: -9, y: 21 },
+  { x: -8, y: 21 }, { x: -7, y: 21 }, { x: -9, y: 22 }, { x: -8, y: 22 },
 ];
 
 export const researchPaneVoidCells: Point2[] = [
@@ -338,8 +342,7 @@ export const researchPaneVoidCells: Point2[] = [
   { x: -1, y: 17 }, { x: 16, y: 17 }, { x: -25, y: 18 }, { x: 0, y: 18 }, { x: 9, y: 18 }, { x: 12, y: 18 },
   { x: 13, y: 18 }, { x: 14, y: 18 }, { x: 15, y: 18 }, { x: -25, y: 19 }, { x: -24, y: 19 }, { x: -23, y: 19 },
   { x: -22, y: 19 }, { x: -21, y: 19 }, { x: 0, y: 19 }, { x: 13, y: 19 }, { x: 14, y: 19 }, { x: -21, y: 20 },
-  { x: 13, y: 20 }, { x: -21, y: 21 }, { x: 3, y: 21 }, { x: 6, y: 21 }, { x: 12, y: 21 }, { x: -21, y: 22 },
-  { x: -20, y: 22 }, { x: -19, y: 22 }, { x: -18, y: 22 }, { x: -17, y: 22 }, { x: 11, y: 22 }, { x: -19, y: 23 },
+  { x: 13, y: 20 }, { x: 3, y: 21 }, { x: 6, y: 21 }, { x: 12, y: 21 }, { x: 11, y: 22 }, { x: -19, y: 23 },
   { x: -18, y: 23 }, { x: -12, y: 23 }, { x: -3, y: 23 }, { x: 0, y: 23 }, { x: 6, y: 23 }, { x: 10, y: 23 },
   { x: -19, y: 24 }, { x: 0, y: 24 }, { x: 7, y: 24 }, { x: 8, y: 24 }, { x: 9, y: 24 }, { x: -19, y: 25 },
   { x: -16, y: 25 }, { x: -11, y: 25 }, { x: -7, y: 25 }, { x: 0, y: 25 }, { x: 6, y: 25 }, { x: -19, y: 26 },

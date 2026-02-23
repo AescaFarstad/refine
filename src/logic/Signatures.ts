@@ -14,6 +14,10 @@ function createRefiningRewardBonus(): RefiningRewardBonus {
     refiningYieldPctBonus: 0,
     refiningSuccessChanceBonus: 0,
     refiningSpeedPctBonus: 0,
+    refiningRedEssenceResourceBonus: 0,
+    refiningGreenEssenceResourceBonus: 0,
+    refiningBlueEssenceResourceBonus: 0,
+    refiningYellowNeighborBonus: 0,
   };
 }
 
@@ -27,6 +31,14 @@ export function sumSignatureRefiningRewards(signatures: readonly ReadonlySignatu
         total.refiningSuccessChanceBonus += reward.amount;
       } else if (reward.kind === 'refining_speed_pct_bonus') {
         total.refiningSpeedPctBonus += reward.amount;
+      } else if (reward.kind === 'refining_red_essence_resource_bonus') {
+        total.refiningRedEssenceResourceBonus += reward.amount;
+      } else if (reward.kind === 'refining_green_essence_resource_bonus') {
+        total.refiningGreenEssenceResourceBonus += reward.amount;
+      } else if (reward.kind === 'refining_blue_essence_resource_bonus') {
+        total.refiningBlueEssenceResourceBonus += reward.amount;
+      } else if (reward.kind === 'refining_yellow_neighbor_bonus') {
+        total.refiningYellowNeighborBonus += reward.amount;
       }
     }
   }

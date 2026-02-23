@@ -102,6 +102,10 @@ function verifyRewardRefs(reward: Reward, context: string, lib: Lib, errors: Ver
     case 'refining_yield_pct_bonus':
     case 'refining_success_chance_bonus':
     case 'refining_speed_pct_bonus':
+    case 'refining_red_essence_resource_bonus':
+    case 'refining_green_essence_resource_bonus':
+    case 'refining_blue_essence_resource_bonus':
+    case 'refining_yellow_neighbor_bonus':
       return;
     case 'discovery':
       if (!DISCOVERY_IDS.has(reward.discoveryId)) {

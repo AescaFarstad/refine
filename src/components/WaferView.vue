@@ -152,27 +152,18 @@ function schedulePulseFrame() {
   });
 }
 
-function drawPulseRing(ctx: CanvasRenderingContext2D) {
+function drawPulseBackdrop(ctx: CanvasRenderingContext2D) {
   if (pulseStartTime < 0) return;
   const elapsed = performance.now() - pulseStartTime;
   const t = Math.min(1, elapsed / PULSE_DURATION_MS);
-  // Ease out: fast start, gradual fade
-  const eased = 1 - Math.pow(1 - t, 2);
-  const maxRadius = Math.sqrt(
-    Math.pow(WAFER_CANVAS_WIDTH / 2, 2) + Math.pow(WAFER_CANVAS_HEIGHT / 2, 2),
-  ) + 20;
-  const radius = maxRadius * eased;
-  const alpha = (1 - t) * 0.72;
-  const lineWidth = 3 + (1 - t) * 9;
+  // Gentle ease-out so the pulse starts visible and quickly settles.
+  const eased = 1 - Math.pow(1 - t, 2.2);
+  const alpha = (1 - eased) * 0.22;
 
   ctx.save();
-  ctx.beginPath();
-  ctx.arc(origin.x, origin.y, radius, 0, Math.PI * 2);
-  ctx.strokeStyle = `rgba(79, 209, 197, ${alpha})`;
-  ctx.lineWidth = lineWidth;
-  ctx.shadowColor = 'rgba(79, 209, 197, 0.55)';
-  ctx.shadowBlur = 10;
-  ctx.stroke();
+  // Completion-like background flash, but gentler and yellow-gold.
+  ctx.fillStyle = `rgba(251, 191, 36, ${alpha})`;
+  ctx.fillRect(0, 0, WAFER_CANVAS_WIDTH, WAFER_CANVAS_HEIGHT);
   ctx.restore();
 }
 
@@ -471,7 +462,7 @@ function renderOverlay() {
     }
   }
 
-  drawPulseRing(ctx);
+  drawPulseBackdrop(ctx);
 }
 
 function onMouseDown(event: MouseEvent) {

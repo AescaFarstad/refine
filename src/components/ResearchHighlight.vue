@@ -74,7 +74,7 @@ const entries = computed<HighlightEntry[]>(() => {
 
     if (type === 'gear' || type === 'obstacle' || type === 'empty' || type === 'void') continue;
 
-    if (type === 'discovery') {
+    if (type === 'discovery' || type === 'refining') {
       hasDiscovery = true;
       continue;
     }

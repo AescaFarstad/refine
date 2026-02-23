@@ -1,6 +1,9 @@
 import type { ResearchArchetypeDef } from '../logic/ResearchLib';
 import { DISCOVERY } from '../logic/DiscoveryLib';
-import { CYAN_YIELD_BONUS_PCT, MAGENTA_YIELD_BONUS_PCT } from '../logic/Const';
+import {
+  CYAN_YIELD_BONUS_PCT,
+  MAGENTA_YIELD_BONUS_PCT,
+} from '../logic/Const';
 
 export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
   hub: { type: 'empty', rewards: [] },
@@ -90,6 +93,54 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
         params: { bonusPct: MAGENTA_YIELD_BONUS_PCT, color: 'magenta' },
       },
     ],
+  },
+  disc_essence_anomaly_red: {
+    type: 'refining',
+    title: 'Essence anomaly',
+    description: 'A mysterious essence mutation of unclear nature.',
+    ownedTitle: 'Red anomaly',
+    revealingDiscovery: DISCOVERY.ESSENCE_RESEARCH_KNOWLEDGE,
+    revealedTitle: 'Red anomaly',
+    icon: { kind: 'glyph', glyph: '?', scale: 2.2, offset: { x: 0, y: 8 }},
+    ownedIcon: { kind: 'itemImage', key: 'red', scale: 1.3, offset: { x: 0, y: 4 } },
+    revealedIcon: { kind: 'itemImage', key: 'red', scale: 1.3, offset: { x: 0, y: 4 } },
+    rewards: [{ kind: 'refining_red_essence_resource_bonus', amount: 1 }],
+  },
+  disc_essence_anomaly_green: {
+    type: 'refining',
+    title: 'Essence anomaly',
+    description: 'A mysterious essence mutation of unclear nature.',
+    ownedTitle: 'Green anomaly',
+    revealingDiscovery: DISCOVERY.ESSENCE_RESEARCH_KNOWLEDGE,
+    revealedTitle: 'Green anomaly',
+    icon: { kind: 'glyph', glyph: '?', scale: 2.2, offset: { x: 0, y: 8 }},
+    ownedIcon: { kind: 'itemImage', key: 'green', scale: 1.3, offset: { x: 0, y: 4 } },
+    revealedIcon: { kind: 'itemImage', key: 'green', scale: 1.3, offset: { x: 0, y: 4 } },
+    rewards: [{ kind: 'refining_green_essence_resource_bonus', amount: 1 }],
+  },
+  disc_essence_anomaly_blue: {
+    type: 'refining',
+    title: 'Essence anomaly',
+    description: 'A mysterious essence mutation of unclear nature.',
+    ownedTitle: 'Blue anomaly',
+    revealingDiscovery: DISCOVERY.ESSENCE_RESEARCH_KNOWLEDGE,
+    revealedTitle: 'Blue anomaly',
+    icon: { kind: 'glyph', glyph: '?', scale: 2.2, offset: { x: 0, y: 8 }},
+    ownedIcon: { kind: 'itemImage', key: 'blue', scale: 1.3, offset: { x: 0, y: 4 } },
+    revealedIcon: { kind: 'itemImage', key: 'blue', scale: 1.3, offset: { x: 0, y: 4 } },
+    rewards: [{ kind: 'refining_blue_essence_resource_bonus', amount: 1 }],
+  },
+  disc_essence_anomaly_yellow: {
+    type: 'refining',
+    title: 'Essence anomaly',
+    description: 'A mysterious essence mutation of unclear nature.',
+    ownedTitle: 'Yellow anomaly',
+    revealingDiscovery: DISCOVERY.ESSENCE_RESEARCH_KNOWLEDGE,
+    revealedTitle: 'Yellow anomaly',
+    icon: { kind: 'glyph', glyph: '?', scale: 2.2, offset: { x: 0, y: 8 }},
+    ownedIcon: { kind: 'itemImage', key: 'yellow', scale: 1.3, offset: { x: 0, y: 4 } },
+    revealedIcon: { kind: 'itemImage', key: 'yellow', scale: 1.3, offset: { x: 0, y: 4 } },
+    rewards: [{ kind: 'refining_yellow_neighbor_bonus', amount: 1 }],
   },
   disc_maze_navigation: {
     type: 'discovery',

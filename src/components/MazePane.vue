@@ -420,6 +420,7 @@ function renderFurniture(): void {
     o,
     HEX_SIZE,
     gs.maze.takenCells,
+    hoverAxial.value,
     highlightedResourceCellKeys,
     visuallyTakenCellKeys,
   );

@@ -1,5 +1,5 @@
 import { copy, type Point2 } from './core/math';
-import type { GameState, MazeResourceSpawn } from './GameState';
+import type { GameState, MazeOracleState, MazeResourceSpawn } from './GameState';
 import { createMazeTransient } from './GameState';
 import type { ResearchLib } from './ResearchLib';
 import { axialDistance } from './HexMath';
@@ -97,6 +97,78 @@ export function getOwnedMazeNexuses(gs: ReadonlyGameState): Array<Point2> {
   return nexuses;
 }
 
+export interface OwnedMazeOracle {
+  nodeId: number;
+  cells: Point2[];
+}
+
+export function getOwnedMazeOracles(gs: ReadonlyGameState): OwnedMazeOracle[] {
+  const oracles: OwnedMazeOracle[] = [];
+  for (const node of gs.lib.research.nodes.values()) {
+    const archetype = gs.lib.research.archetypes.get(node.archetypeId)!;
+    if (archetype.oracle === null) continue;
+
+    let owned = false;
+    for (const cell of node.cells) {
+      const idx = axialToIndex(cell.x, cell.y);
+      if (idx === -1) continue;
+      if (gs.researchCells[idx]!.owned) {
+        owned = true;
+        break;
+      }
+    }
+    if (!owned) continue;
+
+    oracles.push({
+      nodeId: node.nodeId,
+      cells: node.cells.map(copy),
+    });
+  }
+  return oracles;
+}
+
+function getMazeOracleArchetype(gs: ReadonlyGameState, nodeId: number) {
+  const node = gs.lib.research.nodes.get(nodeId)!;
+  return gs.lib.research.archetypes.get(node.archetypeId)!;
+}
+
+export function isMazeOracleCell(gs: ReadonlyGameState, cell: Point2): boolean {
+  const idx = axialToIndex(cell.x, cell.y);
+  if (idx === -1) return false;
+  const researchCell = gs.researchCells[idx]!;
+  if (!researchCell.owned) return false;
+  if (researchCell.nodeId < 0) return false;
+  return getMazeOracleArchetype(gs, researchCell.nodeId).oracle !== null;
+}
+
+export function getMazeOracleNodeIdAtCell(gs: ReadonlyGameState, cell: Point2): number {
+  const idx = axialToIndex(cell.x, cell.y);
+  if (idx === -1) return -1;
+  const researchCell = gs.researchCells[idx]!;
+  if (!researchCell.owned || researchCell.nodeId < 0) return -1;
+  if (getMazeOracleArchetype(gs, researchCell.nodeId).oracle === null) return -1;
+  return researchCell.nodeId;
+}
+
+export function syncMazeOracleStates(gs: GameState): void {
+  const next: Record<string, MazeOracleState> = {};
+  for (const node of gs.lib.research.nodes.values()) {
+    const archetype = gs.lib.research.archetypes.get(node.archetypeId)!;
+    if (archetype.oracle === null) continue;
+    const key = String(node.nodeId);
+    next[key] = gs.mazeOracleStateByNodeId[key] ?? 'riddling';
+  }
+  gs.mazeOracleStateByNodeId = next;
+}
+
+export function getMazeOracleState(gs: ReadonlyGameState, nodeId: number): MazeOracleState {
+  const state = gs.mazeOracleStateByNodeId[String(nodeId)];
+  if (!state) {
+    throw new Error(`Missing oracle state for node ${nodeId}`);
+  }
+  return state;
+}
+
 export function syncMazeResetEntranceCell(gs: GameState) {
   if (isMazeEntranceCell(gs, gs.mazeResetEntranceCell)) return;
   for (const node of gs.lib.research.nodes.values()) {
@@ -150,6 +222,7 @@ export function computeMazeCellDerivedData(gs: GameState): void {
 }
 
 export function computeMazeResourceSpawns(gs: GameState, lib: ResearchLib): void {
+  syncMazeOracleStates(gs);
   if (applyMazeAntiVoidBonuses(gs)) {
     calculateVisibility(gs, lib);
   }
@@ -322,6 +395,7 @@ function getMazeNexusPlacementCellFailureReason(gs: ReadonlyGameState, cell: Poi
 
   if (isMazeEntranceCell(gs, cell)) return 'cell_is_maze_entrance';
   if (isMazeNexusCell(gs, cell)) return 'cell_is_maze_nexus_access';
+  if (isMazeOracleCell(gs, cell)) return 'cell_has_oracle';
 
   return '';
 }
@@ -482,6 +556,8 @@ export interface MazeMoveResult {
   forcedReset: boolean;
   payout: boolean;
   nexusReached: boolean;
+  oracleReached: boolean;
+  oracleNodeId: number;
 }
 
 export interface MazeEnterProjection {
@@ -693,7 +769,7 @@ export function planMazeMoveSegments(
 
     currentPath.push(stepCell);
     const isLast = i === result.path.length - 1;
-    if (!stopOnResource && !stopOnBonus && !stepResult.payout && !stepResult.nexusReached && !isLast) continue;
+    if (!stopOnResource && !stopOnBonus && !stepResult.payout && !isLast) continue;
 
     plan.push(copy(currentPath[currentPath.length - 1]!));
     currentPath = [];
@@ -707,18 +783,18 @@ export function handleMazeMoveTo(gs: GameState, target: Point2): MazeMoveResult 
   const result = bfsMazePath(gs, gs.maze.avatarCell, target);
 
   if (!result.reachable) {
-    return { success: false, path: [], forcedReset: false, payout: false, nexusReached: false };
+    return { success: false, path: [], forcedReset: false, payout: false, nexusReached: false, oracleReached: false, oracleNodeId: -1 };
   }
 
   if (result.path.length === 0) {
-    return { success: true, path: [], forcedReset: false, payout: false, nexusReached: false };
+    return { success: true, path: [], forcedReset: false, payout: false, nexusReached: false, oracleReached: false, oracleNodeId: -1 };
   }
 
   const remainingPool = gs.timeFlux - gs.maze.movementUsed;
 
   if (result.cost > remainingPool) {
     resetMazeTransient(gs);
-    return { success: true, path: result.path, forcedReset: true, payout: false, nexusReached: false };
+    return { success: true, path: result.path, forcedReset: true, payout: false, nexusReached: false, oracleReached: false, oracleNodeId: -1 };
   }
 
   gs.maze.movementUsed += result.cost;
@@ -735,9 +811,19 @@ export function handleMazeMoveTo(gs: GameState, target: Point2): MazeMoveResult 
     gs.mazeHighMovementUsed = Math.max(gs.mazeHighMovementUsed, gs.maze.movementUsed);
     applyMazePayout(gs);
     resetMazeTransient(gs);
-    return { success: true, path: result.path, forcedReset: false, payout: true, nexusReached: false };
+    return { success: true, path: result.path, forcedReset: false, payout: true, nexusReached: false, oracleReached: false, oracleNodeId: -1 };
   }
 
   const isNexus = isMazeNexusCell(gs, target);
-  return { success: true, path: result.path, forcedReset: false, payout: false, nexusReached: isNexus };
+  const oracleNodeId = getMazeOracleNodeIdAtCell(gs, target);
+  const oracleReached = oracleNodeId >= 0;
+  return {
+    success: true,
+    path: result.path,
+    forcedReset: false,
+    payout: false,
+    nexusReached: isNexus,
+    oracleReached,
+    oracleNodeId,
+  };
 }

@@ -493,15 +493,15 @@ handlersByName.set('CmdClearShardPickupGrace', (gs) => {
 handlersByName.set('CmdMazeMoveTo', (gs, cmd) => {
   const c = cmd as CmdMazeMoveTo;
   const moveResult = handleMazeMoveTo(gs, c.target);
-  if (moveResult.nexusReached) {
-    uiState.mazeNexusMenuOpen = true;
-  } else if (moveResult.success) {
-    uiState.mazeNexusMenuOpen = false;
-  }
-  if (moveResult.forcedReset) {
-    uiState.mazeResetReason = 'warped';
-  } else if (moveResult.payout) {
-    uiState.mazeResetReason = 'banked';
+  if (moveResult.success) {
+    uiState.mazeNexusMenuOpen = moveResult.nexusReached;
+    uiState.mazeOracleMenuOpen = moveResult.oracleReached;
+    uiState.mazeVisitedOracleNodeId = moveResult.oracleReached ? moveResult.oracleNodeId : -1;
+    if (moveResult.forcedReset) {
+      uiState.mazeResetReason = 'warped';
+    } else if (moveResult.payout) {
+      uiState.mazeResetReason = 'banked';
+    }
   }
   saveAutosave(gs);
 });

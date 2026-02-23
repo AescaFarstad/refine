@@ -150,6 +150,7 @@
       </span>
     </div>
     <MazeNexusMenu :visible="nexusMenuVisible" />
+    <MazeOracleMenu :visible="oracleMenuVisible" />
   </div>
 </template>
 
@@ -165,6 +166,7 @@ import type {
 } from '../logic/pane/MazeOverlayState';
 import { MAZE_RESOURCE_KEYS } from '../logic/pane/MazeOverlayState';
 import MazeNexusMenu from './MazeNexusMenu.vue';
+import MazeOracleMenu from './MazeOracleMenu.vue';
 
 const props = defineProps<{
   remainingPool: number;
@@ -177,6 +179,7 @@ const props = defineProps<{
   accumulatedPickupBonus: number;
   pickupBonusPerPickup: number;
   nexusMenuVisible: boolean;
+  oracleMenuVisible: boolean;
   resetReason: '' | 'warped' | 'banked';
 }>();
 

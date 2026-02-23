@@ -162,6 +162,8 @@ function createDefaultUIState() {
     mazeMovementUsed: 0,
     mazeVersion: 0,
     mazeNexusMenuOpen: false,
+    mazeOracleMenuOpen: false,
+    mazeVisitedOracleNodeId: -1,
     mazeNexusAvailableUpgradeIds: [] as string[],
     mazeNexusPlacedUpgradeIds: [] as string[],
     mazeNexusUpgradeOpportunityCount: 1,

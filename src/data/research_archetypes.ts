@@ -73,6 +73,7 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
         params: { bonusPct: CYAN_YIELD_BONUS_PCT, color: 'cyan' },
       },
     ],
+    oracle: { signatureId: 's15', riddle: '...' }
   },
   disc_essence_anomaly_magenta: {
     type: 'discovery',

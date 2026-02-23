@@ -9,9 +9,15 @@ export type ResearchArchetypeIcon =
   | { kind: 'glyph'; glyph: string; scale?: number; offset?: Point2 }
   | { kind: 'itemImage'; key: string; scale?: number; offset?: Point2 };
 
+export interface ResearchArchetypeOracleDef {
+  signatureId: string;
+  riddle: string;
+}
+
 export interface ResearchArchetypeDef {
   type: ResearchNodeType;
   covert?: boolean;
+  oracle?: ResearchArchetypeOracleDef;
   title?: string;
   description?: string;
   ownedTitle?: string;
@@ -47,6 +53,7 @@ export interface ResearchArchetype {
   id: string;
   type: ResearchNodeType;
   covert: boolean;
+  oracle: ResearchArchetypeOracleDef | null;
   title: string;
   description: string;
   ownedTitle: string;
@@ -136,6 +143,7 @@ export class ResearchLib {
         id,
         type: input.type,
         covert: input.covert ?? false,
+        oracle: input.oracle ?? null,
         title: input.title ?? '',
         description: input.description ?? '',
         ownedTitle: input.ownedTitle ?? '',
@@ -161,6 +169,7 @@ export class ResearchLib {
             id: archetypeId,
             type: 'gear',
             covert: false,
+            oracle: null,
             title: '',
             description: '',
             ownedTitle: '',

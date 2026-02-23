@@ -27,6 +27,7 @@
         :accumulated-pickup-bonus="accumulatedPickupBonus"
         :pickup-bonus-per-pickup="pickupBonusPerPickup"
         :nexus-menu-visible="uiState.mazeNexusMenuOpen"
+        :oracle-menu-visible="uiState.mazeOracleMenuOpen"
         :reset-reason="mazeResetReason"
         @resource-pill-hover="onResourcePillHover"
         @reset-high-movement="onResetHighMovement"
@@ -42,7 +43,7 @@ import MazeOverlay from './MazeOverlay.vue';
 import { uiState, getGameState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
 import { CmdMazeResetHighMovement } from '../logic/input/InputCommands';
-import { getOwnedMazeEntrances, isMazeNexusCell } from '../logic/Maze';
+import { getOwnedMazeEntrances } from '../logic/Maze';
 import type { MazeResourceHoverHint, MazeResourceKey, MazeResourceTotals } from '../logic/pane/MazeOverlayState';
 
 const entranceOwned = computed(() => {
@@ -90,8 +91,9 @@ watch(
     isHoveringEntrance.value = false;
     hoveredPillResourceKey.value = null;
     hoverResourceHints.value = [];
-    const gs = getGameState();
-    uiState.mazeNexusMenuOpen = isMazeNexusCell(gs, gs.maze.avatarCell);
+    uiState.mazeNexusMenuOpen = false;
+    uiState.mazeOracleMenuOpen = false;
+    uiState.mazeVisitedOracleNodeId = -1;
   }
 );
 

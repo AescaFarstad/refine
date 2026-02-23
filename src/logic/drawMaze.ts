@@ -52,6 +52,7 @@ export function renderMazeFurnitureLayer(
   origin: Point2,
   hexSize: number,
   takenCells: readonly { readonly x: number; readonly y: number }[],
+  hoveredCell: Point2 | null = null,
   highlightedResourceCellKeys?: ReadonlySet<string>,
   visuallyTakenCellKeys?: ReadonlySet<string>,
 ): void {
@@ -61,6 +62,7 @@ export function renderMazeFurnitureLayer(
     origin,
     hexSize,
     takenCells,
+    hoveredCell,
     highlightedResourceCellKeys,
     visuallyTakenCellKeys,
   );
@@ -72,6 +74,7 @@ export function renderMazeBaseLayer(
   origin: Point2,
   hexSize: number,
   takenCells: readonly { readonly x: number; readonly y: number }[],
+  hoveredCell: Point2 | null = null,
   highlightedResourceCellKeys?: ReadonlySet<string>,
   visuallyTakenCellKeys?: ReadonlySet<string>,
   visibleHexBoundaryLoops: readonly (readonly Point2[])[] | null = null,
@@ -93,6 +96,7 @@ export function renderMazeBaseLayer(
     origin,
     hexSize,
     takenCells,
+    hoveredCell,
     highlightedResourceCellKeys,
     visuallyTakenCellKeys,
   );

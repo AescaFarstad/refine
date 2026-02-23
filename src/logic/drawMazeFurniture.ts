@@ -1,6 +1,6 @@
 import { axialToPixel } from './HexMath';
 import { MAZE_RESOURCE_SPECS } from './MazeResourceVisuals';
-import { getOwnedMazeEntrances, getOwnedMazeNexuses } from './Maze';
+import { getMazeOracleState, getOwnedMazeEntrances, getOwnedMazeNexuses, getOwnedMazeOracles } from './Maze';
 import type { Point2 } from './ItemLib';
 import type { ReadonlyGameState } from './UIState';
 import { computeHexBoundary } from './hexBoundary';
@@ -25,6 +25,8 @@ const GLYPH_BG_RADIUS_SCALE = 0.62;
 const GLYPH_BG_STROKE_WIDTH = 1.2;
 const ENTRANCE_ICON_SCALE = 0.72;
 const NEXUS_ICON_SCALE = 1.1;
+const ORACLE_ICON_SCALE = 1.25;
+const SPECIAL_ICON_HOVER_SCALE = 1.25;
 const NEXUS_ITEM_COLOR = 'rgba(248, 250, 252, 0.96)';
 const NEXUS_ITEM_GLOW_COLOR = '#e2e8f0';
 const STONE_SHRINK = 0.82;
@@ -72,6 +74,10 @@ type MazeNexusItemRenderer = {
 };
 
 export const mazeNexusItemRendererRegistry = new Map<string, MazeNexusItemRenderer>();
+
+function isSameCell(a: Point2, b: Point2): boolean {
+  return a.x === b.x && a.y === b.y;
+}
 
 function hexAlphaSuffix(alpha: number): string {
   return Math.round(alpha * 255).toString(16).padStart(2, '0');
@@ -130,6 +136,32 @@ function drawMazeResearchSymbol(
   }
 
   throw new Error(`Unsupported maze symbol icon kind: ${icon.kind}`);
+}
+
+function drawMazeItemImageSymbol(
+  ctx: CanvasRenderingContext2D,
+  center: Point2,
+  hexSize: number,
+  imageKey: string,
+  iconScaleBase: number,
+): void {
+  const source = atlasStorage.getItemsSource();
+  const frame = atlasStorage.getItemsFrame(imageKey)!;
+  const iconMaxSize = hexSize * 1.2 * iconScaleBase;
+  const scale = Math.min(iconMaxSize / frame.w, iconMaxSize / frame.h);
+  const drawW = frame.w * scale;
+  const drawH = frame.h * scale;
+  ctx.drawImage(
+    source,
+    frame.x,
+    frame.y,
+    frame.w,
+    frame.h,
+    center.x - drawW / 2,
+    center.y - drawH / 2,
+    drawW,
+    drawH,
+  );
 }
 
 function buildTakenSet(
@@ -389,6 +421,7 @@ export function renderMazeFurnitureLayer(
   origin: Point2,
   hexSize: number,
   takenCells: readonly { readonly x: number; readonly y: number }[],
+  hoveredCell: Point2 | null = null,
   highlightedResourceCellKeys?: ReadonlySet<string>,
   visuallyTakenCellKeys?: ReadonlySet<string>,
 ): void {
@@ -397,13 +430,48 @@ export function renderMazeFurnitureLayer(
   const ownedEntrances = getOwnedMazeEntrances(game);
   for (const entrance of ownedEntrances) {
     const center = axialToPixel(entrance, hexSize, origin);
-    drawMazeResearchSymbol(ctx, game, center, hexSize, 'disc_maze_navigation', ENTRANCE_ICON_SCALE);
+    const hovered = hoveredCell !== null && isSameCell(hoveredCell, entrance);
+    drawMazeResearchSymbol(
+      ctx,
+      game,
+      center,
+      hexSize,
+      'disc_maze_navigation',
+      ENTRANCE_ICON_SCALE * (hovered ? SPECIAL_ICON_HOVER_SCALE : 1),
+    );
   }
 
   const ownedNexuses = getOwnedMazeNexuses(game);
   for (const nexus of ownedNexuses) {
     const center = axialToPixel(nexus, hexSize, origin);
-    drawMazeResearchSymbol(ctx, game, center, hexSize, 'disc_maze_nexus', NEXUS_ICON_SCALE);
+    const hovered = hoveredCell !== null && isSameCell(hoveredCell, nexus);
+    drawMazeResearchSymbol(
+      ctx,
+      game,
+      center,
+      hexSize,
+      'disc_maze_nexus',
+      NEXUS_ICON_SCALE * (hovered ? SPECIAL_ICON_HOVER_SCALE : 1),
+    );
+  }
+
+  const ownedOracles = getOwnedMazeOracles(game);
+  for (const oracle of ownedOracles) {
+    const centerUnit = getGroupCenterUnit(oracle.cells);
+    const center = {
+      x: origin.x + centerUnit.x * hexSize,
+      y: origin.y + centerUnit.y * hexSize,
+    };
+    const hovered = hoveredCell !== null && oracle.cells.some(cell => isSameCell(cell, hoveredCell));
+    const oracleState = getMazeOracleState(game, oracle.nodeId);
+    const imageKey = oracleState === 'riddlePassed' ? 'tetrahedron_strict' : 'tetrahedron_inv';
+    drawMazeItemImageSymbol(
+      ctx,
+      center,
+      hexSize,
+      imageKey,
+      ORACLE_ICON_SCALE * (hovered ? SPECIAL_ICON_HOVER_SCALE : 1),
+    );
   }
 
   const spawns = game.mazeResourceSpawns;

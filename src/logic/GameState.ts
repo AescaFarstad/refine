@@ -24,6 +24,8 @@ import type { Reward, UIModalEntry } from './Reward';
 export const DEFAULT_SPEED: number = 6;
 export const MIN_WALK_SPEED: number = 1; // km/h
 
+export type MazeOracleState = 'riddling' | 'riddlePassed';
+
 export class GameState {
   public lib: Lib = new Lib();
   public readonly version: number = 1; // game state version for serialization
@@ -88,6 +90,7 @@ export class GameState {
   public mazeNexusUpgradeOfferSeed: number = -1;
   public mazeNexusUpgradeSeedCursor: number = 0;
   public mazeNexusRefundResetRegretUsed: boolean = false;
+  public mazeOracleStateByNodeId: Record<string, MazeOracleState> = {};
   public mazeResetEntranceCell: Point2 = { x: 0, y: 0 };
   public mazeIncrementalBonusPerPickup: number = 0;
   public mazeHasShardsRefresherPanel: boolean = false;

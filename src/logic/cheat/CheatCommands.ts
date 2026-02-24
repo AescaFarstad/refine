@@ -106,3 +106,8 @@ export class CheatUnlockAllNexusUpgrades implements CheatInput {
   readonly name = 'CheatUnlockAllNexusUpgrades';
   constructor() {}
 }
+
+export class CheatMaxGearSlots implements CheatInput {
+  readonly name = 'CheatMaxGearSlots';
+  constructor() {}
+}

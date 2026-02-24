@@ -16,7 +16,6 @@ export interface ResearchArchetypeOracleDef {
 
 export interface ResearchArchetypeDef {
   type: ResearchNodeType;
-  covert?: boolean;
   oracle?: ResearchArchetypeOracleDef;
   title?: string;
   description?: string;
@@ -52,7 +51,6 @@ export interface ResearchPlacementInput {
 export interface ResearchArchetype {
   id: string;
   type: ResearchNodeType;
-  covert: boolean;
   oracle: ResearchArchetypeOracleDef | null;
   title: string;
   description: string;
@@ -142,7 +140,6 @@ export class ResearchLib {
       const arch: ResearchArchetype = {
         id,
         type: input.type,
-        covert: input.covert ?? false,
         oracle: input.oracle ?? null,
         title: input.title ?? '',
         description: input.description ?? '',
@@ -168,7 +165,6 @@ export class ResearchLib {
           const arch: ResearchArchetype = {
             id: archetypeId,
             type: 'gear',
-            covert: false,
             oracle: null,
             title: '',
             description: '',

@@ -71,7 +71,7 @@ export function initResearchCells(gs: GameState, lib: ResearchLib): void {
         // Void cells are never ownable or traversable.
         cellCost = 0;
         cellBlocked = true;
-      } else if (archetype.type === 'obstacle' || archetype.covert) {
+      } else if (archetype.type === 'obstacle') {
         cellCost = 1;
       } else {
         cellCost = 0;
@@ -104,7 +104,7 @@ export function initResearchCells(gs: GameState, lib: ResearchLib): void {
         filledByAntiVoid: false,
       };
 
-      // Track how many paid (obstacle/covert) cells are already owned
+      // Track how many paid obstacle cells are already owned
       if (isOwned && cellCost > 0) {
         gs.researchOwnedCount++;
       }
@@ -198,7 +198,7 @@ export function calculateResearchNodePrice(gs: ReadonlyGameState, pathCost: numb
   const growth = RESEARCH_OBSTACLE_PRICE_GROWTH;
   const ownedBefore = gs.researchOwnedCount;
 
-  // Each new paid obstacle/covert costs:
+  // Each new paid obstacle costs:
   //   base + (ownedBefore + i) * growth, for i = 0..pathCost-1
   // Sum of arithmetic series:
   //   total = pathCost * (first + last) / 2

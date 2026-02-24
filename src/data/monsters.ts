@@ -15,7 +15,7 @@ const monsters: Record<string, RawMonsterDefinition> = {
   hound: {
     name: 'Xeno Hound',
     hp: 3,
-    dodge: 10,
+    dodge: 20,
     accuracy: 0,
     damage: 1,
     lootItemId: 'hound_remains',
@@ -36,12 +36,11 @@ const monsters: Record<string, RawMonsterDefinition> = {
   distorted: {
     name: 'Distorted Human',
     hp: 8,
-    dodge: 15,
-    accuracy: 10,
+    dodge: 40,
+    accuracy: 0,
     damage: 1,
     lootItemId: 'distorted_remains',
     upgrade: "flower",
-    strengthMult: 1.2,
   },
   flower: {
     name: 'Flower Human',
@@ -74,9 +73,9 @@ const monsters: Record<string, RawMonsterDefinition> = {
   },
   spikder: {
     name: 'Spikder',
-    hp: 7,
-    dodge: 45,
-    accuracy: -5,
+    hp: 4,
+    dodge: 60,
+    accuracy: 0,
     damage: 2,
     lootItemId: 'spikder_remains',
     upgrade: "octopus"

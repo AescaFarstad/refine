@@ -87,6 +87,10 @@
           >
             Clear
           </button>
+          <button type="button" class="btn btn-small save-btn" @click="saveToFiles">
+            Save
+          </button>
+          <span v-if="saveStatus" class="save-status">{{ saveStatus }}</span>
         </div>
       </div>
 
@@ -321,6 +325,7 @@ const mockHintCell = computed((): ResearchCell => {
     owned: true, // Show owned state to reveal full info
     cost: 0,
     blocked: false,
+    filledByAntiVoid: false,
   };
 });
 
@@ -516,6 +521,136 @@ async function copyNewlyPlacedToClipboard() {
 function clearNewlyPlaced() {
   (uiState as any).researchNewlyPlaced = [];
   (uiState as any).researchEditVersion = ((uiState as any).researchEditVersion || 0) + 1;
+}
+
+const saveStatus = ref<string>('');
+
+async function saveToFiles() {
+  const gs = getGameState();
+  const lib = getGameLib();
+  if (!gs || !gs.researchCells || !lib?.research) return;
+
+  const cells = gs.researchCells;
+
+  const emptyCells: Array<{ x: number; y: number }> = [];
+  const voidCells: Array<{ x: number; y: number }> = [];
+  // Collect non-empty/void/obstacle cells keyed by index
+  const placementCells: Array<{ axial: { x: number; y: number }; nodeId: number; archetypeId: string }> = [];
+
+  for (let idx = 0; idx < cells.length; idx++) {
+    const cell = cells[idx];
+    if (!cell) continue;
+
+    const axial = indexToAxial(idx);
+
+    if (cell.archetypeId === 'empty') {
+      emptyCells.push({ x: axial.x, y: axial.y });
+      continue;
+    }
+    if (cell.archetypeId === 'void') {
+      voidCells.push({ x: axial.x, y: axial.y });
+      continue;
+    }
+    if (cell.archetypeId === 'obs' || cell.archetypeId === 'obstacle') continue;
+
+    placementCells.push({ axial, nodeId: cell.nodeId, archetypeId: cell.archetypeId });
+  }
+
+  // Build placements: use lib node grouping only when the archetypeId still matches.
+  // Cells that were repainted (archetypeId differs from their original node) become
+  // individual single-cell placements.
+  type Placement = {
+    archetypeId: string;
+    cells: Array<{ x: number; y: number }>;
+    radius: number;
+    type: string;
+    initiallyOwned?: boolean;
+  };
+
+  const placements: Placement[] = [];
+  const usedByLibNode = new Set<string>(); // "x,y" keys of cells claimed by intact lib nodes
+
+  // First pass: find lib nodes that are still intact (all cells still have matching archetypeId)
+  for (const [nodeId, nodeInstance] of lib.research.nodes) {
+    const archetype = lib.research.archetypes.get(nodeInstance.archetypeId);
+    if (!archetype) continue;
+    // Skip generic obstacle/empty/void archetypes (but NOT hub which has type 'empty')
+    const aid = nodeInstance.archetypeId;
+    if (aid === 'obs' || aid === 'obstacle' || aid === 'empty' || aid === 'void') continue;
+
+    // Check if all cells of this lib node still have the same archetypeId
+    const nodeCells = placementCells.filter(
+      c => c.nodeId === nodeId && c.archetypeId === nodeInstance.archetypeId
+    );
+    if (nodeCells.length === 0) continue;
+
+    // Check the node is fully intact (same cell count as in lib)
+    const allNodeCells = placementCells.filter(c => c.nodeId === nodeId);
+    const intact = nodeCells.length === nodeInstance.cells.length
+      && allNodeCells.length === nodeInstance.cells.length;
+
+    if (intact) {
+      // Reconstruct with radius if applicable
+      let radius = 0;
+      let outCells = nodeCells.map(c => c.axial);
+      if (nodeInstance.centerCell) {
+        const cx = nodeInstance.centerCell.x;
+        const cy = nodeInstance.centerCell.y;
+        for (const c of outCells) {
+          const dx = c.x - cx;
+          const dy = c.y - cy;
+          const dist = Math.max(Math.abs(dx), Math.abs(dy), Math.abs(dx + dy));
+          if (dist > radius) radius = dist;
+        }
+        outCells = [{ x: cx, y: cy }];
+      }
+
+      placements.push({
+        archetypeId: nodeInstance.archetypeId,
+        cells: outCells,
+        radius,
+        type: archetype.type,
+        initiallyOwned: nodeInstance.initiallyOwned || undefined,
+      });
+
+      for (const c of nodeCells) {
+        usedByLibNode.add(`${c.axial.x},${c.axial.y}`);
+      }
+    }
+  }
+
+  // Second pass: remaining cells (user-painted) become individual placements
+  for (const c of placementCells) {
+    if (usedByLibNode.has(`${c.axial.x},${c.axial.y}`)) continue;
+    const archetype = lib.research.archetypes.get(c.archetypeId);
+    if (!archetype) continue;
+
+    placements.push({
+      archetypeId: c.archetypeId,
+      cells: [c.axial],
+      radius: 0,
+      type: archetype.type,
+    });
+  }
+
+  saveStatus.value = 'Saving...';
+  try {
+    const resp = await fetch('/__dev/save-research-pane', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ placements, emptyCells, voidCells }),
+    });
+    const result = await resp.json();
+    if (result.ok) {
+      const c = result.counts;
+      saveStatus.value = `Saved: ${c.special}sp ${c.gear}g ${c.stats}st | ${c.emptyCells}e ${c.voidCells}v`;
+    } else {
+      saveStatus.value = `Error: ${result.error}`;
+    }
+  } catch (err: any) {
+    saveStatus.value = `Failed: ${err.message}`;
+  }
+  setTimeout(() => { saveStatus.value = ''; }, 4000);
 }
 
 function getGearSpriteStyle(imageKey: string | undefined): Record<string, string> {
@@ -789,6 +924,21 @@ function getGearSpriteStyle(imageKey: string | undefined): Record<string, string
 
 .btn:disabled:hover {
   background: rgba(15, 23, 42, 0.95);
+}
+
+.save-btn {
+  background: rgba(22, 163, 74, 0.3);
+  border-color: rgba(34, 197, 94, 0.6);
+}
+
+.save-btn:hover {
+  background: rgba(22, 163, 74, 0.5);
+}
+
+.save-status {
+  font-size: 11px;
+  opacity: 0.8;
+  align-self: center;
 }
 
 .hover-hint-container {

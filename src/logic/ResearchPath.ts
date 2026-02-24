@@ -236,7 +236,7 @@ export function calculateResearchPath(
   // Edge cost:
   //   - 0 for owned cells
   //   - 0 when moving inside the same node
-  //   - cell.cost (0 for free, 1 for obstacle/covert) otherwise
+  //   - cell.cost (0 for free, 1 for obstacle) otherwise
   DISTANCES.fill(MAX_INT32);
   PREV.fill(-1);
   SETTLED.fill(0);

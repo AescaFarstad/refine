@@ -104,7 +104,7 @@ const RESEARCH_PANEL_HIGHLIGHT_STYLE: Record<ResearchHighlightHover['kind'], { f
     innerStrokeColor: 'rgba(248, 250, 252, 0.95)',
   },
 };
-const NODE_PLACEMENT_PREVIEW_RADIUS = 4;
+const NODE_PLACEMENT_PREVIEW_RADIUS = 3;
 const NODE_PLACEMENT_PREVIEW_FILL = 'rgba(56, 189, 248, 0.08)';
 const NODE_PLACEMENT_PREVIEW_STROKE = 'rgba(56, 189, 248, 0.92)';
 const NODE_PLACEMENT_PREVIEW_STROKE_WIDTH = 2.4;
@@ -622,7 +622,7 @@ function applyArchetypeStateToCell(cell: ResearchCell, arch: ReadonlyResearchArc
       cell.revealed = false;
       return;
     }
-    if (arch.type === 'obstacle' || arch.covert) {
+    if (arch.type === 'obstacle') {
       cell.blocked = false;
       cell.cost = 1;
       return;

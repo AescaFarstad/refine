@@ -14,7 +14,7 @@ type GearIconDefinition = { readonly image: string };
 
 const RESEARCH_COLOR_OWNED_BG = 'rgb(50, 140, 80)';
 const RESEARCH_COLOR_UNOWNED_BG = 'rgb(35, 45, 70)';
-const RESEARCH_COLOR_SPECIAL_OVERT_UNOWNED_BG = 'rgb(140, 110, 25)'; // yellowish for special nodes
+const RESEARCH_COLOR_SPECIAL_UNOWNED_BG = 'rgb(140, 110, 25)'; // yellowish for special nodes
 const RESEARCH_COLOR_OBSTACLE_MARKER = '#444f60';
 const RESEARCH_COLOR_OBSTACLE_MARKER_ANTIVOID = '#2b3445';
 
@@ -177,13 +177,12 @@ function getVisualStyle(archetype: ReadonlyResearchArchetype | null, owned: bool
     };
   }
 
-  const isSpecialOvert =
+  const isSpecial =
     !!archetype &&
-    !archetype.covert &&
     (archetype.type === 'stat' || archetype.type === 'gear' || archetype.type === 'resource' || archetype.type === 'discovery' || archetype.type === 'refining');
 
   return {
-    fillColor: isSpecialOvert ? RESEARCH_COLOR_SPECIAL_OVERT_UNOWNED_BG : RESEARCH_COLOR_UNOWNED_BG,
+    fillColor: isSpecial ? RESEARCH_COLOR_SPECIAL_UNOWNED_BG : RESEARCH_COLOR_UNOWNED_BG,
   };
 }
 
@@ -291,7 +290,7 @@ function drawSingleCell(
 ): void {
   const style = getVisualStyle(archetype, owned);
   const center = axialToPixel(info.axial, hexSize, origin);
-  const isObstacleLike = !!archetype && (archetype.type === 'obstacle' || !!archetype.covert);
+  const isObstacleLike = !!archetype && archetype.type === 'obstacle';
 
   if (!isObstacleLike || owned) {
     drawHexagon(ctx, center, backgroundHexSize, {
@@ -317,25 +316,24 @@ function drawNodeOverlay(
   if (!archetype) return;
 
   const type = archetype.type;
-  const covert = !!archetype.covert;
-  const isObstacleLike = type === 'obstacle' || covert;
+  const isObstacleLike = type === 'obstacle';
 
   if (type === 'gear' && gearDef) {
     drawGearIconForNode(ctx, cells, gearDef, owned, origin, hexSize);
     return;
   }
 
-  if (!covert && archetype.icon.kind !== 'none') {
+  if (type !== 'obstacle' && archetype.icon.kind !== 'none') {
     drawArchetypeIconForNode(ctx, game, cells, archetype, owned, origin, hexSize);
     return;
   }
 
-  if (type === 'stat' && !covert) {
+  if (type === 'stat') {
     drawStatIconForNode(ctx, cells, archetype, owned, origin, hexSize);
     return;
   }
 
-  if (type === 'resource' && !covert) {
+  if (type === 'resource') {
     drawResourceIconForNode(ctx, cells, archetype, owned, origin, hexSize);
     return;
   }

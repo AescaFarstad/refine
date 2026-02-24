@@ -5,7 +5,7 @@ const raids: Record<string, RawRaidDefinition> = {
     name: 'Shegolskoe',
     locationImageId: 'shegolskoe',
     description: 'A \'cozy\' village where soviet cultural elite used to grow vegetables for dinner.',
-    baseLootChance: 50,
+    baseLootChance: 40,
     zoneCollapseSec: 10200,
     zoneCollapseStepPerMutation: 300,
     items: [
@@ -29,7 +29,7 @@ const raids: Record<string, RawRaidDefinition> = {
       { count: 2, encounter: { type: 'WalkEncounter' } },
       { count: 6, encounter: { type: 'FightEncounter', monsterId: 'hound' } },
       { count: 1, encounter: { type: 'FightEncounter', monsterId: 'distorted' } },
-      { count: 12, encounter: { type: 'LootEncounter' } }
+      { count: 8, encounter: { type: 'LootEncounter' } }
     ],
     initialMutations: [
       { kind: 'AddMonsterMutation', monsterId: 'hound', count: 1 },
@@ -40,6 +40,10 @@ const raids: Record<string, RawRaidDefinition> = {
       { kind: 'AddMonsterMutation', monsterId: 'hound', count: 1 },
       { kind: 'LootDifficultyMutation', amount: -5 },
       { kind: 'UpgradeMonsterMutation', fromMonsterId: 'hound', toMonsterId: 'arch_hound', count: 1 },
+      { kind: 'WalkMutation', count: 1 },
+      { kind: 'LootMutation', count: -1 },
+      { kind: 'AddMonsterMutation', monsterId: 'hound', count: 1 },
+      { kind: 'ZoneCollapseTimeMutation', amount: -300 },
     ],
   },
   ozernoye: {

@@ -47,8 +47,6 @@ getHypRepresentation(2000);
     });
   }
 
-  initDebug(initialGameState);
-
   await atlasStorage.loadItemsAtlas();
   await atlasStorage.loadLocationsAtlas();
   await ensureMoleculeAtlas();
@@ -56,6 +54,9 @@ getHypRepresentation(2000);
 
   // Sync UI immediately so initial values render before mounting
   replaceGameState(initialGameState);
+
+  // initDebug must run after replaceGameState, which resets uiState
+  initDebug(initialGameState);
 
   const app = createApp(App);
   app.mount('#app');

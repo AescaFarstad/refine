@@ -54,7 +54,7 @@ export class GameState {
   public volume: number = 10;
   public baseMaxWeight: number = 10;
   public damage: number = 1;
-  public chanceToHit: number = 60;
+  public chanceToHit: number = 100;
   public chanceToBlock: number = 0;
   public health: number = 10;
   public itemBans: number = 0;

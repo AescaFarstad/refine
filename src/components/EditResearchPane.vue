@@ -22,54 +22,47 @@
     </div>
     <div class="panel-body">
       <div class="controls-row">
-        <button type="button" class="btn" @click="revealAllResearch">
-          Set reveal radius to 1000
-        </button>
-        <button type="button" class="btn" @click="copyAllToClipboard">
-          Copy All
-        </button>
-        <button type="button" class="btn" @click="copyResearchStateCheatToClipboard">
-          Copy State
-        </button>
-        <button type="button" class="btn" @click="runHardcodedResearchStateCheat">
-          Apply State
-        </button>
-      </div>
-
-      <div class="mode-row">
-        <span class="mode-label">Edit mode:</span>
-        <button
-          type="button"
-          class="btn mode-btn"
-          :class="{ active: activeMode === 'empty' }"
-          @click="toggleMode('empty')"
-        >
-          Empty
-        </button>
-        <button
-          type="button"
-          class="btn mode-btn"
-          :class="{ active: activeMode === 'void' }"
-          @click="toggleMode('void')"
-        >
-          Void
-        </button>
-        <button
-          type="button"
-          class="btn mode-btn"
-          :class="{ active: activeMode === 'obstacle' }"
-          @click="toggleMode('obstacle')"
-        >
-          Obstacle
-        </button>
-        <button
-          type="button"
-          class="btn mode-btn"
-          :class="{ active: activeMode === 'coordinates' }"
-          @click="toggleMode('coordinates')"
-        >
-          Coordinates
-        </button>
+        <div class="controls-buttons">
+          <button type="button" class="btn" @click="revealAllResearch">
+            1000
+          </button>
+          <button type="button" class="btn" @click="copyAllToClipboard">
+            Copy All
+          </button>
+          <button
+            type="button"
+            class="btn mode-btn"
+            :class="{ active: activeMode === 'empty' }"
+            @click="toggleMode('empty')"
+          >
+            Empty
+          </button>
+          <button
+            type="button"
+            class="btn mode-btn"
+            :class="{ active: activeMode === 'void' }"
+            @click="toggleMode('void')"
+          >
+            Void
+          </button>
+          <button
+            type="button"
+            class="btn mode-btn"
+            :class="{ active: activeMode === 'obstacle' }"
+            @click="toggleMode('obstacle')"
+          >
+            Obstacle
+          </button>
+          <button
+            type="button"
+            class="btn mode-btn"
+            :class="{ active: activeMode === 'coordinates' }"
+            @click="toggleMode('coordinates')"
+          >
+            Coordinates
+          </button>
+        </div>
+        <PlacementTemplateWafer v-model="placementTemplateCells" />
       </div>
 
       <div class="radius-row">
@@ -77,30 +70,27 @@
         <button type="button" class="btn radius-btn" @click="decrementRadius">−</button>
         <span class="radius-value">{{ placementRadius }}</span>
         <button type="button" class="btn radius-btn" @click="incrementRadius">+</button>
+        <div class="radius-row-right">
+          <button
+            type="button"
+            class="btn btn-small"
+            @click="copyNewlyPlacedToClipboard"
+            :disabled="newlyPlacedNodes.length === 0"
+          >
+            Copy
+          </button>
+          <button
+            type="button"
+            class="btn btn-small"
+            @click="clearNewlyPlaced"
+            :disabled="newlyPlacedNodes.length === 0"
+          >
+            Clear
+          </button>
+        </div>
       </div>
 
       <div class="code-section">
-        <div class="code-header" style="display: flex; justify-content: space-between; align-items: center;">
-          <span>Newly Placed Nodes</span>
-          <div style="display: flex; gap: 4px;">
-            <button
-              type="button"
-              class="btn btn-small"
-              @click="copyNewlyPlacedToClipboard"
-              :disabled="newlyPlacedNodes.length === 0"
-            >
-              Copy
-            </button>
-            <button
-              type="button"
-              class="btn btn-small"
-              @click="clearNewlyPlaced"
-              :disabled="newlyPlacedNodes.length === 0"
-            >
-              Clear
-            </button>
-          </div>
-        </div>
         <textarea
           class="code-area"
           readonly
@@ -185,13 +175,14 @@ import { getStatIcon, getResourceGlyph, type ResearchStatIcon } from '../logic/d
 import atlasStorage from '../logic/AtlasStorage';
 import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 import { setResearchRevealRadius } from '../logic/Model';
-import { CheatLoadResearchState } from '../logic/cheat/CheatCommands';
 import type { ReadonlyResearchArchetype } from '../logic/UIState';
+import type { Point2 } from '../logic/ItemLib';
 import type { ResearchCell } from '../logic/GameState';
+import { RESEARCH_PLACEMENT_TEMPLATE_DEFAULT } from '../logic/researchPlacementTemplate';
 import ResearchNodeHint from './researchHints/ResearchNodeHint.vue';
+import PlacementTemplateWafer from './PlacementTemplateWafer.vue';
 
 type Point = { x: number; y: number };
-
 const position = ref<Point>({ x: 0, y: 0 });
 const dragging = ref(false);
 const dragStart = ref<Point | null>(null);
@@ -218,6 +209,17 @@ const placementRadius = computed({
 const panelStyle = computed(() => ({
   transform: `translate(${position.value.x}px, ${position.value.y}px)`,
 }));
+
+const placementTemplateCells = computed<Point2[]>({
+  get: () => {
+    const stored = (uiState as any).researchPlacementTemplate as Point2[] | undefined;
+    if (stored) return stored;
+    return RESEARCH_PLACEMENT_TEMPLATE_DEFAULT.map((cell) => ({ x: cell.x, y: cell.y }));
+  },
+  set: (value) => {
+    (uiState as any).researchPlacementTemplate = value;
+  }
+});
 
 function onCloseClick() {
   uiState.editResearchOpen = false;
@@ -465,7 +467,13 @@ const newlyPlacedCode = computed(() => {
 
   const lines: string[] = [];
   for (const node of nodes) {
-    let line = `  { archetypeId: '${node.archetypeId}', cells: { x: ${node.cells.x}, y: ${node.cells.y} }`;
+    const orderedCells = [...node.cells].sort((a, b) => {
+      return a.y === b.y ? a.x - b.x : a.y - b.y;
+    });
+    const cellsCode = orderedCells.length === 1
+      ? `{ x: ${orderedCells[0].x}, y: ${orderedCells[0].y} }`
+      : `[${orderedCells.map((cell) => `{ x: ${cell.x}, y: ${cell.y} }`).join(', ')}]`;
+    let line = `  { archetypeId: '${node.archetypeId}', cells: ${cellsCode}`;
     if (node.radius > 0) {
       line += `, radius: ${node.radius}`;
     }
@@ -503,56 +511,6 @@ async function copyNewlyPlacedToClipboard() {
   } catch (err) {
     console.error('Failed to copy to clipboard:', err);
   }
-}
-
-function getOwnedResearchCells(): Array<{ x: number; y: number }> {
-  const gs = getGameState();
-  const coords: Array<{ x: number; y: number }> = [];
-  for (let idx = 0; idx < gs.researchCells.length; idx++) {
-    const cell = gs.researchCells[idx];
-    if (!cell.owned || cell.blocked) continue;
-    coords.push(indexToAxial(idx));
-  }
-  coords.sort((a, b) => (a.y === b.y ? a.x - b.x : a.y - b.y));
-  return coords;
-}
-
-function formatCheatLoadResearchState(ownedCells: Array<{ x: number; y: number }>): string {
-  if (ownedCells.length === 0) {
-    return "new CheatLoadResearchState({ ownedCells: [] })";
-  }
-
-  const lines: string[] = [];
-  lines.push('new CheatLoadResearchState({');
-  lines.push('  ownedCells: [');
-  for (let i = 0; i < ownedCells.length; i += 6) {
-    const chunk = ownedCells.slice(i, i + 6);
-    lines.push('    ' + chunk.map(p => `{ x: ${p.x}, y: ${p.y} }`).join(', ') + ',');
-  }
-  lines.push('  ],');
-  lines.push('})');
-  return lines.join('\n');
-}
-
-async function copyResearchStateCheatToClipboard() {
-  const ownedCells = getOwnedResearchCells();
-  const code = formatCheatLoadResearchState(ownedCells);
-  try {
-    await navigator.clipboard.writeText(code);
-  } catch (err) {
-    console.error('Failed to copy to clipboard:', err);
-  }
-}
-
-const HARD_CODED_OWNED_CELLS: Array<{ x: number; y: number }> = [
-  { x: 0, y: 0 },
-  { x: 1, y: 0 },
-  { x: 0, y: 1 },
-];
-
-function runHardcodedResearchStateCheat() {
-  const gs = getGameStateMutable();
-  gs.cheats.push(new CheatLoadResearchState({ ownedCells: HARD_CODED_OWNED_CELLS }));
 }
 
 function clearNewlyPlaced() {
@@ -617,9 +575,17 @@ function getGearSpriteStyle(imageKey: string | undefined): Record<string, string
 }
 
 .controls-row {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.controls-buttons {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  flex: 1 1 auto;
 }
 
 .mode-row {
@@ -695,6 +661,13 @@ function getGearSpriteStyle(imageKey: string | undefined): Record<string, string
   align-items: center;
   gap: 6px;
   font-size: 13px;
+}
+
+.radius-row-right {
+  margin-left: auto;
+  padding-right: 80px;
+  display: flex;
+  gap: 4px;
 }
 
 .radius-btn {

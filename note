@@ -237,3 +237,8 @@ refine pulse
 Add research node archetypes which give such rewards. style them like the existing essence anomalies.
 
 Add support for these changes in 
+
+
+Add a small wafer 2-3-2 hexes (center + 1 hex around it). clicking hexes turns it on and off. This will be used as a template for placing the nodes which we're cuurently placing, so that instead of a single node, it sould specify an array of nodes in the code with the center cell being 0;0
+
+place this on the right side of all the buttons at the top of EditResearchPane

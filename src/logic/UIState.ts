@@ -157,7 +157,12 @@ function createDefaultUIState() {
     researchEditMode: '' as string,
     researchEditVersion: 0,
     researchPlacementRadius: 0,
-    researchNewlyPlaced: [] as Array<{ archetypeId: string; cells: { x: number; y: number }; radius: number }>,
+    researchPlacementTemplate: [{ x: 0, y: 0 }] as Array<{ x: number; y: number }>,
+    researchNewlyPlaced: [] as Array<{
+      archetypeId: string;
+      cells: Array<{ x: number; y: number }>;
+      radius: number;
+    }>,
 
     mazeMovementUsed: 0,
     mazeVersion: 0,

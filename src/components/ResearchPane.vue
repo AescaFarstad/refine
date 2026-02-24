@@ -15,10 +15,11 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
-import { uiState, getGameState, getGameLib, getGameStateMutable } from '../logic/UIState';
+import { uiState, getGameState, getGameLib, getGameStateMutable, type ReadonlyResearchArchetype } from '../logic/UIState';
 import { clearCanvas, drawHexagon } from '../logic/DrawHex';
 import type { Point2 } from '../logic/ItemLib';
-import { axialToPixel } from '../logic/HexMath';
+import type { ResearchCell } from '../logic/GameState';
+import { axialRange, axialToPixel } from '../logic/HexMath';
 import { renderResearchBaseLayer } from '../logic/drawResearch';
 import { findCheapestPath, indexToAxial, axialToIndex, calculateVisibility, calculateResearchNodePrice } from '../logic/Research';
 import { globalInputQueue } from '../logic/Model';
@@ -26,6 +27,12 @@ import { CmdResearchNode } from '../logic/input/InputCommands';
 import { getResourceSpec } from '../logic/Resources';
 import type { ResearchHighlightHover } from '../logic/ResearchHighlightHover';
 import { useHexPaneInteraction } from '../logic/pane/useHexPaneInteraction';
+import { computeHexBoundary } from '../logic/hexBoundary';
+import {
+  RESEARCH_PLACEMENT_TEMPLATE_CELLS,
+  RESEARCH_PLACEMENT_TEMPLATE_DEFAULT,
+  researchPlacementTemplateCellKey,
+} from '../logic/researchPlacementTemplate';
 
 const container = ref<HTMLDivElement | null>(null);
 const baseCanvas = ref<HTMLCanvasElement | null>(null);
@@ -97,6 +104,10 @@ const RESEARCH_PANEL_HIGHLIGHT_STYLE: Record<ResearchHighlightHover['kind'], { f
     innerStrokeColor: 'rgba(248, 250, 252, 0.95)',
   },
 };
+const NODE_PLACEMENT_PREVIEW_RADIUS = 4;
+const NODE_PLACEMENT_PREVIEW_FILL = 'rgba(56, 189, 248, 0.08)';
+const NODE_PLACEMENT_PREVIEW_STROKE = 'rgba(56, 189, 248, 0.92)';
+const NODE_PLACEMENT_PREVIEW_STROKE_WIDTH = 2.4;
 
 onMounted(() => {
   setupCanvases();
@@ -123,6 +134,13 @@ watch(
 
 watch(
   () => props.panelHighlight,
+  () => {
+    scheduleRender({ highlight: true });
+  }
+);
+
+watch(
+  () => (uiState as any).researchEditMode,
   () => {
     scheduleRender({ highlight: true });
   }
@@ -284,16 +302,18 @@ function renderHighlightLayer() {
   clearCanvas(ctx);
 
   const mode = (uiState as any).researchEditMode as '' | 'empty' | 'void' | 'obstacle' | 'coordinates' | undefined;
-  if (mode) {
-    // In edit mode we do not show purchase paths
-    return;
-  }
-
   const axial = hoverAxial.value;
   const gs = getGameState();
   const z = zoom.value || 1;
   const off = offset.value;
   const o = origin.value;
+  if (mode) {
+    if (axial && isNodePlacementMode(mode)) {
+      drawNodePlacementBoundary(ctx, axial, z, off, o);
+    }
+    // In edit mode we do not show purchase paths
+    return;
+  }
 
   if (axial) {
     const idx = axialToIndex(axial.x, axial.y);
@@ -352,6 +372,58 @@ function renderHighlightLayer() {
   if (props.panelHighlight) {
     ctx.setTransform(z, 0, 0, z, off.x, off.y);
     drawPanelHighlightLayer(ctx, gs, props.panelHighlight, o);
+  }
+}
+
+function isNodePlacementMode(mode: string): boolean {
+  if (mode === 'empty' || mode === 'void' || mode === 'obstacle' || mode === 'coordinates') {
+    return false;
+  }
+  return getGameLib().research.archetypes.has(mode);
+}
+
+function drawNodePlacementBoundary(
+  ctx: CanvasRenderingContext2D,
+  center: Point2,
+  zoomValue: number,
+  offsetValue: Point2,
+  originPoint: Point2
+): void {
+  const cells = axialRange(center, NODE_PLACEMENT_PREVIEW_RADIUS);
+  const loops = computeHexBoundary(cells);
+  if (loops.length === 0) return;
+  const loopPoints = loops.map(loop => loop.points);
+
+  ctx.save();
+  ctx.setTransform(zoomValue, 0, 0, zoomValue, offsetValue.x, offsetValue.y);
+  traceHexBoundaryPath(ctx, loopPoints, originPoint, HEX_SIZE);
+  ctx.fillStyle = NODE_PLACEMENT_PREVIEW_FILL;
+  ctx.fill('evenodd');
+  ctx.strokeStyle = NODE_PLACEMENT_PREVIEW_STROKE;
+  ctx.lineWidth = NODE_PLACEMENT_PREVIEW_STROKE_WIDTH;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.stroke();
+  ctx.restore();
+}
+
+function traceHexBoundaryPath(
+  ctx: CanvasRenderingContext2D,
+  loops: readonly (readonly Point2[])[],
+  originPoint: Point2,
+  scale: number
+): void {
+  ctx.beginPath();
+  for (const loop of loops) {
+    const pointCount = loop.length;
+    if (pointCount < 2) continue;
+    const first = loop[0]!;
+    ctx.moveTo(originPoint.x + first.x * scale, originPoint.y + first.y * scale);
+    for (let i = 1; i < pointCount; i++) {
+      const p = loop[i]!;
+      ctx.lineTo(originPoint.x + p.x * scale, originPoint.y + p.y * scale);
+    }
+    ctx.closePath();
   }
 }
 
@@ -444,10 +516,6 @@ function applyEditModeAt(axial: Point2): void {
   if (!mode) return;
 
   const gs = getGameStateMutable();
-  const idx = axialToIndex(axial.x, axial.y);
-  if (idx === -1) return;
-  const cell = gs.researchCells[idx];
-  if (!cell) return;
 
   if (mode === 'coordinates') {
     const coordText = `{ x: ${axial.x}, y: ${axial.y} }`;
@@ -458,6 +526,7 @@ function applyEditModeAt(axial: Point2): void {
   }
 
   let archetypeId: string;
+  let isTemplatePlacement = false;
   if (mode === 'empty') {
     archetypeId = 'empty';
   } else if (mode === 'void') {
@@ -465,54 +534,106 @@ function applyEditModeAt(axial: Point2): void {
   } else if (mode === 'obstacle') {
     archetypeId = 'obs';
   } else {
-    // Check if mode is a custom archetype ID
     const lib = getGameLib();
     if (lib.research.archetypes.has(mode)) {
       archetypeId = mode;
-
-      // Track newly placed archetype node
-      const radius = (uiState as any).researchPlacementRadius || 0;
-      const newlyPlaced = (uiState as any).researchNewlyPlaced || [];
-      newlyPlaced.push({
-        archetypeId: mode,
-        cells: { x: axial.x, y: axial.y },
-        radius: radius
-      });
-      (uiState as any).researchNewlyPlaced = newlyPlaced;
-      (uiState as any).researchEditVersion = ((uiState as any).researchEditVersion || 0) + 1;
+      isTemplatePlacement = true;
     } else {
       return;
     }
   }
 
-  cell.archetypeId = archetypeId;
-
   const lib = getGameLib();
   const arch = lib.research.archetypes.get(archetypeId) || null;
+  let changed = false;
 
-  if (arch) {
-    if (arch.type === 'void') {
-      cell.blocked = true;
-      cell.cost = 0;
-      cell.owned = false;
-      cell.revealed = false;
-    } else if (arch.type === 'obstacle' || arch.covert) {
-      cell.blocked = false;
-      cell.cost = 1;
-    } else {
-      cell.blocked = false;
-      cell.cost = 0;
+  if (isTemplatePlacement) {
+    const templateCells = getActivePlacementTemplateCells();
+    if (templateCells.length === 0) return;
+    const placedCells: Point2[] = [];
+
+    for (const offsetCell of templateCells) {
+      const targetAxialX = axial.x + offsetCell.x;
+      const targetAxialY = axial.y + offsetCell.y;
+      const targetIndex = axialToIndex(targetAxialX, targetAxialY);
+      if (targetIndex === -1) continue;
+      const targetCell = gs.researchCells[targetIndex];
+      if (!targetCell) continue;
+      targetCell.archetypeId = archetypeId;
+      applyArchetypeStateToCell(targetCell, arch, mode);
+      placedCells.push({ x: targetAxialX, y: targetAxialY });
+      changed = true;
     }
+
+    if (!changed) return;
+
+    const radius = (uiState as any).researchPlacementRadius || 0;
+    const newlyPlaced = (uiState as any).researchNewlyPlaced || [];
+    newlyPlaced.push({
+      archetypeId: mode,
+      cells: placedCells,
+      radius,
+    });
+    (uiState as any).researchNewlyPlaced = newlyPlaced;
   } else {
-    cell.blocked = mode === 'void';
-    cell.cost = mode === 'obstacle' ? 1 : 0;
+    const idx = axialToIndex(axial.x, axial.y);
+    if (idx === -1) return;
+    const cell = gs.researchCells[idx];
+    if (!cell) return;
+    cell.archetypeId = archetypeId;
+    applyArchetypeStateToCell(cell, arch, mode);
+    changed = true;
   }
+
+  if (!changed) return;
 
   calculateVisibility(gs, gs.lib.research);
 
   // Force local redraw and notify dev tools
   scheduleRender({ base: true, highlight: true });
   (uiState as any).researchEditVersion = ((uiState as any).researchEditVersion || 0) + 1;
+}
+
+function getActivePlacementTemplateCells(): Point2[] {
+  const template = (uiState as any).researchPlacementTemplate as Point2[] | undefined;
+  if (!template) {
+    return RESEARCH_PLACEMENT_TEMPLATE_DEFAULT.map(cell => ({ x: cell.x, y: cell.y }));
+  }
+
+  const selected = new Set<string>();
+  for (const cell of template) {
+    selected.add(researchPlacementTemplateCellKey(cell));
+  }
+
+  const active: Point2[] = [];
+  for (const cell of RESEARCH_PLACEMENT_TEMPLATE_CELLS) {
+    if (!selected.has(researchPlacementTemplateCellKey(cell))) continue;
+    active.push({ x: cell.x, y: cell.y });
+  }
+  return active;
+}
+
+function applyArchetypeStateToCell(cell: ResearchCell, arch: ReadonlyResearchArchetype | null, mode: string): void {
+  if (arch) {
+    if (arch.type === 'void') {
+      cell.blocked = true;
+      cell.cost = 0;
+      cell.owned = false;
+      cell.revealed = false;
+      return;
+    }
+    if (arch.type === 'obstacle' || arch.covert) {
+      cell.blocked = false;
+      cell.cost = 1;
+      return;
+    }
+    cell.blocked = false;
+    cell.cost = 0;
+    return;
+  }
+
+  cell.blocked = mode === 'void';
+  cell.cost = mode === 'obstacle' ? 1 : 0;
 }
 
 function handleClick(axial: Point2): void {

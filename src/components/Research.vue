@@ -220,6 +220,9 @@ const showHintPanel = computed(() => {
   const hn = hoveredNode.value;
   if (!hn) return false;
   if (hn.cell.blocked) return false;
+  if (hn.archetype?.type === 'obstacle' && !hn.cell.owned && hn.archetype.obstacleVisual.highlightCells > 0) {
+    return true;
+  }
   for (const reward of hn.archetype?.rewards ?? []) {
     if (reward.kind === 'refining_yield_pct_bonus') return true;
     if (reward.kind === 'refining_success_chance_bonus') return true;

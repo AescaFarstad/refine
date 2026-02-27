@@ -19,7 +19,7 @@ import { uiState, getGameState, getGameLib, getGameStateMutable, type ReadonlyRe
 import { clearCanvas, drawHexagon } from '../logic/DrawHex';
 import type { Point2 } from '../logic/ItemLib';
 import type { ResearchCell } from '../logic/GameState';
-import { axialRange, axialToPixel } from '../logic/HexMath';
+import { axialRange, axialDistance, axialToPixel } from '../logic/HexMath';
 import { renderResearchBaseLayer } from '../logic/drawResearch';
 import { findCheapestPath, indexToAxial, axialToIndex, calculateVisibility, calculateResearchNodePrice } from '../logic/Research';
 import { globalInputQueue } from '../logic/Model';
@@ -109,6 +109,20 @@ const NODE_PLACEMENT_PREVIEW_FILL = 'rgba(56, 189, 248, 0.08)';
 const NODE_PLACEMENT_PREVIEW_STROKE = 'rgba(56, 189, 248, 0.92)';
 const NODE_PLACEMENT_PREVIEW_STROKE_WIDTH = 2.4;
 
+const NODE_SHAPE_PREVIEW_FILL = 'rgba(34, 197, 94, 0.12)';
+const NODE_SHAPE_PREVIEW_STROKE = 'rgba(34, 197, 94, 0.92)';
+const NODE_SHAPE_PREVIEW_STROKE_WIDTH = 2.4;
+const ARROW_OBSTACLE_PREVIEW_FILL = 'rgba(251, 191, 36, 0.24)';
+const ARROW_OBSTACLE_PREVIEW_STROKE = 'rgba(253, 230, 138, 0.96)';
+const HEX_DIRECTION_OFFSETS: Point2[] = [
+  { x: 1, y: 0 },
+  { x: 1, y: -1 },
+  { x: 0, y: -1 },
+  { x: -1, y: 0 },
+  { x: -1, y: 1 },
+  { x: 0, y: 1 },
+];
+
 onMounted(() => {
   setupCanvases();
   scheduleRender({ base: true, highlight: true });
@@ -140,7 +154,7 @@ watch(
 );
 
 watch(
-  () => (uiState as any).researchEditMode,
+  () => [(uiState as any).researchEditMode, (uiState as any).researchPlacementRadius, (uiState as any).researchPlacementTemplate],
   () => {
     scheduleRender({ highlight: true });
   }
@@ -369,10 +383,73 @@ function renderHighlightLayer() {
     }
   }
 
+  if (axial) {
+    drawArrowObstaclePreview(ctx, gs, axial, z, off, o);
+  }
+
   if (props.panelHighlight) {
     ctx.setTransform(z, 0, 0, z, off.x, off.y);
     drawPanelHighlightLayer(ctx, gs, props.panelHighlight, o);
   }
+}
+
+function drawArrowObstaclePreview(
+  ctx: CanvasRenderingContext2D,
+  gs: ReturnType<typeof getGameState>,
+  originCell: Point2,
+  zoomValue: number,
+  offsetValue: Point2,
+  originPoint: Point2
+): void {
+  const projectedCells = getArrowObstacleProjectedCells(gs, originCell);
+  if (projectedCells.length === 0) return;
+
+  ctx.save();
+  ctx.setTransform(zoomValue, 0, 0, zoomValue, offsetValue.x, offsetValue.y);
+
+  for (const cell of projectedCells) {
+    const center = axialToPixel(cell, HEX_SIZE, originPoint);
+    drawHexagon(ctx, center, HEX_SIZE * 0.84, {
+      fillColor: ARROW_OBSTACLE_PREVIEW_FILL,
+      strokeColor: ARROW_OBSTACLE_PREVIEW_STROKE,
+      lineWidth: 2,
+    });
+  }
+
+  ctx.restore();
+}
+
+function getArrowObstacleProjectedCells(
+  gs: ReturnType<typeof getGameState>,
+  originCell: Point2
+): Point2[] {
+  const idx = axialToIndex(originCell.x, originCell.y);
+  if (idx === -1) return [];
+
+  const sourceCell = gs.researchCells[idx]!;
+  if (!sourceCell.revealed || sourceCell.owned) return [];
+
+  const archetype = getGameLib().research.archetypes.get(sourceCell.archetypeId)!;
+  if (archetype.type !== 'obstacle') return [];
+
+  const count = archetype.obstacleVisual.highlightCells;
+  if (count <= 0) return [];
+
+  const direction = archetype.obstacleVisual.direction;
+  const step = HEX_DIRECTION_OFFSETS[direction]!;
+  const cells: Point2[] = [];
+
+  for (let i = 1; i <= count; i++) {
+    const target: Point2 = {
+      x: originCell.x + step.x * i,
+      y: originCell.y + step.y * i,
+    };
+    const targetIdx = axialToIndex(target.x, target.y);
+    if (targetIdx === -1) break;
+    cells.push(target);
+  }
+
+  return cells;
 }
 
 function isNodePlacementMode(mode: string): boolean {
@@ -401,6 +478,42 @@ function drawNodePlacementBoundary(
   ctx.fill('evenodd');
   ctx.strokeStyle = NODE_PLACEMENT_PREVIEW_STROKE;
   ctx.lineWidth = NODE_PLACEMENT_PREVIEW_STROKE_WIDTH;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.stroke();
+  ctx.restore();
+
+  // Draw the actual node shape (template cells expanded by placement radius) in green
+  const templateCells = getActivePlacementTemplateCells();
+  const placementRadius = (uiState as any).researchPlacementRadius || 0;
+  const nodeCells: Point2[] = [];
+  const seen = new Set<string>();
+
+  for (const offsetCell of templateCells) {
+    const cx = center.x + offsetCell.x;
+    const cy = center.y + offsetCell.y;
+    const expandedCells = placementRadius > 0
+      ? axialRange({ x: cx, y: cy }, placementRadius)
+      : [{ x: cx, y: cy }];
+    for (const c of expandedCells) {
+      const key = `${c.x},${c.y}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      nodeCells.push(c);
+    }
+  }
+
+  const nodeLoops = computeHexBoundary(nodeCells);
+  if (nodeLoops.length === 0) return;
+  const nodeLoopPoints = nodeLoops.map(loop => loop.points);
+
+  ctx.save();
+  ctx.setTransform(zoomValue, 0, 0, zoomValue, offsetValue.x, offsetValue.y);
+  traceHexBoundaryPath(ctx, nodeLoopPoints, originPoint, HEX_SIZE);
+  ctx.fillStyle = NODE_SHAPE_PREVIEW_FILL;
+  ctx.fill('evenodd');
+  ctx.strokeStyle = NODE_SHAPE_PREVIEW_STROKE;
+  ctx.lineWidth = NODE_SHAPE_PREVIEW_STROKE_WIDTH;
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
   ctx.stroke();
@@ -550,28 +663,38 @@ function applyEditModeAt(axial: Point2): void {
   if (isTemplatePlacement) {
     const templateCells = getActivePlacementTemplateCells();
     if (templateCells.length === 0) return;
+    const radius = (uiState as any).researchPlacementRadius || 0;
     const placedCells: Point2[] = [];
+    const centerCells: Point2[] = [];
 
     for (const offsetCell of templateCells) {
-      const targetAxialX = axial.x + offsetCell.x;
-      const targetAxialY = axial.y + offsetCell.y;
-      const targetIndex = axialToIndex(targetAxialX, targetAxialY);
-      if (targetIndex === -1) continue;
-      const targetCell = gs.researchCells[targetIndex];
-      if (!targetCell) continue;
-      targetCell.archetypeId = archetypeId;
-      applyArchetypeStateToCell(targetCell, arch, mode);
-      placedCells.push({ x: targetAxialX, y: targetAxialY });
-      changed = true;
+      const centerX = axial.x + offsetCell.x;
+      const centerY = axial.y + offsetCell.y;
+      centerCells.push({ x: centerX, y: centerY });
+
+      // Expand each template cell by the placement radius
+      const cellsToPlace = radius > 0
+        ? axialRange({ x: centerX, y: centerY }, radius)
+        : [{ x: centerX, y: centerY }];
+
+      for (const target of cellsToPlace) {
+        const targetIndex = axialToIndex(target.x, target.y);
+        if (targetIndex === -1) continue;
+        const targetCell = gs.researchCells[targetIndex];
+        if (!targetCell) continue;
+        targetCell.archetypeId = archetypeId;
+        applyArchetypeStateToCell(targetCell, arch, mode);
+        placedCells.push({ x: target.x, y: target.y });
+        changed = true;
+      }
     }
 
     if (!changed) return;
 
-    const radius = (uiState as any).researchPlacementRadius || 0;
     const newlyPlaced = (uiState as any).researchNewlyPlaced || [];
     newlyPlaced.push({
       archetypeId: mode,
-      cells: placedCells,
+      cells: centerCells,
       radius,
     });
     (uiState as any).researchNewlyPlaced = newlyPlaced;
@@ -580,9 +703,55 @@ function applyEditModeAt(axial: Point2): void {
     if (idx === -1) return;
     const cell = gs.researchCells[idx];
     if (!cell) return;
-    cell.archetypeId = archetypeId;
-    applyArchetypeStateToCell(cell, arch, mode);
-    changed = true;
+
+    // If this cell belongs to a newly placed node, remove the entire node
+    const newlyPlaced: Array<{ archetypeId: string; cells: Array<{ x: number; y: number }>; radius: number }> =
+      (uiState as any).researchNewlyPlaced || [];
+    const hitIndex = newlyPlaced.findIndex(entry => {
+      if (entry.radius > 0) {
+        for (const c of entry.cells) {
+          if (axialDistance(axial, c) <= entry.radius) return true;
+        }
+        return false;
+      }
+      return entry.cells.some(c => c.x === axial.x && c.y === axial.y);
+    });
+
+    if (hitIndex !== -1) {
+      const hit = newlyPlaced[hitIndex];
+      // Clear all cells of the removed node to the overwrite archetypeId
+      for (const c of hit.cells) {
+        const cellsToReset = hit.radius > 0
+          ? axialRange(c, hit.radius)
+          : [c];
+        for (const target of cellsToReset) {
+          const ti = axialToIndex(target.x, target.y);
+          if (ti === -1) continue;
+          const tc = gs.researchCells[ti];
+          if (!tc) continue;
+          tc.archetypeId = archetypeId;
+          applyArchetypeStateToCell(tc, arch, mode);
+        }
+      }
+      newlyPlaced.splice(hitIndex, 1);
+      (uiState as any).researchNewlyPlaced = newlyPlaced;
+      changed = true;
+    } else if (cell.nodeId >= 0) {
+      // Cell belongs to a lib node — clear all cells of that node
+      const nodeId = cell.nodeId;
+      for (let i = 0; i < gs.researchCells.length; i++) {
+        const tc = gs.researchCells[i];
+        if (!tc || tc.nodeId !== nodeId) continue;
+        tc.archetypeId = archetypeId;
+        tc.nodeId = -1;
+        applyArchetypeStateToCell(tc, arch, mode);
+      }
+      changed = true;
+    } else {
+      cell.archetypeId = archetypeId;
+      applyArchetypeStateToCell(cell, arch, mode);
+      changed = true;
+    }
   }
 
   if (!changed) return;

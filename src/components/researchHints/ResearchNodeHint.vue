@@ -8,6 +8,7 @@ import type { ResearchNodeType } from '../../logic/ResearchLib';
 import type { ReadonlyResearchArchetype, ReadonlyResearchCell, ReadonlyResearchNodeInstance } from '../../logic/UIState';
 import DiscoveryHint from './DiscoveryHint.vue';
 import GearHint from './GearHint.vue';
+import ObstacleHint from './ObstacleHint.vue';
 import RefiningHint from './RefiningHint.vue';
 import ResourceHint from './ResourceHint.vue';
 import StatHint from './StatHint.vue';
@@ -49,6 +50,8 @@ const hintComponent = computed(() => {
     case 'discovery':
     case 'refining':
       return DiscoveryHint;
+    case 'obstacle':
+      return ObstacleHint;
     default:
       return null;
   }

@@ -3,7 +3,13 @@
     <div class="stat-shell">
       <div :class="['stat', hpFlashClass]">
         <span :class="['label', 'stat-caption', { 'stat-caption--hintable': healthHintRows.length > 0 }]">Health</span>
-        <span class="value">{{ hp }} ❤︎</span>
+        <span class="value value-health">
+          <span :class="hpValueFlashClass">{{ hp }} ❤︎</span>
+          <span v-if="armor > 0" :class="['armor-inline', armorValueFlashClass]">
+            <span>{{ armor }}</span>
+            <span class="armor-icon" :style="armorIconStyle" />
+          </span>
+        </span>
       </div>
       <div v-if="healthHintRows.length > 0" class="stat-hint" role="tooltip" aria-hidden="true">
         <div v-for="(row, i) in healthHintRows" :key="`health-${i}`" class="hint-row">
@@ -42,6 +48,10 @@
 <script setup lang="ts">
 import { computed, ref, watch, type Ref } from 'vue';
 import { uiState, getGameState } from '../logic/UIState';
+import atlasStorage from '../logic/AtlasStorage';
+import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
+
+const ARMOR_ICON_IMAGE = 'shield_solid';
 
 type HintRow = { label: string; value: string };
 
@@ -51,6 +61,7 @@ interface RaidHintStats {
   regenPer10Minutes: number;
   hitChanceBonus: number;
   blockChanceBonus: number;
+  armor: number;
   attackSkipCount: number;
   reflectOnHitPct: number;
   reflectOnBlockPct: number;
@@ -71,6 +82,19 @@ const damage = computed(() => {
   return gs.raid.damage;
 });
 
+const armor = computed(() => {
+  uiState.raidKey;
+  const gs = getGameState();
+  return gs.raid.armor;
+});
+
+const itemsAtlasSource = atlasStorage.getItemsSource();
+const armorIconStyle = atlasSpriteStyle(
+  itemsAtlasSource,
+  atlasStorage.getItemsFrame(ARMOR_ICON_IMAGE)!,
+  { size: 14, mode: 'fit', allowUpscale: false },
+);
+
 const bagsCapacity = computed(() => {
   uiState.raidKey;
   uiState.volume;
@@ -87,6 +111,7 @@ const raidHintStats = computed<RaidHintStats>(() => {
     regenPer10Minutes: gs.raid.regenPer10Minutes,
     hitChanceBonus: gs.raid.hitChance - gs.chanceToHit,
     blockChanceBonus: gs.raid.blockChance - gs.chanceToBlock,
+    armor: gs.raid.armor,
     attackSkipCount: gs.raid.attackSkipCount,
     reflectOnHitPct: gs.raid.reflectOnHitPct,
     reflectOnBlockPct: gs.raid.reflectOnBlockPct,
@@ -115,6 +140,7 @@ const healthHintRows = computed<HintRow[]>(() => {
   if (g.regenAfterCombat) rows.push({ label: 'Regen after combat', value: `${fmtSigned(g.regenAfterCombat)} hp` });
   if (g.regenPer10Minutes) rows.push({ label: 'Regen per 10 min', value: `${fmtSigned(g.regenPer10Minutes)} hp` });
   if (g.blockChanceBonus) rows.push({ label: 'Block chance bonus', value: fmtSigned(g.blockChanceBonus, '%') });
+  if (g.armor) rows.push({ label: 'Armor', value: fmtSigned(g.armor) });
   if (g.attackSkipCount) rows.push({ label: 'Attack skips', value: fmtSigned(g.attackSkipCount) });
   return rows;
 });
@@ -138,10 +164,14 @@ const bagsHintRows = computed<HintRow[]>(() => {
 });
 
 const hpFlashClass = ref('');
+const hpValueFlashClass = ref('');
+const armorValueFlashClass = ref('');
 const damageFlashClass = ref('');
 const bagsFlashClass = ref('');
 
 const hpFlashTimeout = ref<number | null>(null);
+const hpValueFlashTimeout = ref<number | null>(null);
+const armorValueFlashTimeout = ref<number | null>(null);
 const damageFlashTimeout = ref<number | null>(null);
 const bagsFlashTimeout = ref<number | null>(null);
 
@@ -161,7 +191,16 @@ function triggerFlash(flashClass: Ref<string>, direction: 'up' | 'down', timeout
 
 watch(hp, (next, prev) => {
   if (next === prev) return;
-  triggerFlash(hpFlashClass, next > prev ? 'up' : 'down', hpFlashTimeout);
+  const dir = next > prev ? 'up' : 'down';
+  triggerFlash(hpFlashClass, dir, hpFlashTimeout);
+  triggerFlash(hpValueFlashClass, dir, hpValueFlashTimeout);
+});
+
+watch(armor, (next, prev) => {
+  if (next === prev) return;
+  const dir = next > prev ? 'up' : 'down';
+  triggerFlash(hpFlashClass, dir, hpFlashTimeout);
+  triggerFlash(armorValueFlashClass, dir, armorValueFlashTimeout);
 });
 
 watch(damage, (next, prev) => {
@@ -206,6 +245,21 @@ watch(bagsCapacity, (next, prev) => {
 .stat > * {
   position: relative;
   z-index: 1;
+}
+.value-health {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+.armor-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.95;
+}
+.armor-icon {
+  display: inline-block;
+  margin-bottom: 2px;
 }
 .stat-caption {
   cursor: default;
@@ -266,10 +320,10 @@ watch(bagsCapacity, (next, prev) => {
   background: radial-gradient(circle, rgba(186, 207, 230, 0.46) 0%, rgba(156, 180, 208, 0.35) 34%, rgba(116, 140, 166, 0.2) 52%, rgba(116, 140, 166, 0) 72%);
   animation: stat-flash-down 560ms ease-out;
 }
-.stat.flash-up .value {
+.flash-up {
   animation: stat-value-pop 700ms ease-out;
 }
-.stat.flash-down .value {
+.flash-down {
   animation: stat-value-soft 560ms ease-out;
 }
 .stat .label { color: var(--text-secondary); font-size: 14px; text-transform: uppercase; letter-spacing: 0.06em; margin-right: 0; }

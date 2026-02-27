@@ -1,10 +1,10 @@
 <template>
   <div class="maze-tab">
     <template v-if="!entranceOwned">
-      <div class="maze-placeholder">
-        <p>This is the Maze of Time.</p>
-        <p>You will have to navigate it to return home.</p>
-        <p>Yet there seems to be no entrance.</p>
+      <div class="maze-locked">
+        <div class="locked-text">This is the Maze of Time.</div>
+        <div class="locked-text">You will have to navigate it to return home.</div>
+        <div class="locked-text">Yet there seems to be no entrance.</div>
       </div>
     </template>
     <template v-else>
@@ -201,16 +201,18 @@ const remainingPool = computed(() => {
   filter: blur(4px);
 }
 
-.maze-placeholder {
+.maze-locked {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: var(--text-secondary, #94a3b8);
-  font-size: 15px;
-  line-height: 1.8;
+  gap: 24px;
+}
+.locked-text {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--text-secondary);
   text-align: center;
-  opacity: 0.7;
 }
 </style>

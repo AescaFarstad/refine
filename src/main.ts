@@ -9,7 +9,7 @@ import { ensureMoleculeAtlas } from './logic/MoleculeAtlas';
 import { ensureNexusAtlas } from './logic/NexusAtlas';
 import { getRepresentation } from './logic/LogNumbers';
 import { getHypRepresentation } from './logic/HypNumbers';
-import { initDebug } from './logic/CheatInit';
+import { initDebug, initQuickstart } from './logic/CheatInit';
 import { flushAutosave, loadAutosave, setAutosaveEnabled } from './logic/SaveLoad';
 import { loadGameStateFromDevSlot } from './logic/dev/TestSaveLoad';
 import { readURLSettings } from './URLSettings';
@@ -55,8 +55,9 @@ getHypRepresentation(2000);
   // Sync UI immediately so initial values render before mounting
   replaceGameState(initialGameState);
 
-  // initDebug must run after replaceGameState, which resets uiState
+  // initDebug/initQuickstart must run after replaceGameState, which resets uiState
   initDebug(initialGameState);
+  initQuickstart(initialGameState);
 
   const app = createApp(App);
   app.mount('#app');

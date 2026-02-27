@@ -215,6 +215,7 @@ interface UISyncCache {
   lastUnlockedRaidIdsKey: string;
   lastInventoryItemCount: number;
   lastRefinedUniqueCount: number;
+  lastUniqueItemsBonusYield: number;
   lastHasUniqueItemsYield: boolean;
 }
 
@@ -234,6 +235,7 @@ const SYNC_CACHE_DEFAULTS: UISyncCache = {
   lastUnlockedRaidIdsKey: '',
   lastInventoryItemCount: -1,
   lastRefinedUniqueCount: -1,
+  lastUniqueItemsBonusYield: Number.NaN,
   lastHasUniqueItemsYield: false,
 };
 
@@ -317,7 +319,7 @@ export function SyncUIFromGameState(game: GameState): void {
   const loadoutIds = (game.loadouts && game.raid && game.raid.id) ? game.loadouts[game.raid.id] : null;
   const loadoutKey = Array.isArray(loadoutIds) ? [...loadoutIds].sort().join(',') : '';
   const rk = game.raid
-    ? `${game.raid.id}|${game.raid.hp}|${game.raid.maxHp}|${game.raid.baseSpeed}|${game.raid.speedBonusPct}|${game.raid.speedBonusFlat}|${game.raid.regenPerKm}|${game.raid.regenAfterCombat}|${game.raid.weight}|${game.raid.maxWeight}|${(game.raid.damage ?? game.damage ?? 1)}|${game.raid.bagsVolume}|${game.raid.usedVolume}|${game.raid.lootChanceBonus}|${game.raid.tmpLootBuffAppliedPct}|${game.raid.hitChance}|${game.raid.blockChance}|${game.raid.reflectOnHitPct}|${game.raid.reflectOnBlockPct}|${game.raid.biopsyChance}|${loadoutKey}`
+    ? `${game.raid.id}|${game.raid.hp}|${game.raid.maxHp}|${game.raid.baseSpeed}|${game.raid.speedBonusPct}|${game.raid.speedBonusFlat}|${game.raid.regenPerKm}|${game.raid.regenAfterCombat}|${game.raid.weight}|${game.raid.maxWeight}|${(game.raid.damage ?? game.damage ?? 1)}|${game.raid.bagsVolume}|${game.raid.usedVolume}|${game.raid.lootChanceBonus}|${game.raid.tmpLootBuffAppliedPct}|${game.raid.hitChance}|${game.raid.blockChance}|${game.raid.armor}|${game.raid.reflectOnHitPct}|${game.raid.reflectOnBlockPct}|${game.raid.biopsyChance}|${loadoutKey}`
     : '';
   if (rk !== syncCache.lastRaidKey) {
     uiState.raidKey = rk;
@@ -437,7 +439,7 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.refinery = refinery;
   uiState.items = Object.entries(game.items).map(([id, quantity]) => ({ id, quantity }));
   {
-    const hasUniqueItemsYield = game.discoveries[DISCOVERY.UNIQUE_ITEMS_YIELD] === true;
+    const hasUniqueItemsYield = game.uniqueItemsBonusYield > 0;
     const inventoryItemCount = Object.values(game.items).reduce((sum, qty) => sum + qty, 0);
     const refinedUniqueCount = Object.keys(game.refinedUniqueItemIds).length;
     if (!hasUniqueItemsYield) {
@@ -504,6 +506,7 @@ export function SyncUIFromGameState(game: GameState): void {
 
   if (
     game.refiningYieldPctBonus !== syncCache.lastRefiningYieldPctBonus ||
+    game.uniqueItemsBonusYield !== syncCache.lastUniqueItemsBonusYield ||
     game.refiningSuccessChanceBonus !== syncCache.lastRefiningSuccessChanceBonus ||
     game.refiningSpeedPctBonus !== syncCache.lastRefiningSpeedPctBonus ||
     game.refiningRedEssenceResourceBonus !== syncCache.lastRefiningRedEssenceResourceBonus ||
@@ -513,6 +516,7 @@ export function SyncUIFromGameState(game: GameState): void {
   ) {
     uiState.refinePreviewVersion++;
     syncCache.lastRefiningYieldPctBonus = game.refiningYieldPctBonus;
+    syncCache.lastUniqueItemsBonusYield = game.uniqueItemsBonusYield;
     syncCache.lastRefiningSuccessChanceBonus = game.refiningSuccessChanceBonus;
     syncCache.lastRefiningSpeedPctBonus = game.refiningSpeedPctBonus;
     syncCache.lastRefiningRedEssenceResourceBonus = game.refiningRedEssenceResourceBonus;

@@ -19,6 +19,7 @@ export interface GearDefinition {
   // Combat support
   chanceToHit: number;
   chanceToBlock: number;
+  armor: number; // flat damage reduction against monster attacks
   attackSkipCount: number; // number of successful enemy hits negated per fight
   stunChance: number; // percent chance to stun on a landed hit
   // Reflective damage stats (percent of monster's damage returned)
@@ -83,6 +84,7 @@ export function parseGearDefinitions(raw: Record<string, RawGearDefinition>): Ma
       countable: d.countable ?? false,
       chanceToHit: d.chanceToHit ?? 0,
       chanceToBlock: d.chanceToBlock ?? 0,
+      armor: d.armor ?? 0,
       attackSkipCount: d.attackSkipCount ?? 0,
       stunChance: d.stunChance ?? 0,
       reflectOnHitPct: d.reflectOnHitPct ?? 0,

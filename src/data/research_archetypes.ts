@@ -5,9 +5,54 @@ import {
   MAGENTA_YIELD_BONUS_PCT,
 } from '../logic/Const';
 
+const ARROW_OBSTACLE_HINT = 'The arrow itself does not seem to have any special significance';
+const ARROW_OBSTACLE_GLYPH = '➤';
+
 export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
   hub: { type: 'empty', rewards: [] },
   obs: { type: 'obstacle', rewards: [] },
+  obs_arrow_right: {
+    type: 'obstacle',
+    description: ARROW_OBSTACLE_HINT,
+    icon: { kind: 'glyph', glyph: ARROW_OBSTACLE_GLYPH, scale: 1, offset: { x: 0, y: 0 } },
+    obstacleVisual: { direction: 0, highlightCells: 7 },
+    rewards: [],
+  },
+  obs_arrow_topRight: {
+    type: 'obstacle',
+    description: ARROW_OBSTACLE_HINT,
+    icon: { kind: 'glyph', glyph: ARROW_OBSTACLE_GLYPH, scale: 1, offset: { x: 0, y: 0 } },
+    obstacleVisual: { direction: 1, highlightCells: 7 },
+    rewards: [],
+  },
+  obs_arrow_topLeft: {
+    type: 'obstacle',
+    description: ARROW_OBSTACLE_HINT,
+    icon: { kind: 'glyph', glyph: ARROW_OBSTACLE_GLYPH, scale: 1, offset: { x: 0, y: 0 } },
+    obstacleVisual: { direction: 2, highlightCells: 7 },
+    rewards: [],
+  },
+  obs_arrow_left: {
+    type: 'obstacle',
+    description: ARROW_OBSTACLE_HINT,
+    icon: { kind: 'glyph', glyph: ARROW_OBSTACLE_GLYPH, scale: 1, offset: { x: 0, y: 0 } },
+    obstacleVisual: { direction: 3, highlightCells: 7 },
+    rewards: [],
+  },
+  obs_arrow_bottomLeft: {
+    type: 'obstacle',
+    description: ARROW_OBSTACLE_HINT,
+    icon: { kind: 'glyph', glyph: ARROW_OBSTACLE_GLYPH, scale: 1, offset: { x: 0, y: 0 } },
+    obstacleVisual: { direction: 4, highlightCells: 7 },
+    rewards: [],
+  },
+  obs_arrow_bottomRight: {
+    type: 'obstacle',
+    description: ARROW_OBSTACLE_HINT,
+    icon: { kind: 'glyph', glyph: ARROW_OBSTACLE_GLYPH, scale: 1, offset: { x: 0, y: 0 } },
+    obstacleVisual: { direction: 5, highlightCells: 7 },
+    rewards: [],
+  },
   empty: { type: 'empty', rewards: [] },
   void: { type: 'void', rewards: [] },
 
@@ -48,11 +93,10 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.UI_TIME_BREAKDOWN }],
   },
   disc_unique_items_yield: {
-    type: 'discovery',
+    type: 'stat',
     title: 'Unique item recycling',
-    description: 'Gain +1% refining yield for each unique item you have ever successfully refined.',
-    icon: { kind: 'itemImage', key: 'recycle_3', scale: 1.3, offset: { x: 0, y: 3 } },
-    rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.UNIQUE_ITEMS_YIELD }],
+    description: 'Gain +1% refining yield per unique item you have ever successfully refined.',
+    rewards: [{ kind: 'stat', stat: 'uniqueItemsBonusYield', value: 1 }],
   },
   disc_essence_anomaly_cyan: {
     type: 'discovery',

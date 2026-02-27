@@ -138,7 +138,7 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         blockCheck = clamp(baseBlock - theirAccuracy, 0, 100);
         theirHit = Math.floor(gs.random.get() * 100);
         blocked = (theirHit <= blockCheck);
-        received = blocked ? 0 : theirDamage;
+        received = blocked ? 0 : Math.max(0, theirDamage - r.armor);
         if (received > 0 && remainingAttackSkips > 0) {
           received = 0;
           attackSkipTriggered = true;
@@ -210,7 +210,7 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
       const blockCheck = clamp(baseBlock - theirAccuracy, 0, 100);
       const theirHit = Math.floor(gs.random.get() * 100);
       const blocked = (theirHit <= blockCheck);
-      let received = blocked ? 0 : theirDamage;
+      let received = blocked ? 0 : Math.max(0, theirDamage - r.armor);
       let attackSkipTriggered = false;
       if (received > 0 && remainingAttackSkips > 0) {
         received = 0;

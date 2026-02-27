@@ -1,6 +1,6 @@
 import { type GameState, Raid } from '../GameState';
 import type { CheatInput } from './CheatCommands';
-import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources, CheatUnlockAllRaids, CheatLoadResearchState, CheatUnlockAllQuests, CheatDisableQuestPrereqs, CheatGrantDiscoveries, CheatGrantRewards, CheatLearnSignatures, CheatCompleteSignatures, CheatAddItemBans, CheatUnlockAllNexusUpgrades, CheatMaxGearSlots } from './CheatCommands';
+import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources, CheatUnlockAllRaids, CheatLoadResearchState, CheatUnlockAllQuests, CheatDisableQuestPrereqs, CheatGrantDiscoveries, CheatGrantRewards, CheatLearnSignatures, CheatCompleteSignatures, CheatAddItemBans, CheatUnlockAllNexusUpgrades, CheatMaxGearSlots, CheatAddResearchVision, CheatSelectFirstRaid } from './CheatCommands';
 import type { EncounterDef } from '../RaidLib';
 import { applyResearchNodeEffect, axialToIndex, calculateVisibility } from '../Research';
 import { setEnableQuestPrereqs } from '../Const';
@@ -8,6 +8,7 @@ import { discover } from '../Discover';
 import { applyReward } from '../Reward';
 import { undoRewards } from '../RewardsUndo';
 import { MAZE_NEXUS_NO_UPGRADE_OFFER_SEED } from '../MazeNexusUpgradeProgress';
+import { recomputeActiveRaidParams, recomputeActiveRaidEstimates } from '../Raid';
 
 type Handler = (gs: GameState, cheat: CheatInput) => void;
 const handlersByName = new Map<string, Handler>();
@@ -188,6 +189,20 @@ handlersByName.set('CheatMaxGearSlots', (gs) => {
     if (def.hidden || def.unlimited) continue;
     gs.gearLevels[catId] = def.unlockCost.length + 1; // 1 base slot + all unlockable slots
   }
+});
+
+handlersByName.set('CheatAddResearchVision', (gs, cheat) => {
+  const c = cheat as CheatAddResearchVision;
+  gs.researchRevealRadius += c.amount;
+  calculateVisibility(gs, gs.lib.research);
+});
+
+handlersByName.set('CheatSelectFirstRaid', (gs) => {
+  if (gs.raid.id) return;
+  const first = gs.unlockedRaids[0];
+  if (!first) return;
+  recomputeActiveRaidParams(gs, first.id);
+  recomputeActiveRaidEstimates(gs, 100);
 });
 
 handlersByName.set('CheatUnlockAllNexusUpgrades', (gs) => {

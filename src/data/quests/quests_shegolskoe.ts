@@ -19,8 +19,8 @@ const quests: Record<string, RawQuestDefinition> = {
       { kind: 'AddMonsterMutation', monsterId: 'spikder', count: 1 },
     ],
     rewards: [
-      { kind: 'raid_loot_chance', delta: 15 },
-      { kind: 'raid_mutation', mutation: { kind: 'LootMutation', count: 3 } },
+      { kind: 'raid_loot_chance', delta: 20 },
+      { kind: 'raid_mutation', mutation: { kind: 'LootMutation', count: 2 } },
       { kind: 'raid_add_item', itemIds: ['paint', 'brush'] },
     ],
   },
@@ -33,7 +33,7 @@ const quests: Record<string, RawQuestDefinition> = {
       { kind: 'AddMonsterMutation', monsterId: 'flower', count: 1 },
     ],
     rewards: [
-      { kind: 'raid_mutation', mutation: { kind: 'LootMutation', count: 5 } },
+      { kind: 'raid_mutation', mutation: { kind: 'LootMutation', count: 4 } },
     ],
   },
   shegolskoe_break_distorted_pack: {
@@ -47,6 +47,7 @@ const quests: Record<string, RawQuestDefinition> = {
     rewards: [
       { kind: 'raid_add_item', itemIds: ['red_rubber_ball', 'red_christmas_ball', 'ruined_ammo_cartridge', 'vintage_camera'] },
       { kind: 'raid_rarity_buff', delta: 20 },
+      { kind: 'raid_mutation', mutation: { kind: 'LootMutation', count: 2 } },
     ],
   },
   shegolskoe_locate_next_zone: {
@@ -58,7 +59,7 @@ const quests: Record<string, RawQuestDefinition> = {
     encounterTimeMin: 45,
     encounters: [
       { kind: 'WalkMutation', count: 5 },
-      { kind: 'AddMonsterMutation', monsterId: 'spikder', count: 1 },
+      { kind: 'AddMonsterMutation', monsterId: 'spikder', count: 4 },
       { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 2 },
     ],
     rewards: [

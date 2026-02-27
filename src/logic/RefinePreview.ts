@@ -13,7 +13,6 @@ import {
     FAILURE_PER_EMPTY_CELL,
     MAGENTA_SUCCESS_PENALTY_PCT,
     REFINE_TIME,
-    UNIQUE_ITEMS_YIELD_BONUS_PCT,
 } from './Const';
 import { getWaferBuffAt } from './waferLayout';
 import { scanWaferForNewSignatures, sumSignatureRefiningRewards } from './Signatures';
@@ -345,8 +344,11 @@ export function computeColorChangeAffectedCellsForPlacement(
 
 export function computeUniqueItemsYieldBonusPct(
     refinedUniqueItemIds: Readonly<Record<string, true>>,
-    waferItems: readonly ({ id: string } | null)[]
+    waferItems: readonly ({ id: string } | null)[],
+    bonusPerUniqueItemPct: number,
 ): number {
+    if (bonusPerUniqueItemPct <= 0) return 0;
+
     const baseUniqueCount = Object.keys(refinedUniqueItemIds).length;
     const newlyCounted = new Set<string>();
     let uniqueCount = baseUniqueCount;
@@ -359,7 +361,7 @@ export function computeUniqueItemsYieldBonusPct(
         uniqueCount++;
     }
 
-    return uniqueCount * UNIQUE_ITEMS_YIELD_BONUS_PCT;
+    return uniqueCount * bonusPerUniqueItemPct;
 }
 
 export function computeEffectiveEssences(wafer: Wafer): void {
@@ -497,9 +499,11 @@ export function computeRefinePreviewChem(gs: ReadonlyGameState): RefinePreviewCh
     const magentaYieldBonus = gs.discoveries[DISCOVERY.MAGENTA_YIELD]
         ? magentaCount * MAGENTA_YIELD_BONUS_PCT
         : 0;
-    const uniqueItemsYieldBonus = gs.discoveries[DISCOVERY.UNIQUE_ITEMS_YIELD]
-        ? computeUniqueItemsYieldBonusPct(gs.refinedUniqueItemIds, gs.wafer.items)
-        : 0;
+    const uniqueItemsYieldBonus = computeUniqueItemsYieldBonusPct(
+        gs.refinedUniqueItemIds,
+        gs.wafer.items,
+        gs.uniqueItemsBonusYield,
+    );
 
     const totalYieldPct = baseYieldPct + signatureYieldBonus + newSignatureYieldBonus + cyanYieldBonus + magentaYieldBonus + uniqueItemsYieldBonus;
 

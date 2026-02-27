@@ -9,6 +9,9 @@
       <div class="spacer"></div>
 
       <div class="actions">
+        <button v-if="showCheatButton" class="settings-btn" type="button" aria-label="Edit research pane" @click="openEditResearch">
+          <span class="settings-icon" :style="scaffoldIconStyle"></span>
+        </button>
         <button v-if="showCheatButton" class="settings-btn" type="button" aria-label="Open cheat tools" @click="openCheats">
           <span class="settings-icon" :style="cheatIconStyle"></span>
         </button>
@@ -28,6 +31,8 @@ import { getGameState, timeDisplay, uiState } from '../logic/UIState';
 import atlasStorage from '../logic/AtlasStorage';
 import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 import { DISCOVERY } from '../logic/DiscoveryLib';
+import { globalInputQueue } from '../logic/Model';
+import { CmdSwitchTab } from '../logic/input/InputCommands';
 import Tabs from './Tabs.vue';
 import SettingsWindow from './SettingsWindow.vue';
 
@@ -35,6 +40,7 @@ const settingsOpen = ref(false);
 const itemsSource = atlasStorage.getItemsSource();
 const gearFrame = atlasStorage.getItemsFrame('gear')!;
 const cheatFrame = atlasStorage.getItemsFrame('field_scanner')!;
+const scaffoldFrame = atlasStorage.getItemsFrame('scaffold')!;
 
 const gearIconStyle = computed(() => {
   return atlasSpriteStyle(itemsSource, gearFrame, {
@@ -52,6 +58,14 @@ const cheatIconStyle = computed(() => {
   });
 });
 
+const scaffoldIconStyle = computed(() => {
+  return atlasSpriteStyle(itemsSource, scaffoldFrame, {
+    size: 20,
+    mode: 'fit',
+    allowUpscale: false,
+  });
+});
+
 const showCheatButton = computed(() => {
   uiState.discoveryCounter; // reactivity trigger
   return getGameState().discoveries[DISCOVERY.DEV] === true;
@@ -59,6 +73,11 @@ const showCheatButton = computed(() => {
 
 function openCheats(): void {
   uiState.cheatOpen = true;
+}
+
+function openEditResearch(): void {
+  globalInputQueue.push(new CmdSwitchTab({ tab: 'research' }));
+  uiState.editResearchOpen = true;
 }
 
 function openSettings(): void {

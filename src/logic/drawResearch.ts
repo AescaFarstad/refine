@@ -17,6 +17,7 @@ const RESEARCH_COLOR_UNOWNED_BG = 'rgb(35, 45, 70)';
 const RESEARCH_COLOR_SPECIAL_UNOWNED_BG = 'rgb(140, 110, 25)'; // yellowish for special nodes
 const RESEARCH_COLOR_OBSTACLE_MARKER = '#444f60';
 const RESEARCH_COLOR_OBSTACLE_MARKER_ANTIVOID = '#2b3445';
+const HEX_DIRECTION_ROTATION_STEP_RAD = -Math.PI / 3;
 
 interface StatIconSpec {
   offsetX: number;
@@ -39,6 +40,7 @@ const RESEARCH_STAT_ICON_SPECS: Record<string, ResearchStatIconSpec> = {
   researchRevealRadius: { kind: 'itemImage', key: 'eye', offsetX: 0, offsetY: 0, scale: 1.3 },
   speed: { kind: 'itemImage', key: 'hermes_shoe', offsetX: 0, offsetY: 0, scale: 1.3 },
   itemBans: { kind: 'glyph', key: '✕', offsetX: 0, offsetY: 3, scale: 1.2 },
+  uniqueItemsBonusYield: { kind: 'itemImage', key: 'recycle_3', offsetX: 0, offsetY: 3, scale: 1.3 },
 };
 
 const RESOURCE_ICON_OFFSETS: Record<string, StatIconSpec> = {
@@ -204,6 +206,137 @@ function traceHexBoundaryPath(
   }
 }
 
+interface NodeRenderPlacement {
+  centerX: number;
+  centerY: number;
+  layoutMaxIconSize: number | null;
+}
+
+function getCachedNodeLayout(cells: readonly ResearchCellInfo[]): MaxSquareResult | null {
+  const nodeId = cells[0]!.nodeId;
+  if (nodeId < 0) return null;
+  let layout = nodeSquareCache.get(nodeId);
+  if (!layout) {
+    layout = computeMaxSquareForHexNode(cells.map(info => info.axial));
+    if (layout) {
+      nodeSquareCache.set(nodeId, layout);
+    }
+  }
+  return layout || null;
+}
+
+function computeAverageCellCenter(
+  cells: readonly ResearchCellInfo[],
+  hexSize: number,
+  origin: Point2,
+): Point2 {
+  let sumX = 0;
+  let sumY = 0;
+  for (const info of cells) {
+    const pixel = axialToPixel(info.axial, hexSize, origin);
+    sumX += pixel.x;
+    sumY += pixel.y;
+  }
+  return {
+    x: sumX / cells.length,
+    y: sumY / cells.length,
+  };
+}
+
+function computeNodeRenderPlacement(
+  cells: readonly ResearchCellInfo[],
+  hexSize: number,
+  origin: Point2,
+): NodeRenderPlacement {
+  const layout = getCachedNodeLayout(cells);
+  const specifiedCenterCell = cells[0]!.centerCell;
+
+  if (specifiedCenterCell) {
+    const pixel = axialToPixel(specifiedCenterCell, hexSize, origin);
+    return {
+      centerX: pixel.x,
+      centerY: pixel.y,
+      layoutMaxIconSize: layout ? layout.side * hexSize * 0.9 : null,
+    };
+  }
+
+  if (layout) {
+    return {
+      centerX: layout.center.x * hexSize + origin.x,
+      centerY: layout.center.y * hexSize + origin.y,
+      layoutMaxIconSize: layout.side * hexSize * 0.9,
+    };
+  }
+
+  const avg = computeAverageCellCenter(cells, hexSize, origin);
+  return {
+    centerX: avg.x,
+    centerY: avg.y,
+    layoutMaxIconSize: null,
+  };
+}
+
+function drawCenteredGlyph(
+  ctx: CanvasRenderingContext2D,
+  glyph: string,
+  centerX: number,
+  centerY: number,
+  fontSize: number,
+  alpha: number,
+  rotationRad: number = 0,
+): void {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = 'rgba(248, 250, 252, 0.96)';
+  ctx.translate(centerX, centerY);
+  if (rotationRad !== 0) {
+    ctx.rotate(rotationRad);
+  }
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `bold ${fontSize}px sans-serif`;
+  ctx.fillText(glyph, 0, 0);
+  ctx.restore();
+}
+
+function drawCenteredItemImage(
+  ctx: CanvasRenderingContext2D,
+  imageKey: string,
+  centerX: number,
+  centerY: number,
+  maxIconSize: number,
+  alpha: number,
+  scaleMultiplier: number = 1,
+  rotationRad: number = 0,
+): void {
+  const source = atlasStorage.getItemsSource();
+  const frame = atlasStorage.getItemsFrame(imageKey);
+  if (!source || !frame) return;
+
+  const scale = Math.min(maxIconSize / frame.w, maxIconSize / frame.h) * scaleMultiplier;
+  const drawW = frame.w * scale;
+  const drawH = frame.h * scale;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(centerX, centerY);
+  if (rotationRad !== 0) {
+    ctx.rotate(rotationRad);
+  }
+  ctx.drawImage(
+    source,
+    frame.x,
+    frame.y,
+    frame.w,
+    frame.h,
+    -drawW / 2,
+    -drawH / 2,
+    drawW,
+    drawH
+  );
+  ctx.restore();
+}
+
 function drawMergedNode(
   ctx: CanvasRenderingContext2D,
   game: ReadonlyGameState,
@@ -216,44 +349,12 @@ function drawMergedNode(
   gearDef: GearIconDefinition | null
 ): void {
   const style = getVisualStyle(archetype, owned);
-  const nodeId = cells[0].nodeId;
-  const specifiedCenterCell = cells[0].centerCell;
-  const axialCells: Point2[] = cells.map((cell) => cell.axial);
   const loops = computeHexBoundary(cells.map((cell) => cell.axial)).map(loop => loop.points);
-
-  let centerUnitX: number;
-  let centerUnitY: number;
-
-  let layout: MaxSquareResult | null | undefined = nodeId >= 0 ? nodeSquareCache.get(nodeId) : null;
-  if (!layout) {
-    layout = computeMaxSquareForHexNode(axialCells);
-    if (layout && nodeId >= 0) {
-      nodeSquareCache.set(nodeId, layout);
-    }
-  }
-
-  if (specifiedCenterCell) {
-    const centerUnit = axialToPixel(specifiedCenterCell, 1);
-    centerUnitX = centerUnit.x;
-    centerUnitY = centerUnit.y;
-  } else if (layout) {
-    centerUnitX = layout.center.x;
-    centerUnitY = layout.center.y;
-  } else {
-    let sumUnitX = 0;
-    let sumUnitY = 0;
-    for (const cell of cells) {
-      const unit = axialToPixel(cell.axial, 1);
-      sumUnitX += unit.x;
-      sumUnitY += unit.y;
-    }
-    centerUnitX = sumUnitX / cells.length;
-    centerUnitY = sumUnitY / cells.length;
-  }
+  const placement = computeNodeRenderPlacement(cells, 1, { x: 0, y: 0 });
 
   const mergedOrigin: Point2 = {
-    x: origin.x + centerUnitX * (hexSize - backgroundHexSize),
-    y: origin.y + centerUnitY * (hexSize - backgroundHexSize),
+    x: origin.x + placement.centerX * (hexSize - backgroundHexSize),
+    y: origin.y + placement.centerY * (hexSize - backgroundHexSize),
   };
 
   ctx.save();
@@ -316,14 +417,23 @@ function drawNodeOverlay(
   if (!archetype) return;
 
   const type = archetype.type;
-  const isObstacleLike = type === 'obstacle';
+
+  if (type === 'obstacle') {
+    if (owned) return;
+    drawObstacleMarkerForNode(ctx, cells, origin, hexSize);
+    if (archetype.icon.kind !== 'none') {
+      const iconRotationRad = archetype.obstacleVisual.direction * HEX_DIRECTION_ROTATION_STEP_RAD;
+      drawArchetypeIconForNode(ctx, game, cells, archetype, owned, origin, hexSize, iconRotationRad);
+    }
+    return;
+  }
 
   if (type === 'gear' && gearDef) {
     drawGearIconForNode(ctx, cells, gearDef, owned, origin, hexSize);
     return;
   }
 
-  if (type !== 'obstacle' && archetype.icon.kind !== 'none') {
+  if (archetype.icon.kind !== 'none') {
     drawArchetypeIconForNode(ctx, game, cells, archetype, owned, origin, hexSize);
     return;
   }
@@ -337,9 +447,14 @@ function drawNodeOverlay(
     drawResourceIconForNode(ctx, cells, archetype, owned, origin, hexSize);
     return;
   }
+}
 
-  if (owned || !isObstacleLike) return;
-
+function drawObstacleMarkerForNode(
+  ctx: CanvasRenderingContext2D,
+  cells: ResearchCellInfo[],
+  origin: Point2,
+  hexSize: number
+): void {
   const radius = hexSize * 0.75;
 
   ctx.save();
@@ -364,7 +479,8 @@ function drawArchetypeIconForNode(
   archetype: ReadonlyResearchArchetype,
   owned: boolean,
   origin: Point2,
-  hexSize: number
+  hexSize: number,
+  iconRotationRad: number = 0
 ): void {
   if (!cells.length) return;
 
@@ -375,87 +491,124 @@ function drawArchetypeIconForNode(
         ? archetype.revealedIcon
       : archetype.icon;
   if (icon.kind === 'none') return;
-
-  const nodeId = cells[0].nodeId;
-  const specifiedCenterCell = cells[0].centerCell;
-  const axialCells: Point2[] = cells.map(info => info.axial);
-
-  let layout: MaxSquareResult | null | undefined = nodeId >= 0 ? nodeSquareCache.get(nodeId) : null;
-  if (!layout) {
-    layout = computeMaxSquareForHexNode(axialCells);
-    if (layout && nodeId >= 0) {
-      nodeSquareCache.set(nodeId, layout);
-    }
-  }
-
-  let centerX: number;
-  let centerY: number;
-  let maxIconSize: number | null = null;
-
-  if (specifiedCenterCell) {
-    const pixel = axialToPixel(specifiedCenterCell, hexSize, origin);
-    centerX = pixel.x;
-    centerY = pixel.y;
-    maxIconSize = layout ? layout.side * hexSize * 0.9 : null;
-  } else if (layout) {
-    centerX = layout.center.x * hexSize + origin.x;
-    centerY = layout.center.y * hexSize + origin.y;
-    maxIconSize = layout.side * hexSize * 0.9;
-  } else {
-    let sumX = 0;
-    let sumY = 0;
-    for (const cellInfo of cells) {
-      const pixel = axialToPixel(cellInfo.axial, hexSize, origin);
-      sumX += pixel.x;
-      sumY += pixel.y;
-    }
-    centerX = sumX / cells.length;
-    centerY = sumY / cells.length;
-  }
+  const placement = computeNodeRenderPlacement(cells, hexSize, origin);
+  const centerX = placement.centerX;
+  const centerY = placement.centerY;
+  const maxIconSize = placement.layoutMaxIconSize;
 
   if (icon.kind === 'glyph') {
+    if (archetype.type === 'obstacle') {
+      const iconScale = icon.scale ?? 1;
+      const iconOffset = icon.offset ?? { x: 0, y: 0 };
+      drawCenteredObstacleArrowIcon(
+        ctx,
+        centerX + iconOffset.x,
+        centerY + iconOffset.y,
+        maxIconSize,
+        hexSize,
+        iconScale,
+        iconRotationRad,
+        owned ? 1 : 0.95,
+      );
+      return;
+    }
+
     const iconScale = icon.scale ?? 1;
     const iconOffset = icon.offset ?? { x: 0, y: 0 };
     const baseSize = hexSize * 1.05;
     const glyphSize = baseSize * iconScale;
     const fontSize = Math.max(12, glyphSize);
-    ctx.save();
-    ctx.globalAlpha = owned ? 1 : 0.95;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = `bold ${fontSize}px sans-serif`;
-    ctx.fillStyle = 'rgba(248, 250, 252, 0.96)';
-    ctx.fillText(icon.glyph, centerX + iconOffset.x, centerY + iconOffset.y + 2);
-    ctx.restore();
+    drawCenteredGlyph(
+      ctx,
+      icon.glyph,
+      centerX + iconOffset.x,
+      centerY + iconOffset.y + 2,
+      fontSize,
+      owned ? 1 : 0.95,
+      iconRotationRad,
+    );
     return;
   }
 
-  const source = atlasStorage.getItemsSource();
-  const frame = atlasStorage.getItemsFrame(icon.key);
-  if (!source || !frame) return;
-
   const iconScale = icon.scale ?? 1;
   const iconOffset = icon.offset ?? { x: 0, y: 0 };
-  const iconMaxSize = (maxIconSize != null ? maxIconSize : hexSize * 1.6) * 0.75;
-  const scale = Math.min(iconMaxSize / frame.w, iconMaxSize / frame.h) * iconScale;
-  const drawW = frame.w * scale;
-  const drawH = frame.h * scale;
+  drawCenteredItemImage(
+    ctx,
+    icon.key,
+    centerX + iconOffset.x,
+    centerY + iconOffset.y,
+    (maxIconSize != null ? maxIconSize : hexSize * 1.6) * 0.75,
+    owned ? 1 : 0.9,
+    iconScale,
+    iconRotationRad,
+  );
+}
+
+function drawCenteredObstacleArrowIcon(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  maxIconSize: number | null,
+  hexSize: number,
+  iconScale: number,
+  iconRotationRad: number,
+  alpha: number,
+): void {
+  const base = maxIconSize != null ? maxIconSize : hexSize * 1.12;
+  const size = Math.max(6, base * 0.63 * iconScale);
+  const points: Point2[] = [
+    // Symbol-like arrow silhouette (similar to ➤), points to +X.
+    { x: 0.66 * size, y: 0 },
+    { x: -0.2 * size, y: -0.5 * size },
+    { x: -0.06 * size, y: -0.1 * size },
+    { x: -0.62 * size, y: -0.06 * size },
+    { x: -0.62 * size, y: 0.06 * size },
+    { x: -0.06 * size, y: 0.1 * size },
+    { x: -0.2 * size, y: 0.5 * size },
+  ];
+  const centroid = polygonCentroid(points);
 
   ctx.save();
-  ctx.globalAlpha = owned ? 1 : 0.9;
-  ctx.translate(centerX + iconOffset.x, centerY + iconOffset.y);
-  ctx.drawImage(
-    source,
-    frame.x,
-    frame.y,
-    frame.w,
-    frame.h,
-    -drawW / 2,
-    -drawH / 2,
-    drawW,
-    drawH
-  );
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = 'rgba(248, 250, 252, 0.96)';
+  ctx.translate(centerX, centerY);
+  if (iconRotationRad !== 0) {
+    ctx.rotate(iconRotationRad);
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(points[0]!.x - centroid.x, points[0]!.y - centroid.y);
+  for (let i = 1; i < points.length; i++) {
+    const p = points[i]!;
+    ctx.lineTo(p.x - centroid.x, p.y - centroid.y);
+  }
+  ctx.closePath();
+  ctx.fill();
   ctx.restore();
+}
+
+function polygonCentroid(points: Point2[]): Point2 {
+  let area2 = 0;
+  let cx = 0;
+  let cy = 0;
+  const n = points.length;
+
+  for (let i = 0; i < n; i++) {
+    const p0 = points[i]!;
+    const p1 = points[(i + 1) % n]!;
+    const cross = p0.x * p1.y - p1.x * p0.y;
+    area2 += cross;
+    cx += (p0.x + p1.x) * cross;
+    cy += (p0.y + p1.y) * cross;
+  }
+
+  const area = area2 * 0.5;
+  if (area === 0) {
+    return { x: 0, y: 0 };
+  }
+
+  const inv = 1 / (6 * area);
+  return { x: cx * inv, y: cy * inv };
 }
 
 function getStatIconSpec(statKey: string | undefined): ResearchStatIconSpec | null {
@@ -477,43 +630,10 @@ function drawStatIconForNode(
   const spec = getStatIconSpec(reward.stat);
   if (!spec) return;
   if (!cells.length) return;
-
-  const nodeId = cells.length > 0 ? cells[0].nodeId : -1;
-  const specifiedCenterCell = cells.length > 0 ? cells[0].centerCell : null;
-  const axialCells: Point2[] = cells.map(info => info.axial);
-
-  let layout: MaxSquareResult | null | undefined = nodeId >= 0 ? nodeSquareCache.get(nodeId) : null;
-  if (!layout) {
-    layout = computeMaxSquareForHexNode(axialCells);
-    if (layout && nodeId >= 0) {
-      nodeSquareCache.set(nodeId, layout);
-    }
-  }
-
-  let centerX: number;
-  let centerY: number;
-  let layoutMaxIconSize: number | null = null;
-
-  if (specifiedCenterCell) {
-    const pixel = axialToPixel(specifiedCenterCell, hexSize, origin);
-    centerX = pixel.x;
-    centerY = pixel.y;
-    layoutMaxIconSize = layout ? layout.side * hexSize * 0.9 : null;
-  } else if (layout) {
-    centerX = layout.center.x * hexSize + origin.x;
-    centerY = layout.center.y * hexSize + origin.y;
-    layoutMaxIconSize = layout.side * hexSize * 0.9;
-  } else {
-    let sumX = 0;
-    let sumY = 0;
-    for (const cellInfo of cells) {
-      const pixel = axialToPixel(cellInfo.axial, hexSize, origin);
-      sumX += pixel.x;
-      sumY += pixel.y;
-    }
-    centerX = sumX / cells.length;
-    centerY = sumY / cells.length;
-  }
+  const placement = computeNodeRenderPlacement(cells, hexSize, origin);
+  let centerX = placement.centerX;
+  let centerY = placement.centerY;
+  const layoutMaxIconSize = placement.layoutMaxIconSize;
 
   centerX += spec.offsetX;
   centerY += spec.offsetY;
@@ -521,41 +641,18 @@ function drawStatIconForNode(
   if (spec.kind === 'glyph') {
     const glyphSize = layoutMaxIconSize != null ? layoutMaxIconSize : hexSize * 1.1;
     const fontSize = Math.max(12, glyphSize * spec.scale);
-    ctx.save();
-    ctx.globalAlpha = owned ? 1 : 0.95;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = `bold ${fontSize}px sans-serif`;
-    ctx.fillStyle = 'rgba(248, 250, 252, 0.96)'; // light text on dark background
-    ctx.fillText(spec.key, centerX, centerY);
-    ctx.restore();
+    drawCenteredGlyph(ctx, spec.key, centerX, centerY, fontSize, owned ? 1 : 0.95);
     return;
   }
-
-  const source = atlasStorage.getItemsSource();
-  const frame = atlasStorage.getItemsFrame(spec.key);
-  if (!source || !frame) return;
-
-  const iconMaxSize = (layoutMaxIconSize != null ? layoutMaxIconSize : hexSize * 1.6) * 0.75;
-  const scale = Math.min(iconMaxSize / frame.w, iconMaxSize / frame.h) * spec.scale;
-  const drawW = frame.w * scale;
-  const drawH = frame.h * scale;
-
-  ctx.save();
-  ctx.globalAlpha = owned ? 1 : 0.9;
-  ctx.translate(centerX, centerY);
-  ctx.drawImage(
-    source,
-    frame.x,
-    frame.y,
-    frame.w,
-    frame.h,
-    -drawW / 2,
-    -drawH / 2,
-    drawW,
-    drawH
+  drawCenteredItemImage(
+    ctx,
+    spec.key,
+    centerX,
+    centerY,
+    (layoutMaxIconSize != null ? layoutMaxIconSize : hexSize * 1.6) * 0.75,
+    owned ? 1 : 0.9,
+    spec.scale,
   );
-  ctx.restore();
 }
 
 function drawResourceIconForNode(
@@ -574,58 +671,17 @@ function drawResourceIconForNode(
 
   const offsets = RESOURCE_ICON_OFFSETS[resourceKey]!;
   const glyph = getResourceSpecByAnyKey(resourceKey).glyph;
-
-  const nodeId = cells.length > 0 ? cells[0].nodeId : -1;
-  const specifiedCenterCell = cells.length > 0 ? cells[0].centerCell : null;
-  const axialCells: Point2[] = cells.map(info => info.axial);
-
-  let layout: MaxSquareResult | null | undefined = nodeId >= 0 ? nodeSquareCache.get(nodeId) : null;
-  if (!layout) {
-    layout = computeMaxSquareForHexNode(axialCells);
-    if (layout && nodeId >= 0) {
-      nodeSquareCache.set(nodeId, layout);
-    }
-  }
-
-  let centerX: number;
-  let centerY: number;
-  let maxIconSize: number | null = null;
-
-  if (specifiedCenterCell) {
-    const pixel = axialToPixel(specifiedCenterCell, hexSize, origin);
-    centerX = pixel.x;
-    centerY = pixel.y;
-    maxIconSize = layout ? layout.side * hexSize * 0.9 : null;
-  } else if (layout) {
-    centerX = layout.center.x * hexSize + origin.x;
-    centerY = layout.center.y * hexSize + origin.y;
-    maxIconSize = layout.side * hexSize * 0.9;
-  } else {
-    let sumX = 0;
-    let sumY = 0;
-    for (const cellInfo of cells) {
-      const pixel = axialToPixel(cellInfo.axial, hexSize, origin);
-      sumX += pixel.x;
-      sumY += pixel.y;
-    }
-    centerX = sumX / cells.length;
-    centerY = sumY / cells.length;
-  }
+  const placement = computeNodeRenderPlacement(cells, hexSize, origin);
+  let centerX = placement.centerX;
+  let centerY = placement.centerY;
+  const maxIconSize = placement.layoutMaxIconSize;
 
   centerX += offsets.offsetX;
   centerY += offsets.offsetY;
 
   const glyphSize = maxIconSize != null ? maxIconSize : hexSize * 1.1;
   const fontSize = Math.max(12, glyphSize);
-
-  ctx.save();
-  ctx.globalAlpha = owned ? 1 : 0.95;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = `bold ${fontSize}px sans-serif`;
-  ctx.fillStyle = 'rgba(248, 250, 252, 0.96)';
-  ctx.fillText(glyph, centerX, centerY);
-  ctx.restore();
+  drawCenteredGlyph(ctx, glyph, centerX, centerY, fontSize, owned ? 1 : 0.95);
 }
 
 function drawGearIconForNode(
@@ -638,72 +694,13 @@ function drawGearIconForNode(
 ): void {
   const imageKey = gearDef.image;
   if (!imageKey) return;
-
-  const source = atlasStorage.getItemsSource();
-  const frame = atlasStorage.getItemsFrame(imageKey);
-  if (!source || !frame) return;
-
-  // Compute (and cache) the largest square that fits inside this node's hex blob.
-  const nodeId = cells.length > 0 ? cells[0].nodeId : -1;
-  const specifiedCenterCell = cells.length > 0 ? cells[0].centerCell : null;
-  const axialCells: Point2[] = cells.map(info => info.axial);
-
-  let layout: MaxSquareResult | null | undefined = nodeId >= 0 ? nodeSquareCache.get(nodeId) : null;
-  if (!layout) {
-    layout = computeMaxSquareForHexNode(axialCells);
-    if (layout && nodeId >= 0) {
-      nodeSquareCache.set(nodeId, layout);
-    }
-  }
-
-  let cx: number;
-  let cy: number;
-  let maxIconSize: number;
-
-  if (specifiedCenterCell) {
-    const pixel = axialToPixel(specifiedCenterCell, hexSize, origin);
-    cx = pixel.x;
-    cy = pixel.y;
-    maxIconSize = layout ? layout.side * hexSize * 0.9 : hexSize * 1.6;
-  } else if (layout) {
-    // Map from normalized node space (hexSize=1, origin=0) into canvas space.
-    cx = layout.center.x * hexSize + origin.x;
-    cy = layout.center.y * hexSize + origin.y;
-    maxIconSize = layout.side * hexSize * 0.9; // small margin inside the square
-  } else {
-    // Fallback: center on average of cell centers.
-    let sumX = 0;
-    let sumY = 0;
-    let count = 0;
-    for (const info of cells) {
-      const p = axialToPixel(info.axial, hexSize, origin);
-      sumX += p.x;
-      sumY += p.y;
-      count++;
-    }
-    if (!count) return;
-    cx = sumX / count;
-    cy = sumY / count;
-    maxIconSize = hexSize * 1.6;
-  }
-
-  const scale = Math.min(maxIconSize / frame.w, maxIconSize / frame.h);
-  const drawW = frame.w * scale;
-  const drawH = frame.h * scale;
-
-  ctx.save();
-  ctx.globalAlpha = owned ? 1 : 0.9;
-  ctx.translate(cx, cy);
-  ctx.drawImage(
-    source,
-    frame.x,
-    frame.y,
-    frame.w,
-    frame.h,
-    -drawW / 2,
-    -drawH / 2,
-    drawW,
-    drawH
+  const placement = computeNodeRenderPlacement(cells, hexSize, origin);
+  drawCenteredItemImage(
+    ctx,
+    imageKey,
+    placement.centerX,
+    placement.centerY,
+    placement.layoutMaxIconSize != null ? placement.layoutMaxIconSize : hexSize * 1.6,
+    owned ? 1 : 0.9,
   );
-  ctx.restore();
 }

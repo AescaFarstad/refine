@@ -14,6 +14,16 @@ export interface ResearchArchetypeOracleDef {
   riddle: string;
 }
 
+export interface ResearchObstacleVisualInput {
+  direction?: number;
+  highlightCells?: number;
+}
+
+export interface ResearchObstacleVisualDef {
+  direction: number;
+  highlightCells: number;
+}
+
 export interface ResearchArchetypeDef {
   type: ResearchNodeType;
   oracle?: ResearchArchetypeOracleDef;
@@ -27,6 +37,7 @@ export interface ResearchArchetypeDef {
   icon?: ResearchArchetypeIcon;
   ownedIcon?: ResearchArchetypeIcon;
   revealedIcon?: ResearchArchetypeIcon;
+  obstacleVisual?: ResearchObstacleVisualInput;
   rewards: Reward[];
 }
 
@@ -62,6 +73,7 @@ export interface ResearchArchetype {
   icon: ResearchArchetypeIcon;
   ownedIcon: ResearchArchetypeIcon | null;
   revealedIcon: ResearchArchetypeIcon;
+  obstacleVisual: ResearchObstacleVisualDef;
   rewards: Reward[];
 }
 
@@ -137,6 +149,11 @@ export class ResearchLib {
     // Load Archetypes (manual definitions)
     for (const id in archetypes) {
       const input = archetypes[id];
+      const obstacleVisualInput = input.obstacleVisual ?? {};
+      const obstacleVisual: ResearchObstacleVisualDef = {
+        direction: ((Math.trunc(obstacleVisualInput.direction ?? 0) % 6) + 6) % 6,
+        highlightCells: Math.max(0, Math.trunc(obstacleVisualInput.highlightCells ?? 0)),
+      };
       const arch: ResearchArchetype = {
         id,
         type: input.type,
@@ -151,6 +168,7 @@ export class ResearchLib {
         icon: input.icon ?? { kind: 'none' },
         ownedIcon: input.ownedIcon ?? null,
         revealedIcon: input.revealedIcon ?? { kind: 'none' },
+        obstacleVisual,
         rewards: input.rewards,
       };
       this.archetypes.set(arch.id, arch);
@@ -176,6 +194,7 @@ export class ResearchLib {
             icon: { kind: 'none' },
             ownedIcon: null,
             revealedIcon: { kind: 'none' },
+            obstacleVisual: { direction: 0, highlightCells: 0 },
             rewards: [{ kind: 'unlock_gear', gearId: gearId }],
           };
           this.archetypes.set(arch.id, arch);

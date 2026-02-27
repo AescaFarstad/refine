@@ -2,7 +2,6 @@ import type { GameState } from "./GameState";
 import type { CmdInput } from "./input/InputCommands";
 import { processEvt } from './evt/EvtProcessor';
 import { processCheats } from './cheat/CheatProcessor';
-import { IS_DEBUG } from './Const';
 import { calculateVisibility } from "./Research";
 import { ensureShardDiscovery, ensureResearchTabDiscovery, ensureMazeTabDiscovery } from "./Discover";
 import { saveAutosave } from "./SaveLoad";
@@ -23,7 +22,7 @@ export function setResearchRevealRadius(gs: GameState, radius: number): void {
 
 // deltaTime is in seconds
 export function update(gs: GameState, deltaTime: number): void {
-  if (IS_DEBUG && gs.cheats && gs.cheats.length > 0) {
+  if (gs.cheats && gs.cheats.length > 0) {
     processCheats(gs);
   }
 

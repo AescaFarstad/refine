@@ -25,7 +25,7 @@ const monsters: Record<string, RawMonsterDefinition> = {
   arch_hound: {
     name: 'Xeno Arch-hound',
     hp: 3,
-    dodge: 50,
+    dodge: 60,
     accuracy: 20,
     damage: 1,
     lootItemId: 'hound_remains',
@@ -35,7 +35,7 @@ const monsters: Record<string, RawMonsterDefinition> = {
   },
   distorted: {
     name: 'Distorted Human',
-    hp: 8,
+    hp: 10,
     dodge: 40,
     accuracy: 0,
     damage: 1,
@@ -44,8 +44,8 @@ const monsters: Record<string, RawMonsterDefinition> = {
   },
   flower: {
     name: 'Flower Human',
-    hp: 25,
-    dodge: 20,
+    hp: 15,
+    dodge: 30,
     accuracy: 0,
     damage: 2,
     lootItemId: 'flower_remains',
@@ -54,8 +54,8 @@ const monsters: Record<string, RawMonsterDefinition> = {
   },
   mortiflower: {
     name: 'Mortiflower Human',
-    hp: 30,
-    dodge: 30,
+    hp: 25,
+    dodge: 50,
     accuracy: 0,
     damage: 2,
     lootItemId: 'flower_remains',

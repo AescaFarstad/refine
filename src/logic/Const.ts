@@ -1,6 +1,5 @@
 import { uiState } from './UIState';
 
-export let IS_DEBUG = false;
 export let ENABLE_QUEST_PREREQS = true;
 
 export const ESSENCE_CREDITS = 10;
@@ -32,10 +31,6 @@ export const REGEN_INTERVAL_SEC = 600;
 
 
 
-
-export function setIsDebug(enabled: boolean): void {
-  IS_DEBUG = enabled;
-}
 
 export function setEnableQuestPrereqs(enabled: boolean): void {
   ENABLE_QUEST_PREREQS = enabled;

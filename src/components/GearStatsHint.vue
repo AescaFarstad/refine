@@ -39,15 +39,17 @@ const hintRows = computed((): Array<{ label: string; value: string; color?: stri
   if (g.walkMultiplier !== 1) rows.push({ label: 'Walk distance', value: `×${g.walkMultiplier}` });
   if (g.walkDelta !== 0) rows.push({ label: 'Walk distance', value: `${fmtSigned(g.walkDelta)} km` });
   if (g.chanceToHit) rows.push({ label: 'Hit chance', value: `${fmtSigned(g.chanceToHit, '%')}` });
+
+  if (g.hp) rows.push({ label: 'HP', value: `${fmtSigned(g.hp)}${g.hp < 0 ? ' (loss)' : ''}` });
+  if (g.hpMult !== 1) rows.push({ label: 'HP multiplier', value: `×${g.hpMult}` });
+
   if (g.regenPerKm) rows.push({ label: 'Regen', value: `${fmtSigned(g.regenPerKm)} hp/km${g.regenPerKm < 0 ? ' (loss)' : ''}` });
   if (g.regenAfterCombat) rows.push({ label: 'Regen after combat', value: `${fmtSigned(g.regenAfterCombat)} hp${g.regenAfterCombat < 0 ? ' (loss)' : ''}` });
   if (g.regenPer10Minutes) rows.push({ label: 'Regen per 10 min', value: `${fmtSigned(g.regenPer10Minutes)} hp${g.regenPer10Minutes < 0 ? ' (loss)' : ''}` });
 
   if (g.prepTimeMin) rows.push({ label: 'Prep time', value: `${g.prepTimeMin} min` });
-
-  if (g.hp) rows.push({ label: 'HP', value: `${fmtSigned(g.hp)}${g.hp < 0 ? ' (loss)' : ''}` });
-  if (g.hpMult !== 1) rows.push({ label: 'HP multiplier', value: `×${g.hpMult}` });
   if (g.chanceToBlock) rows.push({ label: 'Block chance', value: `${fmtSigned(g.chanceToBlock, '%')}` });
+  if (g.armor) rows.push({ label: 'Armor', value: `${fmtSigned(g.armor)}` });
   if (g.attackSkipCount) rows.push({ label: 'Attack skips', value: `${fmtSigned(g.attackSkipCount)}` });
   if (g.reflectOnHitPct) rows.push({ label: 'Reflect on hit', value: `${fmtSigned(g.reflectOnHitPct, '%')}` });
   if (g.reflectOnBlockPct) rows.push({ label: 'Reflect on block', value: `${fmtSigned(g.reflectOnBlockPct, '%')}` });

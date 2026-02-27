@@ -3,7 +3,7 @@
     <div class="hint-body">
       <div v-if="statDescription">Increase {{ statDescription }} by {{ statIncreaseDisplay }}</div>
       <div v-if="statLongDescription" class="stat-desc">{{ statLongDescription }}</div>
-      <div v-if="currentValue !== null" class="stat-values">{{ currentValue }} → <span class="new-value">{{ newValue }}</span></div>
+      <div v-if="currentValue !== null" class="stat-values">{{ currentValueDisplay }} → <span class="new-value">{{ newValueDisplay }}</span></div>
       <div v-else class="stat-error">Unknown stat</div>
     </div>
   </div>
@@ -32,7 +32,9 @@ const statInfo: Record<string, { name: string; description: string }> = {
   speed: { name: 'Speed', description: '' },
   chanceToHit: { name: 'Chance to Hit', description: '' },
   chanceToBlock: { name: 'Chance to Block', description: '' },
+  armor: { name: 'Armor', description: '' },
   itemBans: { name: 'Max Blocked Items', description: 'Exclude items from possible drops (visit Raid Selection window)' },
+  uniqueItemsBonusYield: { name: 'Unique Items Bonus Yield', description: 'Refining yield per unique item ever successfully refined.' },
 };
 
 const statReward = computed(() => {
@@ -44,9 +46,14 @@ const statReward = computed(() => {
 const statId = computed(() => statReward.value?.stat || '');
 const statIncrease = computed(() => statReward.value?.value || 0);
 
+function formatStatValue(stat: string, value: number): string {
+  if (stat === 'speed') return `${value} km/h`;
+  if (stat === 'uniqueItemsBonusYield') return `${value}%`;
+  return `${value}`;
+}
+
 const statIncreaseDisplay = computed(() => {
-  if (statId.value === 'speed') return `${statIncrease.value} km/h`;
-  return `${statIncrease.value}`;
+  return formatStatValue(statId.value, statIncrease.value);
 });
 
 const statDescription = computed(() => {
@@ -74,6 +81,16 @@ const currentValue = computed(() => {
 const newValue = computed(() => {
   if (currentValue.value === null) return null;
   return currentValue.value + statIncrease.value;
+});
+
+const currentValueDisplay = computed(() => {
+  if (currentValue.value === null) return null;
+  return formatStatValue(statId.value, currentValue.value);
+});
+
+const newValueDisplay = computed(() => {
+  if (newValue.value === null) return null;
+  return formatStatValue(statId.value, newValue.value);
 });
 </script>
 

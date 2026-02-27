@@ -186,8 +186,10 @@ function getInitialHpBeforePlayback(): number {
 const currentHp = computed(() => {
   if (timelinePos.value <= 0) return getInitialHpBeforePlayback();
   if (timeline.length <= 0) return 0;
-  const token = timeline[Math.min(timelinePos.value - 1, timeline.length - 1)]!;
-  const entry = props.entries[token.index]!;
+  const token = timeline[Math.min(timelinePos.value - 1, timeline.length - 1)];
+  if (!token) return 0;
+  const entry = props.entries[token.index];
+  if (!entry) return 0;
 
   if (token.kind === 'fight_sub' && entry.kind === 'FightEncounter') {
     return getFightSubStepHp(entry, token.step, token.index);

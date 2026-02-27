@@ -865,6 +865,7 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
   gs.raid.damage = gs.damage;
   gs.raid.hitChance = gs.chanceToHit;
   gs.raid.blockChance = gs.chanceToBlock;
+  gs.raid.armor = gs.armor;
   gs.raid.attackSkipCount = 0;
   gs.raid.stunChance = 0;
   gs.raid.perks = [];
@@ -902,6 +903,7 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
     gs.raid.lootChanceBonus += g.lootChance;
     gs.raid.hitChance += g.chanceToHit;
     gs.raid.blockChance += g.chanceToBlock;
+    gs.raid.armor += g.armor;
     gs.raid.attackSkipCount += g.attackSkipCount;
     gs.raid.stunChance = 100 - (100 - gs.raid.stunChance) * (100 - g.stunChance) / 100;
     gs.raid.reflectOnHitPct += g.reflectOnHitPct;

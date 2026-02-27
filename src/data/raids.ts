@@ -5,8 +5,8 @@ const raids: Record<string, RawRaidDefinition> = {
     name: 'Shegolskoe',
     locationImageId: 'shegolskoe',
     description: 'A \'cozy\' village where soviet cultural elite used to grow vegetables for dinner.',
-    baseLootChance: 40,
-    zoneCollapseSec: 10200,
+    baseLootChance: 50,
+    zoneCollapseSec: 14200,
     zoneCollapseStepPerMutation: 300,
     items: [
       'enamel_mug',
@@ -27,17 +27,23 @@ const raids: Record<string, RawRaidDefinition> = {
     ],
     encounters: [
       { count: 2, encounter: { type: 'WalkEncounter' } },
-      { count: 6, encounter: { type: 'FightEncounter', monsterId: 'hound' } },
+      { count: 3, encounter: { type: 'FightEncounter', monsterId: 'hound' } },
       { count: 1, encounter: { type: 'FightEncounter', monsterId: 'distorted' } },
-      { count: 8, encounter: { type: 'LootEncounter' } }
+      { count: 10, encounter: { type: 'LootEncounter' } }
     ],
     initialMutations: [
       { kind: 'AddMonsterMutation', monsterId: 'hound', count: 1 },
       { kind: 'ZoneCollapseTimeMutation', amount: -300 },
       { kind: 'AddMonsterMutation', monsterId: 'hound', count: 1 },
       { kind: 'LootMutation', count: -1 },
+      { kind: 'AddMonsterMutation', monsterId: 'hound', count: 1 },
+      { kind: 'AddMonsterMutation', monsterId: 'hound', count: 1 },
       { kind: 'WalkMutation', count: 1 },
       { kind: 'AddMonsterMutation', monsterId: 'hound', count: 1 },
+      { kind: 'ZoneCollapseTimeMutation', amount: -300 },
+      { kind: 'AddMonsterMutation', monsterId: 'hound', count: 1 },
+      { kind: 'ZoneCollapseTimeMutation', amount: -300 },
+      { kind: 'LootDifficultyMutation', amount: -5 },
       { kind: 'LootDifficultyMutation', amount: -5 },
       { kind: 'UpgradeMonsterMutation', fromMonsterId: 'hound', toMonsterId: 'arch_hound', count: 1 },
       { kind: 'WalkMutation', count: 1 },
@@ -51,7 +57,7 @@ const raids: Record<string, RawRaidDefinition> = {
     locationImageId: 'ozernoye',
     description: 'A lakeside settlement overtaken by... OH GOD! WHaT IS THSIissisi??!',
     baseLootChance: 40,
-    zoneCollapseSec: 12800,
+    zoneCollapseSec: 16800,
     zoneCollapseStepPerMutation: 360,
     items: [
       'enamel_mug',
@@ -80,7 +86,7 @@ const raids: Record<string, RawRaidDefinition> = {
     locationImageId: 'dyatlovsk',
     description: 'A closed city in eastern Siberia, rumored to host a biological laboratory.',
     baseLootChance: 40,
-    zoneCollapseSec: 8400,
+    zoneCollapseSec: 10400,
     zoneCollapseStepPerMutation: 360,
     items: [
       'aluminium_bowl',
@@ -110,7 +116,7 @@ const raids: Record<string, RawRaidDefinition> = {
     locationImageId: 'birdmunshire',
     description: 'An English coastal town consumed by the Zone. Strange flowers bloom where people once walked.',
     baseLootChance: 55,
-    zoneCollapseSec: 14400,
+    zoneCollapseSec: 18400,
     zoneCollapseStepPerMutation: 420,
     items: [
       'wrench',

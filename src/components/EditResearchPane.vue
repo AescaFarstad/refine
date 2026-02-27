@@ -121,7 +121,11 @@
               <div v-if="arch.icon.kind === 'itemImage'" class="gear-sprite-wrap">
                 <div class="gear-sprite" :style="getGearSpriteStyle(arch.icon.key)" />
               </div>
-              <span v-else class="archetype-icon">{{ arch.icon.key }}</span>
+              <span
+                v-else
+                class="archetype-icon"
+                :style="getArchetypeIconStyle(arch.archetype, arch.icon)"
+              >{{ arch.icon.key }}</span>
               <span class="archetype-label">{{ arch.label }}</span>
             </button>
           </div>
@@ -175,6 +179,7 @@
 import { computed, onBeforeUnmount, ref } from 'vue';
 import { uiState, getGameState, getGameLib, getGameStateMutable } from '../logic/UIState';
 import { indexToAxial } from '../logic/Research';
+import { axialRange } from '../logic/HexMath';
 import { getStatIcon, getResourceGlyph, type ResearchStatIcon } from '../logic/drawResearch';
 import atlasStorage from '../logic/AtlasStorage';
 import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
@@ -331,11 +336,15 @@ const mockHintCell = computed((): ResearchCell => {
 
 function onHoverStart(archetype: ReadonlyResearchArchetype, event: MouseEvent) {
   const button = event.currentTarget as HTMLElement;
+  const panel = button.closest('.edit-research-panel') as HTMLElement;
+  if (!panel) return;
+  const panelRect = panel.getBoundingClientRect();
+  const buttonRect = button.getBoundingClientRect();
   hoverPosition.value = {
-    x: button.offsetLeft + 20,
-    y: button.offsetTop + button.offsetHeight + 5,
+    x: buttonRect.left - panelRect.left + 20,
+    y: buttonRect.bottom - panelRect.top + 5,
   };
-  
+
   hoveredArchetype.value = archetype;
 }
 
@@ -619,9 +628,49 @@ async function saveToFiles() {
     }
   }
 
-  // Second pass: remaining cells (user-painted) become individual placements
+  // Second pass: remaining cells (user-painted) — use researchNewlyPlaced entries
+  // to preserve radius info instead of treating each cell individually.
+  const newlyPlaced: Array<{ archetypeId: string; cells: Array<{ x: number; y: number }>; radius: number }> =
+    (uiState as any).researchNewlyPlaced || [];
+
+  const usedByNewlyPlaced = new Set<string>();
+
+  for (const entry of newlyPlaced) {
+    // Check that the center cells still have the matching archetypeId in the game state
+    const validCenters = entry.cells.filter(c => {
+      const key = `${c.x},${c.y}`;
+      if (usedByLibNode.has(key)) return false;
+      const cell = placementCells.find(pc => pc.axial.x === c.x && pc.axial.y === c.y);
+      return cell && cell.archetypeId === entry.archetypeId;
+    });
+    if (validCenters.length === 0) continue;
+
+    const archetype = lib.research.archetypes.get(entry.archetypeId);
+    if (!archetype) continue;
+
+    placements.push({
+      archetypeId: entry.archetypeId,
+      cells: validCenters,
+      radius: entry.radius,
+      type: archetype.type,
+    });
+
+    // Mark all cells covered by this entry (centers + expanded radius) as used
+    for (const c of validCenters) {
+      if (entry.radius > 0) {
+        for (const expanded of axialRange(c, entry.radius)) {
+          usedByNewlyPlaced.add(`${expanded.x},${expanded.y}`);
+        }
+      } else {
+        usedByNewlyPlaced.add(`${c.x},${c.y}`);
+      }
+    }
+  }
+
+  // Any remaining cells not covered by lib nodes or newlyPlaced entries
   for (const c of placementCells) {
-    if (usedByLibNode.has(`${c.axial.x},${c.axial.y}`)) continue;
+    const key = `${c.axial.x},${c.axial.y}`;
+    if (usedByLibNode.has(key) || usedByNewlyPlaced.has(key)) continue;
     const archetype = lib.research.archetypes.get(c.archetypeId);
     if (!archetype) continue;
 
@@ -656,6 +705,20 @@ async function saveToFiles() {
 function getGearSpriteStyle(imageKey: string | undefined): Record<string, string> {
   const frame = atlasStorage.getItemsFrame(imageKey!)!;
   return atlasSpriteStyle(atlasSource, frame, { size: 32, mode: 'fit', allowUpscale: false });
+}
+
+function getArchetypeIconStyle(
+  archetype: ReadonlyResearchArchetype,
+  icon: ResearchStatIcon
+): Record<string, string> {
+  if (icon.kind !== 'glyph') return {};
+  if (archetype.type !== 'obstacle') return {};
+  const rotationDeg = archetype.obstacleVisual.direction * -60;
+  return {
+    transform: `rotate(${rotationDeg}deg)`,
+    transformOrigin: '50% 50%',
+    display: 'inline-block',
+  };
 }
 </script>
 

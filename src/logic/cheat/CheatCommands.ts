@@ -111,3 +111,16 @@ export class CheatMaxGearSlots implements CheatInput {
   readonly name = 'CheatMaxGearSlots';
   constructor() {}
 }
+
+export class CheatSelectFirstRaid implements CheatInput {
+  readonly name = 'CheatSelectFirstRaid';
+  constructor() {}
+}
+
+export class CheatAddResearchVision implements CheatInput {
+  readonly name = 'CheatAddResearchVision';
+  readonly amount: number;
+  constructor(args: { amount: number }) {
+    this.amount = args.amount;
+  }
+}

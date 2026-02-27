@@ -1,6 +1,7 @@
 export interface URLSettings {
   seed: number | null;
   cheat: boolean;
+  quickstart: boolean;
   noSave: boolean;
   loadSlotIndex: number | null;
 }
@@ -9,6 +10,7 @@ export function readURLSettings(): URLSettings {
   const params = new URLSearchParams(window.location.search);
   const rawSeed = params.get('seed');
   const cheat = params.has('cheat');
+  const quickstart = params.has('quickstart');
   const noSave = params.has('nosave');
   const rawLoad = params.get('load');
 
@@ -25,7 +27,7 @@ export function readURLSettings(): URLSettings {
   }
 
   if (rawSeed === null) {
-    return { seed: null, cheat, noSave, loadSlotIndex };
+    return { seed: null, cheat, quickstart, noSave, loadSlotIndex };
   }
   if (!/^-?\d+$/.test(rawSeed)) {
     throw new Error(`Invalid seed URL parameter: ${rawSeed}`);
@@ -36,5 +38,5 @@ export function readURLSettings(): URLSettings {
     throw new Error(`Seed URL parameter is out of range: ${rawSeed}`);
   }
 
-  return { seed, cheat, noSave, loadSlotIndex };
+  return { seed, cheat, quickstart, noSave, loadSlotIndex };
 }

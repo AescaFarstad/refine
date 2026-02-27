@@ -15,14 +15,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { uiState } from '../logic/UIState';
 import RaidSetup from './RaidSetup.vue';
 import RaidGear from './RaidGear.vue';
 import RaidDeploy from './RaidDeploy.vue';
-import { globalInputQueue } from '../logic/Model';
-import { CmdSelectRaid } from '../logic/input/InputCommands';
-import { IS_DEBUG } from '../logic/Const';
 import atlasStorage from '../logic/AtlasStorage';
 import { locationsAtlasFrames } from '../data/locationsAtlas';
 
@@ -67,24 +64,6 @@ const raidBackgroundStyle = computed(() => {
   } as Record<string, string>;
 });
 
-function isLockedById(id: string): boolean {
-  return !uiState.unlockedRaidIds.includes(id);
-}
-
-function firstUnlockedRaidId(): string | null {
-  for (const id of uiState.raidOrder) {
-    if (!isLockedById(id)) return id;
-  }
-  return null;
-}
-
-function onSelectRaid(id: string) {
-  if (!id) return;
-  if (isLockedById(id)) return;
-  globalInputQueue.push(new CmdSelectRaid({ id }));
-}
-
-
 onMounted(async () => {
   if (!locationsAtlasReady.value) {
     try { await atlasStorage.loadLocationsAtlas(); } catch (_e) { /* noop */ }
@@ -92,17 +71,6 @@ onMounted(async () => {
     locationsAtlasSource.value = atlasStorage.getLocationsSource();
   }
 
-  if (IS_DEBUG && !uiState.activeRaidId) {
-    const id = firstUnlockedRaidId();
-    if (id) onSelectRaid(id);
-  }
-});
-
-watch(() => uiState.raidOrder.join('|'), () => {
-  if (IS_DEBUG && !uiState.activeRaidId) {
-    const id = firstUnlockedRaidId();
-    if (id) onSelectRaid(id);
-  }
 });
 </script>
 

@@ -45,7 +45,7 @@ export class GameState {
   public connections: any = null;
 
 
-  public credits: number = 1000;
+  public credits: number = 2000;
   public chronotraces: number = 0;
   public timeFlux: number = 0;
   public shardDust: number = 0;
@@ -56,12 +56,14 @@ export class GameState {
   public damage: number = 1;
   public chanceToHit: number = 100;
   public chanceToBlock: number = 0;
+  public armor: number = 0;
   public health: number = 10;
   public itemBans: number = 0;
   public wafer: Wafer = createWafer(2);
   public waferUpgradesPurchased: number = 0;
   public refiningDuration: number = 0;
   public refiningYieldPctBonus: number = 0;
+  public uniqueItemsBonusYield: number = 0;
   public refiningSuccessChanceBonus: number = 0;
   public refiningSpeedPctBonus: number = 0;
   public refiningRedEssenceResourceBonus: number = 0;
@@ -134,7 +136,7 @@ export class GameState {
   public gearLevels: Record<string, number> = {};
   public skillPoints: number = 0;
   public unlockedGear: string[] = [
-    'brass_knuckles', 'painkillers', 'pouches', 'no_scavenging',
+    'brass_knuckles', 'bandage', 'pouches', 'no_scavenging',
   ];
   public loadouts: Record<string, string[]> = {
     shegolskoe: [],
@@ -185,6 +187,7 @@ export class ActiveRaid {
   public tmpLootBuffNextRaidPct: number = 0;
   public hitChance: number = 60;
   public blockChance: number = 30;
+  public armor: number = 0;
   public attackSkipCount: number = 0;
   public stunChance: number = 0;
   public reflectOnHitPct: number = 0;   // monster hits you

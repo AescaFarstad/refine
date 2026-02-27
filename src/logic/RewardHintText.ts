@@ -14,7 +14,9 @@ const STAT_LABELS: Record<string, string> = {
   speed: 'Speed',
   chanceToHit: 'Chance to Hit',
   chanceToBlock: 'Chance to Block',
+  armor: 'Armor',
   itemBans: 'Max Blocked Items',
+  uniqueItemsBonusYield: 'Unique Items Bonus Yield',
 };
 
 function signed(n: number): string {

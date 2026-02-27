@@ -83,6 +83,9 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
     case 'stat': {
       const anyGs = gs as any;
       anyGs[reward.stat] = anyGs[reward.stat] + reward.value;
+      if (reward.stat === 'uniqueItemsBonusYield' && !gs.discoveries[DISCOVERY.UI_REFINE_YIELD]) {
+        discover(gs, DISCOVERY.UI_REFINE_YIELD);
+      }
       break;
     }
 

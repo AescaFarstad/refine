@@ -7,6 +7,7 @@
       :class="{ 'highlight-cell-wrap-gap': entry.gapBefore }"
       @mouseenter="onEntryMouseEnter(entry)"
       @mouseleave="onEntryMouseLeave(entry.id)"
+      @click="onEntryClick(entry)"
     >
       <button
         type="button"
@@ -46,6 +47,7 @@ interface HighlightEntry {
 
 const emit = defineEmits<{
   (e: 'entry-hover', hover: ResearchHighlightHover | null): void;
+  (e: 'entry-click', hover: ResearchHighlightHover): void;
 }>();
 
 const atlasSource = atlasStorage.getItemsSource();
@@ -151,6 +153,10 @@ watch(entries, (nextEntries) => {
 function onEntryMouseEnter(entry: HighlightEntry): void {
   hoveredEntryId.value = entry.id;
   emit('entry-hover', entry.hoverTarget);
+}
+
+function onEntryClick(entry: HighlightEntry): void {
+  emit('entry-click', entry.hoverTarget);
 }
 
 function onEntryMouseLeave(entryId: string): void {

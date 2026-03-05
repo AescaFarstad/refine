@@ -27,11 +27,12 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { getGameState, timeDisplay, uiState } from '../logic/UIState';
+import { getGameState, getGameStateMutable, timeDisplay, uiState } from '../logic/UIState';
 import atlasStorage from '../logic/AtlasStorage';
 import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 import { DISCOVERY } from '../logic/DiscoveryLib';
 import { globalInputQueue } from '../logic/Model';
+import { CheatAddResearchVision } from '../logic/cheat/CheatCommands';
 import { CmdSwitchTab } from '../logic/input/InputCommands';
 import Tabs from './Tabs.vue';
 import SettingsWindow from './SettingsWindow.vue';
@@ -78,6 +79,8 @@ function openCheats(): void {
 function openEditResearch(): void {
   globalInputQueue.push(new CmdSwitchTab({ tab: 'research' }));
   uiState.editResearchOpen = true;
+  const gs = getGameStateMutable();
+  gs.cheats.push(new CheatAddResearchVision({ amount: 1000 }));
 }
 
 function openSettings(): void {

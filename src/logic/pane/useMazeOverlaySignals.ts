@@ -2,7 +2,7 @@ import type { Ref, ComputedRef } from 'vue';
 import { bfsMazePath } from '../MazeBFS';
 import { axialToPixel } from '../HexMath';
 import type { Point2 } from '../ItemLib';
-import { isMazeEntranceCell } from '../Maze';
+import { getMazeNexusPlacementPreviewResourceSpawn, isMazeEntranceCell } from '../Maze';
 import type { ReadonlyGameState } from '../UIState';
 import type { MazeResourceHoverHint, MazeResourceKey } from './MazeOverlayState';
 
@@ -11,6 +11,7 @@ type Point2Ref = Ref<Point2> | ComputedRef<Point2>;
 export interface MazeOverlaySignalsOptions {
   getGameState: () => ReadonlyGameState;
   getHighlightResourceKey: () => MazeResourceKey | null;
+  getDragPreview: () => { itemId: string; axial: Point2 | null; valid: boolean };
   getQueuedAvatarCell: () => Point2;
   origin: Point2Ref;
   zoom: Ref<number>;
@@ -41,9 +42,26 @@ function toCellKey(cell: Point2): string {
 
 export function useMazeOverlaySignals(options: MazeOverlaySignalsOptions): MazeOverlaySignalsController {
   function buildHoverResourceHint(axial: Point2 | null): MazeResourceHoverHint | null {
+    const gs = options.getGameState();
+    const dragPreview = options.getDragPreview();
+    if (dragPreview.valid && dragPreview.axial && dragPreview.itemId) {
+      const previewSpawn = getMazeNexusPlacementPreviewResourceSpawn(gs, dragPreview.itemId, dragPreview.axial);
+      if (previewSpawn) {
+        const world = axialToPixel(previewSpawn.cell, options.hexSize, options.origin.value);
+        const z = options.zoom.value;
+        const off = options.offset.value;
+
+        return {
+          resourceKey: previewSpawn.resourceKey,
+          amount: previewSpawn.amount,
+          screenX: world.x * z + off.x,
+          screenY: world.y * z + off.y,
+        };
+      }
+    }
+
     if (!axial) return null;
 
-    const gs = options.getGameState();
     const spawn = gs.mazeResourceSpawns.find(
       s => s.cell.x === axial.x && s.cell.y === axial.y,
     );

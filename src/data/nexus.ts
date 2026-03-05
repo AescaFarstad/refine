@@ -6,8 +6,8 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
   credits_panel: {
     name: 'Credits',
     description: 'Spawns a credits resource.',
-    price: 100,
-    priceIncrease: [10],
+    price: 5,
+    priceIncrease: [5],
     limitRadius: 2,
     placableInstanceDescription: {
       passable: true,
@@ -21,8 +21,8 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
   chronotraces_panel: {
     name: 'Chronotraces',
     description: 'Spawns a chronotraces resource.',
-    price: 100,
-    priceIncrease: [10],
+    price: 10,
+    priceIncrease: [5],
     limitRadius: 3,
     placableInstanceDescription: {
       passable: true,
@@ -36,8 +36,8 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
   plus_one_panel: {
     name: 'Plus One',
     description: '+1 to all resources globally.<br>Applied before multipliers',
-    price: 100,
-    priceIncrease: [10],
+    price: 5,
+    priceIncrease: [5],
     placableInstanceDescription: {
       passable: false,
       button: false,
@@ -57,7 +57,7 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
     description: 'Doubles resources in its radius.',
     effectRadius: 5,
     limitRadius: 5,
-    price: 100,
+    price: 10,
     priceIncrease: [10],
     minAcquiredUpgradesForOffer: 1,
     placableInstanceDescription: { passable: false, button: false, cells: [{ x: 0, y: 0 }], glyph: 'x2', image: '' },
@@ -65,7 +65,7 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
   crystal_panel: {
     name: 'Crystals',
     description: 'Spawns a crystal resource.',
-    price: 100,
+    price: 10,
     priceIncrease: [10],
     minAcquiredUpgradesForOffer: 2,
     placableInstanceDescription: {
@@ -81,8 +81,8 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
   free_move_panel: {
     name: 'Free movement',
     description: 'No movement cost within vision.',
-    price: 10,
-    priceIncrease: [10],
+    price: 5,
+    priceIncrease: [5],
     minAcquiredUpgradesForOffer: 3,
     placableInstanceDescription: {
       passable: true,
@@ -97,7 +97,7 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
     description: 'Refreshes resources in it radius.',
     effectRadius: 7,
     limitRadius: 7,
-    price: 100,
+    price: 10,
     priceIncrease: [10],
     minAcquiredUpgradesForOffer: 3,
     placableInstanceDescription: { passable: true, button: true, cells: [{ x: 0, y: 0 }], image: 'recycle_2' },
@@ -105,8 +105,8 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
   incremental_panel: {
     name: 'Incremental',
     description: 'Receive a stacking bonus for each<br>resource pick-up in this run.<br>Unaffected by multipliers.',
-    price: 100,
-    priceIncrease: [10],
+    price: 20,
+    priceIncrease: [20],
     minAcquiredUpgradesForOffer: 5,
     placableInstanceDescription: {
       passable: false,
@@ -122,8 +122,8 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
   credits_doubler_panel: {
     name: 'Credits X',
     description: 'Doubles all credit nodes.',
-    price: 100,
-    priceIncrease: [10],
+    price: 20,
+    priceIncrease: [10, 50, 90],
     minAcquiredUpgradesForOffer: 4,
     placableInstanceDescription: {
       passable: false,
@@ -144,8 +144,8 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
   plus_one_radius_panel: {
     name: 'Range Boost',
     description: 'Increases effective radius of all<br><upgrade:refresher_panel> refreshers and <upgrade:doubler_panel> multipliers by 1.',
-    price: 100,
-    priceIncrease: [10],
+    price: 10,
+    priceIncrease: [20, 60],
     minAcquiredUpgradesForOffer: 5,
     placableInstanceDescription: {
       passable: false,
@@ -162,8 +162,8 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
   chronotraces_doubler_panel: {
     name: 'Chronotraces X',
     description: 'Doubles all chronotrace nodes.',
-    price: 100,
-    priceIncrease: [10],
+    price: 30,
+    priceIncrease: [30, 60, 110],
     minAcquiredUpgradesForOffer: 5,
     placableInstanceDescription: {
       passable: false,
@@ -184,8 +184,8 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
   shards_refresher_panel: {
     name: 'Shards Refresher',
     description: '⌁ Shards also act as a <upgrade:refresher_panel> refresher.<br>(But don\'t affect self)',
-    price: 100,
-    priceIncrease: [10],
+    price: 50,
+    priceIncrease: [],
     minAcquiredUpgradesForOffer: 5,
     placedOnce: true,
     placableInstanceDescription: {
@@ -204,7 +204,7 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
     name: 'Anti-Void',
     description: 'Converts void gaps in its radius into<br>simple obstacles.',
     effectRadius: 4,
-    price: 100,
+    price: 10,
     priceIncrease: [10],
     minAcquiredUpgradesForOffer: 5,
     placableInstanceDescription: {
@@ -237,7 +237,7 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
   },
   time_singularity_panel: {
     name: 'Time Singularity',
-    description: 'With enough chronotraces you can<br>collapse time into a wormhole<br>and escape your multiverse predicament.<br>This is one of the ways to win the game.',
+    description: 'With enough chronotraces you can<br>collapse time into a wormhole<br>and escape your multiverse predicament.<br>This is one of the ways to <bright>win</bright> the game.',
     price: 100000,
     priceIncrease: [0],
     minAcquiredUpgradesForOffer: 7,

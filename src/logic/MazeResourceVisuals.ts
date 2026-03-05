@@ -9,7 +9,6 @@ export interface MazeResourceVisualSpec {
   glyph: string;
   color: string;
   bgColor: string;
-  description: string;
   pillRow: number;
   iconImage: string;
 }
@@ -17,16 +16,19 @@ export interface MazeResourceVisualSpec {
 export const MAZE_RESOURCE_SPECS: Record<MazeResourceVisualKey, MazeResourceVisualSpec> = {
   credits: {
     ...RESOURCE_SPECS.credits,
+    key: 'credits' as const,
     pillRow: 0,
     iconImage: '',
   },
   chronotraces: {
     ...RESOURCE_SPECS.chronotraces,
+    key: 'chronotraces' as const,
     pillRow: 0,
     iconImage: '',
   },
   shardDust: {
     ...RESOURCE_SPECS.shardDust,
+    key: 'shardDust' as const,
     pillRow: 0,
     iconImage: '',
   },
@@ -36,8 +38,16 @@ export const MAZE_RESOURCE_SPECS: Record<MazeResourceVisualKey, MazeResourceVisu
     glyph: '◈',
     color: '#a78bfa',
     bgColor: 'rgba(167, 139, 250, 0.10)',
-    description: 'Used to boost zone collapse timers',
     pillRow: 1,
     iconImage: 'quartz',
+  },
+  fractal: {
+    key: 'fractal',
+    name: 'Fractal',
+    glyph: '⬡',
+    color: '#f0abfc',
+    bgColor: 'rgba(240, 171, 252, 0.10)',
+    pillRow: 1,
+    iconImage: 'bismuth',
   },
 };

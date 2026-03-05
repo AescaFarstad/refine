@@ -9,9 +9,6 @@ import type { ReadonlyGameState } from './UIState';
 import { createMazeVisionAux } from './createMazeVisionAux';
 import { computeMazeVisibilityFromIndex, createMazeVisibilityRuntime } from './MazeVision';
 import {
-  CREDITS_PANEL_ID,
-  CHRONOTRACES_PANEL_ID,
-  CRYSTAL_PANEL_ID,
   FREE_MOVE_PANEL_ID,
   SHARDS_REFRESHER_PANEL_ID,
 } from './NexusLib';
@@ -25,6 +22,7 @@ import {
   getMazeNexusItemPlacementCells,
   getMazeNexusPlacementAnchorFromHoverCenter,
   getMazeNexusItemPlacementRotationStep,
+  getMazeNexusResourcePanelSpawnAtCell,
   hasMazeNexusLimitRadiusConflict,
   isMazeShardRefresherStep,
   refundMazeNexusPanelPurchase,
@@ -40,6 +38,7 @@ export {
   getMazeNexusLimitDisks,
   getMazeNexusPlacementAffectedSpawnIndexes,
   getMazeNexusPlacementCentroidUnit,
+  getMazeNexusPlacementPreviewResourceSpawn,
 } from './MazeNexusBonuses';
 
 const MAZE_ENTRANCE_ARCHETYPE_ID = 'disc_maze_navigation';
@@ -246,7 +245,9 @@ export function computeMazeResourceSpawns(gs: GameState, lib: ResearchLib): void
 
     let resourceKey: MazeResourceSpawn['resourceKey'] | null = null;
 
-    if (archetype.type === 'gear') {
+    if (archetype.spawnResource) {
+      resourceKey = archetype.spawnResource;
+    } else if (archetype.type === 'gear') {
       resourceKey = 'chronotraces';
     } else if (archetype.type === 'stat') {
       resourceKey = 'credits';
@@ -259,8 +260,9 @@ export function computeMazeResourceSpawns(gs: GameState, lib: ResearchLib): void
 
     if (!resourceKey) continue;
 
-    const dist = axialDistance(center, origin);
-    const amount = Math.max(1, dist);
+    const amount = (resourceKey === 'zone_crystal' || resourceKey === 'fractal')
+      ? 1
+      : Math.max(1, axialDistance(center, origin));
 
     spawns.push({ cell: { x: center.x, y: center.y }, resourceKey, amount });
   }
@@ -270,27 +272,9 @@ export function computeMazeResourceSpawns(gs: GameState, lib: ResearchLib): void
     if (!cell.owned) continue;
 
     const center = indexToAxial(i);
-    let resourceKey: MazeResourceSpawn['resourceKey'] | null = null;
-    let amount = 0;
-
-    if (cell.nexusId === CRYSTAL_PANEL_ID) {
-      resourceKey = 'zone_crystal';
-      amount = 1;
-    } else if (cell.nexusId === CREDITS_PANEL_ID) {
-      resourceKey = 'credits';
-      amount = Math.max(1, axialDistance(center, origin));
-    } else if (cell.nexusId === CHRONOTRACES_PANEL_ID) {
-      resourceKey = 'chronotraces';
-      amount = Math.max(1, axialDistance(center, origin));
-    }
-
-    if (!resourceKey) continue;
-
-    spawns.push({
-      cell: { x: center.x, y: center.y },
-      resourceKey,
-      amount,
-    });
+    const resourceSpawn = getMazeNexusResourcePanelSpawnAtCell(cell.nexusId, center);
+    if (!resourceSpawn) continue;
+    spawns.push(resourceSpawn);
   }
 
   applyMazeDoublerBonusesToSpawns(gs, spawns);
@@ -503,6 +487,9 @@ function collectResourceAtCell(gs: GameState, cell: Point2): void {
       case 'zone_crystal':
         gs.maze.collectedZoneCrystal += spawn.amount;
         break;
+      case 'fractal':
+        gs.maze.collectedFractal += spawn.amount;
+        break;
     }
 
     grantMazeIncrementalPickupBonus(gs, spawn.resourceKey);
@@ -531,12 +518,14 @@ function applyMazePayout(gs: GameState): void {
   const payoutChronotraces = Math.max(0, m.collectedChronotraces - gs.mazeHighChronotraces);
   const payoutShardDust = Math.max(0, m.collectedShardDust - gs.mazeHighShardDust);
   const payoutZoneCrystal = Math.max(0, m.collectedZoneCrystal - gs.mazeHighZoneCrystal);
+  const payoutFractal = Math.max(0, m.collectedFractal - gs.mazeHighFractal);
 
   // Update persistent highs
   gs.mazeHighCredits = Math.max(gs.mazeHighCredits, m.collectedCredits);
   gs.mazeHighChronotraces = Math.max(gs.mazeHighChronotraces, m.collectedChronotraces);
   gs.mazeHighShardDust = Math.max(gs.mazeHighShardDust, m.collectedShardDust);
   gs.mazeHighZoneCrystal = Math.max(gs.mazeHighZoneCrystal, m.collectedZoneCrystal);
+  gs.mazeHighFractal = Math.max(gs.mazeHighFractal, m.collectedFractal);
 
   // Apply payouts to actual resources
   gs.credits += payoutCredits;
@@ -546,6 +535,12 @@ function applyMazePayout(gs: GameState): void {
     gs.countableGear.zone_crystal = (gs.countableGear.zone_crystal || 0) + payoutZoneCrystal;
     if (!gs.unlockedGear.includes('zone_crystal')) {
       gs.unlockedGear.push('zone_crystal');
+    }
+  }
+  if (payoutFractal > 0) {
+    gs.countableGear.fractal = (gs.countableGear.fractal || 0) + payoutFractal;
+    if (!gs.unlockedGear.includes('fractal')) {
+      gs.unlockedGear.push('fractal');
     }
   }
 }

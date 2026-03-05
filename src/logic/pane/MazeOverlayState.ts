@@ -7,6 +7,7 @@ export interface MazeResourceTotals {
   chronotraces: number;
   shardDust: number;
   zone_crystal: number;
+  fractal: number;
 }
 
 export interface MazeResourceHoverHint {
@@ -16,4 +17,4 @@ export interface MazeResourceHoverHint {
   screenY: number;
 }
 
-export const MAZE_RESOURCE_KEYS: MazeResourceKey[] = ['credits', 'chronotraces', 'shardDust', 'zone_crystal'];
+export const MAZE_RESOURCE_KEYS: MazeResourceKey[] = ['credits', 'chronotraces', 'shardDust', 'zone_crystal', 'fractal'];

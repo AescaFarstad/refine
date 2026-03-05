@@ -43,7 +43,7 @@ import MazeOverlay from './MazeOverlay.vue';
 import { uiState, getGameState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
 import { CmdMazeResetHighMovement } from '../logic/input/InputCommands';
-import { getOwnedMazeEntrances } from '../logic/Maze';
+import { getOwnedMazeEntrances, isMazeNexusCell } from '../logic/Maze';
 import type { MazeResourceHoverHint, MazeResourceKey, MazeResourceTotals } from '../logic/pane/MazeOverlayState';
 
 const entranceOwned = computed(() => {
@@ -91,7 +91,8 @@ watch(
     isHoveringEntrance.value = false;
     hoveredPillResourceKey.value = null;
     hoverResourceHints.value = [];
-    uiState.mazeNexusMenuOpen = false;
+    const gs = getGameState();
+    uiState.mazeNexusMenuOpen = isMazeNexusCell(gs, gs.maze.avatarCell);
     uiState.mazeOracleMenuOpen = false;
     uiState.mazeVisitedOracleNodeId = -1;
   }
@@ -135,6 +136,7 @@ const attemptResources = computed<MazeResourceTotals>(() => {
     chronotraces: m.collectedChronotraces,
     shardDust: m.collectedShardDust,
     zone_crystal: m.collectedZoneCrystal,
+    fractal: m.collectedFractal,
   };
 });
 
@@ -149,6 +151,7 @@ const highResources = computed<MazeResourceTotals>(() => {
     chronotraces: gs.mazeHighChronotraces,
     shardDust: gs.mazeHighShardDust,
     zone_crystal: gs.mazeHighZoneCrystal,
+    fractal: gs.mazeHighFractal,
   };
 });
 

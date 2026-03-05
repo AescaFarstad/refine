@@ -237,6 +237,9 @@ function onCloseClick() {
 
 // Get all available research archetypes separated by type
 const availableArchetypes = computed(() => {
+  // Depend on edit version so this recomputes after edits
+  const _version = (uiState as any).researchEditVersion;
+
   const lib = getGameLib();
   if (!lib || !lib.research) return { nonGear: [], gear: [] };
 
@@ -252,7 +255,7 @@ const availableArchetypes = computed(() => {
     }
   }
 
-  const nonGear: Array<{ id: string; label: string; icon: ResearchStatIcon; type: string; archetype: ReadonlyResearchArchetype }> = [];
+  const nonGear: Array<{ id: string; label: string; icon: ResearchStatIcon; type: string; archetype: ReadonlyResearchArchetype; isAlreadyPlaced: boolean }> = [];
   const gear: Array<{ id: string; label: string; gearId?: string; imageKey?: string; isAlreadyUnlocked: boolean; archetype: ReadonlyResearchArchetype; category: string }> = [];
 
   lib.research.archetypes.forEach((archetype, id) => {
@@ -270,20 +273,21 @@ const availableArchetypes = computed(() => {
       const gearDef = gearId ? lib.gear.get(gearId) : null;
       const imageKey = gearDef?.image;
       const category = gearDef?.category || '';
-      gear.push({ id, label, gearId, imageKey, isAlreadyUnlocked: isAlreadyPlaced, archetype, category });
+      const isStartGear = gearId ? (gs?.unlockedGear?.includes(gearId) ?? false) : false;
+      gear.push({ id, label, gearId, imageKey, isAlreadyUnlocked: isAlreadyPlaced || isStartGear, archetype, category });
     } else if (archetype.type === 'stat') {
       const reward = rewards.find(r => r.kind === 'stat');
       const stat = reward && reward.kind === 'stat' ? reward.stat : '';
       const label = stat || id;
       const icon = getStatIcon(stat);
-      nonGear.push({ id, label, icon, type: 'stat', archetype });
+      nonGear.push({ id, label, icon, type: 'stat', archetype, isAlreadyPlaced });
     } else if (archetype.type === 'resource') {
       const reward = rewards.find(r => r.kind === 'resource');
       const resource = reward && reward.kind === 'resource' ? reward.resource : '';
       const amount = reward && reward.kind === 'resource' ? reward.amount : 0;
       const label = `${resource} (${amount})`;
       const icon: ResearchStatIcon = { kind: 'glyph', key: getResourceGlyph(resource) };
-      nonGear.push({ id, label, icon, type: 'resource', archetype });
+      nonGear.push({ id, label, icon, type: 'resource', archetype, isAlreadyPlaced });
     } else {
       // Discovery or other types
       const label = id;
@@ -303,7 +307,7 @@ const availableArchetypes = computed(() => {
         }
       }
 
-      nonGear.push({ id, label, icon, type: archetype.type, archetype });
+      nonGear.push({ id, label, icon, type: archetype.type, archetype, isAlreadyPlaced });
     }
   });
 

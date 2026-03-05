@@ -1,6 +1,7 @@
 import { copy, type Point2 } from './core/math';
 import type { Reward } from './Reward';
 import type { DiscoveryId } from './DiscoveryLib';
+import type { MazeResourceSpawn } from './GameState';
 
 export type ResearchNodeType = 'obstacle' | 'empty' | 'stat' | 'gear' | 'resource' | 'discovery' | 'refining' | 'void';
 
@@ -39,6 +40,7 @@ export interface ResearchArchetypeDef {
   revealedIcon?: ResearchArchetypeIcon;
   obstacleVisual?: ResearchObstacleVisualInput;
   rewards: Reward[];
+  spawnResource?: MazeResourceSpawn['resourceKey'];
 }
 
 export interface ResearchPlacementInput {
@@ -75,6 +77,7 @@ export interface ResearchArchetype {
   revealedIcon: ResearchArchetypeIcon;
   obstacleVisual: ResearchObstacleVisualDef;
   rewards: Reward[];
+  spawnResource: MazeResourceSpawn['resourceKey'] | null;
 }
 
 export function isResearchArchetypeRevealedByDiscovery(
@@ -170,6 +173,7 @@ export class ResearchLib {
         revealedIcon: input.revealedIcon ?? { kind: 'none' },
         obstacleVisual,
         rewards: input.rewards,
+        spawnResource: input.spawnResource ?? null,
       };
       this.archetypes.set(arch.id, arch);
     }
@@ -196,6 +200,7 @@ export class ResearchLib {
             revealedIcon: { kind: 'none' },
             obstacleVisual: { direction: 0, highlightCells: 0 },
             rewards: [{ kind: 'unlock_gear', gearId: gearId }],
+            spawnResource: null,
           };
           this.archetypes.set(arch.id, arch);
         }

@@ -698,7 +698,15 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
     name: 'Knife',
     volume: 1,
     rarity: 1,
-    molecule: blankMolecule,
+    molecule: {
+      atoms: [
+        { color: 'red', x: -1, y: 0 },
+        { color: 'red', x: 1, y: 0 },
+      ],
+      connections: [
+        { from: { x: -1, y: 0 }, to: { x: 1, y: 0 } },
+      ],
+    },
   },
   mess_kit: {
     name: 'Mess Kit',

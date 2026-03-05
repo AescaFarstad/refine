@@ -90,6 +90,8 @@ february 22
   nexus upgrades
 ferbruary 24
   starting new balance, research editor wafer and vite plugin
+ferbruary 26, 27
+  research pane and editor improvements
 
 npx tsc --noEmit
 npx vue-tsc --noEmit
@@ -174,9 +176,7 @@ walking stick
 https://dist-delta-drab.vercel.app
 
 
-a single crate
-entrance
-evacuation
+банка зелёнки
 
 
 

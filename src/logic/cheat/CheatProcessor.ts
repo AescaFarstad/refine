@@ -1,6 +1,6 @@
 import { type GameState, Raid } from '../GameState';
 import type { CheatInput } from './CheatCommands';
-import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources, CheatUnlockAllRaids, CheatLoadResearchState, CheatUnlockAllQuests, CheatDisableQuestPrereqs, CheatGrantDiscoveries, CheatGrantRewards, CheatLearnSignatures, CheatCompleteSignatures, CheatAddItemBans, CheatUnlockAllNexusUpgrades, CheatMaxGearSlots, CheatAddResearchVision, CheatSelectFirstRaid } from './CheatCommands';
+import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources, CheatUnlockAllRaids, CheatLoadResearchState, CheatUnlockAllQuests, CheatDisableQuestPrereqs, CheatGrantDiscoveries, CheatGrantRewards, CheatLearnSignatures, CheatCompleteSignatures, CheatAddItemBans, CheatUnlockAllNexusUpgrades, CheatMaxGearSlots, CheatAddResearchVision, CheatSelectFirstRaid, CheatMutateRaid } from './CheatCommands';
 import type { EncounterDef } from '../RaidLib';
 import { applyResearchNodeEffect, axialToIndex, calculateVisibility } from '../Research';
 import { setEnableQuestPrereqs } from '../Const';
@@ -9,6 +9,7 @@ import { applyReward } from '../Reward';
 import { undoRewards } from '../RewardsUndo';
 import { MAZE_NEXUS_NO_UPGRADE_OFFER_SEED } from '../MazeNexusUpgradeProgress';
 import { recomputeActiveRaidParams, recomputeActiveRaidEstimates } from '../Raid';
+import { pickAndApplyRaidSuccessMutation } from '../RaidMutation';
 
 type Handler = (gs: GameState, cheat: CheatInput) => void;
 const handlersByName = new Map<string, Handler>();
@@ -209,6 +210,18 @@ handlersByName.set('CheatUnlockAllNexusUpgrades', (gs) => {
   gs.mazeNexusAvailableUpgradeIds = Array.from(gs.lib.nexusItems.keys());
   gs.mazeNexusUpgradeOpportunityCount = 0;
   gs.mazeNexusUpgradeOfferSeed = MAZE_NEXUS_NO_UPGRADE_OFFER_SEED;
+});
+
+handlersByName.set('CheatMutateRaid', (gs, cheat) => {
+  const c = cheat as CheatMutateRaid;
+  const raidEntry = gs.unlockedRaids.find(r => r.id === c.raidId);
+  if (!raidEntry) return;
+  for (let i = 0; i < c.count; i++) {
+    raidEntry.successes += 1;
+    pickAndApplyRaidSuccessMutation(gs, c.raidId);
+  }
+  recomputeActiveRaidParams(gs, gs.raid.id);
+  recomputeActiveRaidEstimates(gs, 100);
 });
 
 export function processCheats(gs: GameState): void {

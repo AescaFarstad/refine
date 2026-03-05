@@ -31,6 +31,20 @@ const quests: Record<string, RawQuestDefinition> = {
       { kind: 'raid_mutation', mutation: { kind: 'AddMonsterMutation', monsterId: 'flower', count: 1 } },
     ],
   },
+  ozernoye_secure_pond: {
+    name: 'Secure the pond',
+    description: 'The nasty creature is accelerating the zone\'s collapse!',
+    raidRestriction: ['ozernoye'],
+    requiresQuestIds: ['ozernoye_explore_fire_station'],
+    requiresRaidSuccesses: 2,
+    encounters: [
+      { kind: 'AddMonsterMutation', monsterId: 'octopus', count: 1 },
+    ],
+    rewards: [
+      { kind: 'raid_loot_chance', delta: 10 },
+      { kind: 'raid_mutation', mutation: { kind: 'ZoneCollapseTimeMutation', amount: 900 } },
+    ],
+  },
   ozernoye_explore_bus_station_: {
     name: 'Bus station',
     encounterLine: 'Disturb the carnivorous flora inhabiting the bus station. This will spread the pollen, but you can’t make a salad without cutting some veggies.',
@@ -42,6 +56,7 @@ const quests: Record<string, RawQuestDefinition> = {
     ],
     rewards: [
       { kind: 'raid_loot_chance', delta: 10 },
+      { kind: 'raid_add_item', itemIds: ['soviet_knife'] },
       { kind: 'raid_mutation', mutation: { kind: 'LootMutation', count: 3 } },
       { kind: 'raid_mutation', mutation: { kind: 'WalkMutation', count: 2 } },
       { kind: 'raid_mutation', mutation: { kind: 'AddMonsterMutation', monsterId: 'flower', count: 2 } },

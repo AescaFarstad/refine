@@ -228,8 +228,27 @@ export function computeHexBoundary(ownedCells: readonly Point2[]): HexBoundaryLo
         );
       }
       seenLoopKeys.add(loopKey);
-      loops.push(loop);
-      loopEdgeOwnerCells.push(edgeOwners);
+      // Canonicalize: rotate loop to start at the lexicographically smallest vertex
+      // so the boundary shape is deterministic regardless of half-edge traversal order.
+      const segCount = loop.length - 1;
+      let minIdx = 0;
+      for (let ri = 1; ri < segCount; ri++) {
+        const cur = loop[ri]!;
+        const best = loop[minIdx]!;
+        if (cur.u < best.u || (cur.u === best.u && cur.v < best.v)) {
+          minIdx = ri;
+        }
+      }
+      if (minIdx !== 0) {
+        const rotatedLoop = loop.slice(minIdx, segCount).concat(loop.slice(0, minIdx));
+        rotatedLoop.push({ u: rotatedLoop[0]!.u, v: rotatedLoop[0]!.v });
+        const rotatedOwners = edgeOwners.slice(minIdx).concat(edgeOwners.slice(0, minIdx));
+        loops.push(rotatedLoop);
+        loopEdgeOwnerCells.push(rotatedOwners);
+      } else {
+        loops.push(loop);
+        loopEdgeOwnerCells.push(edgeOwners);
+      }
     }
   }
 

@@ -13,6 +13,7 @@ export class Perks {
   static readonly FLASHING_LIGHTS = 'Flashing Lights';
   static readonly FIREARMS_CHECKUP = 'Firearms Check-up';
   static readonly EXPLOSIVE = 'Explosive';
+  static readonly MATERIALIZATION = 'Materialization';
 }
 
 export default Perks;

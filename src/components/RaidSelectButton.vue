@@ -10,18 +10,19 @@
       <span class="chevron">▼</span>
     </button>
     <div v-if="showDropdown" class="raid-dropdown">
-      <div class="raid-table-head">
+      <div class="raid-table-head" :class="{ 'has-dev': isDev }">
         <div class="cell name"></div>
         <div class="cell objectives">Objectives</div>
         <div class="cell strength">Monster strength</div>
         <div class="cell loot">Loot prospects</div>
+        <div v-if="isDev" class="cell mutate-btns"></div>
       </div>
       <div class="raid-table-body">
         <button
           v-for="row in raidRows"
           :key="row.raid.id"
           class="raid-row"
-          :class="{ active: row.isActive }"
+          :class="{ active: row.isActive, 'has-dev': isDev }"
           type="button"
           @click="onSelectRaid(row.raid.id)"
         >
@@ -34,6 +35,10 @@
           <div class="cell objectives">{{ row.objectives }}</div>
           <div class="cell strength">{{ formatNumber(row.monsterStrength) }}</div>
           <div class="cell loot">{{ formatNumber(row.lootProspects) }}</div>
+          <div v-if="isDev" class="cell mutate-btns">
+            <button class="mutate-btn" type="button" @click="onMutateRaid(row.raid.id, 1, $event)">M1</button>
+            <button class="mutate-btn" type="button" @click="onMutateRaid(row.raid.id, 5, $event)">M5</button>
+          </div>
         </button>
       </div>
     </div>
@@ -42,7 +47,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-import { getGameLib, getGameState, type UIRaidDef, uiState } from '../logic/UIState';
+import { getGameLib, getGameState, getGameStateMutable, type UIRaidDef, uiState } from '../logic/UIState';
 import type { RaidDefinition } from '../logic/RaidLib';
 import { questIsAvailable } from '../logic/RaidMutation';
 import { globalInputQueue } from '../logic/Model';
@@ -50,6 +55,7 @@ import { CmdSelectRaid, CmdDiscover } from '../logic/input/InputCommands';
 import atlasStorage from '../logic/AtlasStorage';
 import { locationsAtlasFrames } from '../data/locationsAtlas';
 import { DISCOVERY } from '../logic/DiscoveryLib';
+import { CheatMutateRaid } from '../logic/cheat/CheatCommands';
 
 const emit = defineEmits<{ open: [] }>();
 
@@ -110,6 +116,12 @@ interface RaidRow {
   lootProspects: number;
   isActive: boolean;
 }
+
+const isDev = computed(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.discoveryCounter;
+  return getGameState().discoveries[DISCOVERY.DEV] === true;
+});
 
 const showDropdown = computed(() => uiState.unlockedRaidIds.length > 2);
 
@@ -193,6 +205,11 @@ function raidBackgroundStyle(raid: RaidDefinition): Record<string, string> {
 
 function onSelectRaid(id: string): void {
   globalInputQueue.push(new CmdSelectRaid({ id }));
+}
+
+function onMutateRaid(raidId: string, count: number, event: Event): void {
+  event.stopPropagation();
+  getGameStateMutable().cheats.push(new CheatMutateRaid({ raidId, count }));
 }
 
 function formatNumber(value: number): string {
@@ -325,16 +342,49 @@ function formatNumber(value: number): string {
 .cell.objectives {
   text-align: center;
 }
+.raid-table-head.has-dev,
+.raid-row.has-dev {
+  grid-template-columns: minmax(140px, 2.2fr) 130px 160px 130px 80px;
+}
+.mutate-btns {
+  display: flex;
+  gap: 4px;
+  z-index: 1;
+  position: relative;
+  align-self: stretch;
+}
+.mutate-btn {
+  flex: 1;
+  padding: 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  background: rgba(255, 140, 0, 0.3);
+  border: 1px solid rgba(255, 140, 0, 0.5);
+  border-radius: 4px;
+  color: #ffa500;
+  cursor: pointer;
+}
+.mutate-btn:hover {
+  background: rgba(255, 140, 0, 0.5);
+}
 @media (max-width: 900px) {
   .raid-table-head,
   .raid-row {
     grid-template-columns: minmax(120px, 1.8fr) 110px 140px 120px;
+  }
+  .raid-table-head.has-dev,
+  .raid-row.has-dev {
+    grid-template-columns: minmax(120px, 1.8fr) 110px 140px 120px 80px;
   }
 }
 @media (max-width: 720px) {
   .raid-table-head,
   .raid-row {
     grid-template-columns: minmax(120px, 1.6fr) 90px 120px 110px;
+  }
+  .raid-table-head.has-dev,
+  .raid-row.has-dev {
+    grid-template-columns: minmax(120px, 1.6fr) 90px 120px 110px 80px;
   }
   .raid-table-body {
     max-height: 220px;

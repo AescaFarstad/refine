@@ -40,6 +40,7 @@
               <template v-for="(line, lineIndex) in parsedDescriptionLines" :key="`line-${lineIndex}`">
                 <template v-for="(token, tokenIndex) in line" :key="`line-${lineIndex}-token-${tokenIndex}`">
                   <span v-if="token.kind === 'text'">{{ token.text }}</span>
+                  <span v-else-if="token.kind === 'bright'" class="hint-bright">{{ token.text }}</span>
                   <span
                     v-else
                     class="hint-inline-upgrade-image"
@@ -90,6 +91,7 @@ import { RESOURCE_SPECS } from '../logic/Resources';
 type UINexusItem = DeepReadonly<NexusItemDefinition>;
 type DescriptionToken =
   | { kind: 'text'; text: string }
+  | { kind: 'bright'; text: string }
   | { kind: 'upgradeImage'; itemId: string };
 
 const props = defineProps<{
@@ -111,7 +113,7 @@ const emit = defineEmits<{
 const PREVIEW_SIZE = NEXUS_UI_PREVIEW_SIZE;
 const HINT_PREVIEW_SIZE = 22;
 const DESCRIPTION_LINE_BREAK_REGEX = /<br\s*\/?>/gi;
-const DESCRIPTION_UPGRADE_IMAGE_TAG_REGEX = /<upgrade:([a-z0-9_]+)>/g;
+const DESCRIPTION_INLINE_TAG_REGEX = /<upgrade:([a-z0-9_]+)>|<bright>(.*?)<\/bright>/g;
 const isSpecialAction = computed(() => props.item.specialAction !== '');
 const isTimeSingularityAction = computed(() => props.item.specialAction === 'time_singularity');
 const showMenuHint = computed(() => props.item.showMenuHint);
@@ -144,12 +146,11 @@ function parseDescription(input: string): DescriptionToken[][] {
 function parseDescriptionLine(line: string): DescriptionToken[] {
   const tokens: DescriptionToken[] = [];
   let cursor = 0;
-  DESCRIPTION_UPGRADE_IMAGE_TAG_REGEX.lastIndex = 0;
+  DESCRIPTION_INLINE_TAG_REGEX.lastIndex = 0;
 
-  let match = DESCRIPTION_UPGRADE_IMAGE_TAG_REGEX.exec(line);
+  let match = DESCRIPTION_INLINE_TAG_REGEX.exec(line);
   while (match) {
     const fullMatch = match[0]!;
-    const itemId = match[1]!;
     const matchStart = match.index;
 
     if (matchStart > cursor) {
@@ -159,13 +160,14 @@ function parseDescriptionLine(line: string): DescriptionToken[] {
       });
     }
 
-    tokens.push({
-      kind: 'upgradeImage',
-      itemId,
-    });
+    if (match[1] !== undefined) {
+      tokens.push({ kind: 'upgradeImage', itemId: match[1] });
+    } else {
+      tokens.push({ kind: 'bright', text: match[2]! });
+    }
 
     cursor = matchStart + fullMatch.length;
-    match = DESCRIPTION_UPGRADE_IMAGE_TAG_REGEX.exec(line);
+    match = DESCRIPTION_INLINE_TAG_REGEX.exec(line);
   }
 
   if (cursor < line.length) {
@@ -522,6 +524,10 @@ function onClick(): void {
 .nexus-item-hint-desc {
   font-size: 13px;
   font-weight: 700;
+  color: rgba(226, 232, 240, 0.72);
+}
+
+.hint-bright {
   color: rgba(226, 232, 240, 0.95);
 }
 

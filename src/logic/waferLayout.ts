@@ -9,12 +9,16 @@ export interface WaferBuffCell {
   mul?: number;
 }
 
-export const waferBuffCells: WaferBuffCell[] = [
-  { x: 0, y: 3, add: 1 },
-  { x: 0, y: -3, add: 1 },
 
-  { x: 3, y: -2, add: 1 },
+
+export const waferBuffCells: WaferBuffCell[] = [
+  { x: 2, y: -3, add: 1 },
+  { x: -1, y: -2, add: 1 },
+  { x: 3, y: -1, add: 1 },
+  { x: 2, y: 1, add: 1 },
   { x: -3, y: 2, add: 1 },
+  { x: -2, y: 3, add: 1 },
+
   { x: 2, y: 2, add: 2 },
   { x: -2, y: -2, add: 2 },
 

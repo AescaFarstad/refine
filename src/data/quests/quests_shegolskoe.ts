@@ -59,8 +59,8 @@ const quests: Record<string, RawQuestDefinition> = {
     encounterTimeMin: 45,
     encounters: [
       { kind: 'WalkMutation', count: 5 },
-      { kind: 'AddMonsterMutation', monsterId: 'spikder', count: 4 },
-      { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 2 },
+      { kind: 'AddMonsterMutation', monsterId: 'spikder', count: 5 },
+      { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 3 },
     ],
     rewards: [
       { kind: 'unlock_raid', raidId: 'ozernoye' },

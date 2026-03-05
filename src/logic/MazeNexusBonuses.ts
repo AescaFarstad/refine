@@ -1,4 +1,4 @@
-import { axialRotateCW, axialRound, axialToPixel, pixelToAxialFloat } from './HexMath';
+import { axialDistance, axialRotateCW, axialRound, axialToPixel, pixelToAxialFloat } from './HexMath';
 import type { MazeResourceSpawn, GameState } from './GameState';
 import type { Point2 } from './core/math';
 import { axialToIndex, indexToAxial } from './Research';
@@ -8,6 +8,7 @@ import {
   ANTIVOID_PANEL_ID,
   CHRONOTRACES_DOUBLER_PANEL_ID,
   CHRONOTRACES_PANEL_ID,
+  CRYSTAL_PANEL_ID,
   CREDITS_DOUBLER_PANEL_ID,
   CREDITS_PANEL_ID,
   DOUBLER_PANEL_ID,
@@ -372,6 +373,46 @@ export function applyMazeDoublerBonusesToSpawns(gs: ReadonlyGameState, spawns: M
   }
 }
 
+export function getMazeNexusResourcePanelSpawnAtCell(
+  itemId: string,
+  center: Point2,
+): MazeResourceSpawn | null {
+  if (itemId === CREDITS_PANEL_ID) {
+    return {
+      cell: { x: center.x, y: center.y },
+      resourceKey: 'credits',
+      amount: Math.max(1, axialDistance(center, UNIT_ORIGIN)),
+    };
+  }
+  if (itemId === CHRONOTRACES_PANEL_ID) {
+    return {
+      cell: { x: center.x, y: center.y },
+      resourceKey: 'chronotraces',
+      amount: Math.max(1, axialDistance(center, UNIT_ORIGIN)),
+    };
+  }
+  if (itemId === CRYSTAL_PANEL_ID) {
+    return {
+      cell: { x: center.x, y: center.y },
+      resourceKey: 'zone_crystal',
+      amount: 1,
+    };
+  }
+  return null;
+}
+
+export function getMazeNexusPlacementPreviewResourceSpawn(
+  gs: ReadonlyGameState,
+  itemId: string,
+  center: Point2,
+): MazeResourceSpawn | null {
+  const previewSpawn = getMazeNexusResourcePanelSpawnAtCell(itemId, center);
+  if (previewSpawn === null) return null;
+
+  applyMazeDoublerBonusesToSpawns(gs, [previewSpawn]);
+  return previewSpawn;
+}
+
 export function resolveMazeRefresherStep(
   gs: ReadonlyGameState,
   steppedCell: Point2,
@@ -502,6 +543,9 @@ export function grantMazeIncrementalPickupBonus(gs: GameState, resourceKey: Maze
       break;
     case 'zone_crystal':
       gs.maze.collectedZoneCrystal += bonusAmount;
+      break;
+    case 'fractal':
+      gs.maze.collectedFractal += bonusAmount;
       break;
   }
 

@@ -128,8 +128,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { getGameState, uiState } from '../logic/UIState';
-import { globalInputQueue } from '../logic/Model';
-import { CmdStartRaid } from '../logic/input/InputCommands';
 import type { RaidDefinition } from '../logic/RaidLib';
 import { formatDurationHM } from '../logic/StringUtils';
 import { getResourceSpec } from '../logic/Resources';
@@ -137,6 +135,7 @@ import { DISCOVERY } from '../logic/DiscoveryLib';
 import { getRaidGearCost, getRaidStartFailureReason } from '../logic/useRaidAgain';
 import RaidDeployDamageBreakdownPanel from './RaidDeployDamageBreakdownPanel.vue';
 import RaidDeployTimeBreakdownPanel from './RaidDeployTimeBreakdownPanel.vue';
+import { startRaidWithPerkFlow } from '../logic/startRaidWithPerkFlow';
 
 const creditsSpec = getResourceSpec('credits');
 
@@ -185,7 +184,7 @@ function deploy() {
   const raid = selectedRaid.value;
   if (!raid) return;
   if (!canDeploy.value) return;
-  globalInputQueue.push(new CmdStartRaid({ id: raid.id }));
+  startRaidWithPerkFlow(raid.id);
 }
 
 function viewPrevious() {

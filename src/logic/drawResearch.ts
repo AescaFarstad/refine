@@ -215,7 +215,7 @@ interface NodeRenderPlacement {
 function getCachedNodeLayout(cells: readonly ResearchCellInfo[]): MaxSquareResult | null {
   const nodeId = cells[0]!.nodeId;
   if (nodeId < 0) return null;
-  let layout = nodeSquareCache.get(nodeId);
+  let layout: MaxSquareResult | null | undefined = nodeSquareCache.get(nodeId);
   if (!layout) {
     layout = computeMaxSquareForHexNode(cells.map(info => info.axial));
     if (layout) {

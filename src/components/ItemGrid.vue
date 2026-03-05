@@ -5,7 +5,7 @@
         v-for="it in items"
         :key="it.id"
         class="grid-item"
-        :class="{ clickable, dim: !!dimIds && !!dimIds[it.id] }"
+        :class="{ clickable, dim: !!dimIds && !!dimIds[it.id], highlight: !!highlightIds && !!highlightIds[it.id] }"
         :draggable="false"
         @click="onItemClick(it.id)"
         @pointerdown="onPointerDown(it.id, $event)"
@@ -45,6 +45,7 @@ const props = defineProps<{
   draggable?: boolean;
   draggableIds?: Record<string, boolean>;
   dimIds?: Record<string, boolean>;
+  highlightIds?: Record<string, boolean>;
   showMolecule?: boolean;
   noTooltip?: boolean;
   showRarityLabels?: boolean;
@@ -143,6 +144,15 @@ onUnmounted(() => {
 .grid-item { position: relative; }
 .grid-item.clickable { cursor: pointer; }
 .grid-item.dim { opacity: 0.38; }
+.grid-item.highlight {
+  background: transparent;
+  box-shadow: none;
+}
+.grid-item.highlight :deep(.item-cell) {
+  border-color: rgba(250, 204, 21, 0.82);
+  background: linear-gradient(180deg, rgba(250, 204, 21, 0.3), rgba(250, 204, 21, 0.15));
+  box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.78), 0 0 16px rgba(250, 204, 21, 0.42);
+}
 /* Prevent native drag and selection inside the grid */
 .item-grid, .item-grid * { user-select: none; -webkit-user-drag: none; }
 

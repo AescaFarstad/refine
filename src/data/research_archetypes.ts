@@ -84,6 +84,7 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     description: 'Shows per monster damage received in the raid simulation.',
     icon: { kind: 'glyph', glyph: 'ⓘ' },
     rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.UI_DAMAGE_BREAKDOWN }],
+    spawnResource: 'fractal',
   },
   disc_time_breakdown: {
     type: 'discovery',
@@ -91,6 +92,7 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     description: 'Shows per activity time taken in the raid simulation.',
     icon: { kind: 'glyph', glyph: 'ⓘ' },
     rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.UI_TIME_BREAKDOWN }],
+    spawnResource: 'fractal',
   },
   disc_unique_items_yield: {
     type: 'stat',
@@ -217,6 +219,7 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
   gear_zone_crystal: {
     type: 'gear',
     rewards: [{ kind: 'countable_gear', gearId: 'zone_crystal', amount: 5 }],
+    spawnResource: 'zone_crystal',
   },
 
   // Gear archetypes are auto-generated from gear definitions in ResearchLib.load()

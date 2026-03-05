@@ -277,8 +277,47 @@ function setCount(def: RaidDefinition, type: string, newCount: number): void {
   else encounters.push(entry);
 }
 
+function applyMaterializationLootAtStart(
+  gs: GameState,
+  raid: ActiveRaid,
+  itemId: string,
+  bagItemCounts: Record<string, number>,
+  discardedItemCounts: Record<string, number>,
+  log: RaidEventLog
+): void {
+  const before = Math.max(0, raid.usedVolume || 0);
+  const def = gs.lib.getItem(itemId);
+  const after = before + def.volume;
 
-export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean = false): RaidRunResult {
+  const entry = createLootEncounterLogEntry({
+    injected: true,
+    timeSpentSec: 0,
+    myRoll: 0,
+    checkValue: 100,
+    itemId,
+    tmpLootBuffNextRaidPct: raid.tmpLootBuffNextRaidPct,
+    capacity: raid.bagsVolume,
+    volumeBefore: before,
+    volumeAfter: before,
+  });
+
+  if (after <= raid.bagsVolume) {
+    raid.usedVolume = after;
+    entry.volumeAfter = after;
+    entry.discarded = false;
+    bagItemCounts[itemId] = (bagItemCounts[itemId] ?? 0) + 1;
+  } else {
+    entry.volumeAfter = before;
+    entry.discarded = true;
+    entry.requiredVolume = Math.max(0, after - raid.bagsVolume);
+    discardedItemCounts[itemId] = (discardedItemCounts[itemId] ?? 0) + 1;
+  }
+
+  log.entries.push(stampEntry(entry, raid));
+}
+
+
+export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean = false, materializationItemId: string = ''): RaidRunResult {
   const raid = dryRun ? structuredClone(gs.raid) : gs.raid;
   raid.tmpLootBuffNextRaidPct = 0;
   // When running for real, use the game state's random generator (affects game state)
@@ -337,6 +376,10 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
   }
   // Store the planned encounter count before we start processing (for UI progress indicator)
   const plannedEncounters = queue.length;
+
+  if (raid.perks.includes(Perks.MATERIALIZATION) && materializationItemId) {
+    applyMaterializationLootAtStart(gsForRun, raid, materializationItemId, bagItemCounts, discardedItemCounts, log);
+  }
 
   // Track if we just completed a walk encounter (for Safer Routes perk)
   let justWalked = false;
@@ -545,7 +588,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         const mid = enc.monsterId;
         const injected = (enc as MonsterLootEncounterDef).injected;
         const m = gsForRun.lib.monsters.get(mid)!;
-        const entry = handleMonsterLootEncounter(gsForRun, raid, m.lootItemId, raid.biopsyChance, bagItemCounts, discardedItemCounts);
+        const entry = handleMonsterLootEncounter(gsForRun, raid, m.lootItemId, raid.biopsyChance, m.biopsyBuff, bagItemCounts, discardedItemCounts);
         timeSpentSec += entry.timeSpentSec;
         timeBreakdownSec.totalSec += entry.timeSpentSec;
         timeBreakdownSec.dissectingSec += entry.timeSpentSec;

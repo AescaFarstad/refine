@@ -178,9 +178,30 @@ const {
 
 isMoving = () => movePath.value.length > 0 || segmentQueue.value.length > 0;
 
+const {
+  dragNexusItemId,
+  dragNexusAxial,
+  dragNexusValid,
+  onMazeDragMove,
+  onMazeDragEnd,
+} = useMazeNexusDragPreview({
+  getGameState,
+  clientToAxial,
+  queuePlaceNexusItem: (target, nexusItemId) => {
+    globalInputQueue.push(new CmdMazePlaceNexusItem({ target, nexusItemId }));
+  },
+  onPreviewChanged: onDragPreviewChanged,
+  onPlacementCommitted: scheduleFurnitureRender,
+});
+
 const overlaySignals = useMazeOverlaySignals({
   getGameState,
   getHighlightResourceKey: () => props.highlightResourceKey,
+  getDragPreview: () => ({
+    itemId: dragNexusItemId.value,
+    axial: dragNexusAxial.value,
+    valid: dragNexusValid.value,
+  }),
   getQueuedAvatarCell,
   origin,
   zoom,
@@ -199,22 +220,6 @@ const overlaySignals = useMazeOverlaySignals({
   emitEntranceHover: (hovering) => {
     emit('entrance-hover', hovering);
   },
-});
-
-const {
-  dragNexusItemId,
-  dragNexusAxial,
-  dragNexusValid,
-  onMazeDragMove,
-  onMazeDragEnd,
-} = useMazeNexusDragPreview({
-  getGameState,
-  clientToAxial,
-  queuePlaceNexusItem: (target, nexusItemId) => {
-    globalInputQueue.push(new CmdMazePlaceNexusItem({ target, nexusItemId }));
-  },
-  onPreviewChanged: onDragPreviewChanged,
-  onPlacementCommitted: scheduleFurnitureRender,
 });
 
 function emitHoverSignals(): void {
@@ -252,6 +257,7 @@ const { getHoverNexusRadiusPreview } = useMazeHoverRadiusPreview({
 function onDragPreviewChanged(): void {
   recomputeHoverVisibility();
   renderPath();
+  overlaySignals.emitHoverResourceHint();
 }
 
 onMounted(() => {

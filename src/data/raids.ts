@@ -76,8 +76,8 @@ const raids: Record<string, RawRaidDefinition> = {
     ],
     encounters: [
       { count: 4, encounter: { type: 'WalkEncounter' } },
-      { count: 5, encounter: { type: 'FightEncounter', monsterId: 'hound' } },
-      { count: 2, encounter: { type: 'FightEncounter', monsterId: 'spikder' } },
+      { count: 2, encounter: { type: 'FightEncounter', monsterId: 'hound' } },
+      { count: 4, encounter: { type: 'FightEncounter', monsterId: 'spikder' } },
       { count: 15, encounter: { type: 'LootEncounter' } }
     ],
   },

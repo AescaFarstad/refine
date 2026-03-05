@@ -6,6 +6,7 @@ export interface MonsterDefinition {
   accuracy: number; // percent
   damage: number;
   lootItemId: string; // item dropped for MonsterLootEncounter
+  biopsyBuff: number; // added to biopsy chance if player has biopsy chance > 0
   features: string[];
   armor: number;     // flat damage reduction on all incoming damage
   damageCap: number; // max damage per hit (0 = no cap)
@@ -15,8 +16,8 @@ export interface MonsterDefinition {
 }
 
 export type RawMonsterDefinition =
-  & Omit<MonsterDefinition, 'id' | 'features' | 'armor' | 'damageCap' | 'strength' | 'inferredUpgrade'>
-  & { features?: string[]; armor?: number; damageCap?: number; strengthMult?: number };
+  & Omit<MonsterDefinition, 'id' | 'features' | 'armor' | 'damageCap' | 'biopsyBuff' | 'strength' | 'inferredUpgrade'>
+  & { features?: string[]; armor?: number; damageCap?: number; biopsyBuff?: number; strengthMult?: number };
 
 export function parseMonsterDefinitions(raw: Record<string, RawMonsterDefinition>): Map<string, MonsterDefinition> {
   const tempMonsters: Array<{ id: string; def: Omit<MonsterDefinition, 'inferredUpgrade'>; strength: number }> = [];
@@ -27,11 +28,12 @@ export function parseMonsterDefinitions(raw: Record<string, RawMonsterDefinition
 
     const armor = Math.max(0, d.armor ?? 0);
     const damageCap = Math.max(0, d.damageCap ?? 0);
+    const biopsyBuff = d.biopsyBuff ?? 0;
     const features = d.features ?? [];
 
     const strengthMult = d.strengthMult ?? 1.0;
     const cap = damageCap > 0 ? damageCap : Number.POSITIVE_INFINITY;
-    const strength = (d.hp + (d.hp / cap)) * (d.damage + armor) * d.accuracy * d.dodge * strengthMult;
+    const strength = (d.hp + (d.hp / cap)) * (d.damage + armor) * (d.accuracy + 100) * (d.dodge + 100) * strengthMult;
 
     tempMonsters.push({
       id: key,
@@ -44,6 +46,7 @@ export function parseMonsterDefinitions(raw: Record<string, RawMonsterDefinition
         accuracy: d.accuracy,
         damage: d.damage,
         lootItemId: d.lootItemId,
+        biopsyBuff: biopsyBuff,
         features: features,
         armor: armor,
         damageCap: damageCap,

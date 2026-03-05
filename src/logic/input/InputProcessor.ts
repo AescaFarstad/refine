@@ -81,7 +81,7 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
     }
   }
 
-  const result = runRaid(gs, def);
+  const result = runRaid(gs, def, false, c.materializationItemId);
 
   // cleanup empty countable gear from loadout
   for (const gid of gearToRemove) {

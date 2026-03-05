@@ -83,6 +83,7 @@ export class GameState {
   public mazeHighChronotraces: number = 0;
   public mazeHighShardDust: number = 0;
   public mazeHighZoneCrystal: number = 0;
+  public mazeHighFractal: number = 0;
   public mazeHighMovementUsed: number = 0;
   public mazeNextNexusPlacementId: number = 1;
   public mazeNexusPlacementRotationSteps: Record<string, number> = {};
@@ -279,7 +280,7 @@ export interface Shard {
 
 export interface MazeResourceSpawn {
   cell: Point2;
-  resourceKey: 'credits' | 'chronotraces' | 'shardDust' | 'zone_crystal';
+  resourceKey: 'credits' | 'chronotraces' | 'shardDust' | 'zone_crystal' | 'fractal';
   amount: number;
 }
 
@@ -291,6 +292,7 @@ export interface MazeTransient {
   collectedChronotraces: number;
   collectedShardDust: number;
   collectedZoneCrystal: number;
+  collectedFractal: number;
   takenCells: Point2[];
   version: number;
 }
@@ -311,6 +313,7 @@ export function createMazeTransient(avatarCell: Point2 = { x: 0, y: 0 }): MazeTr
     collectedChronotraces: 0,
     collectedShardDust: 0,
     collectedZoneCrystal: 0,
+    collectedFractal: 0,
     takenCells: [],
     version: 0,
   };

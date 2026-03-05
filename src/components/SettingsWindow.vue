@@ -48,6 +48,7 @@
               <button class="action-btn slot-btn" type="button" @click="saveDevSlot(slotIndex)">Save</button>
               <button class="action-btn slot-btn" type="button" @click="loadDevSlot(slotIndex)">Load</button>
               <button class="action-btn slot-btn" type="button" @click="compareDevSlot(slotIndex)">Compare</button>
+              <button class="action-btn slot-btn wipe-save-btn" type="button" @click="resetDevSlot(slotIndex)">Reset</button>
             </div>
           </div>
 
@@ -323,6 +324,12 @@ async function loadDevSlot(slotIndex: number): Promise<void> {
   forceLoadState(result.loadedState!);
   clearDiff();
   setStatus(`${getSlotLabel(slotIndex)} loaded from IndexedDB.`, true);
+}
+
+function resetDevSlot(slotIndex: number): void {
+  forceLoadState(new GameState());
+  clearDiff();
+  setStatus(`${getSlotLabel(slotIndex)} reset to blank GameState.`, true);
 }
 
 async function compareDevSlot(slotIndex: number): Promise<void> {

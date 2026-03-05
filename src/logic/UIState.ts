@@ -102,6 +102,10 @@ function createDefaultUIState() {
     lastOutcome: null as RaidOutcome | null,
     acknowledgedOutcome: null as RaidOutcome | null,
     showAcknowledgedOutcome: false,
+    chooseItemToLootModalOpen: false,
+    chooseItemToLootRaidId: '' as string,
+    chooseItemToLootKnownItemIds: [] as string[],
+    chooseItemToLootSelectedItemId: '' as string,
     lastRefineryOutcome: null as RefineryOutcome | null,
 
     activeTab: 'raid' as 'raid' | 'refine' | 'research' | 'maze',
@@ -316,95 +320,98 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.canAdvanceTime = !!game.nextEvt;
   uiState.timeActive = game.timeActive;
 
-  const loadoutIds = (game.loadouts && game.raid && game.raid.id) ? game.loadouts[game.raid.id] : null;
-  const loadoutKey = Array.isArray(loadoutIds) ? [...loadoutIds].sort().join(',') : '';
-  const rk = game.raid
-    ? `${game.raid.id}|${game.raid.hp}|${game.raid.maxHp}|${game.raid.baseSpeed}|${game.raid.speedBonusPct}|${game.raid.speedBonusFlat}|${game.raid.regenPerKm}|${game.raid.regenAfterCombat}|${game.raid.weight}|${game.raid.maxWeight}|${(game.raid.damage ?? game.damage ?? 1)}|${game.raid.bagsVolume}|${game.raid.usedVolume}|${game.raid.lootChanceBonus}|${game.raid.tmpLootBuffAppliedPct}|${game.raid.hitChance}|${game.raid.blockChance}|${game.raid.armor}|${game.raid.reflectOnHitPct}|${game.raid.reflectOnBlockPct}|${game.raid.biopsyChance}|${loadoutKey}`
-    : '';
-  if (rk !== syncCache.lastRaidKey) {
-    uiState.raidKey = rk;
-    syncCache.lastRaidKey = rk;
-  }
-
-  uiState.strength = game.strength;
-  uiState.speed = game.speed ?? 0;
-  uiState.volume = game.volume;
-
-  const effectiveRaidsKey = buildEffectiveRaidsSyncKey(game);
-  if (effectiveRaidsKey !== syncCache.lastEffectiveRaidsKey) {
-    const raids: UIRaidDef[] = [];
-    const order: string[] = [];
-    game.lib.raids.forEach((_, id) => {
-      const eff = getEffectiveRaidDefinition(game, id) as UIRaidDef;
-      raids.push(eff);
-      order.push(id);
-    });
-    uiState.raids = raids;
-    uiState.raidOrder = order;
-    syncCache.lastEffectiveRaidsKey = effectiveRaidsKey;
-  }
-
-  uiState.unlockedRaidIds = game.unlockedRaids.map(r => r.id);
-  uiState.unlockedGear = Array.isArray(game.unlockedGear) ? [...game.unlockedGear] : [];
-  {
-    const categories = new Set<string>();
-    for (const gearId of game.unlockedGear) {
-      const gear = game.lib.gear.get(gearId);
-      if (gear) categories.add(gear.category);
+  const activeTab = game.activeTab;
+  if (activeTab === 'raid') {
+    const loadoutIds = (game.loadouts && game.raid && game.raid.id) ? game.loadouts[game.raid.id] : null;
+    const loadoutKey = Array.isArray(loadoutIds) ? [...loadoutIds].sort().join(',') : '';
+    const rk = game.raid
+      ? `${game.raid.id}|${game.raid.hp}|${game.raid.maxHp}|${game.raid.baseSpeed}|${game.raid.speedBonusPct}|${game.raid.speedBonusFlat}|${game.raid.regenPerKm}|${game.raid.regenAfterCombat}|${game.raid.weight}|${game.raid.maxWeight}|${(game.raid.damage ?? game.damage ?? 1)}|${game.raid.bagsVolume}|${game.raid.usedVolume}|${game.raid.lootChanceBonus}|${game.raid.tmpLootBuffAppliedPct}|${game.raid.hitChance}|${game.raid.blockChance}|${game.raid.armor}|${game.raid.reflectOnHitPct}|${game.raid.reflectOnBlockPct}|${game.raid.biopsyChance}|${loadoutKey}`
+      : '';
+    if (rk !== syncCache.lastRaidKey) {
+      uiState.raidKey = rk;
+      syncCache.lastRaidKey = rk;
     }
-    uiState.unlockedGearCategories = [...categories];
-  }
-  uiState.countableGear = { ...game.countableGear };
-  uiState.activeQuests = Array.isArray(game.activeQuests) ? [...game.activeQuests] : [];
-  uiState.reviewedQuestIds = Array.isArray(game.reviewedQuestIds) ? [...game.reviewedQuestIds] : [];
-  const progress: Record<string, number> = {};
-  game.unlockedRaids.forEach(r => { progress[r.id] = r.questProgress; });
-  uiState.questProgressById = progress;
 
-  {
-    const unlockedKey = game.unlockedRaids.map(r => r.id).join('|');
-    const version = game.raidFoundItemsVersion | 0;
-    if (version !== syncCache.lastRaidFoundItemsVersion || unlockedKey !== syncCache.lastUnlockedRaidIdsKey) {
-      const found: Record<string, string[]> = {};
-      for (const r of game.unlockedRaids) {
-        found[r.id] = [...r.foundItemIds];
+    uiState.strength = game.strength;
+    uiState.speed = game.speed ?? 0;
+    uiState.volume = game.volume;
+
+    const effectiveRaidsKey = buildEffectiveRaidsSyncKey(game);
+    if (effectiveRaidsKey !== syncCache.lastEffectiveRaidsKey) {
+      const raids: UIRaidDef[] = [];
+      const order: string[] = [];
+      game.lib.raids.forEach((_, id) => {
+        const eff = getEffectiveRaidDefinition(game, id) as UIRaidDef;
+        raids.push(eff);
+        order.push(id);
+      });
+      uiState.raids = raids;
+      uiState.raidOrder = order;
+      syncCache.lastEffectiveRaidsKey = effectiveRaidsKey;
+    }
+
+    uiState.unlockedRaidIds = game.unlockedRaids.map(r => r.id);
+    uiState.unlockedGear = Array.isArray(game.unlockedGear) ? [...game.unlockedGear] : [];
+    {
+      const categories = new Set<string>();
+      for (const gearId of game.unlockedGear) {
+        const gear = game.lib.gear.get(gearId);
+        if (gear) categories.add(gear.category);
       }
-      uiState.raidFoundItemIdsByRaidId = found;
-      syncCache.lastRaidFoundItemsVersion = version;
-      syncCache.lastUnlockedRaidIdsKey = unlockedKey;
+      uiState.unlockedGearCategories = [...categories];
     }
-  }
+    uiState.countableGear = { ...game.countableGear };
+    uiState.activeQuests = Array.isArray(game.activeQuests) ? [...game.activeQuests] : [];
+    uiState.reviewedQuestIds = Array.isArray(game.reviewedQuestIds) ? [...game.reviewedQuestIds] : [];
+    const progress: Record<string, number> = {};
+    game.unlockedRaids.forEach(r => { progress[r.id] = r.questProgress; });
+    uiState.questProgressById = progress;
 
-  {
-    const banned: Record<string, string[]> = {};
-    for (const r of game.unlockedRaids) {
-      banned[r.id] = [...r.bannedItemIds];
+    {
+      const unlockedKey = game.unlockedRaids.map(r => r.id).join('|');
+      const version = game.raidFoundItemsVersion | 0;
+      if (version !== syncCache.lastRaidFoundItemsVersion || unlockedKey !== syncCache.lastUnlockedRaidIdsKey) {
+        const found: Record<string, string[]> = {};
+        for (const r of game.unlockedRaids) {
+          found[r.id] = [...r.foundItemIds];
+        }
+        uiState.raidFoundItemIdsByRaidId = found;
+        syncCache.lastRaidFoundItemsVersion = version;
+        syncCache.lastUnlockedRaidIdsKey = unlockedKey;
+      }
     }
-    uiState.bannedItemIdsByRaidId = banned;
-  }
-  uiState.itemBans = game.itemBans;
 
-  uiState.activeRaidId = game.raid.id;
-  uiState.selectedGearPrice = game.selectedGearPrice ?? 0;
-  const sim = game.raidSimulation;
-  uiState.raidSurvivalPct = sim.survivalEstimatePct;
-  uiState.raidTimeEstimateSec = sim.timeEstimateSec;
-  uiState.raidTimeEstimateMinSec = sim.timeEstimateMinSec;
-  uiState.raidTimeEstimateMaxSec = sim.timeEstimateMaxSec;
-  uiState.raidTimeEstimateStdDevSec = sim.timeEstimateStdDevSec;
-  uiState.raidZoneCollapseDeathPct = sim.zoneCollapseDeathPct;
-  uiState.raidZoneCollapseDeaths = sim.zoneCollapseDeaths;
-  uiState.raidMonsterDeaths = sim.monsterDeaths;
-  uiState.raidTimeBreakdownSimulations = sim.simulations;
-  uiState.raidTimeBreakdownSuccesses = sim.successes;
-  uiState.raidTimeBreakdownFailures = sim.failures;
-  uiState.raidTimeBreakdownOverallSec = sim.timeBreakdownOverallSec;
-  uiState.raidTimeBreakdownSuccessSec = sim.timeBreakdownSuccessSec;
-  uiState.raidTimeBreakdownFailureSec = sim.timeBreakdownFailureSec;
-  uiState.raidTimeBreakdownZoneCollapseSec = sim.timeBreakdownZoneCollapseSec;
-  uiState.raidDamageBreakdownOverall = sim.damageBreakdownOverall;
-  uiState.raidDamageBreakdownSuccess = sim.damageBreakdownSuccess;
-  uiState.raidDamageBreakdownFailure = sim.damageBreakdownFailure;
+    {
+      const banned: Record<string, string[]> = {};
+      for (const r of game.unlockedRaids) {
+        banned[r.id] = [...r.bannedItemIds];
+      }
+      uiState.bannedItemIdsByRaidId = banned;
+    }
+    uiState.itemBans = game.itemBans;
+
+    uiState.activeRaidId = game.raid.id;
+    uiState.selectedGearPrice = game.selectedGearPrice ?? 0;
+    const sim = game.raidSimulation;
+    uiState.raidSurvivalPct = sim.survivalEstimatePct;
+    uiState.raidTimeEstimateSec = sim.timeEstimateSec;
+    uiState.raidTimeEstimateMinSec = sim.timeEstimateMinSec;
+    uiState.raidTimeEstimateMaxSec = sim.timeEstimateMaxSec;
+    uiState.raidTimeEstimateStdDevSec = sim.timeEstimateStdDevSec;
+    uiState.raidZoneCollapseDeathPct = sim.zoneCollapseDeathPct;
+    uiState.raidZoneCollapseDeaths = sim.zoneCollapseDeaths;
+    uiState.raidMonsterDeaths = sim.monsterDeaths;
+    uiState.raidTimeBreakdownSimulations = sim.simulations;
+    uiState.raidTimeBreakdownSuccesses = sim.successes;
+    uiState.raidTimeBreakdownFailures = sim.failures;
+    uiState.raidTimeBreakdownOverallSec = sim.timeBreakdownOverallSec;
+    uiState.raidTimeBreakdownSuccessSec = sim.timeBreakdownSuccessSec;
+    uiState.raidTimeBreakdownFailureSec = sim.timeBreakdownFailureSec;
+    uiState.raidTimeBreakdownZoneCollapseSec = sim.timeBreakdownZoneCollapseSec;
+    uiState.raidDamageBreakdownOverall = sim.damageBreakdownOverall;
+    uiState.raidDamageBreakdownSuccess = sim.damageBreakdownSuccess;
+    uiState.raidDamageBreakdownFailure = sim.damageBreakdownFailure;
+  }
 
   uiState.lastOutcome = game.lastRaidOutcome;
   uiState.acknowledgedOutcome = game.acknowledgedRaidOutcome;
@@ -413,64 +420,66 @@ export function SyncUIFromGameState(game: GameState): void {
   }
   uiState.lastRefineryOutcome = game.lastRefineryOutcome;
 
-  const hasWafer = !!game.wafer;
-  const refinery: UIRefinery = {};
-  if (hasWafer && game.nextEvt?.name === 'EvtRefineryDone') {
-    const preview = computeRefinePreviewChem(game as ReadonlyGameState);
-    const duration = Math.max(0, game.refiningDuration || preview.timeSec || 0);
-    const startedAt = (game.nextEvt.at || 0) - duration;
+  if (activeTab === 'refine') {
+    const hasWafer = !!game.wafer;
+    const refinery: UIRefinery = {};
+    if (hasWafer && game.nextEvt?.name === 'EvtRefineryDone') {
+      const preview = computeRefinePreviewChem(game as ReadonlyGameState);
+      const duration = Math.max(0, game.refiningDuration || preview.timeSec || 0);
+      const startedAt = (game.nextEvt.at || 0) - duration;
 
-    refinery.startedAtSec = startedAt;
-    if (duration > 0) {
-      const elapsed = Math.max(0, (game.gameTime || 0) - startedAt);
-      const progressPct = Math.max(0, Math.min(100, Math.round((elapsed / duration) * 100)));
-      const remaining = Math.max(0, Math.round(duration - elapsed));
-      refinery.progressPct = progressPct;
-      refinery.timeRemainingSec = remaining;
-    } else {
-      refinery.progressPct = 0;
-      refinery.timeRemainingSec = 0;
-    }
-    refinery.expectedCredits = preview.expectedCredits;
-    refinery.expectedChrono = preview.expectedChrono;
-    refinery.expectedFlux = preview.expectedFlux;
-    refinery.failureChancePct = preview.failureChancePct;
-  }
-  uiState.refinery = refinery;
-  uiState.items = Object.entries(game.items).map(([id, quantity]) => ({ id, quantity }));
-  {
-    const hasUniqueItemsYield = game.uniqueItemsBonusYield > 0;
-    const inventoryItemCount = Object.values(game.items).reduce((sum, qty) => sum + qty, 0);
-    const refinedUniqueCount = Object.keys(game.refinedUniqueItemIds).length;
-    if (!hasUniqueItemsYield) {
-      if (uiState.unrefinedOwnedItemIds.length > 0) {
-        uiState.unrefinedOwnedItemIds = [];
-        uiState.unrefinedOwnedItemIdMap = {};
+      refinery.startedAtSec = startedAt;
+      if (duration > 0) {
+        const elapsed = Math.max(0, (game.gameTime || 0) - startedAt);
+        const progressPct = Math.max(0, Math.min(100, Math.round((elapsed / duration) * 100)));
+        const remaining = Math.max(0, Math.round(duration - elapsed));
+        refinery.progressPct = progressPct;
+        refinery.timeRemainingSec = remaining;
+      } else {
+        refinery.progressPct = 0;
+        refinery.timeRemainingSec = 0;
       }
-      syncCache.lastInventoryItemCount = inventoryItemCount;
-      syncCache.lastRefinedUniqueCount = refinedUniqueCount;
-      syncCache.lastHasUniqueItemsYield = false;
-    } else if (
-      !syncCache.lastHasUniqueItemsYield ||
-      inventoryItemCount !== syncCache.lastInventoryItemCount ||
-      refinedUniqueCount !== syncCache.lastRefinedUniqueCount
-    ) {
-      const ids: string[] = [];
-      const idMap: Record<string, true> = {};
-      for (const id of Object.keys(game.items)) {
-        if (game.refinedUniqueItemIds[id]) continue;
-        ids.push(id);
-        idMap[id] = true;
-      }
-      uiState.unrefinedOwnedItemIds = ids;
-      uiState.unrefinedOwnedItemIdMap = idMap;
-      syncCache.lastInventoryItemCount = inventoryItemCount;
-      syncCache.lastRefinedUniqueCount = refinedUniqueCount;
-      syncCache.lastHasUniqueItemsYield = true;
+      refinery.expectedCredits = preview.expectedCredits;
+      refinery.expectedChrono = preview.expectedChrono;
+      refinery.expectedFlux = preview.expectedFlux;
+      refinery.failureChancePct = preview.failureChancePct;
     }
+    uiState.refinery = refinery;
+    uiState.items = Object.entries(game.items).map(([id, quantity]) => ({ id, quantity }));
+    {
+      const hasUniqueItemsYield = game.uniqueItemsBonusYield > 0;
+      const inventoryItemCount = Object.values(game.items).reduce((sum, qty) => sum + qty, 0);
+      const refinedUniqueCount = Object.keys(game.refinedUniqueItemIds).length;
+      if (!hasUniqueItemsYield) {
+        if (uiState.unrefinedOwnedItemIds.length > 0) {
+          uiState.unrefinedOwnedItemIds = [];
+          uiState.unrefinedOwnedItemIdMap = {};
+        }
+        syncCache.lastInventoryItemCount = inventoryItemCount;
+        syncCache.lastRefinedUniqueCount = refinedUniqueCount;
+        syncCache.lastHasUniqueItemsYield = false;
+      } else if (
+        !syncCache.lastHasUniqueItemsYield ||
+        inventoryItemCount !== syncCache.lastInventoryItemCount ||
+        refinedUniqueCount !== syncCache.lastRefinedUniqueCount
+      ) {
+        const ids: string[] = [];
+        const idMap: Record<string, true> = {};
+        for (const id of Object.keys(game.items)) {
+          if (game.refinedUniqueItemIds[id]) continue;
+          ids.push(id);
+          idMap[id] = true;
+        }
+        uiState.unrefinedOwnedItemIds = ids;
+        uiState.unrefinedOwnedItemIdMap = idMap;
+        syncCache.lastInventoryItemCount = inventoryItemCount;
+        syncCache.lastRefinedUniqueCount = refinedUniqueCount;
+        syncCache.lastHasUniqueItemsYield = true;
+      }
+    }
+    uiState.encounteredEssences = Object.keys(game.encounteredEssences);
+    uiState.seenEssences = Object.keys(game.seenEssences);
   }
-  uiState.encounteredEssences = Object.keys(game.encounteredEssences);
-  uiState.seenEssences = Object.keys(game.seenEssences);
   uiState.discoveryCounter = game.discoveryCounter;
   uiState.hasDiscoveredGear = game.discoveries[DISCOVERY.UI_GEAR] === true;
   uiState.hasDiscoveredGearUpgradeModal = game.discoveries[DISCOVERY.UI_GEAR_UPGRADE_MODAL_OPENED] === true;
@@ -499,57 +508,63 @@ export function SyncUIFromGameState(game: GameState): void {
     (game.shardDust > 0) ||
     (game.waferUpgradesPurchased > 0);
 
-  uiState.wafer = game.wafer;
-  uiState.shards = game.shards.filter(s => s !== null);
-  uiState.shardPickupGraceSec = game.shardPickupGraceSec || 0;
-  uiState.waferUpgradesPurchased = game.waferUpgradesPurchased || 0;
+  if (activeTab === 'refine') {
+    uiState.wafer = game.wafer;
+    uiState.shards = game.shards.filter(s => s !== null);
+    uiState.shardPickupGraceSec = game.shardPickupGraceSec || 0;
+    uiState.waferUpgradesPurchased = game.waferUpgradesPurchased || 0;
 
-  if (
-    game.refiningYieldPctBonus !== syncCache.lastRefiningYieldPctBonus ||
-    game.uniqueItemsBonusYield !== syncCache.lastUniqueItemsBonusYield ||
-    game.refiningSuccessChanceBonus !== syncCache.lastRefiningSuccessChanceBonus ||
-    game.refiningSpeedPctBonus !== syncCache.lastRefiningSpeedPctBonus ||
-    game.refiningRedEssenceResourceBonus !== syncCache.lastRefiningRedEssenceResourceBonus ||
-    game.refiningGreenEssenceResourceBonus !== syncCache.lastRefiningGreenEssenceResourceBonus ||
-    game.refiningBlueEssenceResourceBonus !== syncCache.lastRefiningBlueEssenceResourceBonus ||
-    game.refiningYellowNeighborBonus !== syncCache.lastRefiningYellowNeighborBonus
-  ) {
-    uiState.refinePreviewVersion++;
-    syncCache.lastRefiningYieldPctBonus = game.refiningYieldPctBonus;
-    syncCache.lastUniqueItemsBonusYield = game.uniqueItemsBonusYield;
-    syncCache.lastRefiningSuccessChanceBonus = game.refiningSuccessChanceBonus;
-    syncCache.lastRefiningSpeedPctBonus = game.refiningSpeedPctBonus;
-    syncCache.lastRefiningRedEssenceResourceBonus = game.refiningRedEssenceResourceBonus;
-    syncCache.lastRefiningGreenEssenceResourceBonus = game.refiningGreenEssenceResourceBonus;
-    syncCache.lastRefiningBlueEssenceResourceBonus = game.refiningBlueEssenceResourceBonus;
-    syncCache.lastRefiningYellowNeighborBonus = game.refiningYellowNeighborBonus;
-  }
+    if (
+      game.refiningYieldPctBonus !== syncCache.lastRefiningYieldPctBonus ||
+      game.uniqueItemsBonusYield !== syncCache.lastUniqueItemsBonusYield ||
+      game.refiningSuccessChanceBonus !== syncCache.lastRefiningSuccessChanceBonus ||
+      game.refiningSpeedPctBonus !== syncCache.lastRefiningSpeedPctBonus ||
+      game.refiningRedEssenceResourceBonus !== syncCache.lastRefiningRedEssenceResourceBonus ||
+      game.refiningGreenEssenceResourceBonus !== syncCache.lastRefiningGreenEssenceResourceBonus ||
+      game.refiningBlueEssenceResourceBonus !== syncCache.lastRefiningBlueEssenceResourceBonus ||
+      game.refiningYellowNeighborBonus !== syncCache.lastRefiningYellowNeighborBonus
+    ) {
+      uiState.refinePreviewVersion++;
+      syncCache.lastRefiningYieldPctBonus = game.refiningYieldPctBonus;
+      syncCache.lastUniqueItemsBonusYield = game.uniqueItemsBonusYield;
+      syncCache.lastRefiningSuccessChanceBonus = game.refiningSuccessChanceBonus;
+      syncCache.lastRefiningSpeedPctBonus = game.refiningSpeedPctBonus;
+      syncCache.lastRefiningRedEssenceResourceBonus = game.refiningRedEssenceResourceBonus;
+      syncCache.lastRefiningGreenEssenceResourceBonus = game.refiningGreenEssenceResourceBonus;
+      syncCache.lastRefiningBlueEssenceResourceBonus = game.refiningBlueEssenceResourceBonus;
+      syncCache.lastRefiningYellowNeighborBonus = game.refiningYellowNeighborBonus;
+    }
 
-  if (game.wafer) {
-    const currentItemCount = Array.isArray(game.wafer.items) ? game.wafer.items.filter(item => item !== null).length : 0;
-    const currentEnabledCount = game.wafer.enabledCount;
-    if (currentItemCount !== syncCache.lastWaferItemCount || currentEnabledCount !== syncCache.lastWaferEnabledCount) {
-      uiState.waferVersion++;
-      syncCache.lastWaferItemCount = currentItemCount;
-      syncCache.lastWaferEnabledCount = currentEnabledCount;
+    if (game.wafer) {
+      const currentItemCount = Array.isArray(game.wafer.items) ? game.wafer.items.filter(item => item !== null).length : 0;
+      const currentEnabledCount = game.wafer.enabledCount;
+      if (currentItemCount !== syncCache.lastWaferItemCount || currentEnabledCount !== syncCache.lastWaferEnabledCount) {
+        uiState.waferVersion++;
+        syncCache.lastWaferItemCount = currentItemCount;
+        syncCache.lastWaferEnabledCount = currentEnabledCount;
+      }
     }
   }
 
-  if (game.researchOwnedCount !== uiState.researchOwnedCount) {
-    uiState.researchOwnedCount = game.researchOwnedCount;
+  if (activeTab === 'research' || activeTab === 'maze') {
+    if (game.researchOwnedCount !== uiState.researchOwnedCount) {
+      uiState.researchOwnedCount = game.researchOwnedCount;
+    }
+
+    const radius = game.researchRevealRadius;
+    uiState.researchRevealRadius = typeof radius === 'number' ? radius : 0;
   }
 
-  const radius = game.researchRevealRadius;
-  uiState.researchRevealRadius = typeof radius === 'number' ? radius : 0;
+  if (activeTab === 'maze') {
+    uiState.mazeMovementUsed = game.maze.movementUsed;
+    uiState.mazeVersion = game.maze.version;
+    uiState.mazeNexusAvailableUpgradeIds = [...game.mazeNexusAvailableUpgradeIds];
+    uiState.mazeNexusPlacedUpgradeIds = [...game.mazeNexusPlacedUpgradeIds];
+    uiState.mazeNexusUpgradeOpportunityCount = game.mazeNexusUpgradeOpportunityCount;
+    uiState.mazeNexusUpgradeOfferSeed = game.mazeNexusUpgradeOfferSeed;
+  }
 
-  uiState.mazeMovementUsed = game.maze.movementUsed;
-  uiState.mazeVersion = game.maze.version;
-  uiState.mazeNexusAvailableUpgradeIds = [...game.mazeNexusAvailableUpgradeIds];
-  uiState.mazeNexusPlacedUpgradeIds = [...game.mazeNexusPlacedUpgradeIds];
-  uiState.mazeNexusUpgradeOpportunityCount = game.mazeNexusUpgradeOpportunityCount;
-  uiState.mazeNexusUpgradeOfferSeed = game.mazeNexusUpgradeOfferSeed;
-
-  uiState.activeTab = game.activeTab;
+  uiState.activeTab = activeTab;
 
   uiState.pendingUIModals = [...game.pendingUIModals];
 

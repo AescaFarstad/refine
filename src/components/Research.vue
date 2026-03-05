@@ -2,7 +2,7 @@
   <div class="research-tab" ref="researchTab">
     <ResearchParallax :offset="parallaxOffset" :zoom="parallaxZoom" />
     <ResearchPane ref="researchPane" :panel-highlight="hoveredHighlight" @hover-cell="onHoverCell" />
-    <ResearchHighlight @entry-hover="onHighlightEntryHover" />
+    <ResearchHighlight @entry-hover="onHighlightEntryHover" @entry-click="onHighlightEntryClick" />
     <EditResearchPane v-if="editResearchOpen" />
     <div
       v-if="hoverPreview && hoverPreview.reachable && !hoverPreview.alreadyOwned"
@@ -136,6 +136,10 @@ function onHoverCell(cell: Point2 | null): void {
 
 function onHighlightEntryHover(hover: ResearchHighlightHover | null): void {
   hoveredHighlight.value = hover;
+}
+
+function onHighlightEntryClick(hover: ResearchHighlightHover): void {
+  researchPane.value?.playHighlightAnimation(hover);
 }
 
 const chronotracesSpec = getResourceSpec('chronotraces');

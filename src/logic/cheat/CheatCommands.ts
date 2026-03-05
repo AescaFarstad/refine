@@ -124,3 +124,13 @@ export class CheatAddResearchVision implements CheatInput {
     this.amount = args.amount;
   }
 }
+
+export class CheatMutateRaid implements CheatInput {
+  readonly name = 'CheatMutateRaid';
+  readonly raidId: string;
+  readonly count: number;
+  constructor(args: { raidId: string; count: number }) {
+    this.raidId = args.raidId;
+    this.count = args.count;
+  }
+}

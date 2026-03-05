@@ -1,10 +1,8 @@
 import { computed } from 'vue';
 import { uiState, getGameState, ReadonlyGameState } from './UIState';
-import { globalInputQueue } from './Model';
-import { CmdAcknowledgeOutcome, CmdStartRaid } from './input/InputCommands';
 import { formatDurationHM } from './StringUtils';
 import { questIsActive } from './RaidMutation';
-import type { GameState } from './GameState';
+import { startRaidWithPerkFlow } from './startRaidWithPerkFlow';
 
 export function hasMissingRequiredQuestGear(gs: ReadonlyGameState, raidId: string): boolean {
   const loadout = gs.loadouts[raidId] ?? [];
@@ -95,8 +93,7 @@ export function useRaidAgain() {
   });
 
   function raidAgain() {
-    globalInputQueue.push(new CmdAcknowledgeOutcome());
-    globalInputQueue.push(new CmdStartRaid({ id: raidId.value }));
+    startRaidWithPerkFlow(raidId.value, true);
   }
 
   return {

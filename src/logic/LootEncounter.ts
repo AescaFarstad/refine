@@ -221,6 +221,7 @@ export function handleMonsterLootEncounter(
   r: ActiveRaid,
   itemId: string,
   biopsyChance: number,
+  biopsyBuff: number,
   bagItemCounts: Record<string, number>,
   discardedItemCounts: Record<string, number>
 ): MonsterLootEncounterLogEntry {
@@ -244,8 +245,9 @@ export function handleMonsterLootEncounter(
   const explosiveRoll = explosiveChance > 0 ? Math.floor(gs.random.get() * 100) : 0;
   const explosiveTriggered = explosiveChance > 0 && explosiveRoll < explosiveChance;
 
+  const effectiveBiopsyChance = biopsyChance > 0 ? biopsyChance + biopsyBuff : 0;
   const biopsyRoll = explosiveTriggered ? 0 : Math.floor(gs.random.get() * 100);
-  const biopsySuccess = !explosiveTriggered && biopsyRoll < biopsyChance;
+  const biopsySuccess = !explosiveTriggered && biopsyRoll < effectiveBiopsyChance;
 
   const entry: MonsterLootEncounterLogEntry = createMonsterLootEncounterLogEntry({
     timeSpentSec,

@@ -12,7 +12,11 @@ export class CmdAdvanceTime implements CmdInput {
 export class CmdStartRaid implements CmdInput {
   readonly name = 'CmdStartRaid';
   readonly id: string;
-  constructor(args: { id: string }) { this.id = args.id; }
+  readonly materializationItemId: string;
+  constructor(args: { id: string; materializationItemId?: string }) {
+    this.id = args.id;
+    this.materializationItemId = args.materializationItemId ?? '';
+  }
 }
 
 export class CmdAcknowledgeOutcome implements CmdInput {

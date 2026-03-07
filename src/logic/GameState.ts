@@ -212,6 +212,9 @@ export class Raid {
 
   public foundItemIds: string[] = [];
   public bannedItemIds: string[] = [];
+  public uncollectedCredits: number = 0;
+  public maxStoredCredits: number = 500;
+  public passiveCreditsPerHour: number = 0;
 
   // Cumulative price adjustments per gear item for this raid
   public gearPriceAdjustments: Record<string, number> = {};

@@ -6,7 +6,7 @@ import { SHARD_PICKUP_DELAY_SEC } from '../Model';
 import { discover, discoverRefineTab, ensureSignatureDiscoveryFromWafer } from '../Discover';
 import { DISCOVERY } from '../DiscoveryLib';
 import { computeEffectiveEssences } from '../RefinePreview';
-import { runRaid, recomputeActiveRaidParams, toggleGearForRaid, recomputeActiveRaidEstimates, getEffectiveRaidDefinition } from '../Raid';
+import { runRaid, recomputeActiveRaidParams, toggleGearForRaid, recomputeActiveRaidEstimates, getEffectiveRaidDefinition, accumulateRaidResources, getLoadoutPassiveCreditsPerHour, getLoadoutResourceStorageBonus } from '../Raid';
 import { pickAndApplyRaidSuccessMutation, describeMutation, questIsAvailable } from '../RaidMutation';
 import { getRaidGearCost, getRaidStartFailureReason } from '../useRaidAgain';
 import { placeMolecule, removeMolecule, enableCellWithFloodfill, computeWaferUpgradePrice } from '../Wafer';
@@ -83,19 +83,29 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
 
   const result = runRaid(gs, def, false, c.materializationItemId);
 
+  if (result.reimbursedCredits) {
+    gs.credits += result.reimbursedCredits;
+  }
+
+  const raidEntry = gs.unlockedRaids.find(r => r.id === c.id)!;
+  const loadoutPassiveCreditsPerHour = getLoadoutPassiveCreditsPerHour(gs, c.id);
+  const loadoutResourceStorageBonus = getLoadoutResourceStorageBonus(gs, c.id);
+  gs.gameTime += result.timeSpentSec;
+  accumulateRaidResources(gs, result.timeSpentSec);
+
+  if (result.success && loadoutPassiveCreditsPerHour > 0) {
+    raidEntry.passiveCreditsPerHour += loadoutPassiveCreditsPerHour;
+  }
+  if (result.success && loadoutResourceStorageBonus > 0) {
+    raidEntry.maxStoredCredits += loadoutResourceStorageBonus;
+  }
+
   // cleanup empty countable gear from loadout
   for (const gid of gearToRemove) {
     const idx = loadout.indexOf(gid);
     if (idx !== -1) loadout.splice(idx, 1);
   }
 
-  if (result.reimbursedCredits) {
-    gs.credits += result.reimbursedCredits;
-  }
-
-  gs.gameTime += result.timeSpentSec;
-
-  const raidEntry = gs.unlockedRaids.find(r => r.id === c.id)!;
   raidEntry.tmpLootBuff = gs.raid.tmpLootBuffNextRaidPct;
 
   {

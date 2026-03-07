@@ -53,6 +53,8 @@ function encountersEqual(a: EncounterDef, b: EncounterDef): boolean {
       return true; // all prep encounters are considered equal
     case 'WalkEncounter':
       return true; // no additional fields
+    case 'ResourcesEncounter':
+      return true; // no additional fields
     case 'LootEncounter':
       return true; // identical by type only
     case 'MonsterLootEncounter':

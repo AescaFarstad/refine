@@ -179,6 +179,8 @@ function isEncounterDef(value: unknown): value is EncounterDef {
       return true;
     case "WalkEncounter":
       return true;
+    case "ResourcesEncounter":
+      return true;
     case "LootEncounter":
       return true;
     case "MonsterLootEncounter":
@@ -226,6 +228,8 @@ function copyEncounterDef(source: EncounterDef): EncounterDef {
         gearImage: source.gearImage,
       };
     case "WalkEncounter":
+      return { type: source.type };
+    case "ResourcesEncounter":
       return { type: source.type };
     case "LootEncounter":
       return { type: source.type };

@@ -51,6 +51,13 @@
               <button class="btn" type="button" @click="grantNexusUpgradeOpportunities(10)">+10</button>
               <button class="btn primary" type="button" @click="unlockAllNexusUpgrades">Unlock all</button>
             </div>
+            <div v-for="cg in countableGearEntries" :key="cg.id" class="resource-row">
+              <span class="resource-label">{{ cg.name }}</span>
+              <button class="btn" type="button" @click="setCountableGear(cg.id, 0)">0</button>
+              <button class="btn" type="button" @click="grantCountableGear(cg.id, 1)">+1</button>
+              <button class="btn" type="button" @click="grantCountableGear(cg.id, 10)">+10</button>
+              <button class="btn" type="button" @click="grantCountableGear(cg.id, 100)">+100</button>
+            </div>
           </div>
 
           <div class="discovery-panel">
@@ -137,6 +144,7 @@ import { discover } from '../logic/Discover';
 import { REWARD_UI_KEYS } from './rewardUI/RewardUIRegistry';
 import atlasStorage from '../logic/AtlasStorage';
 import { CheatCompleteSignatures, CheatUnlockAllNexusUpgrades } from '../logic/cheat/CheatCommands';
+import gearData from '../data/gear';
 import { processCheats } from '../logic/cheat/CheatProcessor';
 
 const open = computed(() => uiState.cheatOpen);
@@ -294,6 +302,21 @@ function grantNexusUpgradeOpportunities(amount: number): void {
 function setNexusUpgradeOpportunities(amount: number): void {
   const gs = getGameStateMutable();
   gs.mazeNexusUpgradeOpportunityCount = amount;
+}
+
+const countableGearEntries = Object.entries(gearData)
+  .filter(([, d]) => d.countable)
+  .map(([id, d]) => ({ id, name: d.name }));
+
+function grantCountableGear(id: string, amount: number): void {
+  const gs = getGameStateMutable();
+  gs.countableGear[id] = (gs.countableGear[id] || 0) + amount;
+  if (!gs.unlockedGear.includes(id)) gs.unlockedGear.push(id);
+}
+
+function setCountableGear(id: string, amount: number): void {
+  const gs = getGameStateMutable();
+  gs.countableGear[id] = amount;
 }
 
 function isDiscovered(id: DiscoveryId): boolean {

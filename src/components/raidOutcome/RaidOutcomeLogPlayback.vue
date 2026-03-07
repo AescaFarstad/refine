@@ -12,6 +12,7 @@
             <div class="enc-title-time" :class="{ dimmed: isSkipped(entry) }">
               <div class="enc-name-text">
                 <template v-if="entry.kind === 'PreparationEncounter'">Preparation</template>
+                <template v-else-if="entry.kind === 'ResourcesEncounter'">Collecting resources</template>
                 <template v-else-if="entry.kind === 'WalkEncounter'">Walking</template>
                 <template v-else-if="entry.kind === 'LootEncounter'">Scavenging</template>
                 <template v-else-if="entry.kind === 'MonsterLootEncounter'">Dissecting the corpse</template>
@@ -33,6 +34,7 @@
 
         <div class="col-right details-col">
           <PreparationEncounterDetails v-if="entry.kind === 'PreparationEncounter'" :entry="entry" />
+          <ResourcesEncounterDetails v-else-if="entry.kind === 'ResourcesEncounter'" :entry="entry" />
           <WalkEncounterDetails v-else-if="entry.kind === 'WalkEncounter'" :entry="entry" />
           <LootEncounterDetails v-else-if="entry.kind === 'LootEncounter' || entry.kind === 'MonsterLootEncounter'" :entry="entry" :shown-step="subShownSteps[idx] || 0" />
           <FightEncounterDetails v-else-if="entry.kind === 'FightEncounter'" :entry="entry" :shown-step="subShownSteps[idx] || 0" />
@@ -57,6 +59,7 @@ import PreparationEncounterDetails from './PreparationEncounterDetails.vue';
 import LootEncounterDetails from './LootEncounterDetails.vue';
 import FightEncounterDetails from './FightEncounterDetails.vue';
 import QuestEncounterDetails from './QuestEncounterDetails.vue';
+import ResourcesEncounterDetails from './ResourcesEncounterDetails.vue';
 
 const props = withDefaults(defineProps<{
   entries: RaidEventLogEntry[];
@@ -408,6 +411,7 @@ function isSkipped(entry: RaidEventLogEntry): boolean {
 
 const ENCOUNTER_ICON_KEYS: Record<RaidEventLogEntry['kind'], string> = {
   PreparationEncounter: 'canvas_tent',
+  ResourcesEncounter: 'crates_3d',
   WalkEncounter: 'winding_road',
   FightEncounter: 'swords_crossed',
   QuestEncounter: 'questions',

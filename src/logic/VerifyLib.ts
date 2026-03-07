@@ -33,6 +33,7 @@ function verifyEncounterRefs(encounter: EncounterDef, context: string, lib: Lib,
       ensureExists(errors, lib.quests, encounter.questId, context, 'quest');
       return;
     case 'WalkEncounter':
+    case 'ResourcesEncounter':
     case 'LootEncounter':
       return;
   }

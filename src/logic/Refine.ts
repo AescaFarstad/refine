@@ -61,7 +61,7 @@ export function resolveRefineryDone(gs: GameState): void {
     const magentaCount = preview.essenceTotals['magenta'] || 0;
     if (magentaCount > 0 && !gs.discoveries[DISCOVERY.MAGENTA_CRYSTALS]) {
       applyReward(gs, { kind: 'discovery', discoveryId: DISCOVERY.MAGENTA_CRYSTALS });
-      applyReward(gs, { kind: 'show_ui', ui: 'RUIMagentsCrystals' });
+      applyReward(gs, { kind: 'show_ui', ui: 'RUIMagentaCrystals' });
     }
 
     for (const gearOutput of preview.gearOutputs) {

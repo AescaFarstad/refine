@@ -99,6 +99,7 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     title: 'Unique item recycling',
     description: 'Gain +1% refining yield per unique item you have ever successfully refined.',
     rewards: [{ kind: 'stat', stat: 'uniqueItemsBonusYield', value: 1 }],
+    spawnResource: 'fractal',
   },
   disc_essence_anomaly_cyan: {
     type: 'discovery',

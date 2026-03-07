@@ -2,6 +2,7 @@ import type { RaidMutation } from './RaidMutation';
 
 export type EncounterType =
   | 'PreparationEncounter'
+  | 'ResourcesEncounter'
   | 'WalkEncounter'
   | 'LootEncounter'
   | 'MonsterLootEncounter'
@@ -23,6 +24,10 @@ export interface PreparationEncounterDef {
 
 export interface WalkEncounterDef {
   type: 'WalkEncounter';
+}
+
+export interface ResourcesEncounterDef {
+  type: 'ResourcesEncounter';
 }
 
 export interface LootEncounterDef {
@@ -48,6 +53,7 @@ export interface QuestEncounterDef {
 
 export type EncounterDef =
   | PreparationEncounterDef
+  | ResourcesEncounterDef
   | WalkEncounterDef
   | LootEncounterDef
   | MonsterLootEncounterDef

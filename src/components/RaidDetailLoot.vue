@@ -14,6 +14,7 @@
             <th>Count</th>
             <th>Find item chance</th>
             <th>Rarity %</th>
+            <th v-if="showResourcesColumn">✦ Resources</th>
           </tr>
         </thead>
         <tbody>
@@ -38,6 +39,7 @@
                 <span class="rarity-val" :class="prob.rarity">{{ formatRarityPct(prob.pct) }}</span>
               </template>
             </td>
+            <td v-if="showResourcesColumn" class="resource-compact">{{ resourcesCompact }}</td>
           </tr>
         </tbody>
       </table>
@@ -81,6 +83,24 @@ const lootChanceBuffPct = computed(() => {
   uiState.raidKey;
   const gs = getGameState();
   return Math.max(0, Math.round(gs.raid.tmpLootBuffAppliedPct));
+});
+
+const raidResourceInfo = computed(() => {
+  uiState.raidKey;
+  const gs = getGameState();
+  const entry = gs.unlockedRaids.find(rr => rr.id === raid.value.id)!;
+  return {
+    stored: Math.max(0, Math.floor(entry.uncollectedCredits)),
+    cap: Math.max(0, Math.floor(entry.maxStoredCredits)),
+    perHour: Math.max(0, Math.floor(entry.passiveCreditsPerHour)),
+  };
+});
+
+const showResourcesColumn = computed(() => raidResourceInfo.value.stored > 0);
+
+const resourcesCompact = computed(() => {
+  const info = raidResourceInfo.value;
+  return `${info.stored}/${info.cap} +${info.perHour}/h`;
 });
 
 interface RarityProbability {
@@ -295,4 +315,5 @@ function formatRarityPct(pct: number): string {
 .rarity-val.uncommon { color: #22c55e; }
 .rarity-val.rare { color: #3b82f6; }
 .rarity-val.legendary { color: #f59e0b; }
+.resource-compact { white-space: nowrap; }
 </style>

@@ -324,8 +324,9 @@ export function SyncUIFromGameState(game: GameState): void {
   if (activeTab === 'raid') {
     const loadoutIds = (game.loadouts && game.raid && game.raid.id) ? game.loadouts[game.raid.id] : null;
     const loadoutKey = Array.isArray(loadoutIds) ? [...loadoutIds].sort().join(',') : '';
+    const activeRaidEntry = game.raid?.id ? game.unlockedRaids.find(r => r.id === game.raid.id) : null;
     const rk = game.raid
-      ? `${game.raid.id}|${game.raid.hp}|${game.raid.maxHp}|${game.raid.baseSpeed}|${game.raid.speedBonusPct}|${game.raid.speedBonusFlat}|${game.raid.regenPerKm}|${game.raid.regenAfterCombat}|${game.raid.weight}|${game.raid.maxWeight}|${(game.raid.damage ?? game.damage ?? 1)}|${game.raid.bagsVolume}|${game.raid.usedVolume}|${game.raid.lootChanceBonus}|${game.raid.tmpLootBuffAppliedPct}|${game.raid.hitChance}|${game.raid.blockChance}|${game.raid.armor}|${game.raid.reflectOnHitPct}|${game.raid.reflectOnBlockPct}|${game.raid.biopsyChance}|${loadoutKey}`
+      ? `${game.raid.id}|${game.raid.hp}|${game.raid.maxHp}|${game.raid.baseSpeed}|${game.raid.speedBonusPct}|${game.raid.speedBonusFlat}|${game.raid.regenPerKm}|${game.raid.regenAfterCombat}|${game.raid.weight}|${game.raid.maxWeight}|${(game.raid.damage ?? game.damage ?? 1)}|${game.raid.bagsVolume}|${game.raid.usedVolume}|${game.raid.lootChanceBonus}|${game.raid.tmpLootBuffAppliedPct}|${game.raid.hitChance}|${game.raid.blockChance}|${game.raid.armor}|${game.raid.reflectOnHitPct}|${game.raid.reflectOnBlockPct}|${game.raid.biopsyChance}|${activeRaidEntry?.uncollectedCredits ?? 0}|${activeRaidEntry?.maxStoredCredits ?? 0}|${activeRaidEntry?.passiveCreditsPerHour ?? 0}|${loadoutKey}`
       : '';
     if (rk !== syncCache.lastRaidKey) {
       uiState.raidKey = rk;

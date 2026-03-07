@@ -4,17 +4,21 @@
       <span class="hint-label">Name:</span>
       <span class="hint-value name-value">{{ displayName }}</span>
     </div>
+    <div class="hint-row">
+      <span class="hint-label">Color:</span>
+      <span class="hint-value" :style="{ color: colorCss }">{{ colorLabel }}</span>
+    </div>
     <div v-if="refiningYieldBonus !== 0" class="hint-row">
       <span class="hint-label">Refining yield:</span>
       <span class="hint-value">{{ fmtSignedPct(refiningYieldBonus) }}</span>
     </div>
-    <div v-if="refiningSuccessBonus !== 0" class="hint-row">
-      <span class="hint-label">Refining success:</span>
-      <span class="hint-value">{{ fmtSignedPct(refiningSuccessBonus) }}</span>
-    </div>
     <div v-if="refiningSpeedBonus !== 0" class="hint-row">
       <span class="hint-label">Refining speed:</span>
       <span class="hint-value">{{ fmtSignedPct(refiningSpeedBonus) }}</span>
+    </div>
+    <div v-if="refiningSuccessBonus !== 0" class="hint-row">
+      <span class="hint-label">Refining success:</span>
+      <span class="hint-value">{{ fmtSignedPct(refiningSuccessBonus) }}</span>
     </div>
     <div v-for="(line, idx) in otherRewardLines" :key="idx" class="hint-row">
       <span class="hint-label">Reward:</span>
@@ -28,6 +32,7 @@ import { computed } from 'vue';
 import type { ReadonlySignatureDefinition } from '../logic/SignatureLib';
 import { getGameLib } from '../logic/UIState';
 import { formatRewardHintText } from '../logic/RewardHintText';
+import { ESSENCE_COLORS } from '../logic/RenderConstants';
 
 const props = defineProps<{
   signature: ReadonlySignatureDefinition;
@@ -35,6 +40,12 @@ const props = defineProps<{
 }>();
 
 const displayName = computed(() => (props.completed ? props.signature.name : '???'));
+
+const colorLabel = computed(() => {
+  const c = props.signature.color;
+  return c.charAt(0).toUpperCase() + c.slice(1);
+});
+const colorCss = computed(() => ESSENCE_COLORS[props.signature.color] || '#ffffff');
 
 const refiningYieldBonus = computed(() => {
   let total = 0;

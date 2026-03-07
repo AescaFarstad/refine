@@ -6,7 +6,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     group: 'starter',
     layout: 'insipre',
     colors: ['red'],
-    rewards: [{ kind: 'refining_yield_pct_bonus', amount: 20 }],
+    rewards: [{ kind: 'refining_yield_pct_bonus', amount: 25 }],
   },
   s2: {
     name: 'Delineate',
@@ -14,8 +14,9 @@ const signatures: Record<string, RawSignatureDefinition> = {
     layout: 'up_triangle',
     colors: ['gray'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 14 },
-      { kind: 'refining_success_chance_bonus', amount: 6 },
+      { kind: 'refining_yield_pct_bonus', amount: 20 },
+      { kind: 'refining_speed_pct_bonus', amount: 20 },
+      { kind: 'refining_success_chance_bonus', amount: 1 },
     ],
   },
   s3: {
@@ -24,8 +25,8 @@ const signatures: Record<string, RawSignatureDefinition> = {
     layout: 'sun',
     colors: ['blue'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 12 },
-      { kind: 'refining_speed_pct_bonus', amount: 8 },
+      { kind: 'refining_yield_pct_bonus', amount: 20 },
+      { kind: 'refining_speed_pct_bonus', amount: 5 },
     ],
   },
   s4: {
@@ -34,8 +35,8 @@ const signatures: Record<string, RawSignatureDefinition> = {
     layout: 'h',
     colors: ['red'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 18 },
-      { kind: 'refining_success_chance_bonus', amount: 2 },
+      { kind: 'refining_yield_pct_bonus', amount: 15 },
+      { kind: 'refining_speed_pct_bonus', amount: 15 },
     ],
   },
   s5: {
@@ -44,9 +45,8 @@ const signatures: Record<string, RawSignatureDefinition> = {
     layout: 'up_serpinski',
     colors: ['blue'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 10 },
-      { kind: 'refining_success_chance_bonus', amount: 4 },
-      { kind: 'refining_speed_pct_bonus', amount: 6 },
+      { kind: 'refining_yield_pct_bonus', amount: 15 },
+      { kind: 'refining_speed_pct_bonus', amount: 10 },
     ],
   },
   s6: {
@@ -55,8 +55,9 @@ const signatures: Record<string, RawSignatureDefinition> = {
     layout: 'up_blunt_triangle',
     colors: ['magenta'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 6 },
-      { kind: 'refining_success_chance_bonus', amount: 14 },
+      { kind: 'refining_yield_pct_bonus', amount: 25 },
+      { kind: 'refining_speed_pct_bonus', amount: 25 },
+      { kind: 'refining_success_chance_bonus', amount: 5 },
     ],
   },
   s7: {
@@ -65,9 +66,9 @@ const signatures: Record<string, RawSignatureDefinition> = {
     layout: 'candy_left',
     colors: ['green'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 8 },
-      { kind: 'refining_success_chance_bonus', amount: 6 },
-      { kind: 'refining_speed_pct_bonus', amount: 6 },
+      { kind: 'refining_yield_pct_bonus', amount: 15 },
+      { kind: 'refining_speed_pct_bonus', amount: 15 },
+      { kind: 'refining_success_chance_bonus', amount: 1 },
     ],
   },
   s8: {
@@ -76,9 +77,9 @@ const signatures: Record<string, RawSignatureDefinition> = {
     layout: 'shelf_left',
     colors: ['gray'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 9 },
+      { kind: 'refining_yield_pct_bonus', amount: 25 },
       { kind: 'refining_success_chance_bonus', amount: 1 },
-      { kind: 'refining_speed_pct_bonus', amount: 10 },
+      { kind: 'refining_speed_pct_bonus', amount: 15 },
     ],
   },
 
@@ -89,8 +90,8 @@ const signatures: Record<string, RawSignatureDefinition> = {
     layout: 'down_trihex',
     colors: ['blue'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 7 },
-      { kind: 'refining_success_chance_bonus', amount: 11 },
+      { kind: 'refining_yield_pct_bonus', amount: 15 },
+      { kind: 'refining_speed_pct_bonus', amount: 15 },
     ],
   },
   s10: {
@@ -99,9 +100,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     layout: 'down_triangle',
     colors: ['red'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 13 },
-      { kind: 'refining_success_chance_bonus', amount: 3 },
-      { kind: 'refining_speed_pct_bonus', amount: 4 },
+      { kind: 'refining_yield_pct_bonus', amount: 25 },
     ],
   },
   s11: {
@@ -110,8 +109,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     layout: 'hexagon',
     colors: ['green'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 11 },
-      { kind: 'refining_speed_pct_bonus', amount: 9 },
+      { kind: 'refining_yield_pct_bonus', amount: 25 },
     ],
   },
   s12: {
@@ -120,9 +118,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     layout: 'ex',
     colors: ['blue'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 5 },
-      { kind: 'refining_success_chance_bonus', amount: 12 },
-      { kind: 'refining_speed_pct_bonus', amount: 3 },
+      { kind: 'refining_speed_pct_bonus', amount: 40 },
     ],
   },
   s13: {
@@ -131,9 +127,8 @@ const signatures: Record<string, RawSignatureDefinition> = {
     layout: 'down_serpinski',
     colors: ['green'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 15 },
-      { kind: 'refining_success_chance_bonus', amount: 5 },
-      { kind: 'refining_speed_pct_bonus', amount: 1 },
+      { kind: 'refining_yield_pct_bonus', amount: 20 },
+      { kind: 'refining_speed_pct_bonus', amount: 5 },
     ],
   },
   s14: {
@@ -142,9 +137,8 @@ const signatures: Record<string, RawSignatureDefinition> = {
     layout: 'arrow',
     colors: ['blue'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 4 },
-      { kind: 'refining_success_chance_bonus', amount: 8 },
-      { kind: 'refining_speed_pct_bonus', amount: 8 },
+      { kind: 'refining_yield_pct_bonus', amount: 20 },
+      { kind: 'refining_speed_pct_bonus', amount: 5 },
     ],
   },
   s15: {
@@ -153,8 +147,9 @@ const signatures: Record<string, RawSignatureDefinition> = {
     layout: 'candy_right',
     colors: ['red'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 16 },
+      { kind: 'refining_yield_pct_bonus', amount: 20 },
       { kind: 'refining_speed_pct_bonus', amount: 5 },
+      { kind: 'refining_success_chance_bonus', amount: 1 },
     ],
   },
   s16: {
@@ -163,9 +158,9 @@ const signatures: Record<string, RawSignatureDefinition> = {
     layout: 'shelf_right',
     colors: ['yellow'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 9 },
-      { kind: 'refining_success_chance_bonus', amount: 7 },
-      { kind: 'refining_speed_pct_bonus', amount: 4 },
+      { kind: 'refining_yield_pct_bonus', amount: 15 },
+      { kind: 'refining_speed_pct_bonus', amount: 20 },
+      { kind: 'refining_success_chance_bonus', amount: 1 },
     ],
   },
 };

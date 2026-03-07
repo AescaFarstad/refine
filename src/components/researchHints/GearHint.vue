@@ -7,7 +7,7 @@
         <div class="gear-info">Type: {{ categoryName }}<span v-if="isNewCategory" class="new-category">First of this type!</span></div>
         <div v-if="!isCountable" class="gear-info">Price: <span class="price" :style="{ color: creditsSpec.color }">{{ gear.price }}{{ creditsSpec.glyph }}</span></div>
         <div class="gear-info">Weight: {{ gear.weight }}</div>
-        <GearStatsHint :gear="gear" class="gear-stats" />
+        <GearStatsHint :gear="gear" :showResourceContext="false" class="gear-stats" />
       </div>
       <div v-else class="gear-error">Unknown gear</div>
     </div>

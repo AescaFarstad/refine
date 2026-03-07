@@ -1,7 +1,7 @@
 import { createRaidDamageBreakdown, createRaidTimeBreakdownSec, type GameState, type ActiveRaid, type RaidDamageBreakdown, type RaidTimeBreakdownSec } from './GameState';
 import type { RaidDefinition, EncounterDef, FightEncounterDef, QuestEncounterDef, MonsterLootEncounterDef } from './RaidLib';
 import type { GearDefinition } from './GearLib';
-import { createFightEncounterLogEntry, createLootEncounterLogEntry, createMonsterLootEncounterLogEntry, createQuestEncounterLogEntry, createZoneCollapseLogEntry, type LootEncounterLogEntry, type MonsterLootEncounterLogEntry, type RaidEventLog, type RaidEventLogEntry } from './RaidLog';
+import { createFightEncounterLogEntry, createLootEncounterLogEntry, createMonsterLootEncounterLogEntry, createQuestEncounterLogEntry, createResourcesEncounterLogEntry, createZoneCollapseLogEntry, type LootEncounterLogEntry, type MonsterLootEncounterLogEntry, type RaidEventLog, type RaidEventLogEntry } from './RaidLog';
 import { handleWalkEncounter } from './WalkEncounter';
 import { handleLootLikeEncounter, handleMonsterLootEncounter } from './LootEncounter';
 import { handleFightEncounter } from './FightEncounter';
@@ -93,6 +93,44 @@ function applyTimeBasedRegen<T extends RaidEventLogEntry>(
 function loadoutGear(gs: GameState, raidId: string): GearDefinition[] {
   const ids: string[] = gs.loadouts[raidId] ?? [];
   return ids.map(id => gs.lib.gear.get(id)!);
+}
+
+function hasGatherResourcesTactic(gear: GearDefinition[]): boolean {
+  return gear.some(g => g.gatherRaidResources);
+}
+
+export function getLoadoutPassiveCreditsPerHour(gs: GameState, raidId: string): number {
+  let perHour = 0;
+  const gear = loadoutGear(gs, raidId);
+  for (const g of gear) {
+    perHour += g.raidPassiveCreditsPerHour;
+  }
+  return perHour;
+}
+
+export function getLoadoutResourceStorageBonus(gs: GameState, raidId: string): number {
+  let bonus = 0;
+  const gear = loadoutGear(gs, raidId);
+  for (const g of gear) {
+    bonus += g.raidResourceStorageBonus;
+  }
+  return bonus;
+}
+
+export function accumulateRaidResources(gs: GameState, elapsedSec: number): void {
+  const dt = Math.max(0, Number(elapsedSec) || 0);
+  if (dt <= 0) return;
+  const hours = dt / 3600;
+
+  for (const raid of gs.unlockedRaids) {
+    const speedPerHour = Math.max(0, raid.passiveCreditsPerHour);
+    if (speedPerHour <= 0) continue;
+
+    const current = Math.max(0, raid.uncollectedCredits);
+    const cap = Math.max(0, raid.maxStoredCredits);
+    const next = Math.min(cap, current + speedPerHour * hours);
+    raid.uncollectedCredits = next;
+  }
 }
 
 function countByCategory(gear: GearDefinition[]): Record<string, number> {
@@ -342,6 +380,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
   const raidItemsAdded: string[] = [];
   let lootChanceDeltaApplied = 0;
   let lootingRarityBuffDeltaApplied = 0;
+  let gatheredCredits = 0;
 
   const activeQuestIdsAtStart = new Set<string>();
   if (!dryRun) {
@@ -354,6 +393,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
   const queue: EncounterDef[] = buildEncounterQueue(gsForRun, raidDef);
 
   const gear = loadoutGear(gsForRun, raidDef.id);
+  const raidEntry = gsForRun.unlockedRaids.find(r => r.id === raidDef.id)!;
   const counts = countByCategory(gear);
   const prepBonuses = computePreparationBonuses(gear, counts);
 
@@ -374,6 +414,11 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
     const prep = createPreparationEncounter(adjustedBonus);
     if (prep) queue.unshift(prep);
   }
+
+  if (hasGatherResourcesTactic(gear)) {
+    queue.unshift({ type: 'ResourcesEncounter' });
+  }
+
   // Store the planned encounter count before we start processing (for UI progress indicator)
   const plannedEncounters = queue.length;
 
@@ -469,6 +514,38 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         log.entries.push(stampEntry(entry, raid));
         break;
       }
+      case 'ResourcesEncounter': {
+        const beforeStored = Math.max(0, raidEntry.uncollectedCredits);
+        const storageCapacity = Math.max(0, raidEntry.maxStoredCredits);
+        const clampedStored = Math.min(storageCapacity, beforeStored);
+        const volumeBefore = Math.max(0, raid.usedVolume);
+        const freeVolume = Math.max(0, raid.bagsVolume - volumeBefore);
+        const chunksCollected = Math.min(Math.floor(clampedStored / 100), freeVolume);
+        const creditsCollected = chunksCollected * 100;
+        const afterStored = clampedStored - creditsCollected;
+        const volumeAfter = volumeBefore + chunksCollected;
+
+        raid.usedVolume = volumeAfter;
+        if (!dryRun) {
+          raidEntry.uncollectedCredits = afterStored;
+        }
+        gatheredCredits += creditsCollected;
+
+        const entry = createResourcesEncounterLogEntry({
+          timeSpentSec: 0,
+          storageBefore: clampedStored,
+          storageAfter: afterStored,
+          storageCapacity,
+          chunksCollected,
+          creditsCollected,
+          volumeBefore,
+          volumeAfter,
+        });
+        entry.elapsedTotalSec = timeSpentSec;
+        nextRegenThresholdSec = applyTimeBasedRegen(entry, raid, timeSpentSec, nextRegenThresholdSec);
+        log.entries.push(stampEntry(entry, raid));
+        break;
+      }
       case 'WalkEncounter': {
         const entry = handleWalkEncounter(raid);
         timeSpentSec += entry.timeSpentSec;
@@ -493,12 +570,11 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         break;
       }
       case 'LootEncounter': {
-        const raidEntry = gsForRun.unlockedRaids.find(re => re.id === raidDef.id);
         const entry = handleLootLikeEncounter(gsForRun, raid, {
           baseLootChance: raidDef.baseLootChance,
           items: raidDef.items,
           poolsByRarity: raidDef.itemPoolsByRarity,
-          bannedItemIds: raidEntry?.bannedItemIds,
+          bannedItemIds: raidEntry.bannedItemIds,
         }, bagItemCounts, discardedItemCounts);
         timeSpentSec += entry.timeSpentSec;
         timeBreakdownSec.totalSec += entry.timeSpentSec;
@@ -603,7 +679,6 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
 
   if (!dryRun) {
     const raidId = raidDef.id;
-    const raidEntry = gsForRun.unlockedRaids.find(r => r.id === raidId)!;
     raidEntry.successes += 1;
 
     const completedSet = new Set<string>();
@@ -686,6 +761,14 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
       applyRaidMutation(raidDefToChange, mutation);
       raidMutationsApplied.push(mutation);
     }
+  }
+
+  if (!diedToZoneCollapse && gatheredCredits > 0) {
+    rewardsApplied.push({
+      kind: 'resource',
+      resource: 'credits',
+      amount: gatheredCredits,
+    });
   }
 
   return {

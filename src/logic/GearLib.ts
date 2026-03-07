@@ -43,6 +43,13 @@ export interface GearDefinition {
   hpMult: number;         // multiplier applied to HP after all flat bonuses (including preparation)
   ignoreLootEncounters: boolean;
 
+  // Passive raid resource generation (credits per hour) for the raid this gear is equipped on.
+  raidPassiveCreditsPerHour: number;
+  // If true, adds a ResourcesEncounter at the start of the raid.
+  gatherRaidResources: boolean;
+  // Permanent raid resource storage increase applied on successful raid completion.
+  raidResourceStorageBonus: number;
+
   // Zone stability boost in seconds (applied on successful raid completion)
   zoneBoost: number;
 
@@ -101,6 +108,9 @@ export function parseGearDefinitions(raw: Record<string, RawGearDefinition>): Ma
       walkDelta: d.walkDelta ?? 0,
       hpMult: d.hpMult ?? 1,
       ignoreLootEncounters: d.ignoreLootEncounters ?? false,
+      raidPassiveCreditsPerHour: d.raidPassiveCreditsPerHour ?? 0,
+      gatherRaidResources: d.gatherRaidResources ?? false,
+      raidResourceStorageBonus: d.raidResourceStorageBonus ?? 0,
       zoneBoost: d.zoneBoost ?? 0,
       priceChange: d.priceChange ?? 0,
       image: d.image ?? '',

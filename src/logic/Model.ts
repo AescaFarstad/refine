@@ -5,6 +5,7 @@ import { processCheats } from './cheat/CheatProcessor';
 import { calculateVisibility } from "./Research";
 import { ensureShardDiscovery, ensureResearchTabDiscovery, ensureMazeTabDiscovery } from "./Discover";
 import { saveAutosave } from "./SaveLoad";
+import { accumulateRaidResources } from './Raid';
 
 const TIME_SPEED_MAX = 3800;
 const TIME_SPEED_MIN = 300;
@@ -35,7 +36,9 @@ export function update(gs: GameState, deltaTime: number): void {
 
   if (gs.timeActive && gs.nextEvt && gs.gameTime >= gs.nextEvt.at) {
     const evt = gs.nextEvt;
+    const timeDelta = Math.max(0, evt.at - gs.gameTime);
     gs.gameTime = evt.at;
+    accumulateRaidResources(gs, timeDelta);
     gs.nextEvt = null;
     processEvt(gs, evt);
     if (evt.name === 'EvtRefineryDone') {
@@ -51,8 +54,11 @@ export function update(gs: GameState, deltaTime: number): void {
 
   if (gs.timeActive) {
     const dt = Math.max(0, deltaTime);
-    const oldTime = gs.gameTime;
-    gs.gameTime += dt * Math.max(1, gs.timeSpeed || 1);
+    const scaledDelta = dt * Math.max(1, gs.timeSpeed || 1);
+    const remainingToEvt = gs.nextEvt ? Math.max(0, gs.nextEvt.at - gs.gameTime) : scaledDelta;
+    const timeDelta = Math.min(scaledDelta, remainingToEvt);
+    gs.gameTime += timeDelta;
+    accumulateRaidResources(gs, timeDelta);
 
     // exponential ramp: multiply by MAX^(dt/T)
     const effectiveMax = TIME_SPEED_MAX * (gs.timeSpeedMaxBoost || 1);

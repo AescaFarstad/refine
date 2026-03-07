@@ -32,14 +32,17 @@ export function drawMazeResourceMarker(
     const source = atlasStorage.getItemsSource();
     const frame = atlasStorage.getItemsFrame(iconImage)!;
     const iconSizePx = glyphSizePx * iconScale;
+    const aspect = frame.w / frame.h;
+    const drawW = aspect >= 1 ? iconSizePx : iconSizePx * aspect;
+    const drawH = aspect >= 1 ? iconSizePx / aspect : iconSizePx;
 
     ctx.save();
     ctx.globalAlpha *= iconAlpha;
     ctx.drawImage(
       source,
       frame.x, frame.y, frame.w, frame.h,
-      centerX - iconSizePx / 2, centerY - iconSizePx / 2,
-      iconSizePx, iconSizePx,
+      centerX - drawW / 2, centerY - drawH / 2,
+      drawW, drawH,
     );
     ctx.restore();
     return;

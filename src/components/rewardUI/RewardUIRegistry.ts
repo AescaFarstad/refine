@@ -2,7 +2,7 @@ import type { Component } from 'vue';
 import RUIPoetsScribbles from './RUIPoetsScribbles.vue';
 import RUIChurchSymbols from './RUIChurchSymbols.vue';
 import RUISignatureComplete from './RUISignatureComplete.vue';
-import RUIMagentsCrystals from './RUIMagentsCrystals.vue';
+import RUIMagentaCrystals from './RUIMagentaCrystals.vue';
 import RUIEssenceYieldBonus from './RUIEssenceYieldBonus.vue';
 import RUIYouWon from './RUIYouWon.vue';
 
@@ -10,7 +10,7 @@ export const REWARD_UI_COMPONENTS: Record<string, Component> = {
   poets_scribbles: RUIPoetsScribbles,
   church_symbols: RUIChurchSymbols,
   signature_complete: RUISignatureComplete,
-  RUIMagentsCrystals: RUIMagentsCrystals,
+  RUIMagentaCrystals: RUIMagentaCrystals,
   RUIEssenceYieldBonus: RUIEssenceYieldBonus,
   you_won: RUIYouWon,
 };

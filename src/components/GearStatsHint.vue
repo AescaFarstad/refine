@@ -3,8 +3,10 @@
     <div v-if="blocked" class="blocked-warning">No spare slots in this category</div>
     <div v-if="blocked" class="blocked-warning">(Use ◌ skill points to unlock more slots)</div>
     <div class="hint-row" v-for="(row, i) in hintRows" :key="i">
-      <span class="hint-label">{{ row.label }}</span>
-      <span class="hint-value"><span :style="row.color ? { color: row.color } : undefined">{{ row.value }}</span>{{ row.suffix }}</span>
+      <span v-if="row.label" class="hint-label">{{ row.label }}</span>
+      <span class="hint-value" :style="!row.label ? { gridColumn: '1 / -1' } : undefined">
+        <span v-for="(s, j) in row.spans" :key="j" :class="{ dim: s.dim }" :style="s.color ? { color: s.color } : undefined">{{ s.text }}</span>
+      </span>
     </div>
   </div>
 </template>
@@ -18,10 +20,13 @@ import { getGameState, uiState } from '../logic/UIState';
 
 const creditsSpec = getResourceSpec('credits');
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   gear: GearDefinition;
   blocked?: boolean;
-}>();
+  showResourceContext?: boolean;
+}>(), {
+  showResourceContext: true,
+});
 
 function fmtSigned(n: number, suffix = ''): string {
   if (n > 0) return `+${n}${suffix}`;
@@ -29,58 +34,97 @@ function fmtSigned(n: number, suffix = ''): string {
   return `0${suffix}`;
 }
 
-const hintRows = computed((): Array<{ label: string; value: string; color?: string; suffix?: string }> => {
+type HintSpan = { text: string; color?: string; dim?: boolean };
+type HintRow = { label: string; spans: HintSpan[] };
+
+function bright(text: string): HintSpan { return { text }; }
+function dim(text: string): HintSpan { return { text, dim: true }; }
+function colored(text: string, color: string): HintSpan { return { text, color }; }
+
+const hintRows = computed((): HintRow[] => {
   const g = props.gear;
-  const rows: Array<{ label: string; value: string; color?: string; suffix?: string }> = [];
+  const rows: HintRow[] = [];
 
-  if (g.damage) rows.push({ label: 'Damage', value: `${fmtSigned(g.damage)}` });
-  if (g.speedPercent) rows.push({ label: 'Walking speed', value: `${fmtSigned(g.speedPercent, '%')}` });
-  if (g.speedFlat) rows.push({ label: 'Flat speed bonus', value: `${fmtSigned(g.speedFlat, ' km/h')}` });
-  if (g.walkMultiplier !== 1) rows.push({ label: 'Walk distance', value: `×${g.walkMultiplier}` });
-  if (g.walkDelta !== 0) rows.push({ label: 'Walk distance', value: `${fmtSigned(g.walkDelta)} km` });
-  if (g.chanceToHit) rows.push({ label: 'Hit chance', value: `${fmtSigned(g.chanceToHit, '%')}` });
+  uiState.raidKey;
+  const gs = getGameState();
+  const activeRaidId = gs.raid.id || gs.unlockedRaids[0]?.id || '';
+  const activeRaidEntry = activeRaidId ? gs.unlockedRaids.find(r => r.id === activeRaidId) || null : null;
+  const storedCredits = Math.max(0, Math.floor(activeRaidEntry?.uncollectedCredits ?? 0));
+  const storageCap = Math.max(0, Math.floor(activeRaidEntry?.maxStoredCredits ?? 0));
+  const currentGenerationPerHour = Math.max(0, Math.floor(activeRaidEntry?.passiveCreditsPerHour ?? 0));
+  const freeVolume = Math.max(0, Math.floor((gs.raid.bagsVolume || 0) - (gs.raid.usedVolume || 0)));
+  const gatherPacks = Math.max(0, Math.min(Math.floor(storedCredits / 100), freeVolume));
 
-  if (g.hp) rows.push({ label: 'HP', value: `${fmtSigned(g.hp)}${g.hp < 0 ? ' (loss)' : ''}` });
-  if (g.hpMult !== 1) rows.push({ label: 'HP multiplier', value: `×${g.hpMult}` });
+  if (props.showResourceContext) {
+    if (g.id === 'gather_resources') {
+      if (g.description) rows.push({ label: '', spans: [dim(g.description)] });
+      rows.push({ label: 'Collect', spans: [bright(`${gatherPacks} packs`), dim(' (currently stored: '), colored(`${storedCredits}/${storageCap}${creditsSpec.glyph}`, creditsSpec.color), dim(')')] });
+      rows.push({ label: 'Each pack takes', spans: [bright('1'), dim(' volume and contains '), colored(`100${creditsSpec.glyph}`, creditsSpec.color)] });
+    }
+  }
 
-  if (g.regenPerKm) rows.push({ label: 'Regen', value: `${fmtSigned(g.regenPerKm)} hp/km${g.regenPerKm < 0 ? ' (loss)' : ''}` });
-  if (g.regenAfterCombat) rows.push({ label: 'Regen after combat', value: `${fmtSigned(g.regenAfterCombat)} hp${g.regenAfterCombat < 0 ? ' (loss)' : ''}` });
-  if (g.regenPer10Minutes) rows.push({ label: 'Regen per 10 min', value: `${fmtSigned(g.regenPer10Minutes)} hp${g.regenPer10Minutes < 0 ? ' (loss)' : ''}` });
+  if (g.damage) rows.push({ label: 'Damage', spans: [bright(`${fmtSigned(g.damage)}`)] });
+  if (g.speedPercent) rows.push({ label: 'Walking speed', spans: [bright(`${fmtSigned(g.speedPercent, '%')}`)] });
+  if (g.speedFlat) rows.push({ label: 'Flat speed bonus', spans: [bright(`${fmtSigned(g.speedFlat, ' km/h')}`)] });
+  if (g.walkMultiplier !== 1) rows.push({ label: 'Walk distance', spans: [bright(`×${g.walkMultiplier}`)] });
+  if (g.walkDelta !== 0) rows.push({ label: 'Walk distance', spans: [bright(`${fmtSigned(g.walkDelta)} km`)] });
+  if (g.chanceToHit) rows.push({ label: 'Hit chance', spans: [bright(`${fmtSigned(g.chanceToHit, '%')}`)] });
 
-  if (g.prepTimeMin) rows.push({ label: 'Prep time', value: `${g.prepTimeMin} min` });
-  if (g.chanceToBlock) rows.push({ label: 'Block chance', value: `${fmtSigned(g.chanceToBlock, '%')}` });
-  if (g.armor) rows.push({ label: 'Armor', value: `${fmtSigned(g.armor)}` });
-  if (g.attackSkipCount) rows.push({ label: 'Attack skips', value: `${fmtSigned(g.attackSkipCount)}` });
-  if (g.reflectOnHitPct) rows.push({ label: 'Reflect on hit', value: `${fmtSigned(g.reflectOnHitPct, '%')}` });
-  if (g.reflectOnBlockPct) rows.push({ label: 'Reflect on block', value: `${fmtSigned(g.reflectOnBlockPct, '%')}` });
-  if (g.stunChance) rows.push({ label: 'Stun chance', value: `${fmtSigned(g.stunChance, '%')}` });
+  if (g.hp) rows.push({ label: 'HP', spans: [bright(`${fmtSigned(g.hp)}${g.hp < 0 ? ' (loss)' : ''}`)] });
+  if (g.hpMult !== 1) rows.push({ label: 'HP multiplier', spans: [bright(`×${g.hpMult}`)] });
 
-  if (g.lootChance) rows.push({ label: 'Loot chance', value: `${fmtSigned(g.lootChance, '%')}` });
-  if (g.rarityBuff) rows.push({ label: 'Loot rarity', value: `${fmtSigned(g.rarityBuff, '')}` });
-  if (g.biopsyChance) rows.push({ label: 'Remains harvest chance', value: `${fmtSigned(g.biopsyChance, '%')}` });
-  if (g.maxWeight) rows.push({ label: 'Max weight', value: `${fmtSigned(g.maxWeight)}` });
-  if (g.volume) rows.push({ label: 'Volume', value: `${fmtSigned(g.volume)}` });
-  if (g.zoneBoost) rows.push({ label: 'Zone stability', value: `+${formatDurationHM(g.zoneBoost)} (permanent)` });
-  if (g.priceChange) rows.push({ label: 'Price change', value: `${fmtSigned(g.priceChange)}${creditsSpec.glyph}`, color: creditsSpec.color, suffix: ' for each usage in the raid' });
-  if (g.reimbursed) rows.push({ label: `Reimbursement: `, value: `${g.reimbursed}%` });
+  if (g.regenPerKm) rows.push({ label: 'Regen', spans: [bright(`${fmtSigned(g.regenPerKm)} hp/km${g.regenPerKm < 0 ? ' (loss)' : ''}`)] });
+  if (g.regenAfterCombat) rows.push({ label: 'Regen after combat', spans: [bright(`${fmtSigned(g.regenAfterCombat)} hp${g.regenAfterCombat < 0 ? ' (loss)' : ''}`)] });
+  if (g.regenPer10Minutes) rows.push({ label: 'Regen per 10 min', spans: [bright(`${fmtSigned(g.regenPer10Minutes)} hp${g.regenPer10Minutes < 0 ? ' (loss)' : ''}`)] });
+
+  if (g.prepTimeMin) rows.push({ label: 'Prep time', spans: [bright(`${g.prepTimeMin} min`)] });
+  if (g.chanceToBlock) rows.push({ label: 'Block chance', spans: [bright(`${fmtSigned(g.chanceToBlock, '%')}`)] });
+  if (g.armor) rows.push({ label: 'Armor', spans: [bright(`${fmtSigned(g.armor)}`)] });
+  if (g.attackSkipCount) rows.push({ label: 'Attack skips', spans: [bright(`${fmtSigned(g.attackSkipCount)}`)] });
+  if (g.reflectOnHitPct) rows.push({ label: 'Reflect on hit', spans: [bright(`${fmtSigned(g.reflectOnHitPct, '%')}`)] });
+  if (g.reflectOnBlockPct) rows.push({ label: 'Reflect on block', spans: [bright(`${fmtSigned(g.reflectOnBlockPct, '%')}`)] });
+  if (g.stunChance) rows.push({ label: 'Stun chance', spans: [bright(`${fmtSigned(g.stunChance, '%')}`)] });
+
+  if (g.lootChance) rows.push({ label: 'Loot chance', spans: [bright(`${fmtSigned(g.lootChance, '%')}`)] });
+  if (g.rarityBuff) rows.push({ label: 'Loot rarity', spans: [bright(`${fmtSigned(g.rarityBuff, '')}`)] });
+  if (g.raidPassiveCreditsPerHour) {
+    const newGen = currentGenerationPerHour + Math.max(0, Math.floor(g.raidPassiveCreditsPerHour));
+    if (currentGenerationPerHour > 0) {
+      rows.push({ label: 'Raid credits generation', spans: [colored(`${currentGenerationPerHour}/h → ${newGen}/h${creditsSpec.glyph}`, creditsSpec.color), dim(' (permanent)')] });
+    } else {
+      rows.push({ label: 'Raid credits generation', spans: [colored(`${fmtSigned(g.raidPassiveCreditsPerHour, '')}${creditsSpec.glyph}`, creditsSpec.color), dim(' per hour (permanent)')] });
+    }
+  }
+  if (g.raidResourceStorageBonus) {
+    const newCap = storageCap + Math.max(0, Math.floor(g.raidResourceStorageBonus));
+    if (storageCap > 0) {
+      rows.push({ label: 'Raid credits storage capacity', spans: [colored(`${storageCap} → ${newCap}${creditsSpec.glyph}`, creditsSpec.color), dim(' (permanent)')] });
+    } else {
+      rows.push({ label: 'Raid credits storage capacity', spans: [colored(`+${g.raidResourceStorageBonus}${creditsSpec.glyph}`, creditsSpec.color), dim(' (permanent)')] });
+    }
+  }
+  if (g.biopsyChance) rows.push({ label: 'Remains harvest chance', spans: [bright(`${fmtSigned(g.biopsyChance, '%')}`)] });
+  if (g.maxWeight) rows.push({ label: 'Max weight', spans: [bright(`${fmtSigned(g.maxWeight)}`)] });
+  if (g.volume) rows.push({ label: 'Volume', spans: [bright(`${fmtSigned(g.volume)}`)] });
+  if (g.zoneBoost) rows.push({ label: 'Zone stability', spans: [bright(`+${formatDurationHM(g.zoneBoost)}`), dim(' (permanent)')] });
+  if (g.priceChange) rows.push({ label: 'Price change', spans: [colored(`${fmtSigned(g.priceChange)}${creditsSpec.glyph}`, creditsSpec.color), dim(' for each usage in the raid')] });
+  if (g.reimbursed) rows.push({ label: `Reimbursement: `, spans: [bright(`${g.reimbursed}%`)] });
   // Perk
-  if (g.perk) rows.push({ label: 'Perk', value: g.perk });
+  if (g.perk) rows.push({ label: 'Perk', spans: [bright(g.perk)] });
 
   if (g.stunChance) {
-    uiState.raidKey; // reactive dependency: recompute when loadout changes
-    const gs = getGameState();
     const loadout = gs.loadouts[gs.raid.id] ?? [];
     const equipped = loadout.includes(g.id);
     const total = equipped
       ? gs.raid.stunChance
       : 100 - (100 - gs.raid.stunChance) * (100 - g.stunChance) / 100;
     if (total !== g.stunChance) {
-      rows.push({ label: 'Total stun chance', value: `${Math.round(total)}%` });
+      rows.push({ label: 'Total stun chance', spans: [bright(`${Math.round(total)}%`)] });
     }
   }
 
-  // Description
-  if (g.description) rows.push({ label: '', value: g.description });
+  // Description (skip for gather_resources, already shown above)
+  if (g.description && g.id !== 'gather_resources') rows.push({ label: '', spans: [bright(g.description)] });
   return rows;
 });
 </script>
@@ -116,5 +160,12 @@ const hintRows = computed((): Array<{ label: string; value: string; color?: stri
   font-size: 14px;
   font-weight: 800;
   white-space: pre-line;
+}
+
+.dim {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
 }
 </style>

@@ -41,6 +41,17 @@ export interface WalkEncounterLogEntry extends RaidLogEntryBase {
   hpHealed: number;
 }
 
+export interface ResourcesEncounterLogEntry extends RaidLogEntryBase {
+  kind: 'ResourcesEncounter';
+  storageBefore: number;
+  storageAfter: number;
+  storageCapacity: number;
+  chunksCollected: number;
+  creditsCollected: number;
+  volumeBefore: number;
+  volumeAfter: number;
+}
+
 export interface QuestEncounterLogEntry extends RaidLogEntryBase {
   kind: 'QuestEncounter';
   questId: string;
@@ -146,6 +157,7 @@ export interface ZoneCollapseLogEntry extends RaidLogEntryBase {
 export type RaidEventLogEntry =
   | PreparationEncounterLogEntry
   | WalkEncounterLogEntry
+  | ResourcesEncounterLogEntry
   | QuestEncounterLogEntry
   | FightEncounterLogEntry
   | LootEncounterLogEntry
@@ -206,6 +218,31 @@ export function createWalkEncounterLogEntry(init: Partial<WalkEncounterLogEntry>
     maxHp: 0,
     hasPainkiller: false,
     hpHealed: 0,
+    ...rest,
+  };
+}
+
+export function createResourcesEncounterLogEntry(init: Partial<ResourcesEncounterLogEntry> = {}): ResourcesEncounterLogEntry {
+  const { kind: _kind, ...rest } = init;
+  return {
+    kind: 'ResourcesEncounter',
+    timeSpentSec: 0,
+    elapsedTotalSec: 0,
+    currentHp: 0,
+    currentMaxHp: 0,
+    bagsUsed: 0,
+    bagsCapacity: 0,
+    injected: false,
+    timeRegenHpBefore: 0,
+    timeRegenHpAfter: 0,
+    timeRegenDurationSec: 0,
+    storageBefore: 0,
+    storageAfter: 0,
+    storageCapacity: 0,
+    chunksCollected: 0,
+    creditsCollected: 0,
+    volumeBefore: 0,
+    volumeAfter: 0,
     ...rest,
   };
 }

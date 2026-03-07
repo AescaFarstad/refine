@@ -22,7 +22,7 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 2,
     image: 'kukri',
     perk: 'Hack and Slash',
-    description: 'Scavenging takes 2 minutes less.',
+    description: 'Scavenging takes 2 minutes less',
   },
   fire_axe: {
     name: 'Fire Axe',
@@ -33,7 +33,7 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 3,
     image: 'axe',
     perk: 'Hack and Crack',
-    description: 'Scavenging takes 4 minutes less.',
+    description: 'Scavenging takes 4 minutes less',
   },
   sledgehammer: {
     name: 'Sledgehammer',
@@ -63,7 +63,7 @@ const gear: Record<string, RawGearDefinition> = {
     price: 250,
     weight: 2,
     image: 'stun_gun',
-    description: 'Stunned enemies skip one turn.',
+    description: 'Stunned enemies skip one turn',
   },
   riot_shield: {
     name: 'Riot Shield',
@@ -74,7 +74,7 @@ const gear: Record<string, RawGearDefinition> = {
     price: 300,
     weight: 8,
     image: 'police_shield',
-    description: 'Negates 2 successful enemy hits in each fight.',
+    description: 'Negates 2 successful enemy hits in each fight',
   },
 
   // ── Ranged Weapons ─────────────────────────────────────────────────
@@ -86,7 +86,7 @@ const gear: Record<string, RawGearDefinition> = {
     price: 50,
     weight: 2,
     image: 'flare_gun',
-    description: 'Stunned enemies skip a turn.',
+    description: 'Stunned enemies skip one turn',
   },
   revolver: {
     name: 'Revolver',
@@ -97,7 +97,7 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 2,
     image: 'revolver2',
     perk: 'Aiming',
-    description: 'Attacks take 1 minute longer.',
+    description: 'Attacks take 1 minute longer',
   },
   uzi: {
     name: 'Uzi',
@@ -133,7 +133,7 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 4,
     image: 'm4_rifle',
     perk: 'Aiming',
-    description: 'Attacks take 1 minute longer.',
+    description: 'Attacks take 1 minute longer',
   },
   sniper_rifle: {
     name: 'Sniper Rifle',
@@ -144,7 +144,7 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 5,
     image: 'sniper_rifle',
     perk: 'Aiming',
-    description: 'Attacks take 1 minute longer.',
+    description: 'Attacks take 1 minute longer',
   },
 
   // ── Accessories ────────────────────────────────────────────────────
@@ -182,7 +182,7 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 1,
     image: 'scope',
     perk: 'Aiming',
-    description: 'Attacks take 1 minute longer.',
+    description: 'Attacks take 1 minute longer',
   },
   scout_binoculars: {
     name: 'Binoculars',
@@ -346,7 +346,7 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 1,
     image: 'bone_saw',
     biopsyChance: 20,
-    description: 'Allows extracting monster remains.',
+    description: 'Allows extracting monster remains',
   },
   aspirator_probe: {
     name: 'Aspirator Probe',
@@ -355,7 +355,7 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 1,
     image: 'aspirator_probe',
     biopsyChance: 30,
-    description: 'Allows extracting monster remains.',
+    description: 'Allows extracting monster remains',
   },
   field_scanner: {
     name: 'Field Scanner',
@@ -383,7 +383,7 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 2,
     reimbursed: 40,
     image: 'collar',
-    description: 'Part of the equipment cost is reimbursed in case you die in the raid.',
+    description: 'Part of the equipment cost is reimbursed in case you die in the raid',
   },
   biofoam: {
     name: 'Biofoam Dispenser',
@@ -411,7 +411,7 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 3,
     attackSkipCount: 2,
     image: 'decoy',
-    description: 'Negates 2 successful enemy hits in each fight.',
+    description: 'Negates 2 successful enemy hits in each fight',
   },
   combat_drone: {
     name: 'Combat Drone',
@@ -458,7 +458,7 @@ const gear: Record<string, RawGearDefinition> = {
     price: 300,
     weight: 0,
     image: 'robodog',
-    description: 'Part of the equipment cost is reimbursed in case you die in the raid.',
+    description: 'Part of the equipment cost is reimbursed in case you die in the raid',
   },
 
   // ── Grenades ───────────────────────────────────────────────────────
@@ -470,7 +470,7 @@ const gear: Record<string, RawGearDefinition> = {
     price: 60,
     weight: 1,
     image: 'flashbang',
-    description: 'Negates 1 successful enemy hit in each fight.',
+    description: 'Negates 1 successful enemy hit in each fight',
   },
   frag_grenade: {
     name: 'Frag Grenade',
@@ -480,7 +480,7 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 1,
     image: 'frag_grenade2',
     perk: 'Explosive',
-    description: '40% chance to spoil the monster remains.',
+    description: '40% chance to spoil the monster remains',
   },
   smoke_grenade: {
     name: 'Smoke Grenade',
@@ -507,7 +507,24 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 1,
     image: 'bismuth',
     perk: 'Materialization',
-    description: 'At the start of the raid, choose one guaranteed item to be looted.',
+    description: 'At the start of the raid, choose one item guaranteed to be looted',
+  },
+  tesseract: {
+    name: 'Tesseract',
+    category: 'grenades',
+    countable: true,
+    weight: 1,
+    raidPassiveCreditsPerHour: 40,
+    image: 'tesseract',
+    description: 'Collect these resources with the corresponding tactic.',
+  },
+  scaffold: {
+    name: 'Scaffold',
+    category: 'grenades',
+    countable: true,
+    weight: 1,
+    raidResourceStorageBonus: 500,
+    image: 'scaffold',
   },
   zone_crystal: {
     name: 'Zone Crystal',
@@ -527,7 +544,7 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 0,
     perk: 'Painkiller',
     image: 'syringe',
-    description: 'Prevents speed loss due to missing health.',
+    description: 'Prevents speed loss due to missing health',
   },
   bandage: {
     name: 'Bandage',
@@ -648,12 +665,13 @@ const gear: Record<string, RawGearDefinition> = {
     description: 'Skip all scavenging sites, thus saving time',
   },
   gather_resources: {
-    name: 'Gather Resources',
+    name: 'Collect Resources',
     category: 'tactics',
+    gatherRaidResources: true,
     price: 0,
     weight: 0,
     image: 'crates_3d',
-    description: '',
+    description: 'Visit the placed tesseracts and collect accumulated resources',
   },
 
   // ── Summons (commented out) ────────────────────────────────────────

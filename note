@@ -213,6 +213,7 @@ resource pickup radius +1
 next 5 resources double their value
 get 1 credit for each timeflux spent on this trip by this point
 double all visible resources
+increase resource counts by teh number of void cells in its radius
 
 
 corruption spreading in the maze
@@ -242,3 +243,6 @@ white essence = charges wafer. next refining 15% yield, 15% success chance
 gives sumatras. sumtras prevent zone deterioration, prevent raids from taking any time
 there is a raid which deteriorates VERY quickly, use sumatras to extract enough resources from it
 crystal+sumatra +1000 cr = scaffold
+
+
+make oracle: { signatureId: 's4', riddle: '...' } not part of the archetype, but part of the research node, so that nodes with same archetype could have different riddles and signatures.

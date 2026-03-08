@@ -5,7 +5,7 @@ import {
   MAGENTA_YIELD_BONUS_PCT,
 } from '../logic/Const';
 
-const ARROW_OBSTACLE_HINT = 'The arrow itself does not seem to have any special significance';
+const ARROW_OBSTACLE_HINT = 'The arrow node itself does nothing special.';
 const ARROW_OBSTACLE_GLYPH = '➤';
 
 export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
@@ -141,6 +141,7 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
         params: { bonusPct: MAGENTA_YIELD_BONUS_PCT, color: 'magenta' },
       },
     ],
+    oracle: { signatureId: 's1', riddle: '...' }
   },
   disc_essence_anomaly_red: {
     type: 'refining',
@@ -153,6 +154,7 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     ownedIcon: { kind: 'itemImage', key: 'red', scale: 1.3, offset: { x: 0, y: 4 } },
     revealedIcon: { kind: 'itemImage', key: 'red', scale: 1.3, offset: { x: 0, y: 4 } },
     rewards: [{ kind: 'refining_red_essence_resource_bonus', amount: 1 }],
+    oracle: { signatureId: 's2', riddle: '...' }
   },
   disc_essence_anomaly_green: {
     type: 'refining',
@@ -165,6 +167,7 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     ownedIcon: { kind: 'itemImage', key: 'green', scale: 1.3, offset: { x: 0, y: 4 } },
     revealedIcon: { kind: 'itemImage', key: 'green', scale: 1.3, offset: { x: 0, y: 4 } },
     rewards: [{ kind: 'refining_green_essence_resource_bonus', amount: 1 }],
+    oracle: { signatureId: 's3', riddle: '...' }
   },
   disc_essence_anomaly_blue: {
     type: 'refining',
@@ -177,6 +180,7 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     ownedIcon: { kind: 'itemImage', key: 'blue', scale: 1.3, offset: { x: 0, y: 4 } },
     revealedIcon: { kind: 'itemImage', key: 'blue', scale: 1.3, offset: { x: 0, y: 4 } },
     rewards: [{ kind: 'refining_blue_essence_resource_bonus', amount: 1 }],
+    oracle: { signatureId: 's4', riddle: '...' }
   },
   disc_essence_anomaly_yellow: {
     type: 'refining',
@@ -189,6 +193,7 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     ownedIcon: { kind: 'itemImage', key: 'yellow', scale: 1.3, offset: { x: 0, y: 4 } },
     revealedIcon: { kind: 'itemImage', key: 'yellow', scale: 1.3, offset: { x: 0, y: 4 } },
     rewards: [{ kind: 'refining_yellow_neighbor_bonus', amount: 1 }],
+    oracle: { signatureId: 's5', riddle: '...' }
   },
   disc_maze_navigation: {
     type: 'discovery',
@@ -215,6 +220,20 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     ownedIcon: { kind: 'itemImage', key: 'eye_in_triangle', scale: 1.5, offset: { x: 0, y: -2 } },
     revealedIcon: { kind: 'itemImage', key: 'eye_in_triangle', scale: 1.5, offset: { x: 0, y: -2 } },
     rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.MAZE_NEXUS }],
+  },
+  transmutation_room: {
+    type: 'discovery',
+    title: 'A geometric irregularity',
+    description: 'A concealed structure with no obvious purpose.',
+    ownedTitle: 'Transmutation room',
+    ownedDescription: 'A maze chamber for crafting consumable gear.',
+    revealingDiscovery: DISCOVERY.MAZE_NAVIGATION,
+    revealedTitle: 'Transmutation room',
+    revealedDescription: 'A maze chamber for crafting consumable gear.',
+    icon: { kind: 'glyph', glyph: '?', scale: 1.2, offset: { x: 0, y: 0 } },
+    ownedIcon: { kind: 'itemImage', key: 'pentagon_concave', scale: 1.0, offset: { x: 0, y: 0 } },
+    revealedIcon: { kind: 'itemImage', key: 'pentagon_concave', scale: 1.0, offset: { x: 0, y: 0 } },
+    rewards: [],
   },
 
   gear_zone_crystal: {

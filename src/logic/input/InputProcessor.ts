@@ -505,6 +505,7 @@ handlersByName.set('CmdMazeMoveTo', (gs, cmd) => {
   const moveResult = handleMazeMoveTo(gs, c.target);
   if (moveResult.success) {
     uiState.mazeNexusMenuOpen = moveResult.nexusReached;
+    uiState.mazeTransmutationMenuOpen = moveResult.transmutationReached;
     uiState.mazeOracleMenuOpen = moveResult.oracleReached;
     uiState.mazeVisitedOracleNodeId = moveResult.oracleReached ? moveResult.oracleNodeId : -1;
     if (moveResult.forcedReset) {

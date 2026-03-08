@@ -514,7 +514,7 @@ const gear: Record<string, RawGearDefinition> = {
     category: 'grenades',
     countable: true,
     weight: 1,
-    raidPassiveCreditsPerHour: 40,
+    raidPassiveCreditsPerHour: 10,
     image: 'tesseract',
     description: 'Collect these resources with the corresponding tactic.',
   },

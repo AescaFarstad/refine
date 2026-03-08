@@ -16,6 +16,7 @@ type BoundaryEdge = {
 export interface HexBoundaryLoop {
   points: Point2[];
   edgeOwnerCells: Point2[];
+  isHole: boolean;
 }
 
 // Hex corners for pointy-top orientation, mapped onto an integer lattice:
@@ -66,6 +67,89 @@ function signedArea(loop: readonly LatticeVertex[]): number {
     area2 += a.u * b.v - a.v * b.u;
   }
   return area2 * 0.5;
+}
+
+function latticeCellCenter(cell: Point2): LatticeVertex {
+  return {
+    u: 2 * cell.x + cell.y,
+    v: 3 * cell.y,
+  };
+}
+
+function loopOwnersAreOnLeft(loop: readonly LatticeVertex[], edgeOwners: readonly Point2[]): boolean {
+  const segmentCount = loop.length - 1;
+  if (segmentCount !== edgeOwners.length) {
+    throw new Error(
+      `loopOwnersAreOnLeft: segment-owner mismatch, segments=${segmentCount}, owners=${edgeOwners.length}.`
+    );
+  }
+
+  let signedOwnerSide = 0;
+  for (let i = 0; i < segmentCount; i++) {
+    const a = loop[i]!;
+    const b = loop[i + 1]!;
+    const ownerCenter = latticeCellCenter(edgeOwners[i]!);
+    const midU = (a.u + b.u) * 0.5;
+    const midV = (a.v + b.v) * 0.5;
+    const relU = ownerCenter.u - midU;
+    const relV = ownerCenter.v - midV;
+    signedOwnerSide += (b.u - a.u) * relV - (b.v - a.v) * relU;
+  }
+
+  if (signedOwnerSide === 0) {
+    throw new Error('loopOwnersAreOnLeft: could not determine loop owner side.');
+  }
+  return signedOwnerSide > 0;
+}
+
+function reverseLoopWithOwners(loop: readonly LatticeVertex[], edgeOwners: readonly Point2[]): {
+  loop: LatticeVertex[];
+  edgeOwners: Point2[];
+} {
+  const segmentCount = loop.length - 1;
+  const reversedLoop = new Array<LatticeVertex>(segmentCount + 1);
+  const reversedOwners = new Array<Point2>(segmentCount);
+
+  for (let i = 0; i < segmentCount; i++) {
+    reversedLoop[i] = loop[segmentCount - i]!;
+    reversedOwners[i] = edgeOwners[(segmentCount - 2 - i + segmentCount) % segmentCount]!;
+  }
+  reversedLoop[segmentCount] = reversedLoop[0]!;
+
+  return {
+    loop: reversedLoop,
+    edgeOwners: reversedOwners,
+  };
+}
+
+function rotateLoopToSmallestVertex(loop: readonly LatticeVertex[], edgeOwners: readonly Point2[]): {
+  loop: LatticeVertex[];
+  edgeOwners: Point2[];
+} {
+  const segmentCount = loop.length - 1;
+  let minIdx = 0;
+  for (let ri = 1; ri < segmentCount; ri++) {
+    const cur = loop[ri]!;
+    const best = loop[minIdx]!;
+    if (cur.u < best.u || (cur.u === best.u && cur.v < best.v)) {
+      minIdx = ri;
+    }
+  }
+
+  if (minIdx === 0) {
+    return {
+      loop: loop.slice(),
+      edgeOwners: edgeOwners.slice(),
+    };
+  }
+
+  const rotatedLoop = loop.slice(minIdx, segmentCount).concat(loop.slice(0, minIdx));
+  rotatedLoop.push({ u: rotatedLoop[0]!.u, v: rotatedLoop[0]!.v });
+  const rotatedOwners = edgeOwners.slice(minIdx).concat(edgeOwners.slice(0, minIdx));
+  return {
+    loop: rotatedLoop,
+    edgeOwners: rotatedOwners,
+  };
 }
 
 function toPixelVertex(v: LatticeVertex): Point2 {
@@ -228,27 +312,17 @@ export function computeHexBoundary(ownedCells: readonly Point2[]): HexBoundaryLo
         );
       }
       seenLoopKeys.add(loopKey);
-      // Canonicalize: rotate loop to start at the lexicographically smallest vertex
-      // so the boundary shape is deterministic regardless of half-edge traversal order.
-      const segCount = loop.length - 1;
-      let minIdx = 0;
-      for (let ri = 1; ri < segCount; ri++) {
-        const cur = loop[ri]!;
-        const best = loop[minIdx]!;
-        if (cur.u < best.u || (cur.u === best.u && cur.v < best.v)) {
-          minIdx = ri;
-        }
+      let normalizedLoop = loop;
+      let normalizedOwners = edgeOwners;
+      if (!loopOwnersAreOnLeft(normalizedLoop, normalizedOwners)) {
+        const reversed = reverseLoopWithOwners(normalizedLoop, normalizedOwners);
+        normalizedLoop = reversed.loop;
+        normalizedOwners = reversed.edgeOwners;
       }
-      if (minIdx !== 0) {
-        const rotatedLoop = loop.slice(minIdx, segCount).concat(loop.slice(0, minIdx));
-        rotatedLoop.push({ u: rotatedLoop[0]!.u, v: rotatedLoop[0]!.v });
-        const rotatedOwners = edgeOwners.slice(minIdx).concat(edgeOwners.slice(0, minIdx));
-        loops.push(rotatedLoop);
-        loopEdgeOwnerCells.push(rotatedOwners);
-      } else {
-        loops.push(loop);
-        loopEdgeOwnerCells.push(edgeOwners);
-      }
+
+      const rotated = rotateLoopToSmallestVertex(normalizedLoop, normalizedOwners);
+      loops.push(rotated.loop);
+      loopEdgeOwnerCells.push(rotated.edgeOwners);
     }
   }
 
@@ -256,6 +330,7 @@ export function computeHexBoundary(ownedCells: readonly Point2[]): HexBoundaryLo
     return [{
       points: loops[0]!.map(toPixelVertex),
       edgeOwnerCells: loopEdgeOwnerCells[0]!,
+      isHole: signedArea(loops[0]!) < 0,
     }];
   }
 
@@ -272,12 +347,14 @@ export function computeHexBoundary(ownedCells: readonly Point2[]): HexBoundaryLo
   const ordered: HexBoundaryLoop[] = [{
     points: loops[outerIdx]!.map(toPixelVertex),
     edgeOwnerCells: loopEdgeOwnerCells[outerIdx]!,
+    isHole: signedArea(loops[outerIdx]!) < 0,
   }];
   for (let i = 0; i < loops.length; i++) {
     if (i === outerIdx) continue;
     ordered.push({
       points: loops[i]!.map(toPixelVertex),
       edgeOwnerCells: loopEdgeOwnerCells[i]!,
+      isHole: signedArea(loops[i]!) < 0,
     });
   }
 

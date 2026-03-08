@@ -1,3 +1,4 @@
+import { axialToPixel } from './HexMath';
 import { indexToAxial, axialToIndex } from './Research';
 import type { Point2 } from './ItemLib';
 import type { ReadonlyGameState } from './UIState';
@@ -29,20 +30,10 @@ const MAZE_NEXUS_ARCHETYPE_ID = 'disc_maze_nexus';
 const SPECIAL_RESOURCE_PUSH_WEIGHT = 1.2;
 const SPECIAL_NEXUS_PUSH_WEIGHT = 1;
 const SPECIAL_BOUNDARY_PUSH_AMOUNT = 0.15;
+const INNER_LOOP_RENDER_OFFSET = 0.08;
 const NORMAL_EPS = 1e-8;
 
 const traceBoundaryPath = traceSmoothHexBoundary;
-
-function getLoopSignedArea(loop: readonly Point2[]): number {
-  const segmentCount = loop.length - 1;
-  let area2 = 0;
-  for (let i = 0; i < segmentCount; i++) {
-    const a = loop[i]!;
-    const b = loop[i + 1]!;
-    area2 += a.x * b.y - a.y * b.x;
-  }
-  return area2 * 0.5;
-}
 
 function buildSpecialBoundaryPushByCell(game: ReadonlyGameState): Map<string, number> {
   const pushByCell = new Map<string, number>();
@@ -83,6 +74,7 @@ function buildSpecialBoundaryPushByCell(game: ReadonlyGameState): Map<string, nu
 
 function deformBoundaryLoopOutward(loop: HexBoundaryLoop, pushByCell: ReadonlyMap<string, number>): Point2[] {
   const points = loop.points;
+  const { normalX, normalY } = buildBoundaryLoopOutwardNormals(loop, points);
   const segmentCount = points.length - 1;
   if (segmentCount < 3) {
     return points.map(p => ({ x: p.x, y: p.y }));
@@ -91,30 +83,6 @@ function deformBoundaryLoopOutward(loop: HexBoundaryLoop, pushByCell: ReadonlyMa
     throw new Error(
       `deformBoundaryLoopOutward: segment-owner mismatch, segments=${segmentCount}, owners=${loop.edgeOwnerCells.length}.`
     );
-  }
-
-  const orientationArea = getLoopSignedArea(points);
-  const orientationSign = orientationArea >= 0 ? 1 : -1;
-
-  const normalX = new Array<number>(segmentCount);
-  const normalY = new Array<number>(segmentCount);
-  for (let i = 0; i < segmentCount; i++) {
-    const a = points[i]!;
-    const b = points[i + 1]!;
-    const dx = b.x - a.x;
-    const dy = b.y - a.y;
-    let nx = orientationSign > 0 ? dy : -dy;
-    let ny = orientationSign > 0 ? -dx : dx;
-    const mag = Math.hypot(nx, ny);
-    if (mag > NORMAL_EPS) {
-      nx /= mag;
-      ny /= mag;
-    } else {
-      nx = 0;
-      ny = 0;
-    }
-    normalX[i] = nx;
-    normalY[i] = ny;
   }
 
   const output = new Array<Point2>(segmentCount + 1);
@@ -151,14 +119,104 @@ function deformBoundaryLoopOutward(loop: HexBoundaryLoop, pushByCell: ReadonlyMa
   return output;
 }
 
+function buildBoundaryLoopOutwardNormals(loop: HexBoundaryLoop, points: readonly Point2[]): {
+  normalX: number[];
+  normalY: number[];
+} {
+  const segmentCount = points.length - 1;
+  if (segmentCount < 3) {
+    return {
+      normalX: [],
+      normalY: [],
+    };
+  }
+  if (segmentCount !== loop.edgeOwnerCells.length) {
+    throw new Error(
+      `buildBoundaryLoopOutwardNormals: segment-owner mismatch, segments=${segmentCount}, owners=${loop.edgeOwnerCells.length}.`
+    );
+  }
+
+  const normalX = new Array<number>(segmentCount);
+  const normalY = new Array<number>(segmentCount);
+  for (let i = 0; i < segmentCount; i++) {
+    const a = points[i]!;
+    const b = points[i + 1]!;
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    let nx = dy;
+    let ny = -dx;
+    const mag = Math.hypot(nx, ny);
+    if (mag > NORMAL_EPS) {
+      nx /= mag;
+      ny /= mag;
+
+      const owner = loop.edgeOwnerCells[i]!;
+      const ownerCenter = axialToPixel(owner, 1);
+      const midX = (a.x + b.x) * 0.5;
+      const midY = (a.y + b.y) * 0.5;
+      const outwardDot = nx * (midX - ownerCenter.x) + ny * (midY - ownerCenter.y);
+      if (outwardDot < 0) {
+        nx = -nx;
+        ny = -ny;
+      }
+    } else {
+      nx = 0;
+      ny = 0;
+    }
+    normalX[i] = nx;
+    normalY[i] = ny;
+  }
+  return {
+    normalX,
+    normalY,
+  };
+}
+
+function offsetBoundaryLoopAlongOutwardNormals(loop: HexBoundaryLoop, points: readonly Point2[], amount: number): Point2[] {
+  if (amount === 0) {
+    return points.map(p => ({ x: p.x, y: p.y }));
+  }
+  const segmentCount = points.length - 1;
+  if (segmentCount < 3) {
+    return points.map(p => ({ x: p.x, y: p.y }));
+  }
+
+  const { normalX, normalY } = buildBoundaryLoopOutwardNormals(loop, points);
+  const output = new Array<Point2>(segmentCount + 1);
+  for (let i = 0; i < segmentCount; i++) {
+    const prevSegment = (i - 1 + segmentCount) % segmentCount;
+    const nextSegment = i;
+    let nx = normalX[prevSegment]! + normalX[nextSegment]!;
+    let ny = normalY[prevSegment]! + normalY[nextSegment]!;
+    const nMag = Math.hypot(nx, ny);
+    if (nMag > NORMAL_EPS) {
+      nx /= nMag;
+      ny /= nMag;
+    } else {
+      nx = normalX[nextSegment]!;
+      ny = normalY[nextSegment]!;
+    }
+
+    const base = points[i]!;
+    output[i] = { x: base.x + nx * amount, y: base.y + ny * amount };
+  }
+  output[segmentCount] = { x: output[0]!.x, y: output[0]!.y };
+  return output;
+}
+
 function buildOwnedBoundaryLoopPoints(game: ReadonlyGameState): Point2[][] {
   const loops = computeOwnedResearchBoundary(game.researchCells);
   if (loops.length === 0) return [];
   const pushByCell = buildSpecialBoundaryPushByCell(game);
-  if (pushByCell.size === 0) {
-    return loops.map(loop => loop.points);
-  }
-  return loops.map(loop => deformBoundaryLoopOutward(loop, pushByCell));
+  return loops.map((loop) => {
+    let points = pushByCell.size === 0
+      ? loop.points.map(p => ({ x: p.x, y: p.y }))
+      : deformBoundaryLoopOutward(loop, pushByCell);
+    if (loop.isHole) {
+      points = offsetBoundaryLoopAlongOutwardNormals(loop, points, INNER_LOOP_RENDER_OFFSET);
+    }
+    return points;
+  });
 }
 
 function drawVisibleHexBoundary(

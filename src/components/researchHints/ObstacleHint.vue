@@ -15,7 +15,7 @@ const props = defineProps<{
 }>();
 
 const hintText = computed(() => {
-  return props.archetype?.description || 'The arrow itself does not seem to have any special significance';
+  return props.archetype?.description;
 });
 </script>
 

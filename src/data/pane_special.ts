@@ -63,4 +63,5 @@ export const paneSpecial: ResearchPlacementInput[] = [
   { archetypeId: 'obs_arrow_bottomLeft', cells: { x: 24, y: -18 } },
   { archetypeId: 'obs_arrow_left', cells: { x: 24, y: -13 } },
   { archetypeId: 'obs_arrow_topLeft', cells: { x: 18, y: -7 } },
+  { archetypeId: 'transmutation_room', cells: [{ x: -7, y: 13 }, { x: -9, y: 14 }, { x: -8, y: 14 }, { x: -8, y: 15 }] },
 ];

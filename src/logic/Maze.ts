@@ -43,6 +43,7 @@ export {
 
 const MAZE_ENTRANCE_ARCHETYPE_ID = 'disc_maze_navigation';
 const MAZE_NEXUS_ARCHETYPE_ID = 'disc_maze_nexus';
+const MAZE_TRANSMUTATION_ROOM_ARCHETYPE_ID = 'transmutation_room';
 
 export function isMazeEntranceCell(gs: ReadonlyGameState, cell: Point2): boolean {
   const idx = axialToIndex(cell.x, cell.y);
@@ -94,6 +95,32 @@ export function getOwnedMazeNexuses(gs: ReadonlyGameState): Array<Point2> {
     }
   }
   return nexuses;
+}
+
+export function isMazeTransmutationCell(gs: ReadonlyGameState, cell: Point2): boolean {
+  const idx = axialToIndex(cell.x, cell.y);
+  if (idx === -1) return false;
+  const researchCell = gs.researchCells[idx]!;
+  if (!researchCell.owned) return false;
+  if (researchCell.nodeId < 0) return false;
+  const node = gs.lib.research.nodes.get(researchCell.nodeId)!;
+  if (node.archetypeId !== MAZE_TRANSMUTATION_ROOM_ARCHETYPE_ID) return false;
+  const cc = node.centerCell ?? node.cells[0];
+  return cc != null && cc.x === cell.x && cc.y === cell.y;
+}
+
+export function getOwnedMazeTransmutationRooms(gs: ReadonlyGameState): Array<Point2> {
+  const rooms: Array<Point2> = [];
+  for (const node of gs.lib.research.nodes.values()) {
+    if (node.archetypeId !== MAZE_TRANSMUTATION_ROOM_ARCHETYPE_ID) continue;
+    const cc = node.centerCell ?? node.cells[0];
+    if (!cc) continue;
+    const idx = axialToIndex(cc.x, cc.y);
+    if (gs.researchCells[idx]!.owned) {
+      rooms.push(copy(cc));
+    }
+  }
+  return rooms;
 }
 
 export interface OwnedMazeOracle {
@@ -380,6 +407,7 @@ function getMazeNexusPlacementCellFailureReason(gs: ReadonlyGameState, cell: Poi
   if (isMazeEntranceCell(gs, cell)) return 'cell_is_maze_entrance';
   if (isMazeNexusCell(gs, cell)) return 'cell_is_maze_nexus_access';
   if (isMazeOracleCell(gs, cell)) return 'cell_has_oracle';
+  if (isMazeTransmutationCell(gs, cell)) return 'cell_has_transmutation_room';
 
   return '';
 }
@@ -551,6 +579,7 @@ export interface MazeMoveResult {
   forcedReset: boolean;
   payout: boolean;
   nexusReached: boolean;
+  transmutationReached: boolean;
   oracleReached: boolean;
   oracleNodeId: number;
 }
@@ -778,18 +807,45 @@ export function handleMazeMoveTo(gs: GameState, target: Point2): MazeMoveResult 
   const result = bfsMazePath(gs, gs.maze.avatarCell, target);
 
   if (!result.reachable) {
-    return { success: false, path: [], forcedReset: false, payout: false, nexusReached: false, oracleReached: false, oracleNodeId: -1 };
+    return {
+      success: false,
+      path: [],
+      forcedReset: false,
+      payout: false,
+      nexusReached: false,
+      transmutationReached: false,
+      oracleReached: false,
+      oracleNodeId: -1,
+    };
   }
 
   if (result.path.length === 0) {
-    return { success: true, path: [], forcedReset: false, payout: false, nexusReached: false, oracleReached: false, oracleNodeId: -1 };
+    return {
+      success: true,
+      path: [],
+      forcedReset: false,
+      payout: false,
+      nexusReached: false,
+      transmutationReached: false,
+      oracleReached: false,
+      oracleNodeId: -1,
+    };
   }
 
   const remainingPool = gs.timeFlux - gs.maze.movementUsed;
 
   if (result.cost > remainingPool) {
     resetMazeTransient(gs);
-    return { success: true, path: result.path, forcedReset: true, payout: false, nexusReached: false, oracleReached: false, oracleNodeId: -1 };
+    return {
+      success: true,
+      path: result.path,
+      forcedReset: true,
+      payout: false,
+      nexusReached: false,
+      transmutationReached: false,
+      oracleReached: false,
+      oracleNodeId: -1,
+    };
   }
 
   gs.maze.movementUsed += result.cost;
@@ -806,10 +862,20 @@ export function handleMazeMoveTo(gs: GameState, target: Point2): MazeMoveResult 
     gs.mazeHighMovementUsed = Math.max(gs.mazeHighMovementUsed, gs.maze.movementUsed);
     applyMazePayout(gs);
     resetMazeTransient(gs);
-    return { success: true, path: result.path, forcedReset: false, payout: true, nexusReached: false, oracleReached: false, oracleNodeId: -1 };
+    return {
+      success: true,
+      path: result.path,
+      forcedReset: false,
+      payout: true,
+      nexusReached: false,
+      transmutationReached: false,
+      oracleReached: false,
+      oracleNodeId: -1,
+    };
   }
 
   const isNexus = isMazeNexusCell(gs, target);
+  const isTransmutation = isMazeTransmutationCell(gs, target);
   const oracleNodeId = getMazeOracleNodeIdAtCell(gs, target);
   const oracleReached = oracleNodeId >= 0;
   return {
@@ -818,6 +884,7 @@ export function handleMazeMoveTo(gs: GameState, target: Point2): MazeMoveResult 
     forcedReset: false,
     payout: false,
     nexusReached: isNexus,
+    transmutationReached: isTransmutation,
     oracleReached,
     oracleNodeId,
   };

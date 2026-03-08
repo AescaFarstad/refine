@@ -1,6 +1,12 @@
 import { axialToPixel } from './HexMath';
 import { MAZE_RESOURCE_SPECS } from './MazeResourceVisuals';
-import { getMazeOracleState, getOwnedMazeEntrances, getOwnedMazeNexuses, getOwnedMazeOracles } from './Maze';
+import {
+  getMazeOracleState,
+  getOwnedMazeEntrances,
+  getOwnedMazeNexuses,
+  getOwnedMazeOracles,
+  getOwnedMazeTransmutationRooms,
+} from './Maze';
 import type { Point2 } from './ItemLib';
 import type { ReadonlyGameState } from './UIState';
 import { computeHexBoundary } from './hexBoundary';
@@ -25,6 +31,7 @@ const GLYPH_BG_RADIUS_SCALE = 0.62;
 const GLYPH_BG_STROKE_WIDTH = 1.2;
 const ENTRANCE_ICON_SCALE = 0.72;
 const NEXUS_ICON_SCALE = 1.1;
+const TRANSMUTATION_ICON_SCALE = 1;
 const ORACLE_ICON_SCALE = 1.25;
 const SPECIAL_ICON_HOVER_SCALE = 1.25;
 const NEXUS_ITEM_COLOR = 'rgba(248, 250, 252, 0.96)';
@@ -452,6 +459,20 @@ export function renderMazeFurnitureLayer(
       hexSize,
       'disc_maze_nexus',
       NEXUS_ICON_SCALE * (hovered ? SPECIAL_ICON_HOVER_SCALE : 1),
+    );
+  }
+
+  const ownedTransmutationRooms = getOwnedMazeTransmutationRooms(game);
+  for (const room of ownedTransmutationRooms) {
+    const center = axialToPixel(room, hexSize, origin);
+    const hovered = hoveredCell !== null && isSameCell(hoveredCell, room);
+    drawMazeResearchSymbol(
+      ctx,
+      game,
+      center,
+      hexSize,
+      'transmutation_room',
+      TRANSMUTATION_ICON_SCALE * (hovered ? SPECIAL_ICON_HOVER_SCALE : 1),
     );
   }
 

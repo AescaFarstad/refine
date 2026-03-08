@@ -24,5 +24,8 @@ export const itemsAtlasFrames: Record<string, AtlasFrame> = (() => {
       frames[key] = { x: entry.x, y: entry.y, w: entry.w, h: entry.h };
     }
   }
+  if (!frames.pentagon_concave && frames.pentagon_cocave) {
+    frames.pentagon_concave = frames.pentagon_cocave;
+  }
   return frames;
 })();

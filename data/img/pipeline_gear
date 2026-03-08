@@ -232,11 +232,6 @@
 }
 
 {
-  image:ChatGPT Image Feb 16, 2026, 12_50_02 AM.png
-  content:  tetrahedron_inv _ pentagon pentagon_cocave
-}
-
-{
   image:ChatGPT Image Feb 16, 2026, 12_55_40 AM.png
   content: tetrahedron_strict eye_in_triangle triangle_fluid triangle_spinner
 }
@@ -266,4 +261,9 @@
   image:ChatGPT Image Feb 25, 2026, 04_37_49 AM.png
   content: shield1 shield_solid shield_behind shield2
 }
+
 #start
+{
+  image:ChatGPT Image Feb 16, 2026, 12_50_02 AM.png
+  content:  tetrahedron_inv _ pentagon pentagon_concave
+}

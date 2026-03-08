@@ -252,3 +252,12 @@ crystal+sumatra +1000 cr = scaffold
 
 
 make oracle: { signatureId: 's4', riddle: '...' } not part of the archetype, but part of the research node, so that nodes with same archetype could have different riddles and signatures.
+
+there needs to be a hint for resources - similar to 
+res_skillPoint: { type: 'resource', rewards: [{ kind: 'resource', resource: 'skillPoints', amount: 1 }] },
+research node
+
+
+make all items (the recipe and the result) the same size
+
+Milestones - show how well you're doing. You are X days ahead of schedule. You are early. You are late.

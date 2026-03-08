@@ -1,39 +1,106 @@
 <template>
   <div v-if="visible" class="maze-transmutation-menu">
-    <div class="transmutation-panel">
-      <div class="transmutation-header">TRANSMUTATION</div>
-      <div class="transmutation-body">
+    <div class="tm-panel">
+      <div class="tm-header">TRANSMUTATION</div>
+      <div class="tm-body">
         <div
           v-for="recipe in recipes"
           :key="recipe.id"
-          class="recipe-card"
-          :class="{ 'recipe-card-unaffordable': !recipe.canAfford }"
+          class="tm-recipe"
         >
-          <div class="recipe-topline">
-            <div>
-              <div class="recipe-name">{{ recipe.name }}</div>
-              <div class="recipe-crafted-count">crafted {{ recipe.craftedCount }}</div>
-            </div>
-            <div class="recipe-result-block">
-              <div class="recipe-result" :style="{ color: recipe.resultColor }">
-                +{{ recipe.resultAmount }} {{ recipe.resultLabel }}
+          <div class="tm-recipe-flow">
+            <!-- Gear ingredient slots only (resources are in the button) -->
+            <div class="tm-slots">
+              <div
+                v-for="ingredient in recipe.gearIngredients"
+                :key="ingredient.id"
+                class="tm-slot"
+                :class="{ 'tm-slot--short': ingredient.owned < ingredient.amount }"
+              >
+                <div class="tm-slot-icon">
+                  <div class="tm-slot-sprite" :style="ingredient.spriteStyle" />
+                </div>
+                <div class="tm-slot-count" :class="{ 'tm-slot-count--short': ingredient.owned < ingredient.amount }">
+                  <span class="tm-count-default">{{ ingredient.amount }}</span>
+                  <span class="tm-count-hover">{{ ingredient.owned }}&thinsp;/&thinsp;{{ ingredient.amount }}</span>
+                </div>
+                <div v-if="ingredient.gear" class="tm-hint">
+                  <GearStatsHint :gear="ingredient.gear" :showResourceContext="false" noRaidContext />
+                </div>
               </div>
-              <button class="craft-btn" type="button" :disabled="!recipe.canAfford" @click="craft(recipe.id)">
-                Craft
-              </button>
             </div>
-          </div>
-          <div class="recipe-costs">
-            <div
-              v-for="ingredient in recipe.ingredients"
-              :key="ingredient.id"
-              class="ingredient-chip"
-              :class="{ 'ingredient-chip-missing': ingredient.owned < ingredient.amount }"
-              :style="{ '--ingredient-accent': ingredient.color }"
+
+            <div class="tm-arrow">⟶</div>
+
+            <!-- Result column: name above, slot below -->
+            <div class="tm-result-col">
+              <div class="tm-recipe-top">
+                <span class="tm-recipe-name">{{ recipe.name }}</span>
+              </div>
+              <div class="tm-result-slot" :class="{ 'tm-result-slot--resource': !recipe.resultGearImage }" :style="{ '--result-color': recipe.resultColor }">
+                <div v-if="recipe.resultGearImage" class="tm-slot-icon">
+                  <div class="tm-slot-sprite" :style="recipe.resultSpriteStyle" />
+                </div>
+                <div v-else class="tm-slot-icon">
+                  <span class="tm-slot-glyph" :style="{ color: recipe.resultColor }">{{ recipe.resultGlyph }}</span>
+                </div>
+                <div class="tm-result-count" :class="{ 'tm-result-count--hover-only': recipe.resultAmount <= 1 }">
+                  <span v-if="recipe.resultAmount > 1" class="tm-count-default">+{{ recipe.resultAmount }}</span>
+                  <span class="tm-count-hover">{{ recipe.resultOwned }} /</span>
+                </div>
+                <div v-if="recipe.resultGear" class="tm-hint">
+                  <GearStatsHint :gear="recipe.resultGear" :showResourceContext="false" noRaidContext />
+                </div>
+                <div v-else-if="recipe.resultResourceSpec" class="tm-hint">
+                  <div class="tm-resource-hint">
+                    <span>Gives </span>
+                    <span class="tm-resource-hint-value" :style="{ color: recipe.resultResourceSpec.color }">{{ recipe.resultAmount }}{{ recipe.resultResourceSpec.glyph }}</span>
+                    <span> {{ recipe.resultResourceSpec.name }}</span>
+                    <span class="tm-resource-hint-desc"> ({{ recipe.resultResourceSpec.description }})</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button
+              class="tm-craft-btn"
+              :class="{ 'tm-craft-btn--disabled': !recipe.canAfford }"
+              type="button"
+              :disabled="!recipe.canAfford"
+              @click="craft(recipe.id)"
             >
-              <span class="ingredient-name">{{ ingredient.name }}</span>
-              <span class="ingredient-amount">{{ ingredient.amount }}</span>
-              <span class="ingredient-owned">have {{ ingredient.owned }}</span>
+              <span class="tm-craft-label">Transmutate</span>
+              <span class="tm-craft-price">
+                <template v-for="cost in recipe.resourceCosts" :key="cost.key">
+                  <span class="tm-craft-cost" :style="{ color: cost.color }">{{ cost.amount }}{{ cost.glyph }}</span>
+                </template>
+              </span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+      <div v-if="ownedItems.length > 0" class="tm-header tm-header--owned">YOU HAVE:</div>
+      <div v-if="ownedItems.length > 0" class="tm-owned-panel">
+        <div class="tm-owned-items">
+          <div
+            v-for="item in ownedItems"
+            :key="item.id"
+            class="tm-owned-item"
+            :class="{ 'tm-owned-item--resource': item.kind === 'resource' }"
+            :style="item.kind === 'resource' ? { '--owned-color': item.color } : undefined"
+          >
+            <div class="tm-slot-icon">
+              <div v-if="item.kind === 'gear'" class="tm-slot-sprite" :style="item.spriteStyle" />
+              <span v-else class="tm-slot-glyph" :style="{ color: item.color }">{{ item.glyph }}</span>
+            </div>
+            <div class="tm-owned-count">{{ item.owned }}</div>
+            <div v-if="item.kind === 'gear'" class="tm-hint">
+              <GearStatsHint :gear="item.gear" :showResourceContext="false" noRaidContext />
+            </div>
+            <div v-else class="tm-hint">
+              <div class="tm-resource-hint">
+                <span>{{ item.name }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -43,24 +110,57 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { RESOURCE_KEYS, getResourceSpec, type ResourceKey } from '../logic/Resources';
+import { computed, type CSSProperties } from 'vue';
+import { RESOURCE_KEYS, getResourceSpec, type ResourceKey, type ResourceSpec } from '../logic/Resources';
+import type { GearDefinition } from '../logic/GearLib';
 import { getGameLib, uiState } from '../logic/UIState';
 import { CmdTransmutate } from '../logic/input/InputCommands';
 import { globalInputQueue } from '../logic/Model';
 import { getTransmutationEffectivePrice } from '../logic/Transmutation';
+import atlasStorage from '../logic/AtlasStorage';
+import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
+import GearStatsHint from './GearStatsHint.vue';
 
 defineProps<{
   visible: boolean;
 }>();
 
-interface IngredientViewModel {
+const SPRITE_SIZE = 56;
+const OMITTED_OWNED_RESOURCE_KEYS: ResourceKey[] = ['credits', 'chronotraces'];
+
+interface GearIngredientViewModel {
   id: string;
   name: string;
   amount: number;
   owned: number;
+  gear: GearDefinition;
+  spriteStyle: CSSProperties | null;
+}
+
+interface ResourceCostViewModel {
+  key: ResourceKey;
+  amount: number;
+  glyph: string;
   color: string;
 }
+
+type OwnedItemViewModel =
+  | {
+    id: string;
+    kind: 'gear';
+    name: string;
+    owned: number;
+    gear: GearDefinition;
+    spriteStyle: CSSProperties | null;
+  }
+  | {
+    id: string;
+    kind: 'resource';
+    name: string;
+    owned: number;
+    glyph: string;
+    color: string;
+  };
 
 interface RecipeViewModel {
   id: string;
@@ -69,7 +169,14 @@ interface RecipeViewModel {
   resultLabel: string;
   resultAmount: number;
   resultColor: string;
-  ingredients: IngredientViewModel[];
+  resultGlyph: string;
+  resultGearImage: string | null;
+  resultSpriteStyle: CSSProperties | null;
+  resultGear: GearDefinition | null;
+  resultResourceSpec: ResourceSpec | null;
+  resultOwned: number;
+  gearIngredients: GearIngredientViewModel[];
+  resourceCosts: ResourceCostViewModel[];
   canAfford: boolean;
 }
 
@@ -79,6 +186,13 @@ function getOwnedResourceAmount(resource: ResourceKey): number {
   if (resource === 'timeFlux') return uiState.timeFlux;
   if (resource === 'shardDust') return uiState.shardDust;
   return uiState.skillPoints;
+}
+
+function gearSpriteStyle(imageKey: string): CSSProperties | null {
+  const source = atlasStorage.getItemsSource();
+  const frame = atlasStorage.getItemsFrame(imageKey);
+  if (!source || !frame) return null;
+  return atlasSpriteStyle(source, frame, { size: SPRITE_SIZE, mode: 'fit', allowUpscale: false }) as CSSProperties;
 }
 
 const recipes = computed<RecipeViewModel[]>(() => {
@@ -96,16 +210,21 @@ const recipes = computed<RecipeViewModel[]>(() => {
   return Array.from(lib.transmutations.values()).map((recipe) => {
     const craftedCount = uiState.transmutationCraftCounts[recipe.id] ?? 0;
     const effectivePrice = getTransmutationEffectivePrice(recipe, craftedCount);
-    const ingredients: IngredientViewModel[] = [];
+    const gearIngredients: GearIngredientViewModel[] = [];
+    const resourceCosts: ResourceCostViewModel[] = [];
+    let canAfford = true;
 
     for (const [gearId, amount] of Object.entries(effectivePrice.gear)) {
       const gear = lib.gear.get(gearId)!;
-      ingredients.push({
+      const owned = uiState.countableGear[gearId] ?? 0;
+      if (owned < amount) canAfford = false;
+      gearIngredients.push({
         id: `gear:${gearId}`,
         name: gear.name,
         amount,
-        owned: uiState.countableGear[gearId] ?? 0,
-        color: 'rgba(226, 232, 240, 0.92)',
+        owned,
+        gear,
+        spriteStyle: gearSpriteStyle(gear.image),
       });
     }
 
@@ -113,25 +232,38 @@ const recipes = computed<RecipeViewModel[]>(() => {
       const amount = effectivePrice.resources[resourceKey];
       if (amount <= 0) continue;
       const spec = getResourceSpec(resourceKey);
-      ingredients.push({
-        id: `resource:${resourceKey}`,
-        name: spec.name,
+      if (getOwnedResourceAmount(resourceKey) < amount) canAfford = false;
+      resourceCosts.push({
+        key: resourceKey,
         amount,
-        owned: getOwnedResourceAmount(resourceKey),
+        glyph: spec.glyph,
         color: spec.color,
       });
     }
 
     let resultLabel = '';
     let resultColor = 'rgba(226, 232, 240, 0.95)';
+    let resultGlyph = '';
+    let resultGearImage: string | null = null;
+    let resultSpriteStyle: CSSProperties | null = null;
+    let resultGear: GearDefinition | null = null;
+    let resultResourceSpec: ResourceSpec | null = null;
+    let resultOwned = 0;
 
     if (recipe.result.kind === 'gear') {
-      const resultGear = lib.gear.get(recipe.result.gearId)!;
-      resultLabel = resultGear.name;
+      const rg = lib.gear.get(recipe.result.gearId)!;
+      resultLabel = rg.name;
+      resultGearImage = rg.image;
+      resultSpriteStyle = gearSpriteStyle(rg.image);
+      resultGear = rg;
+      resultOwned = uiState.countableGear[recipe.result.gearId] ?? 0;
     } else {
       const resultSpec = getResourceSpec(recipe.result.resource);
       resultLabel = resultSpec.name;
       resultColor = resultSpec.color;
+      resultGlyph = resultSpec.glyph;
+      resultResourceSpec = resultSpec;
+      resultOwned = getOwnedResourceAmount(recipe.result.resource);
     }
 
     return {
@@ -141,10 +273,84 @@ const recipes = computed<RecipeViewModel[]>(() => {
       resultLabel,
       resultAmount: recipe.result.amount,
       resultColor,
-      ingredients,
-      canAfford: ingredients.every((ingredient) => ingredient.owned >= ingredient.amount),
+      resultGlyph,
+      resultGearImage,
+      resultSpriteStyle,
+      resultGear,
+      resultResourceSpec,
+      resultOwned,
+      gearIngredients,
+      resourceCosts,
+      canAfford,
     };
   });
+});
+
+const ownedItems = computed<OwnedItemViewModel[]>(() => {
+  const items: OwnedItemViewModel[] = [];
+  const seen = new Set<string>();
+
+  for (const recipe of recipes.value) {
+    for (const ingredient of recipe.gearIngredients) {
+      if (seen.has(ingredient.id)) continue;
+      seen.add(ingredient.id);
+      items.push({
+        id: ingredient.id,
+        kind: 'gear',
+        name: ingredient.name,
+        owned: ingredient.owned,
+        gear: ingredient.gear,
+        spriteStyle: ingredient.spriteStyle,
+      });
+    }
+
+    for (const cost of recipe.resourceCosts) {
+      if (OMITTED_OWNED_RESOURCE_KEYS.includes(cost.key)) continue;
+      const id = `resource:${cost.key}`;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      items.push({
+        id,
+        kind: 'resource',
+        name: getResourceSpec(cost.key).name,
+        owned: getOwnedResourceAmount(cost.key),
+        glyph: cost.glyph,
+        color: cost.color,
+      });
+    }
+
+    if (recipe.resultGear) {
+      const id = `gear:${recipe.resultGear.id}`;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      items.push({
+        id,
+        kind: 'gear',
+        name: recipe.resultGear.name,
+        owned: recipe.resultOwned,
+        gear: recipe.resultGear,
+        spriteStyle: recipe.resultSpriteStyle,
+      });
+      continue;
+    }
+
+    if (recipe.resultResourceSpec) {
+      if (OMITTED_OWNED_RESOURCE_KEYS.includes(recipe.resultResourceSpec.key)) continue;
+      const id = `resource:${recipe.resultResourceSpec.key}`;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      items.push({
+        id,
+        kind: 'resource',
+        name: recipe.resultResourceSpec.name,
+        owned: recipe.resultOwned,
+        glyph: recipe.resultResourceSpec.glyph,
+        color: recipe.resultResourceSpec.color,
+      });
+    }
+  }
+
+  return items;
 });
 
 function craft(transmutationId: string): void {
@@ -161,16 +367,15 @@ function craft(transmutationId: string): void {
   pointer-events: auto;
 }
 
-.transmutation-panel {
+.tm-panel {
   border: none;
   border-radius: 4px;
-  background: var(--panel-bg);
   color: rgba(226, 232, 240, 0.95);
   padding: 0;
-  min-width: 320px;
+  width: max-content;
 }
 
-.transmutation-header {
+.tm-header {
   font-size: 14px;
   letter-spacing: 0.04em;
   color: rgba(226, 232, 240, 0.95);
@@ -180,120 +385,326 @@ function craft(transmutationId: string): void {
   margin-bottom: 6px;
 }
 
-.transmutation-body {
-  min-height: 120px;
-  max-height: min(60vh, 560px);
-  overflow-y: auto;
-  background: var(--panel-bg);
-  border-radius: 8px;
-  padding: 8px;
-}
-
-.recipe-card {
-  background: rgba(15, 23, 42, 0.55);
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 10px;
-  padding: 10px 12px;
-}
-
-.recipe-card + .recipe-card {
-  margin-top: 8px;
-}
-
-.recipe-card-unaffordable {
-  border-color: rgba(239, 68, 68, 0.3);
-}
-
-.recipe-topline {
+.tm-body {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-.recipe-name {
-  font-size: 14px;
-  font-weight: 700;
-  color: rgba(248, 250, 252, 0.96);
-}
-
-.recipe-crafted-count {
-  margin-top: 2px;
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: rgba(148, 163, 184, 0.95);
-}
-
-.recipe-result-block {
-  display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 10px;
 }
 
-.recipe-result {
+/* Recipe card */
+.tm-recipe {
+  position: relative;
+  background: var(--panel-bg);
+  border-radius: 8px;
+  padding: 30px 16px 14px;
+  transition: background 0.15s;
+}
+
+.tm-recipe:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Flow: ingredients → result */
+.tm-recipe-flow {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+.tm-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Individual ingredient slot */
+.tm-slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tm-slot--short {
+  background: rgba(239, 68, 68, 0.14);
+}
+
+/* Shared icon container */
+.tm-slot-icon {
+  width: 76px;
+  height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tm-slot-sprite {
+  flex-shrink: 0;
+  image-rendering: auto;
+}
+
+.tm-slot-glyph {
+  font-size: 34px;
+  line-height: 1;
+}
+
+/* Corner count badge — required amount only */
+.tm-slot-count {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 2px 5px;
+  border-bottom-left-radius: 6px;
+  border-top-right-radius: 4px;
+  background: rgba(96, 165, 250, 0.45);
+  color: var(--text-primary);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
   white-space: nowrap;
 }
 
-.craft-btn {
-  border: 1px solid rgba(96, 165, 250, 0.4);
-  border-radius: 999px;
-  background: rgba(30, 64, 175, 0.18);
-  color: rgba(219, 234, 254, 0.98);
+.tm-slot-count--short {
+  background: rgba(239, 68, 68, 0.5);
+  color: #fca5a5;
+}
+
+/* Gear stats hint tooltip — display toggle like GearItem, shown to the left */
+.tm-hint {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  background: var(--hint-bg, rgba(10, 14, 20, 0.95));
+  border: 1px solid var(--hint-border, rgba(148, 163, 184, 0.25));
+  border-radius: 4px;
+  padding: 4px 10px;
+  min-width: 120px;
+  width: max-content;
+  max-width: 75vw;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  z-index: 3000;
+  pointer-events: none;
+}
+
+.tm-hint::after {
+  content: '';
+  position: absolute;
+  bottom: calc(100% - 5px);
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  background: var(--hint-bg, rgba(10, 14, 20, 0.95));
+  border-left: 1px solid var(--hint-border, rgba(148, 163, 184, 0.25));
+  border-top: 1px solid var(--hint-border, rgba(148, 163, 184, 0.25));
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.tm-slot:hover .tm-hint,
+.tm-result-slot:hover .tm-hint {
+  display: block;
+}
+
+/* Show owned counts on hover */
+.tm-count-hover { display: none; }
+.tm-slot:hover .tm-count-default { display: none; }
+.tm-slot:hover .tm-count-hover { display: inline; }
+.tm-result-count--hover-only { display: none; }
+.tm-result-slot:hover .tm-result-count--hover-only { display: block; }
+.tm-result-slot:hover .tm-count-default { display: none; }
+.tm-result-slot:hover .tm-count-hover { display: inline; }
+
+/* Arrow — vertically centered relative to the slot icons */
+.tm-arrow {
+  flex-shrink: 0;
+  height: 76px;
+  display: flex;
+  align-items: center;
+  font-size: 32px;
+  font-weight: 900;
+  color: rgba(148, 163, 184, 0.5);
+  line-height: 1;
+}
+
+/* Result column: name on top, slot below */
+.tm-result-col {
+  position: relative;
+}
+
+.tm-recipe-top {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding-bottom: 4px;
+  white-space: nowrap;
+}
+
+.tm-recipe-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(248, 250, 252, 0.96);
+  white-space: nowrap;
+}
+
+.tm-recipe-count {
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
+  color: rgba(148, 163, 184, 0.6);
+}
+
+/* Result slot */
+.tm-result-slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--result-color) 10%, rgba(255, 255, 255, 0.08));
+}
+
+.tm-result-slot--resource {
+  background: none;
+}
+
+/* Result corner count badge — hidden by default when no default content, shown on hover */
+.tm-result-count {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 2px 5px;
+  border-bottom-left-radius: 6px;
+  border-top-right-radius: 4px;
+  background: rgba(96, 165, 250, 0.45);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Transmutate button — two-row layout, matches slot height */
+.tm-craft-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 76px;
+  margin-left: 10px;
+  gap: 7px;
+  padding: 0 14px;
+  border: 1px solid rgba(34, 197, 94, 0.5);
+  border-radius: 4px;
+  background: rgba(34, 197, 94, 0.32);
+  color: #86efac;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  padding: 6px 10px;
   cursor: pointer;
 }
 
-.craft-btn:disabled {
+.tm-craft-btn:hover {
+  background: rgba(34, 197, 94, 0.45);
+}
+
+.tm-craft-btn--disabled {
   cursor: default;
-  opacity: 0.45;
+  opacity: 0.55;
+  background: rgba(34, 197, 94, 0.10);
+  border-color: rgba(34, 197, 94, 0.22);
 }
 
-.craft-btn:not(:disabled):hover {
-  background: rgba(37, 99, 235, 0.28);
+.tm-craft-btn--disabled:hover {
+  background: rgba(34, 197, 94, 0.10);
 }
 
-.recipe-costs {
+.tm-craft-label {
+  line-height: 1;
+}
+
+.tm-craft-price {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.ingredient-chip {
-  display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 28px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--ingredient-accent) 12%, rgba(15, 23, 42, 0.92));
-  border: 1px solid color-mix(in srgb, var(--ingredient-accent) 40%, rgba(148, 163, 184, 0.18));
-  color: rgba(226, 232, 240, 0.95);
-  font-size: 12px;
+  line-height: 1;
+  font-size: 19px;
 }
 
-.ingredient-chip-missing {
-  background: rgba(127, 29, 29, 0.34);
-  border-color: rgba(248, 113, 113, 0.4);
+.tm-craft-cost {
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
 }
 
-.ingredient-name {
+/* Resource hint (for non-gear results) */
+.tm-resource-hint {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.tm-resource-hint-value {
   font-weight: 700;
 }
 
-.ingredient-amount {
-  color: var(--ingredient-accent);
-  font-weight: 700;
+.tm-resource-hint-desc {
+  opacity: 0.9;
 }
 
-.ingredient-owned {
-  color: rgba(148, 163, 184, 0.95);
+.tm-header--owned {
+  margin-top: 6px;
+}
+
+.tm-owned-panel {
+  background: var(--panel-bg);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.tm-owned-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tm-owned-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tm-owned-item--resource {
+  background: color-mix(in srgb, var(--owned-color) 10%, rgba(255, 255, 255, 0.08));
+}
+
+.tm-owned-count {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 2px 5px;
+  border-bottom-left-radius: 6px;
+  border-top-right-radius: 4px;
+  background: rgba(96, 165, 250, 0.45);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
 }
 </style>

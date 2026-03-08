@@ -105,8 +105,8 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
   incremental_panel: {
     name: 'Incremental',
     description: 'Receive a stacking bonus for each<br>resource pick-up in this run.<br>Unaffected by multipliers.',
-    price: 20,
-    priceIncrease: [20],
+    price: 40,
+    priceIncrease: [50],
     minAcquiredUpgradesForOffer: 5,
     placableInstanceDescription: {
       passable: false,

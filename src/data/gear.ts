@@ -516,7 +516,7 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 12,
     raidPassiveCreditsPerHour: 10,
     image: 'tesseract',
-    description: 'Collect these resources with the corresponding tactic.',
+    description: 'Collect these resources with the corresponding tactic',
   },
   scaffold: {
     name: 'Scaffold',

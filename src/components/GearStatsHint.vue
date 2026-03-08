@@ -24,8 +24,10 @@ const props = withDefaults(defineProps<{
   gear: GearDefinition;
   blocked?: boolean;
   showResourceContext?: boolean;
+  noRaidContext?: boolean;
 }>(), {
   showResourceContext: true,
+  noRaidContext: false,
 });
 
 function fmtSigned(n: number, suffix = ''): string {
@@ -45,15 +47,25 @@ const hintRows = computed((): HintRow[] => {
   const g = props.gear;
   const rows: HintRow[] = [];
 
-  uiState.raidKey;
-  const gs = getGameState();
-  const activeRaidId = gs.raid.id || gs.unlockedRaids[0]?.id || '';
-  const activeRaidEntry = activeRaidId ? gs.unlockedRaids.find(r => r.id === activeRaidId) || null : null;
-  const storedCredits = Math.max(0, Math.floor(activeRaidEntry?.uncollectedCredits ?? 0));
-  const storageCap = Math.max(0, Math.floor(activeRaidEntry?.maxStoredCredits ?? 0));
-  const currentGenerationPerHour = Math.max(0, Math.floor(activeRaidEntry?.passiveCreditsPerHour ?? 0));
-  const freeVolume = Math.max(0, Math.floor((gs.raid.bagsVolume || 0) - (gs.raid.usedVolume || 0)));
-  const gatherPacks = Math.max(0, Math.min(Math.floor(storedCredits / 100), freeVolume));
+  const skipRaid = props.noRaidContext;
+
+  let gs: ReturnType<typeof getGameState> | null = null;
+  let storedCredits = 0;
+  let storageCap = 0;
+  let currentGenerationPerHour = 0;
+  let gatherPacks = 0;
+
+  if (!skipRaid) {
+    uiState.raidKey;
+    gs = getGameState();
+    const activeRaidId = gs.raid.id || gs.unlockedRaids[0]?.id || '';
+    const activeRaidEntry = activeRaidId ? gs.unlockedRaids.find(r => r.id === activeRaidId) || null : null;
+    storedCredits = Math.max(0, Math.floor(activeRaidEntry?.uncollectedCredits ?? 0));
+    storageCap = Math.max(0, Math.floor(activeRaidEntry?.maxStoredCredits ?? 0));
+    currentGenerationPerHour = Math.max(0, Math.floor(activeRaidEntry?.passiveCreditsPerHour ?? 0));
+    const freeVolume = Math.max(0, Math.floor((gs.raid.bagsVolume || 0) - (gs.raid.usedVolume || 0)));
+    gatherPacks = Math.max(0, Math.min(Math.floor(storedCredits / 100), freeVolume));
+  }
 
   if (props.showResourceContext) {
     if (g.id === 'gather_resources') {
@@ -88,17 +100,25 @@ const hintRows = computed((): HintRow[] => {
   if (g.lootChance) rows.push({ label: 'Loot chance', spans: [bright(`${fmtSigned(g.lootChance, '%')}`)] });
   if (g.rarityBuff) rows.push({ label: 'Loot rarity', spans: [bright(`${fmtSigned(g.rarityBuff, '')}`)] });
   if (g.raidPassiveCreditsPerHour) {
-    const newGen = currentGenerationPerHour + Math.max(0, Math.floor(g.raidPassiveCreditsPerHour));
-    if (currentGenerationPerHour > 0) {
-      rows.push({ label: 'Raid credits generation', spans: [colored(`${currentGenerationPerHour}/h → ${newGen}/h${creditsSpec.glyph}`, creditsSpec.color), dim(' (permanent)')] });
+    if (!skipRaid) {
+      const newGen = currentGenerationPerHour + Math.max(0, Math.floor(g.raidPassiveCreditsPerHour));
+      if (currentGenerationPerHour > 0) {
+        rows.push({ label: 'Raid credits generation', spans: [colored(`${currentGenerationPerHour}/h → ${newGen}/h${creditsSpec.glyph}`, creditsSpec.color), dim(' (permanent)')] });
+      } else {
+        rows.push({ label: 'Raid credits generation', spans: [colored(`${fmtSigned(g.raidPassiveCreditsPerHour, '')}${creditsSpec.glyph}`, creditsSpec.color), dim(' per hour (permanent)')] });
+      }
     } else {
       rows.push({ label: 'Raid credits generation', spans: [colored(`${fmtSigned(g.raidPassiveCreditsPerHour, '')}${creditsSpec.glyph}`, creditsSpec.color), dim(' per hour (permanent)')] });
     }
   }
   if (g.raidResourceStorageBonus) {
-    const newCap = storageCap + Math.max(0, Math.floor(g.raidResourceStorageBonus));
-    if (storageCap > 0) {
-      rows.push({ label: 'Raid credits storage capacity', spans: [colored(`${storageCap} → ${newCap}${creditsSpec.glyph}`, creditsSpec.color), dim(' (permanent)')] });
+    if (!skipRaid) {
+      const newCap = storageCap + Math.max(0, Math.floor(g.raidResourceStorageBonus));
+      if (storageCap > 0) {
+        rows.push({ label: 'Raid credits storage capacity', spans: [colored(`${storageCap} → ${newCap}${creditsSpec.glyph}`, creditsSpec.color), dim(' (permanent)')] });
+      } else {
+        rows.push({ label: 'Raid credits storage capacity', spans: [colored(`+${g.raidResourceStorageBonus}${creditsSpec.glyph}`, creditsSpec.color), dim(' (permanent)')] });
+      }
     } else {
       rows.push({ label: 'Raid credits storage capacity', spans: [colored(`+${g.raidResourceStorageBonus}${creditsSpec.glyph}`, creditsSpec.color), dim(' (permanent)')] });
     }
@@ -112,7 +132,7 @@ const hintRows = computed((): HintRow[] => {
   // Perk
   if (g.perk) rows.push({ label: 'Perk', spans: [bright(g.perk)] });
 
-  if (g.stunChance) {
+  if (g.stunChance && !skipRaid && gs) {
     const loadout = gs.loadouts[gs.raid.id] ?? [];
     const equipped = loadout.includes(g.id);
     const total = equipped

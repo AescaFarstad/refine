@@ -138,10 +138,14 @@ onBeforeUnmount(() => {
 const source = atlasStorage.getItemsSource();
 const moleculesSource = atlasStorage.getMoleculesSource();
 
-const frame = computed(() => atlasStorage.getItemsFrame(props.id)!);
-const moleculeFrame = computed(() => atlasStorage.getMoleculesFrame(`mol:${props.id}`));
-
 const itemDef = computed<ItemDefinition>(() => (itemsData as Record<string, ItemDefinition>)[props.id]!);
+const frame = computed(() => {
+  const itemFrame = atlasStorage.getItemsFrame(props.id);
+  if (itemFrame) return itemFrame;
+  const firstAtom = itemDef.value.molecule.atoms[0]!;
+  return atlasStorage.getItemsFrame(firstAtom.color)!;
+});
+const moleculeFrame = computed(() => atlasStorage.getMoleculesFrame(`mol:${props.id}`));
 const displayName = computed(() => itemDef.value.name);
 const displayVolume = computed(() => itemDef.value.volume);
 const displayRarity = computed(() => {
@@ -196,7 +200,7 @@ const tooltipMoleculeStyle = computed(() => {
 
 // Essences display
 type EssenceKey = 'red' | 'green' | 'blue' | 'yellow' | string;
-const orderedKeys: EssenceKey[] = ['red', 'green', 'blue', 'yellow'];
+const orderedKeys: EssenceKey[] = ['red', 'red_s', 'green', 'green_s', 'blue', 'blue_s', 'yellow', 'yellow_s'];
 const essencesToShow = computed(() => {
   const e = itemDef.value.essence;
   const keys = Array.from(new Set([...orderedKeys, ...Object.keys(e)]));

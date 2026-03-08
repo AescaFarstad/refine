@@ -3,6 +3,7 @@ import { getCell } from './Wafer';
 import type { ReadonlySignatureDefinition, ReadonlySignatureMolecule } from './SignatureLib';
 import type { Point2 } from './ItemLib';
 import type { RefiningRewardBonus } from './Reward';
+import { getEssenceColorFamily } from './Essence';
 
 export interface WaferSignatureScanResult {
   newlyCompletedSignatureIds: string[];
@@ -53,7 +54,7 @@ const essenceEquivalents: Record<string, string> = {
 };
 
 function essenceMatchesForSignature(essence: string, targetColor: string): boolean {
-  if (essence === targetColor) return true;
+  if (getEssenceColorFamily(essence) === targetColor) return true;
   return essenceEquivalents[essence] === targetColor;
 }
 

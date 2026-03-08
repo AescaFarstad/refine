@@ -18,6 +18,11 @@ import { getWaferBuffAt } from './waferLayout';
 import { scanWaferForNewSignatures, sumSignatureRefiningRewards } from './Signatures';
 import { DISCOVERY } from './DiscoveryLib';
 import type { ReadonlyGameState } from './UIState';
+import {
+    convertFamilyEssence,
+    getEssenceColorFamily,
+    isYellowFamilyEssence,
+} from './Essence';
 
 export interface GearOutput {
     gearId: string;
@@ -48,7 +53,7 @@ export interface RefinePreviewChem {
 
     essenceTotals: Record<string, number>;
 
-    // Per-cell effective counts for standard essences (red/green/blue) after buffs.
+    // Per-cell effective counts for cells that contribute directly to refining totals.
     // Key: "x,y" axial coordinates. Only cells with effectiveCount > 1 are stored.
     cellEffectiveCounts: Record<string, number>;
 
@@ -70,7 +75,7 @@ export const COLOR_CHANGER_TARGET: Record<string, string> = {
     gold: 'yellow',
 };
 
-const BUFFABLE_ESSENCES = new Set(['red', 'green', 'blue', 'cyan', 'magenta']);
+const DIRECT_COUNT_ESSENCES = new Set(['red', 'green', 'blue', 'cyan', 'magenta']);
 
 export interface ColorChangeAffectedCell {
     x: number;
@@ -137,7 +142,7 @@ function createClusterResolver(
             visited.add(key);
 
             const baseEssence = baseEssenceByKey[key];
-            if (baseEssence !== essence) continue;
+            if (getEssenceColorFamily(baseEssence) !== getEssenceColorFamily(essence)) continue;
 
             result.push(key);
 
@@ -149,7 +154,7 @@ function createClusterResolver(
             for (const n of axialNeighbors({ x, y })) {
                 const nKey = `${n.x},${n.y}`;
                 if (!enabledKeys.has(nKey)) continue;
-                if (baseEssenceByKey[nKey] !== essence) continue;
+                if (getEssenceColorFamily(baseEssenceByKey[nKey]!) !== getEssenceColorFamily(essence)) continue;
                 if (!visited.has(nKey)) {
                     queue.push(nKey);
                 }
@@ -233,10 +238,12 @@ function computeEffectiveEssenceByKey(
             // correctly resolve to gray.
             const cluster = getCluster(neighborKey, neighborBaseEssence);
             for (const clusterKey of cluster) {
+                const clusterEssence = baseEssenceByKey[clusterKey]!;
+                const desiredEssence = convertFamilyEssence(clusterEssence, target as 'red' | 'green' | 'blue' | 'yellow');
                 if (!desiredTargetsByKey[clusterKey]) {
-                    desiredTargetsByKey[clusterKey] = [target];
+                    desiredTargetsByKey[clusterKey] = [desiredEssence];
                 } else {
-                    desiredTargetsByKey[clusterKey].push(target);
+                    desiredTargetsByKey[clusterKey].push(desiredEssence);
                 }
             }
         }
@@ -391,7 +398,7 @@ function computeEffectiveEssenceTotals(wafer: ReadonlyWafer, yellowNeighborBonus
     const effectiveTotals: Record<string, number> = {};
     const cellEffectiveCounts: Record<string, number> = {};
 
-    // Count totals from effective essences (after color-changing atoms).
+    // Count raw totals from effective essences (after color-changing atoms).
     for (const cell of wafer.cells.values()) {
         if (!cell.enabled) continue;
         const effEssence = cell.effectiveEssence ?? cell.essence;
@@ -399,20 +406,22 @@ function computeEffectiveEssenceTotals(wafer: ReadonlyWafer, yellowNeighborBonus
         effectiveTotals[effEssence] = (effectiveTotals[effEssence] || 0) + 1;
     }
 
-    // Initialize totals for buffable essences: they will be recomputed with yellow/orange buffs.
-    for (const k of Object.keys(effectiveTotals)) {
-        if (BUFFABLE_ESSENCES.has(k)) {
-            effectiveTotals[k] = 0;
-        }
-    }
+    effectiveTotals.red = 0;
+    effectiveTotals.green = 0;
+    effectiveTotals.blue = 0;
+    effectiveTotals.cyan = 0;
+    effectiveTotals.magenta = 0;
 
-    // Compute effective counts for buffable essences with yellow/orange buffs
-    // and built-in wafer cell buffs, based on the already transformed colors.
+    const redBonus = effectiveTotals.red_s || 0;
+    const greenBonus = effectiveTotals.green_s || 0;
+    const blueBonus = effectiveTotals.blue_s || 0;
+    const yellowSplit = effectiveTotals.yellow_s || 0;
+
     for (const cell of wafer.cells.values()) {
         if (!cell.enabled) continue;
         const key = `${cell.x},${cell.y}`;
         const effEssence = cell.effectiveEssence ?? cell.essence;
-        if (!effEssence || !BUFFABLE_ESSENCES.has(effEssence)) continue;
+        if (!effEssence) continue;
 
         const pos = { x: cell.x, y: cell.y };
 
@@ -424,7 +433,7 @@ function computeEffectiveEssenceTotals(wafer: ReadonlyWafer, yellowNeighborBonus
             if (!neighbor || !neighbor.enabled) continue;
             const neighborEffEssence = neighbor.effectiveEssence ?? neighbor.essence;
             if (!neighborEffEssence) continue;
-            if (neighborEffEssence === 'yellow') {
+            if (isYellowFamilyEssence(neighborEffEssence)) {
                 yellowNeighbors++;
             } else if (neighborEffEssence === 'orange') {
                 orangeNeighbors++;
@@ -436,12 +445,32 @@ function computeEffectiveEssenceTotals(wafer: ReadonlyWafer, yellowNeighborBonus
         const yellowNeighborStrength = 1 + yellowNeighborBonus;
         const base = 1 + yellowNeighbors * yellowNeighborStrength + waferBuff.additive; // Yellow + built-in additive buffs
         const multiplier = Math.pow(2, orangeNeighbors) * waferBuff.multiplier; // Orange + built-in multiplicative buffs
-        const effectiveCount = base * multiplier;
 
-        effectiveTotals[effEssence] = (effectiveTotals[effEssence] || 0) + effectiveCount;
+        if (DIRECT_COUNT_ESSENCES.has(effEssence)) {
+            let directBase = base;
+            if (effEssence === 'red') {
+                directBase += redBonus;
+            } else if (effEssence === 'green') {
+                directBase += greenBonus;
+            } else if (effEssence === 'blue') {
+                directBase += blueBonus;
+            }
+            const effectiveCount = directBase * multiplier;
+            effectiveTotals[effEssence] = (effectiveTotals[effEssence] || 0) + effectiveCount;
+            if (effectiveCount > 1) {
+                cellEffectiveCounts[key] = Math.max(cellEffectiveCounts[key] || 0, effectiveCount);
+            }
+            continue;
+        }
 
-        if (effectiveCount > 1) {
-            cellEffectiveCounts[key] = effectiveCount;
+        if (isYellowFamilyEssence(effEssence) && yellowSplit > 0) {
+            const effectiveCount = base * multiplier * yellowSplit;
+            effectiveTotals.red += effectiveCount;
+            effectiveTotals.green += effectiveCount;
+            effectiveTotals.blue += effectiveCount;
+            if (effectiveCount > 1) {
+                cellEffectiveCounts[key] = Math.max(cellEffectiveCounts[key] || 0, effectiveCount);
+            }
         }
     }
 

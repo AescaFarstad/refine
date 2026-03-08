@@ -927,7 +927,24 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
     name: 'Tape',
     volume: 1,
     rarity: 1,
-    molecule: blankMolecule,
+    molecule: {
+      atoms: [
+        { color: 'green', x: 0, y: -1 },
+        { color: 'yellow', x: 1, y: -1 },
+        { color: 'gray', x: -1, y: 0 },
+        { color: 'red', x: 1, y: 0 },
+        { color: 'blue', x: -1, y: 1 },
+        { color: 'green_s', x: 0, y: 1 },
+      ],
+      connections: [
+        { from: { x: 0, y: -1 }, to: { x: -1, y: 0 } },
+        { from: { x: 0, y: 1 }, to: { x: 1, y: 0 } },
+        { from: { x: 1, y: 0 }, to: { x: 1, y: -1 } },
+        { from: { x: -1, y: 1 }, to: { x: 0, y: 1 } },
+        { from: { x: 1, y: -1 }, to: { x: 0, y: -1 } },
+        { from: { x: -1, y: 0 }, to: { x: -1, y: 1 } },
+      ],
+    },
   },
   inventory_keys: {
     name: 'Keys',
@@ -1099,7 +1116,7 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
         { color: 'red', x: 0, y: -1 },
         { color: 'red', x: 1, y: -1 },
         { color: 'red', x: -1, y: 0 },
-        { color: 'cyan', x: 0, y: 0 },
+        { color: 'red_s', x: 0, y: 0 },
         { color: 'red', x: 1, y: 0 },
         { color: 'red', x: -1, y: 1 },
         { color: 'red', x: 0, y: 1 },
@@ -1591,6 +1608,46 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
     rarity: 1,
     molecule: {
       atoms: [{ color: 'yellow', x: 0, y: 0 }],
+      connections: [],
+    },
+    devOnly: true,
+  },
+  dev_atom_red_s: {
+    name: 'Dev Atom (Red S)',
+    volume: 0,
+    rarity: 1,
+    molecule: {
+      atoms: [{ color: 'red_s', x: 0, y: 0 }],
+      connections: [],
+    },
+    devOnly: true,
+  },
+  dev_atom_green_s: {
+    name: 'Dev Atom (Green S)',
+    volume: 0,
+    rarity: 1,
+    molecule: {
+      atoms: [{ color: 'green_s', x: 0, y: 0 }],
+      connections: [],
+    },
+    devOnly: true,
+  },
+  dev_atom_blue_s: {
+    name: 'Dev Atom (Blue S)',
+    volume: 0,
+    rarity: 1,
+    molecule: {
+      atoms: [{ color: 'blue_s', x: 0, y: 0 }],
+      connections: [],
+    },
+    devOnly: true,
+  },
+  dev_atom_yellow_s: {
+    name: 'Dev Atom (Yellow S)',
+    volume: 0,
+    rarity: 1,
+    molecule: {
+      atoms: [{ color: 'yellow_s', x: 0, y: 0 }],
       connections: [],
     },
     devOnly: true,

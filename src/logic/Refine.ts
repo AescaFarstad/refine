@@ -129,20 +129,48 @@ function createShards(gs: GameState, resource: string, amount: number, launchSpe
   if (amount <= 0) return;
   const representation = getHypRepresentation(amount);
 
-  // Representation index i corresponds to value i+1
+  // Expand representation into individual shard values, separating 1s from larger
+  const largerShards: number[] = [];
+  let onesCount = 0;
   for (let i = 0; i < representation.length; i++) {
     const count = representation[i];
     const value = i + 1;
     for (let j = 0; j < count; j++) {
-      gs.shards.push({
-        id: gs.random.get().toString(36).substring(2, 11),
-        resource,
-        amount: value,
-        triggered: false,
-        pickupDelaySec: 0,
-        size: calculateShardFontSize(value),
-        launchSpeedMultiplier,
-      });
+      if (value === 1) {
+        onesCount++;
+      } else {
+        largerShards.push(value);
+      }
     }
+  }
+
+  // Distribute value-1 shards' worth into larger shards
+  let shardValues: number[];
+  if (onesCount > 0 && largerShards.length > 0) {
+    shardValues = largerShards;
+    let remaining = onesCount;
+    while (remaining > 0) {
+      for (let i = 0; i < shardValues.length && remaining > 0; i++) {
+        shardValues[i]++;
+        remaining--;
+      }
+    }
+  } else if (onesCount > 0) {
+    // No larger shards — keep 1-value shards as-is
+    shardValues = Array(onesCount).fill(1);
+  } else {
+    shardValues = largerShards;
+  }
+
+  for (const value of shardValues) {
+    gs.shards.push({
+      id: gs.random.get().toString(36).substring(2, 11),
+      resource,
+      amount: value,
+      triggered: false,
+      pickupDelaySec: 0,
+      size: calculateShardFontSize(value),
+      launchSpeedMultiplier,
+    });
   }
 }

@@ -68,7 +68,7 @@ function essenceIconStyle(size: number, k: string): Record<string, string> {
 const encounteredEssenceKeys = computed<string[]>(() => {
   const keys = (uiState.encounteredEssences || []).filter(Boolean);
   const uniq = Array.from(new Set(keys));
-  const order = ['red', 'green', 'blue', 'yellow', 'cyan', 'magenta', 'orange', 'indigo', 'crimson', 'emerald', 'gold', 'gray'];
+  const order = ['red', 'red_s', 'green', 'green_s', 'blue', 'blue_s', 'yellow', 'yellow_s', 'cyan', 'magenta', 'orange', 'indigo', 'crimson', 'emerald', 'gold', 'gray'];
   const orderIdx: Record<string, number> = {};
   order.forEach((k, i) => { orderIdx[k] = i; });
   return uniq.sort((a, b) => {
@@ -107,9 +107,13 @@ const yellowAdjacencyBonus = computed<number>(() => {
 function essenceDisplayName(k: string): string {
   const name: Record<string, string> = {
     red: 'Red',
+    red_s: 'Lava',
     green: 'Green',
+    green_s: 'Lush',
     blue: 'Blue',
+    blue_s: 'Frozen',
     yellow: 'Yellow',
+    yellow_s: 'Sun',
     orange: 'Orange',
     cyan: 'Cyan',
     magenta: 'Magenta',
@@ -127,16 +131,32 @@ function resourceHtml(amount: number, resourceKey: 'credits' | 'chronotraces' | 
   return `<span style="color:${spec.color}">${amount}${spec.glyph}</span> ${spec.name.toLowerCase()}`;
 }
 
+function essenceInlineIcon(essenceKey: string, size = 14): string {
+  const f = atlasStorage.getItemsFrame(essenceKey);
+  if (!f) return '';
+  const style = atlasSpriteStyle(source, f, { size, mode: 'fixed' });
+  const css = Object.entries(style).map(([k, v]) => `${k.replace(/[A-Z]/g, m => '-' + m.toLowerCase())}:${v}`).join(';');
+  return `<span style="display:inline-block;vertical-align:middle;${css}"></span>`;
+}
+
 function essenceEffectHtml(k: string): string {
   switch (k) {
     case 'red':
       return `gives ${resourceHtml(redEssenceCredits.value, 'credits')}`;
+    case 'red_s':
+      return `+1 effective count to each  ${essenceInlineIcon('red')}`;
     case 'blue':
       return `gives ${resourceHtml(blueEssenceChrono.value, 'chronotraces')}`;
+    case 'blue_s':
+      return `+1 effective count to each  ${essenceInlineIcon('blue')}`;
     case 'green':
       return `gives ${resourceHtml(greenEssenceFlux.value, 'timeFlux')}`;
+    case 'green_s':
+      return `+1 effective count to each  ${essenceInlineIcon('green')}`;
     case 'yellow':
-      return `+${yellowAdjacencyBonus.value} effective count for adjacent`;
+      return `+${yellowAdjacencyBonus.value} effective count to adjacent`;
+    case 'yellow_s':
+      return `+1 (${essenceInlineIcon('red')} + ${essenceInlineIcon('green')} + ${essenceInlineIcon('blue')}) count to each  ${essenceInlineIcon('yellow')}`;
     case 'orange':
       return 'Doubles adjacent';
     case 'cyan':
@@ -167,18 +187,16 @@ function position(): void {
   const el = anchorEl.value;
   if (!el) return;
   const rect = el.getBoundingClientRect();
-  const margin = 10;
+  const margin = 6;
   const assumedW = 360;
-  const assumedH = 280;
 
-  const wantAbove = rect.bottom + margin + assumedH > window.innerHeight;
-  showAbove.value = wantAbove;
+  showAbove.value = false;
 
   let left = rect.left;
   left = Math.min(left, window.innerWidth - assumedW - margin);
   left = Math.max(margin, left);
 
-  const top = wantAbove ? rect.top - margin : rect.bottom + margin;
+  const top = rect.top;
   pos.value = { top, left };
 }
 
@@ -242,8 +260,7 @@ onBeforeUnmount(() => close());
   z-index: 5000;
   width: max-content;
   max-width: calc(100vw - 20px);
-  max-height: min(60vh, 520px);
-  overflow: auto;
+  overflow: visible;
   padding: 10px 10px;
   border-radius: 8px;
   border: 1px solid var(--panel-border);

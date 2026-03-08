@@ -6,6 +6,25 @@ import signatures from '../data/signatures';
 import { recomputeActiveRaidEstimates, recomputeActiveRaidParams } from './Raid';
 import { readURLSettings } from '../URLSettings';
 
+const DEV_ATOM_IDS = [
+  'dev_atom_red',
+  'dev_atom_green',
+  'dev_atom_blue',
+  'dev_atom_yellow',
+  'dev_atom_red_s',
+  'dev_atom_green_s',
+  'dev_atom_blue_s',
+  'dev_atom_yellow_s',
+  'dev_atom_indigo',
+  'dev_atom_crimson',
+  'dev_atom_emerald',
+  'dev_atom_gold',
+  'dev_atom_orange',
+  'dev_atom_gray',
+  'dev_atom_cyan',
+  'dev_atom_magenta',
+] as const;
+
 export function initQuickstart(gameState: GameState): void {
   if (!readURLSettings().quickstart) return;
 
@@ -28,6 +47,15 @@ export function initQuickstart(gameState: GameState): void {
 export function initDebug(gameState: GameState): void {
   if (!readURLSettings().cheat) return;
   uiState.editResearchOpen = true;
+
+  for (const itemId of DEV_ATOM_IDS) {
+    gameState.items[itemId] = (gameState.items[itemId] ?? 0) + 10;
+    const essence = gameState.lib.getItem(itemId).essence;
+    for (const [k, v] of Object.entries(essence)) {
+      if (!v) continue;
+      gameState.encounteredEssences[k] = true;
+    }
+  }
 
   // gameState.unlockedRaids = Array.from(gameState.lib.raids.keys()).map(id => new Raid(id));
   // if (!gameState.lib.raids.has('ozernoye')) {
@@ -62,9 +90,13 @@ export function initDebug(gameState: GameState): void {
     new CheatDisableQuestPrereqs({ disabled: true }),
     new CheatGrantRewards({ rewards: [{ kind: 'countable_gear', gearId: 'xeno_bait', amount: 10 }] }),
     new CheatGrantRewards({ rewards: [{ kind: 'countable_gear', gearId: 'zone_crystal', amount: 10 }] }),
+    new CheatGrantRewards({ rewards: [{ kind: 'countable_gear', gearId: 'tesseract', amount: 10 }] }),
+    new CheatGrantRewards({ rewards: [{ kind: 'countable_gear', gearId: 'scaffold', amount: 10 }] }),
     // new CheatLearnSignatures({ signatureIds: Object.keys(signatures) }),
     // new CheatCompleteSignatures({ signatureIds: Object.keys(signatures) }),
-    // raidItemCheats[0],
+    raidItemCheats[0],
+    raidItemCheats[1],
+    raidItemCheats[2],
     // ...raidItemCheats,
   ];
 }

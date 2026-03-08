@@ -25,9 +25,9 @@ const quests: Record<string, RawQuestDefinition> = {
       { kind: 'AddMonsterMutation', monsterId: 'flower', count: 3 },
     ],
     rewards: [
-      { kind: 'raid_loot_chance', delta: 5 },
       { kind: 'raid_mutation', mutation: { kind: 'LootMutation', count: 5 } },
       { kind: 'raid_mutation', mutation: { kind: 'WalkMutation', count: 1 } },
+      { kind: 'raid_add_item', itemIds: ['insulation_tape'] },
       { kind: 'raid_mutation', mutation: { kind: 'AddMonsterMutation', monsterId: 'flower', count: 1 } },
     ],
   },

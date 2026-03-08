@@ -181,7 +181,6 @@ https://dist-delta-drab.vercel.app
 банка зелёнки
 
 
-
 schematics
 
 +20 credits income per hour
@@ -194,21 +193,7 @@ add tactics "gather accumulated resources"
 
 item credits (1 volume)
 
-
-signature effects:
-adds bonuses to wafer 
-refining time -5% (multiplicative)
-
-flare gun
-fire axe
-sledgehammer
-
 gear xp, 
-combat stim
-camo cloak
-
-
-
 
 
 window.debugMaze()
@@ -238,5 +223,22 @@ nexus upgrade - crafting station - to use up crystals
 gear level-up purchased with skill points
 
 tinies shards - larger
-wafer +1
-clicking on highlights re-triggers them
+
+black essence -50% yield
+oracles give quests
+essence color transform table
+quest reward: loot X rare items
+
+
+Transmutation room
+Allows crafting consumable gear
+
+crystal + fractal + 100ch = tesseract
+2x crystal
+black essence produces fractals
+birdmundshire spawns black essence items
+
+white essence = charges wafer. next refining 15% yield, 15% success chance
+gives sumatras. sumtras prevent zone deterioration, prevent raids from taking any time
+there is a raid which deteriorates VERY quickly, use sumatras to extract enough resources from it
+crystal+sumatra +1000 cr = scaffold

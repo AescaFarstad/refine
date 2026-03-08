@@ -49,7 +49,15 @@
                 <span class="ess-icon" :style="essenceIconStyle(key)" />
               </template>
             </template>
+            <template v-if="preview.blackYieldPenalty > 0">
+              <template v-if="preview.signatureYieldBonus > 0 || preview.newSignatureYieldBonus > 0 || preview.cyanYieldBonus > 0 || preview.magentaYieldBonus > 0"> </template>
+              -{{ preview.blackYieldPenalty }}% from {{ blackEssences }}
+              <template v-for="key in blackEssenceKeys" :key="key">
+                <span class="ess-icon" :style="essenceIconStyle(key)" />
+              </template>
+            </template>
             <template v-if="preview.uniqueItemsYieldBonus > 0">
+              <template v-if="preview.signatureYieldBonus > 0 || preview.newSignatureYieldBonus > 0 || preview.cyanYieldBonus > 0 || preview.magentaYieldBonus > 0 || preview.blackYieldPenalty > 0"> </template>
               +{{ preview.uniqueItemsYieldBonus }}% (unique items)
             </template>
           </span>
@@ -88,15 +96,24 @@
           </span>
         </div>
 
-        <div v-for="go in preview.gearOutputs" :key="go.gearId" class="stat-row">
+        <div v-if="preview.gearOutputs.length > 0" class="stat-row gear-output-row">
           <span class="stat-label">Gear Output:</span>
-          <span class="stat-value gear-output">
-            <span class="gear-icon" :style="gearIconStyle(go.gearId)" />
-            <span class="gear-count">×{{ go.count }}</span>
-          </span>
-          <span class="stat-source">
-            from {{ preview.essenceTotals[go.fromEssence] || 0 }}
-            <span class="ess-icon" :style="essenceIconStyle(go.fromEssence)" />
+          <span class="gear-output-pairs">
+            <span
+              v-for="go in preview.gearOutputs"
+              :key="go.gearId"
+              class="gear-output-pill"
+              :style="gearOutputPillStyle(go.fromEssence)"
+            >
+              <span class="gear-output">
+                <span class="gear-icon" :style="gearIconStyle(go.gearId)" />
+                <span class="gear-count">×{{ go.count }}</span>
+              </span>
+              <span class="gear-output-source">
+                from {{ preview.essenceTotals[go.fromEssence] || 0 }}
+                <span class="ess-icon" :style="essenceIconStyle(go.fromEssence)" />
+              </span>
+            </span>
           </span>
         </div>
 
@@ -182,6 +199,7 @@ export interface WaferInfoPreview {
   newSignatureMatches: Array<{ id: string; offset: Point2 }>;
   cyanYieldBonus: number;
   magentaYieldBonus: number;
+  blackYieldPenalty: number;
   uniqueItemsYieldBonus: number;
 
   expectedCredits: number;
@@ -276,6 +294,14 @@ const magentaPenalty = computed(() => {
   return magentaEssences.value * MAGENTA_SUCCESS_PENALTY_PCT;
 });
 
+const blackEssences = computed(() => {
+  return props.preview.essenceTotals.black || 0;
+});
+
+const blackEssenceKeys = computed(() => {
+  return blackEssences.value > 0 ? ['black'] : [];
+});
+
 const failureClass = computed(() => {
   const pct = props.preview.failureChancePct;
   if (pct === 0) return 'success';
@@ -295,6 +321,26 @@ function gearIconStyle(gearId: string): Record<string, string> {
   const gearDef = gs!.lib.gear.get(gearId)!;
   const f = atlasStorage.getItemsFrame(gearDef.image)!;
   return atlasSpriteStyle(source, f, { size: 20, mode: 'fixed' });
+}
+
+function gearOutputPillStyle(_essenceKey: string): Record<string, string> {
+  return {
+    background: solidPillBackground('#ffffff'),
+  };
+}
+
+function solidPillBackground(hexColor: string): string {
+  const srcR = parseInt(hexColor.slice(1, 3), 16);
+  const srcG = parseInt(hexColor.slice(3, 5), 16);
+  const srcB = parseInt(hexColor.slice(5, 7), 16);
+  const tintAlpha = 0.10;
+  const paneR = 15;
+  const paneG = 23;
+  const paneB = 42;
+  const outR = Math.round((srcR * tintAlpha) + (paneR * (1 - tintAlpha)));
+  const outG = Math.round((srcG * tintAlpha) + (paneG * (1 - tintAlpha)));
+  const outB = Math.round((srcB * tintAlpha) + (paneB * (1 - tintAlpha)));
+  return `rgb(${outR}, ${outG}, ${outB})`;
 }
 
 const shouldFlashSignaturesTab = computed(() => {
@@ -383,6 +429,11 @@ function cycleInfoTab() {
   border-bottom: none;
 }
 
+.gear-output-row {
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+}
+
 .stat-label {
   color: var(--text-secondary);
   font-weight: 500;
@@ -434,6 +485,35 @@ function cycleInfoTab() {
   display: flex;
   align-items: center;
   gap: 4px;
+  white-space: nowrap;
+}
+
+.gear-output-pairs {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  white-space: nowrap;
+}
+
+.gear-output-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 12px;
+  border: none;
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: rgba(226, 232, 240, 0.95) !important;
+}
+
+.gear-output-source {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
 }
 
 .gear-icon {

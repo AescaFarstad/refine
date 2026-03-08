@@ -202,6 +202,32 @@ export function verifyGear(lib: Lib, errors: VerifyErrors): void {
   }
 }
 
+export function verifyTransmutations(lib: Lib, errors: VerifyErrors): void {
+  for (const transmutation of lib.transmutations.values()) {
+    const context = `Transmutation[${transmutation.id}]`;
+
+    for (const gearId of Object.keys(transmutation.price.gear)) {
+      ensureExists(errors, lib.gear, gearId, `${context} price`, 'gear');
+      if (lib.gear.has(gearId) && !lib.gear.get(gearId)!.countable) {
+        errors.push(`${context} price references non-countable gear: ${gearId}`);
+      }
+    }
+    for (const gearId of Object.keys(transmutation.priceIncrease.gear)) {
+      ensureExists(errors, lib.gear, gearId, `${context} priceIncrease`, 'gear');
+      if (lib.gear.has(gearId) && !lib.gear.get(gearId)!.countable) {
+        errors.push(`${context} priceIncrease references non-countable gear: ${gearId}`);
+      }
+    }
+
+    if (transmutation.result.kind === 'gear') {
+      ensureExists(errors, lib.gear, transmutation.result.gearId, `${context} result`, 'gear');
+      if (lib.gear.has(transmutation.result.gearId) && !lib.gear.get(transmutation.result.gearId)!.countable) {
+        errors.push(`${context} result references non-countable gear: ${transmutation.result.gearId}`);
+      }
+    }
+  }
+}
+
 export function verifyResearch(lib: Lib, errors: VerifyErrors): void {
   for (const node of lib.research.nodes.values()) {
     if (!lib.research.archetypes.has(node.archetypeId)) {
@@ -231,6 +257,7 @@ export function verifyLibIntegrity(lib: Lib): void {
   verifyQuests(lib, errors);
   verifyItems(lib, errors);
   verifyGear(lib, errors);
+  verifyTransmutations(lib, errors);
   verifyResearch(lib, errors);
   verifySignatures(lib, errors);
 

@@ -70,6 +70,7 @@ function createDefaultUIState() {
     unlockedGear: [] as string[],
     unlockedGearCategories: [] as string[],
     countableGear: {} as Record<string, number>,
+    transmutationCraftCounts: {} as Record<string, number>,
     activeQuests: [] as string[],
     reviewedQuestIds: [] as string[],
     questProgressById: {} as Record<string, number>,
@@ -140,6 +141,8 @@ function createDefaultUIState() {
     hasDiscoveredRaidSelection: false,
     hasDiscoveredCyanYield: false,
     hasDiscoveredMagentaYield: false,
+    hasDiscoveredBlackFractals: false,
+    hasDiscoveredWhiteSpice: false,
     hasDiscoveredSignatureInfo: false,
     hasVisitedRefineTab: false,
     hasVisitedResearchTab: false,
@@ -316,6 +319,8 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.timeFlux = game.timeFlux ?? 0;
   uiState.shardDust = game.shardDust || 0;
   uiState.skillPoints = game.skillPoints || 0;
+  uiState.countableGear = { ...game.countableGear };
+  uiState.transmutationCraftCounts = { ...game.transmutationCraftCounts };
   // Model tracks time in seconds; UI needs minutes for display
   uiState.timeMinutes = Math.floor((game.gameTime || 0) / 60);
   uiState.canAdvanceTime = !!game.nextEvt;
@@ -362,7 +367,6 @@ export function SyncUIFromGameState(game: GameState): void {
       }
       uiState.unlockedGearCategories = [...categories];
     }
-    uiState.countableGear = { ...game.countableGear };
     uiState.activeQuests = Array.isArray(game.activeQuests) ? [...game.activeQuests] : [];
     uiState.reviewedQuestIds = Array.isArray(game.reviewedQuestIds) ? [...game.reviewedQuestIds] : [];
     const progress: Record<string, number> = {};
@@ -495,6 +499,8 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.hasDiscoveredRaidSelection = game.discoveries[DISCOVERY.UI_RAID_SELECTION] === true;
   uiState.hasDiscoveredCyanYield = game.discoveries[DISCOVERY.CYAN_YIELD] === true;
   uiState.hasDiscoveredMagentaYield = game.discoveries[DISCOVERY.MAGENTA_YIELD] === true;
+  uiState.hasDiscoveredBlackFractals = game.discoveries[DISCOVERY.BLACK_FRACTALS] === true;
+  uiState.hasDiscoveredWhiteSpice = game.discoveries[DISCOVERY.WHITE_SPICE] === true;
   uiState.hasDiscoveredSignatureInfo = game.discoveries[DISCOVERY.UI_SIGNATURE_INFO] === true;
   uiState.hasVisitedRefineTab = game.discoveries[DISCOVERY.TAB_REFINE_VISITED] === true;
   uiState.hasVisitedResearchTab = game.discoveries[DISCOVERY.TAB_RESEARCH_VISITED] === true;

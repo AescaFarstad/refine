@@ -56,6 +56,11 @@ export interface GearDefinition {
   // Price change applied after each successful raid (can be positive or negative)
   priceChange: number;
 
+  // If true, completing the raid does not advance global time.
+  preventsGlobalTimeAdvance: boolean;
+  // If true, a successful raid does not apply success-based zone deterioration.
+  preventsSuccessZoneDeterioration: boolean;
+
   // Visual - key into items.json sprite atlas
   image: string;
 
@@ -113,6 +118,8 @@ export function parseGearDefinitions(raw: Record<string, RawGearDefinition>): Ma
       raidResourceStorageBonus: d.raidResourceStorageBonus ?? 0,
       zoneBoost: d.zoneBoost ?? 0,
       priceChange: d.priceChange ?? 0,
+      preventsGlobalTimeAdvance: d.preventsGlobalTimeAdvance ?? false,
+      preventsSuccessZoneDeterioration: d.preventsSuccessZoneDeterioration ?? false,
       image: d.image ?? '',
       description: d.description ?? '',
     };

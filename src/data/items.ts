@@ -1732,6 +1732,26 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
     },
     devOnly: true,
   },
+  dev_atom_black: {
+    name: 'Dev Atom (Black)',
+    volume: 0,
+    rarity: 1,
+    molecule: {
+      atoms: [{ color: 'black', x: 0, y: 0 }],
+      connections: [],
+    },
+    devOnly: true,
+  },
+  dev_atom_white: {
+    name: 'Dev Atom (White)',
+    volume: 0,
+    rarity: 1,
+    molecule: {
+      atoms: [{ color: 'white', x: 0, y: 0 }],
+      connections: [],
+    },
+    devOnly: true,
+  },
 };
 
 // Merge remains with other items

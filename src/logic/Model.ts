@@ -15,6 +15,7 @@ export const globalInputQueue: CmdInput[] = [];
 
 // Duration of the shard pickup animation in seconds;
 export const SHARD_PICKUP_DELAY_SEC = 0.6;
+const COUNTABLE_GEAR_SHARD_RESOURCES = new Set(['zone_crystal', 'fractal', 'spice']);
 
 export function setResearchRevealRadius(gs: GameState, radius: number): void {
   gs.researchRevealRadius = radius;
@@ -108,10 +109,10 @@ function updateShards(gs: GameState, dt: number) {
         ensureMazeTabDiscovery(gs);
       } else if (shard.resource === 'shards') {
         gs.shardDust += shard.amount;
-      } else if (shard.resource === 'zone_crystal') {
-        gs.countableGear['zone_crystal'] = (gs.countableGear['zone_crystal'] || 0) + shard.amount;
-        if (!gs.unlockedGear.includes('zone_crystal')) {
-          gs.unlockedGear.push('zone_crystal');
+      } else if (COUNTABLE_GEAR_SHARD_RESOURCES.has(shard.resource)) {
+        gs.countableGear[shard.resource] = (gs.countableGear[shard.resource] || 0) + shard.amount;
+        if (!gs.unlockedGear.includes(shard.resource)) {
+          gs.unlockedGear.push(shard.resource);
         }
       }
       gs.shards[i] = null as any;

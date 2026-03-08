@@ -94,6 +94,8 @@ ferbruary 26, 27
   research pane and editor improvements
 march 6
   tesseracts, resource collection
+march 7, 8, 9
+  transmutation, white, black, lava, frozen, lush essences
 
 npx tsc --noEmit
 npx vue-tsc --noEmit
@@ -106,7 +108,11 @@ medical - +hp when you find an item
 you've looted a giant item and now you need to refine it
 a way to re-invigurate old zones
 
-
+REGRET:
+refund maze furniture
+load last save in case of failure
+load a save which is recent but takes a step back
+never used consumable which gives two armor for one battle
 
 achievements:
 complete raid 20 times

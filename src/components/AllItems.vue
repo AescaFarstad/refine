@@ -129,7 +129,7 @@ const essenceTotals = computed<Record<string, number>>(() => {
   return totals;
 });
 
-const orderedKeys: string[] = ['red', 'red_s', 'green', 'green_s', 'blue', 'blue_s', 'yellow', 'yellow_s'];
+const orderedKeys: string[] = ['red', 'red_s', 'green', 'green_s', 'blue', 'blue_s', 'yellow', 'yellow_s', 'black', 'white'];
 const essenceKeys = computed<string[]>(() => {
   const keys = Array.from(new Set([...orderedKeys, ...Object.keys(essenceTotals.value)]));
   return keys.filter(k => (essenceTotals.value[k] || 0) > 0);

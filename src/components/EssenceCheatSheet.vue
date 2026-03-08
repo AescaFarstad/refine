@@ -68,7 +68,7 @@ function essenceIconStyle(size: number, k: string): Record<string, string> {
 const encounteredEssenceKeys = computed<string[]>(() => {
   const keys = (uiState.encounteredEssences || []).filter(Boolean);
   const uniq = Array.from(new Set(keys));
-  const order = ['red', 'red_s', 'green', 'green_s', 'blue', 'blue_s', 'yellow', 'yellow_s', 'cyan', 'magenta', 'orange', 'indigo', 'crimson', 'emerald', 'gold', 'gray'];
+  const order = ['red', 'red_s', 'green', 'green_s', 'blue', 'blue_s', 'yellow', 'yellow_s', 'black', 'white', 'cyan', 'magenta', 'orange', 'indigo', 'crimson', 'emerald', 'gold', 'gray'];
   const orderIdx: Record<string, number> = {};
   order.forEach((k, i) => { orderIdx[k] = i; });
   return uniq.sort((a, b) => {
@@ -114,6 +114,8 @@ function essenceDisplayName(k: string): string {
     blue_s: 'Frozen',
     yellow: 'Yellow',
     yellow_s: 'Sun',
+    black: 'Black',
+    white: 'White',
     orange: 'Orange',
     cyan: 'Cyan',
     magenta: 'Magenta',
@@ -159,6 +161,10 @@ function essenceEffectHtml(k: string): string {
       return `+1 (${essenceInlineIcon('red')} + ${essenceInlineIcon('green')} + ${essenceInlineIcon('blue')}) count to each  ${essenceInlineIcon('yellow')}`;
     case 'orange':
       return 'Doubles adjacent';
+    case 'black':
+      return '-50% refining yield' + (uiState.hasDiscoveredBlackFractals ? ', yields Fractal gear' : '');
+    case 'white':
+      return uiState.hasDiscoveredWhiteSpice ? 'Yields Spice gear' : 'No effect yet';
     case 'cyan':
       return `${CYAN_SUCCESS_BONUS_PCT}% refining success` + (uiState.hasDiscoveredCyanYield ? `, +${CYAN_YIELD_BONUS_PCT}% bonus yield` : '');
     case 'magenta':

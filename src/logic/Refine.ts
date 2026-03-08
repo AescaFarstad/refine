@@ -63,6 +63,16 @@ export function resolveRefineryDone(gs: GameState): void {
       applyReward(gs, { kind: 'discovery', discoveryId: DISCOVERY.MAGENTA_CRYSTALS });
       applyReward(gs, { kind: 'show_ui', ui: 'RUIMagentaCrystals' });
     }
+    const blackCount = preview.essenceTotals['black'] || 0;
+    if (blackCount > 0 && !gs.discoveries[DISCOVERY.BLACK_FRACTALS]) {
+      applyReward(gs, { kind: 'discovery', discoveryId: DISCOVERY.BLACK_FRACTALS });
+      applyReward(gs, { kind: 'show_ui', ui: 'RUIBlackFractals' });
+    }
+    const whiteCount = preview.essenceTotals['white'] || 0;
+    if (whiteCount > 0 && !gs.discoveries[DISCOVERY.WHITE_SPICE]) {
+      applyReward(gs, { kind: 'discovery', discoveryId: DISCOVERY.WHITE_SPICE });
+      applyReward(gs, { kind: 'show_ui', ui: 'RUIWhiteSpice' });
+    }
 
     for (const gearOutput of preview.gearOutputs) {
       if (gearOutput.count > 0) {

@@ -200,7 +200,7 @@ const tooltipMoleculeStyle = computed(() => {
 
 // Essences display
 type EssenceKey = 'red' | 'green' | 'blue' | 'yellow' | string;
-const orderedKeys: EssenceKey[] = ['red', 'red_s', 'green', 'green_s', 'blue', 'blue_s', 'yellow', 'yellow_s'];
+const orderedKeys: EssenceKey[] = ['red', 'red_s', 'green', 'green_s', 'blue', 'blue_s', 'yellow', 'yellow_s', 'black', 'white'];
 const essencesToShow = computed(() => {
   const e = itemDef.value.essence;
   const keys = Array.from(new Set([...orderedKeys, ...Object.keys(e)]));

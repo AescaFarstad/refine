@@ -26,10 +26,13 @@ import itemsData from '../data/items';
 import signaturesData from '../data/signatures';
 import nexusData from '../data/nexus';
 import signatureLayoutsData from '../data/signature_layouts';
+import transmutationData from '../data/transmutation';
 import { ResearchLib } from "./ResearchLib";
 import { researchArchetypes } from '../data/research_archetypes';
 import { researchPane, researchPaneEmptyCells, researchPaneVoidCells } from '../data/research_pane';
 import { verifyLibIntegrity } from './VerifyLib';
+import type { TransmutationDefinition } from './TransmutationLib';
+import { parseTransmutationDefinitions } from './TransmutationLib';
 
 export class Lib {
 
@@ -43,6 +46,7 @@ export class Lib {
   public signatures: Map<string, SignatureDefinition> = new Map();
   public monsters: Map<string, MonsterDefinition> = new Map();
   public nexusItems: Map<string, NexusItemDefinition> = new Map();
+  public transmutations: Map<string, TransmutationDefinition> = new Map();
   public research: ResearchLib = new ResearchLib();
 
   constructor() {
@@ -135,6 +139,7 @@ export class Lib {
 
       this.monsters = parseMonsterDefinitions(monstersData);
       this.nexusItems = parseNexusItemDefinitions(nexusData);
+      this.transmutations = parseTransmutationDefinitions(transmutationData);
 
       // Initialize research library with gear archetypes
       this.research.load(

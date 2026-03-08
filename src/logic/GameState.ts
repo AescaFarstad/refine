@@ -144,6 +144,7 @@ export class GameState {
     ozernoye: [],
   };
   public countableGear: Record<string, number> = {};
+  public transmutationCraftCounts: Record<string, number> = {};
   public selectedGearPrice: number = 0;
 
   public raidSimulation: RaidSimulation = new RaidSimulation();
@@ -196,6 +197,8 @@ export class ActiveRaid {
   public biopsyChance: number = 0;      // chance to successfully harvest monster loot
   public reimbursedPct: number = 0;     // % of gear price reimbursed on combat death
   public rarityBuff: number = 0;        // bonus to loot rarity from gear
+  public preventsGlobalTimeAdvance: boolean = false;
+  public preventsSuccessZoneDeterioration: boolean = false;
 }
 
 export class Raid {

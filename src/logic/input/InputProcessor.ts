@@ -1,7 +1,7 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdReviewQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro, CmdPickupShard, CmdSpeedUpRefining, CmdClearShardPickupGrace, CmdMazeMoveTo, CmdMazePrepareUpgradeOffer, CmdMazeSelectNexusUpgrade, CmdMazePlaceNexusItem, CmdMazeActivateNexusSpecialUpgrade, CmdMazeResetHighMovement } from './InputCommands';
+import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdReviewQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro, CmdPickupShard, CmdSpeedUpRefining, CmdClearShardPickupGrace, CmdMazeMoveTo, CmdMazePrepareUpgradeOffer, CmdMazeSelectNexusUpgrade, CmdMazePlaceNexusItem, CmdMazeActivateNexusSpecialUpgrade, CmdMazeResetHighMovement, CmdTransmutate } from './InputCommands';
 import { SHARD_PICKUP_DELAY_SEC } from '../Model';
 import { discover, discoverRefineTab, ensureSignatureDiscoveryFromWafer } from '../Discover';
 import { DISCOVERY } from '../DiscoveryLib';
@@ -16,6 +16,7 @@ import { applyReward } from '../Reward';
 import { saveAutosave } from '../SaveLoad';
 import { handleMazeMoveTo, computeMazeResourceSpawns, syncMazeResetEntranceCell, placeMazeNexusItem, isMazeEntranceCell } from '../Maze';
 import { prepareMazeNexusUpgradeOffer, selectMazeNexusUpgrade, onMazeNexusUpgradePlaced, activateMazeNexusSpecialUpgrade } from '../MazeNexusUpgradeProgress';
+import { transmutate } from '../Transmutation';
 import { uiState } from '../UIState';
 
 
@@ -90,8 +91,10 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
   const raidEntry = gs.unlockedRaids.find(r => r.id === c.id)!;
   const loadoutPassiveCreditsPerHour = getLoadoutPassiveCreditsPerHour(gs, c.id);
   const loadoutResourceStorageBonus = getLoadoutResourceStorageBonus(gs, c.id);
-  gs.gameTime += result.timeSpentSec;
-  accumulateRaidResources(gs, result.timeSpentSec);
+  if (!gs.raid.preventsGlobalTimeAdvance) {
+    gs.gameTime += result.timeSpentSec;
+    accumulateRaidResources(gs, result.timeSpentSec);
+  }
 
   if (result.success && loadoutPassiveCreditsPerHour > 0) {
     raidEntry.passiveCreditsPerHour += loadoutPassiveCreditsPerHour;
@@ -156,7 +159,7 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
   }
 
   let zoneChange: { label: string; value: string } | null = null;
-  if (result.success) {
+  if (result.success && !gs.raid.preventsSuccessZoneDeterioration) {
     const chosen = pickAndApplyRaidSuccessMutation(gs, c.id);
     if (chosen) {
       zoneChange = describeMutation(gs, chosen.mutation);
@@ -554,6 +557,13 @@ handlersByName.set('CmdMazeActivateNexusSpecialUpgrade', (gs, cmd) => {
 handlersByName.set('CmdMazeResetHighMovement', (gs) => {
   gs.mazeHighMovementUsed = 0;
   uiState.mazeVersion++;
+  saveAutosave(gs);
+});
+
+handlersByName.set('CmdTransmutate', (gs, cmd) => {
+  const c = cmd as CmdTransmutate;
+  const crafted = transmutate(gs, c.transmutationId);
+  if (!crafted) return;
   saveAutosave(gs);
 });
 

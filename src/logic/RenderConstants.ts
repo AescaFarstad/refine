@@ -19,5 +19,6 @@ export const ESSENCE_COLORS: Record<string, string> = {
   orange: '#fb923c',
   cyan: '#00ffff',
   magenta: '#ff00ff',
+  black: '#111111',
   white: '#ffffff',
 };

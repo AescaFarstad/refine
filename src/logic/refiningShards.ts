@@ -32,6 +32,13 @@ let lastLocalMouseCoords: { x: number; y: number } | null = null;
 const animatedShardIds = new Set<string>();
 const shardSpriteCache = new Map<string, HTMLCanvasElement>();
 
+function getGearShardFrame(resource: string) {
+  const gs = getGameState();
+  const imageKey = gs?.lib.gear.get(resource)?.image;
+  if (!imageKey) return null;
+  return atlasStorage.getItemsFrame(imageKey);
+}
+
 export function updateMouseCoords(x: number, y: number) {
   localMouseCoords = {
     x: x - origin.x,
@@ -300,16 +307,15 @@ function createFlyingShardAnimation(shard: Shard, startX: number, startY: number
   const transitionDurationMs = Math.round(SHARD_FLY_TO_UI_DURATION_SEC * 1000);
   flyingEl.style.transition = `left ${transitionDurationMs}ms cubic-bezier(0.25, 0.46, 0.45, 0.94), top ${transitionDurationMs}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
 
-  // For zone_crystal, use an image sprite instead of text
-  if (shard.resource === 'zone_crystal') {
+  const gearFrame = getGearShardFrame(shard.resource);
+  if (gearFrame) {
     const source = atlasStorage.getItemsSource();
-    const frame = atlasStorage.getItemsFrame('quartz');
-    if (source && frame) {
+    if (source) {
       const spriteEl = document.createElement('div');
       spriteEl.style.width = ZONE_CRYSTAL_SHARD_SIZE + 'px';
       spriteEl.style.height = ZONE_CRYSTAL_SHARD_SIZE + 'px';
       spriteEl.style.backgroundImage = `url(${source.src})`;
-      spriteEl.style.backgroundPosition = `-${frame.x}px -${frame.y}px`;
+      spriteEl.style.backgroundPosition = `-${gearFrame.x}px -${gearFrame.y}px`;
       spriteEl.style.backgroundSize = `${source.naturalWidth}px ${source.naturalHeight}px`;
       spriteEl.style.transform = 'translate(-50%, -50%)';
       flyingEl.appendChild(spriteEl);
@@ -353,17 +359,16 @@ export function drawShard(ctx: CanvasRenderingContext2D, shard: Shard) {
   const y = origin.y + physics.pos.y;
   const angle = physics.angle || 0;
 
-  // For zone_crystal, draw the gear image instead of text
-  if (shard.resource === 'zone_crystal') {
+  const gearFrame = getGearShardFrame(shard.resource);
+  if (gearFrame) {
     const source = atlasStorage.getItemsSource();
-    const frame = atlasStorage.getItemsFrame('quartz'); // zone_crystal uses 'quartz' image
-    if (source && frame) {
+    if (source) {
       ctx.save();
       ctx.translate(x, y);
       ctx.rotate(angle);
       ctx.drawImage(
         source,
-        frame.x, frame.y, frame.w, frame.h,
+        gearFrame.x, gearFrame.y, gearFrame.w, gearFrame.h,
         -ZONE_CRYSTAL_SHARD_SIZE / 2, -ZONE_CRYSTAL_SHARD_SIZE / 2,
         ZONE_CRYSTAL_SHARD_SIZE, ZONE_CRYSTAL_SHARD_SIZE
       );

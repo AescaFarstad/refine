@@ -118,6 +118,8 @@ const DEV_ESSENCE_ITEMS: Record<string, string> = {
   green: 'dev_atom_green',
   blue: 'dev_atom_blue',
   yellow: 'dev_atom_yellow',
+  black: 'dev_atom_black',
+  white: 'dev_atom_white',
   indigo: 'dev_atom_indigo',
   crimson: 'dev_atom_crimson',
   emerald: 'dev_atom_emerald',

@@ -244,3 +244,11 @@ export class CmdMazeActivateNexusSpecialUpgrade implements CmdInput {
 export class CmdMazeResetHighMovement implements CmdInput {
   readonly name = 'CmdMazeResetHighMovement';
 }
+
+export class CmdTransmutate implements CmdInput {
+  readonly name = 'CmdTransmutate';
+  readonly transmutationId: string;
+  constructor(args: { transmutationId: string }) {
+    this.transmutationId = args.transmutationId;
+  }
+}

@@ -1,10 +1,6 @@
 <template>
   <div v-if="open" class="modal-backdrop" @click.self="closeAll">
     <div class="modal" :class="{ full: hasFullscreen }">
-      <header class="modal-header" v-if="!hasFullscreen">
-        <h3>Cheat Tools</h3>
-      </header>
-
       <section class="modal-body" v-if="!hasFullscreen">
         <div class="grid">
           <button v-for="k in atlasKeys" :key="k" class="btn atlas-btn" @click="openAtlas(k)">
@@ -61,6 +57,14 @@
           </div>
 
           <div class="discovery-panel">
+            <button
+              class="btn discovery-toggle-all"
+              :class="{ primary: allDiscovered }"
+              type="button"
+              @click="toggleAllDiscoveries"
+            >
+              {{ allDiscovered ? 'ALL ON' : 'ALL OFF' }}
+            </button>
             <div class="discovery-grid">
               <button
                 v-for="id in tabDiscoveryIds"
@@ -90,6 +94,19 @@
             <div class="discovery-grid">
               <button
                 v-for="id in otherDiscoveryIds"
+                :key="id"
+                class="btn discovery-btn"
+                :class="{ primary: isDiscovered(id) }"
+                type="button"
+                @click="toggleDiscovery(id)"
+              >
+                {{ formatDiscoveryLabel(id) }}
+              </button>
+            </div>
+            <hr class="discovery-separator" />
+            <div class="discovery-grid">
+              <button
+                v-for="id in refineEssenceIds"
                 :key="id"
                 class="btn discovery-btn"
                 :class="{ primary: isDiscovered(id) }"
@@ -270,14 +287,29 @@ function sigCheatSpriteStyle(id: string): Record<string, string> {
 }
 
 const resources = Object.values(RESOURCE_SPECS);
+const REFINE_ESSENCE_IDS = new Set<string>([
+  DISCOVERY.UI_REFINE_YIELD,
+  DISCOVERY.UNIQUE_ITEMS_YIELD,
+  DISCOVERY.CYAN_YIELD,
+  DISCOVERY.MAGENTA_YIELD,
+  DISCOVERY.ESSENCE_RESEARCH_KNOWLEDGE,
+  DISCOVERY.MAGENTA_CRYSTALS,
+  DISCOVERY.BLACK_FRACTALS,
+  DISCOVERY.WHITE_SPICE,
+  DISCOVERY.REFINEMENT_FAILED,
+]);
+
 const tabDiscoveryIds = computed<DiscoveryId[]>(() =>
   Object.values(DISCOVERY).filter(id => String(id).startsWith('TAB_'))
 );
 const uiDiscoveryIds = computed<DiscoveryId[]>(() =>
-  Object.values(DISCOVERY).filter(id => String(id).startsWith('UI_'))
+  Object.values(DISCOVERY).filter(id => String(id).startsWith('UI_') && !REFINE_ESSENCE_IDS.has(id))
 );
 const otherDiscoveryIds = computed<DiscoveryId[]>(() =>
-  Object.values(DISCOVERY).filter(id => !String(id).startsWith('TAB_') && !String(id).startsWith('UI_'))
+  Object.values(DISCOVERY).filter(id => !String(id).startsWith('TAB_') && !String(id).startsWith('UI_') && !REFINE_ESSENCE_IDS.has(id))
+);
+const refineEssenceIds = computed<DiscoveryId[]>(() =>
+  Object.values(DISCOVERY).filter(id => REFINE_ESSENCE_IDS.has(id))
 );
 
 function grantResource(key: ResourceKey, amount: number) {
@@ -334,6 +366,28 @@ function toggleDiscovery(id: DiscoveryId): void {
     return;
   }
   discover(gs, id);
+}
+
+const allDiscoveryIds = computed<DiscoveryId[]>(() => Object.values(DISCOVERY));
+const allDiscovered = computed(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  uiState.discoveryCounter;
+  const gs = getGameStateMutable();
+  return allDiscoveryIds.value.every(id => gs.discoveries[id] === true);
+});
+
+function toggleAllDiscoveries(): void {
+  const gs = getGameStateMutable();
+  if (allDiscovered.value) {
+    for (const id of allDiscoveryIds.value) {
+      delete gs.discoveries[id];
+    }
+  } else {
+    for (const id of allDiscoveryIds.value) {
+      discover(gs, id);
+    }
+  }
+  gs.discoveryCounter++;
 }
 
 function formatDiscoveryLabel(id: DiscoveryId): string {
@@ -444,7 +498,7 @@ function closeAll() {
 }
 .resource-and-discovery {
   display: grid;
-  grid-template-columns: max-content minmax(240px, 320px);
+  grid-template-columns: max-content minmax(340px, 480px);
   gap: 12px;
   align-items: start;
   justify-content: start;
@@ -474,12 +528,19 @@ function closeAll() {
 }
 .discovery-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
 .discovery-btn {
   text-transform: uppercase;
   font-size: 11px;
+  letter-spacing: 0.06em;
+}
+.discovery-toggle-all {
+  margin-bottom: 8px;
+  width: 100%;
+  font-size: 12px;
+  font-weight: 700;
   letter-spacing: 0.06em;
 }
 .discovery-separator {

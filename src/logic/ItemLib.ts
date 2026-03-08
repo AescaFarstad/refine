@@ -7,6 +7,8 @@ export const DEFAULT_ESSENCE_KEYS: string[] = [
   'blue',
   'green',
   'yellow',
+  'black',
+  'white',
   'red_s',
   'blue_s',
   'green_s',

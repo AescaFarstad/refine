@@ -7,10 +7,13 @@ import {
     CYAN_YIELD_BONUS_PCT,
     MAGENTA_YIELD_BONUS_PCT,
     MAGENTA_CRYSTAL_YIELD_PER_ESSENCE,
+    BLACK_FRACTAL_YIELD_PER_ESSENCE,
+    WHITE_SPICE_YIELD_PER_ESSENCE,
     ESSENCE_CREDITS,
     ESSENCE_CHRONOTRACES,
     ESSENCE_TEMPORAL_FLUX,
     FAILURE_PER_EMPTY_CELL,
+    BLACK_YIELD_PENALTY_PCT,
     MAGENTA_SUCCESS_PENALTY_PCT,
     REFINE_TIME,
 } from './Const';
@@ -43,6 +46,7 @@ export interface RefinePreviewChem {
     newSignatureSpeedBonus: number;
     cyanYieldBonus: number;
     magentaYieldBonus: number;
+    blackYieldPenalty: number;
     uniqueItemsYieldBonus: number;
 
     totalYieldPct: number;
@@ -528,13 +532,24 @@ export function computeRefinePreviewChem(gs: ReadonlyGameState): RefinePreviewCh
     const magentaYieldBonus = gs.discoveries[DISCOVERY.MAGENTA_YIELD]
         ? magentaCount * MAGENTA_YIELD_BONUS_PCT
         : 0;
+    const blackCount = essenceTotals['black'] || 0;
+    const blackYieldPenalty = blackCount * BLACK_YIELD_PENALTY_PCT;
     const uniqueItemsYieldBonus = computeUniqueItemsYieldBonusPct(
         gs.refinedUniqueItemIds,
         gs.wafer.items,
         gs.uniqueItemsBonusYield,
     );
 
-    const totalYieldPct = baseYieldPct + signatureYieldBonus + newSignatureYieldBonus + cyanYieldBonus + magentaYieldBonus + uniqueItemsYieldBonus;
+    const totalYieldPct = Math.max(
+        0,
+        baseYieldPct
+        + signatureYieldBonus
+        + newSignatureYieldBonus
+        + cyanYieldBonus
+        + magentaYieldBonus
+        + uniqueItemsYieldBonus
+        - blackYieldPenalty
+    );
 
     const red = essenceTotals['red'] || 0;
     const green = essenceTotals['green'] || 0;
@@ -551,14 +566,26 @@ export function computeRefinePreviewChem(gs: ReadonlyGameState): RefinePreviewCh
     const gearOutputs: GearOutput[] = [];
 
     if (gs.discoveries[DISCOVERY.MAGENTA_CRYSTALS] && magentaCount > 0) {
-        const crystalCount = Math.floor(magentaCount * MAGENTA_CRYSTAL_YIELD_PER_ESSENCE * yieldMultiplier);
-        if (crystalCount > 0) {
-            gearOutputs.push({
-                gearId: 'zone_crystal',
-                count: crystalCount,
-                fromEssence: 'magenta',
-            });
-        }
+        gearOutputs.push({
+            gearId: 'zone_crystal',
+            count: Math.floor(magentaCount * MAGENTA_CRYSTAL_YIELD_PER_ESSENCE * yieldMultiplier),
+            fromEssence: 'magenta',
+        });
+    }
+    if (gs.discoveries[DISCOVERY.BLACK_FRACTALS] && blackCount > 0) {
+        gearOutputs.push({
+            gearId: 'fractal',
+            count: Math.floor(blackCount * BLACK_FRACTAL_YIELD_PER_ESSENCE * yieldMultiplier),
+            fromEssence: 'black',
+        });
+    }
+    const whiteCount = essenceTotals['white'] || 0;
+    if (gs.discoveries[DISCOVERY.WHITE_SPICE] && whiteCount > 0) {
+        gearOutputs.push({
+            gearId: 'spice',
+            count: Math.floor(whiteCount * WHITE_SPICE_YIELD_PER_ESSENCE * yieldMultiplier),
+            fromEssence: 'white',
+        });
     }
 
     return {
@@ -573,6 +600,7 @@ export function computeRefinePreviewChem(gs: ReadonlyGameState): RefinePreviewCh
         newSignatureSpeedBonus,
         cyanYieldBonus,
         magentaYieldBonus,
+        blackYieldPenalty,
         uniqueItemsYieldBonus,
         totalYieldPct,
         expectedCredits,

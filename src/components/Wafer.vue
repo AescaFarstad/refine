@@ -226,6 +226,7 @@ const preview = computed(() => {
       totalYieldPct: 100,
       cyanYieldBonus: 0,
       magentaYieldBonus: 0,
+      blackYieldPenalty: 0,
       uniqueItemsYieldBonus: 0,
       signatureYieldBonus: 0,
       newSignatureYieldBonus: 0,

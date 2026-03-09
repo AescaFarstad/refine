@@ -48,6 +48,40 @@
           {{ upgradeCost }} {{ shardSpec.glyph }}
         </span>
       </div>
+      <div
+        v-if="uiState.waferCharge > 0"
+        class="wafer-charge-wrap"
+        @mouseenter="showChargeHint = true"
+        @mouseleave="showChargeHint = false"
+      >
+        <button
+          type="button"
+          class="wafer-charge-label"
+          @focus="showChargeHint = true"
+          @blur="showChargeHint = false"
+          @click="showChargeHint = !showChargeHint"
+        >
+          <span class="wafer-charge-word">Charge</span>: {{ uiState.waferCharge }}
+        </button>
+        <div
+          v-if="showChargeHint"
+          class="wafer-charge-hint"
+          role="tooltip"
+          aria-hidden="true"
+        >
+          <div class="hint-row">
+            <span class="hint-label">Yield</span>
+            <span class="hint-value">+{{ waferChargeBonusPct }}%</span>
+          </div>
+          <div class="hint-row">
+            <span class="hint-label">Success chance</span>
+            <span class="hint-value">+{{ waferChargeBonusPct }}%</span>
+          </div>
+          <div class="hint-row hint-row-note">
+            <span class="hint-value hint-value-dim">Resets after each refining</span>
+          </div>
+        </div>
+      </div>
     </div>
 
 	    <div class="placed-items-row">
@@ -99,7 +133,7 @@
 </template>
 
 <script setup lang="ts">
-	import { ref, computed, watch, onMounted } from 'vue';
+	import { ref, computed, watch } from 'vue';
 	import WaferView from './WaferView.vue';
 	import ItemDisplay from './ItemDisplay.vue';
 	import RefineAnim from './RefineAnim.vue';
@@ -118,6 +152,7 @@
 	import { HEX_SIZE, WAFER_CANVAS_WIDTH, WAFER_CANVAS_HEIGHT } from '../logic/RefineUIBehaviour';
 	import { updateManualDragMolecule } from '../logic/ManualDrag';
 	import { getResourceSpec } from '../logic/Resources';
+	import { WAFER_CHARGE_BONUS_PCT } from '../logic/Const';
 
 
 const props = defineProps<{
@@ -149,7 +184,9 @@ const rotation = ref(0);
 const upgradeHoverCells = ref<Point2[] | null>(null);
 const isRefineHovered = ref(false);
 const waferPulseVersion = ref(0);
+const showChargeHint = ref(false);
 const shouldFlashFailure = computed(() => isRefineHovered.value && canRefine.value && preview.value.failureChancePct > 20);
+const waferChargeBonusPct = computed(() => uiState.waferCharge * WAFER_CHARGE_BONUS_PCT);
 
 
 const activeRefinery = computed(() => uiState.refinery);
@@ -218,6 +255,9 @@ const preview = computed(() => {
       expectedFlux: 0,
       timeSec: 0,
       failureChancePct: 0,
+      waferCharge: 0,
+      waferChargeYieldBonus: 0,
+      waferChargeSuccessChanceBonus: 0,
       creditsEssences: 0,
       chronoEssences: 0,
       fluxEssences: 0,
@@ -482,6 +522,86 @@ defineExpose({ rotate: onRotate });
   flex-direction: column;
   align-items: center;
   position: relative;
+}
+
+.wafer-charge-wrap {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  z-index: 30;
+}
+
+.wafer-charge-label {
+  border: none;
+  border-top-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+  background: var(--panel-border);
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 6px 12px 7px 10px;
+  cursor: pointer;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  line-height: 1;
+}
+
+.wafer-charge-word {
+  text-decoration: underline dashed;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+.wafer-charge-hint {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 280px;
+  width: max-content;
+  max-width: min(420px, calc(100vw - 24px));
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--hint-border);
+  background: var(--hint-bg);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+  cursor: default;
+}
+
+.hint-row {
+  white-space: nowrap;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 8px;
+  align-items: baseline;
+  margin: 2px 0;
+}
+
+.hint-row-note {
+  grid-template-columns: 1fr;
+}
+
+.hint-label {
+  color: var(--text-secondary);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  font-weight: 800;
+}
+
+.hint-value {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 800;
+  white-space: normal;
+}
+
+.hint-value-dim {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
 }
 
 .wafer-hidden {

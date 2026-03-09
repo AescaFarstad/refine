@@ -16,6 +16,7 @@ import {
     BLACK_YIELD_PENALTY_PCT,
     MAGENTA_SUCCESS_PENALTY_PCT,
     REFINE_TIME,
+    WAFER_CHARGE_BONUS_PCT,
 } from './Const';
 import { getWaferBuffAt } from './waferLayout';
 import { scanWaferForNewSignatures, sumSignatureRefiningRewards } from './Signatures';
@@ -37,6 +38,9 @@ export interface RefinePreviewChem {
     timeSec: number;
     failureChancePct: number;
     baseYieldPct: number;
+    waferCharge: number;
+    waferChargeYieldBonus: number;
+    waferChargeSuccessChanceBonus: number;
 
     signatureYieldBonus: number;
     newSignatureYieldBonus: number;
@@ -513,11 +517,14 @@ export function computeRefinePreviewChem(gs: ReadonlyGameState): RefinePreviewCh
     const cyanReduction = cyanCount * CYAN_SUCCESS_BONUS_PCT;
     const magentaCount = essenceTotals['magenta'] || 0;
     const magentaPenalty = magentaCount * MAGENTA_SUCCESS_PENALTY_PCT;
+    const waferCharge = gs.waferCharge || 0;
+    const waferChargeYieldBonus = waferCharge * WAFER_CHARGE_BONUS_PCT;
+    const waferChargeSuccessChanceBonus = waferCharge * WAFER_CHARGE_BONUS_PCT;
 
     const baseFailureChance = gs.wafer.emptyCount * FAILURE_PER_EMPTY_CELL;
     const failureChancePct = Math.min(
         100,
-        Math.max(0, baseFailureChance + magentaPenalty - cyanReduction - signatureSuccessChanceBonus - newSignatureSuccessChanceBonus)
+        Math.max(0, baseFailureChance + magentaPenalty - cyanReduction - signatureSuccessChanceBonus - newSignatureSuccessChanceBonus - waferChargeSuccessChanceBonus)
     );
 
     const totalSpeedBonusPct = signatureSpeedBonus + newSignatureSpeedBonus;
@@ -543,6 +550,7 @@ export function computeRefinePreviewChem(gs: ReadonlyGameState): RefinePreviewCh
     const totalYieldPct = Math.max(
         0,
         baseYieldPct
+        + waferChargeYieldBonus
         + signatureYieldBonus
         + newSignatureYieldBonus
         + cyanYieldBonus
@@ -592,6 +600,9 @@ export function computeRefinePreviewChem(gs: ReadonlyGameState): RefinePreviewCh
         timeSec,
         failureChancePct,
         baseYieldPct,
+        waferCharge,
+        waferChargeYieldBonus,
+        waferChargeSuccessChanceBonus,
         signatureYieldBonus,
         newSignatureYieldBonus,
         signatureSuccessChanceBonus,

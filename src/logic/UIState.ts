@@ -151,6 +151,7 @@ function createDefaultUIState() {
     learnedSignatureIds: [] as string[],
     completedSignatureIds: [] as string[],
     signatureLearnQueue: [] as string[],
+    waferCharge: 0,
     waferUpgradesPurchased: 0,
     wafer: createWafer(2) as Wafer,
     shards: [] as Shard[],
@@ -219,6 +220,7 @@ interface UISyncCache {
   lastRefiningGreenEssenceResourceBonus: number;
   lastRefiningBlueEssenceResourceBonus: number;
   lastRefiningYellowNeighborBonus: number;
+  lastWaferCharge: number;
   lastRaidFoundItemsVersion: number;
   lastUnlockedRaidIdsKey: string;
   lastInventoryItemCount: number;
@@ -239,6 +241,7 @@ const SYNC_CACHE_DEFAULTS: UISyncCache = {
   lastRefiningGreenEssenceResourceBonus: Number.NaN,
   lastRefiningBlueEssenceResourceBonus: Number.NaN,
   lastRefiningYellowNeighborBonus: Number.NaN,
+  lastWaferCharge: Number.NaN,
   lastRaidFoundItemsVersion: -1,
   lastUnlockedRaidIdsKey: '',
   lastInventoryItemCount: -1,
@@ -518,6 +521,7 @@ export function SyncUIFromGameState(game: GameState): void {
 
   if (activeTab === 'refine') {
     uiState.wafer = game.wafer;
+    uiState.waferCharge = game.waferCharge;
     uiState.shards = game.shards.filter(s => s !== null);
     uiState.shardPickupGraceSec = game.shardPickupGraceSec || 0;
     uiState.waferUpgradesPurchased = game.waferUpgradesPurchased || 0;
@@ -530,7 +534,8 @@ export function SyncUIFromGameState(game: GameState): void {
       game.refiningRedEssenceResourceBonus !== syncCache.lastRefiningRedEssenceResourceBonus ||
       game.refiningGreenEssenceResourceBonus !== syncCache.lastRefiningGreenEssenceResourceBonus ||
       game.refiningBlueEssenceResourceBonus !== syncCache.lastRefiningBlueEssenceResourceBonus ||
-      game.refiningYellowNeighborBonus !== syncCache.lastRefiningYellowNeighborBonus
+      game.refiningYellowNeighborBonus !== syncCache.lastRefiningYellowNeighborBonus ||
+      game.waferCharge !== syncCache.lastWaferCharge
     ) {
       uiState.refinePreviewVersion++;
       syncCache.lastRefiningYieldPctBonus = game.refiningYieldPctBonus;
@@ -541,6 +546,7 @@ export function SyncUIFromGameState(game: GameState): void {
       syncCache.lastRefiningGreenEssenceResourceBonus = game.refiningGreenEssenceResourceBonus;
       syncCache.lastRefiningBlueEssenceResourceBonus = game.refiningBlueEssenceResourceBonus;
       syncCache.lastRefiningYellowNeighborBonus = game.refiningYellowNeighborBonus;
+      syncCache.lastWaferCharge = game.waferCharge;
     }
 
     if (game.wafer) {

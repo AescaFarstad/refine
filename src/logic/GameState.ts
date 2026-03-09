@@ -60,6 +60,7 @@ export class GameState {
   public health: number = 10;
   public itemBans: number = 0;
   public wafer: Wafer = createWafer(2);
+  public waferCharge: number = 0;
   public waferUpgradesPurchased: number = 0;
   public refiningDuration: number = 0;
   public refiningYieldPctBonus: number = 0;

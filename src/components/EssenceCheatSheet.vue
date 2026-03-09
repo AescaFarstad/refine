@@ -42,6 +42,7 @@ import { globalInputQueue } from '../logic/Model';
 import { CmdMarkEssencesSeen } from '../logic/input/InputCommands';
 import atlasStorage from '../logic/AtlasStorage';
 import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
+import { DISCOVERY } from '../logic/DiscoveryLib';
 import {
   CYAN_SUCCESS_BONUS_PCT,
   CYAN_YIELD_BONUS_PCT,
@@ -50,6 +51,7 @@ import {
   ESSENCE_TEMPORAL_FLUX,
   MAGENTA_SUCCESS_PENALTY_PCT,
   MAGENTA_YIELD_BONUS_PCT,
+  WAFER_CHARGE_BONUS_PCT,
 } from '../logic/Const';
 import { getResourceSpec } from '../logic/Resources';
 
@@ -133,12 +135,29 @@ function resourceHtml(amount: number, resourceKey: 'credits' | 'chronotraces' | 
   return `<span style="color:${spec.color}">${amount}${spec.glyph}</span> ${spec.name.toLowerCase()}`;
 }
 
-function essenceInlineIcon(essenceKey: string, size = 14): string {
-  const f = atlasStorage.getItemsFrame(essenceKey);
-  if (!f) return '';
+function itemInlineIcon(itemKey: string, size = 14, visualScale = 1): string {
+  const f = atlasStorage.getItemsFrame(itemKey)!;
   const style = atlasSpriteStyle(source, f, { size, mode: 'fixed' });
   const css = Object.entries(style).map(([k, v]) => `${k.replace(/[A-Z]/g, m => '-' + m.toLowerCase())}:${v}`).join(';');
-  return `<span style="display:inline-block;vertical-align:middle;${css}"></span>`;
+  if (visualScale === 1) {
+    return `<span style="display:inline-block;vertical-align:middle;${css}"></span>`;
+  }
+  return `<span style="display:inline-block;vertical-align:middle;position:relative;width:${size}px;height:${size}px;overflow:visible;line-height:0"><span style="display:inline-block;position:absolute;left:0;top:0;transform:scale(${visualScale});transform-origin:left center;${css}"></span></span>`;
+}
+
+function essenceInlineIcon(essenceKey: string, size = 14): string {
+  return itemInlineIcon(essenceKey, size);
+}
+
+function gearInlineIcon(gearId: string, size = 14, visualScale = 2): string {
+  const gearDef = getGameState().lib.gear.get(gearId)!;
+  const effectiveScale = gearId === 'zone_crystal' ? visualScale * 0.7 : visualScale;
+  return itemInlineIcon(gearDef.image, size, effectiveScale);
+}
+
+function hasDiscovery(discoveryId: string): boolean {
+  uiState.discoveryCounter;
+  return getGameState().discoveries[discoveryId] === true;
 }
 
 function essenceEffectHtml(k: string): string {
@@ -162,13 +181,17 @@ function essenceEffectHtml(k: string): string {
     case 'orange':
       return 'Doubles adjacent';
     case 'black':
-      return '-50% refining yield' + (uiState.hasDiscoveredBlackFractals ? ', yields Fractal gear' : '');
+      return '-50% refining yield'
+        + (uiState.hasDiscoveredBlackFractals ? `, yields Fractal ${gearInlineIcon('fractal')}` : '');
     case 'white':
-      return uiState.hasDiscoveredWhiteSpice ? 'Yields Spice gear' : 'No effect yet';
+      return 'Charges the wafer'
+        + (uiState.hasDiscoveredWhiteSpice ? `, yields Spice ${gearInlineIcon('spice')}` : '');
     case 'cyan':
-      return `${CYAN_SUCCESS_BONUS_PCT}% refining success` + (uiState.hasDiscoveredCyanYield ? `, +${CYAN_YIELD_BONUS_PCT}% bonus yield` : '');
+      return `${CYAN_SUCCESS_BONUS_PCT}% refining success` + (uiState.hasDiscoveredCyanYield ? `, +${CYAN_YIELD_BONUS_PCT}% yield` : '');
     case 'magenta':
-      return `-${MAGENTA_SUCCESS_PENALTY_PCT}% refining success` + (uiState.hasDiscoveredMagentaYield ? `, +${MAGENTA_YIELD_BONUS_PCT}% bonus yield` : '');
+      return `-${MAGENTA_SUCCESS_PENALTY_PCT}% refining success`
+        + (uiState.hasDiscoveredMagentaYield ? `, +${MAGENTA_YIELD_BONUS_PCT}% yield` : '')
+        + (hasDiscovery(DISCOVERY.MAGENTA_CRYSTALS) ? `, yields Zone Crystal ${gearInlineIcon('zone_crystal')}` : '');
     case 'indigo':
       return 'Converts adjacent color clusters to blue';
     case 'crimson':

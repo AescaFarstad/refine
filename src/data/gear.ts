@@ -337,6 +337,14 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 8,
     image: 'cargo_trolley',
   },
+  scaffold: {
+    name: 'Scaffold',
+    category: 'bags',
+    countable: true,
+    weight: 8,
+    raidResourceStorageBonus: 500,
+    image: 'scaffold',
+  },
 
   // ── Devices ────────────────────────────────────────────────────────
   bone_saw: {
@@ -460,6 +468,15 @@ const gear: Record<string, RawGearDefinition> = {
     image: 'robodog',
     description: 'Part of the equipment cost is reimbursed in case you die in the raid',
   },
+  tesseract: {
+    name: 'Tesseract',
+    category: 'companions',
+    countable: true,
+    weight: 12,
+    raidPassiveCreditsPerHour: 10,
+    image: 'tesseract',
+    description: 'Collect these resources with the corresponding tactic',
+  },
 
   // ── Grenades ───────────────────────────────────────────────────────
   flash_grenade: {
@@ -508,23 +525,6 @@ const gear: Record<string, RawGearDefinition> = {
     image: 'bismuth',
     perk: 'Materialization',
     description: 'At the start of the raid, choose one item guaranteed to be looted',
-  },
-  tesseract: {
-    name: 'Tesseract',
-    category: 'grenades',
-    countable: true,
-    weight: 12,
-    raidPassiveCreditsPerHour: 10,
-    image: 'tesseract',
-    description: 'Collect these resources with the corresponding tactic',
-  },
-  scaffold: {
-    name: 'Scaffold',
-    category: 'grenades',
-    countable: true,
-    weight: 8,
-    raidResourceStorageBonus: 500,
-    image: 'scaffold',
   },
   zone_crystal: {
     name: 'Zone Crystal',

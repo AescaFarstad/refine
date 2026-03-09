@@ -21,11 +21,15 @@
           <span class="stat-label">Yield:</span>
           <span class="stat-value" :class="{ 'yield-bonus': preview.totalYieldPct > 100 }">{{ preview.totalYieldPct }}%</span>
           <span class="stat-source">
+            <template v-if="preview.waferChargeYieldBonus > 0">
+              +{{ preview.waferChargeYieldBonus }}% (wafer charge)
+            </template>
             <template v-if="preview.signatureYieldBonus > 0">
+              <template v-if="preview.waferChargeYieldBonus > 0"> </template>
               +{{ preview.signatureYieldBonus }}% (signatures)
             </template>
             <template v-if="preview.newSignatureYieldBonus > 0">
-              <template v-if="preview.signatureYieldBonus > 0"> </template>
+              <template v-if="preview.waferChargeYieldBonus > 0 || preview.signatureYieldBonus > 0"> </template>
               +{{ preview.newSignatureYieldBonus }}% (NEW
               <template v-for="sig in preview.newSignatureMatches" :key="sig.id">
                 <span
@@ -36,28 +40,28 @@
               signatures)
             </template>
             <template v-if="preview.cyanYieldBonus > 0">
-              <template v-if="preview.signatureYieldBonus > 0 || preview.newSignatureYieldBonus > 0"> </template>
+              <template v-if="preview.waferChargeYieldBonus > 0 || preview.signatureYieldBonus > 0 || preview.newSignatureYieldBonus > 0"> </template>
               +{{ preview.cyanYieldBonus }}% {{ cyanEssences }}
               <template v-for="key in cyanEssenceKeys" :key="key">
                 <span class="ess-icon" :style="essenceIconStyle(key)" />
               </template>
             </template>
             <template v-if="preview.magentaYieldBonus > 0">
-              <template v-if="preview.signatureYieldBonus > 0 || preview.newSignatureYieldBonus > 0 || preview.cyanYieldBonus > 0"> </template>
+              <template v-if="preview.waferChargeYieldBonus > 0 || preview.signatureYieldBonus > 0 || preview.newSignatureYieldBonus > 0 || preview.cyanYieldBonus > 0"> </template>
               +{{ preview.magentaYieldBonus }}% from {{ magentaEssences }}
               <template v-for="key in magentaEssenceKeys" :key="key">
                 <span class="ess-icon" :style="essenceIconStyle(key)" />
               </template>
             </template>
             <template v-if="preview.blackYieldPenalty > 0">
-              <template v-if="preview.signatureYieldBonus > 0 || preview.newSignatureYieldBonus > 0 || preview.cyanYieldBonus > 0 || preview.magentaYieldBonus > 0"> </template>
+              <template v-if="preview.waferChargeYieldBonus > 0 || preview.signatureYieldBonus > 0 || preview.newSignatureYieldBonus > 0 || preview.cyanYieldBonus > 0 || preview.magentaYieldBonus > 0"> </template>
               -{{ preview.blackYieldPenalty }}% from {{ blackEssences }}
               <template v-for="key in blackEssenceKeys" :key="key">
                 <span class="ess-icon" :style="essenceIconStyle(key)" />
               </template>
             </template>
             <template v-if="preview.uniqueItemsYieldBonus > 0">
-              <template v-if="preview.signatureYieldBonus > 0 || preview.newSignatureYieldBonus > 0 || preview.cyanYieldBonus > 0 || preview.magentaYieldBonus > 0 || preview.blackYieldPenalty > 0"> </template>
+              <template v-if="preview.waferChargeYieldBonus > 0 || preview.signatureYieldBonus > 0 || preview.newSignatureYieldBonus > 0 || preview.cyanYieldBonus > 0 || preview.magentaYieldBonus > 0 || preview.blackYieldPenalty > 0"> </template>
               +{{ preview.uniqueItemsYieldBonus }}% (unique items)
             </template>
           </span>
@@ -120,30 +124,34 @@
         <div class="stat-row" :class="{ 'flash-red': shouldFlashFailure }">
           <span class="stat-label">Failure Chance:</span>
           <span class="stat-value" :class="failureClass">{{ preview.failureChancePct }}%</span>
-          <span class="stat-source" v-if="preview.emptyCells > 0 || cyanEssences > 0 || magentaEssences > 0 || preview.signatureSuccessChanceBonus > 0 || preview.newSignatureSuccessChanceBonus > 0">
+          <span class="stat-source" v-if="preview.emptyCells > 0 || preview.waferChargeSuccessChanceBonus > 0 || cyanEssences > 0 || magentaEssences > 0 || preview.signatureSuccessChanceBonus > 0 || preview.newSignatureSuccessChanceBonus > 0">
             <template v-if="preview.emptyCells > 0">
               from {{ preview.emptyCells }} empty cells
             </template>
-            <template v-if="cyanEssences > 0">
+            <template v-if="preview.waferChargeSuccessChanceBonus > 0">
               <template v-if="preview.emptyCells > 0">, </template>
+              -{{ preview.waferChargeSuccessChanceBonus }}% from wafer charge
+            </template>
+            <template v-if="cyanEssences > 0">
+              <template v-if="preview.emptyCells > 0 || preview.waferChargeSuccessChanceBonus > 0">, </template>
               {{ cyanReduction }}% success from
               <template v-for="key in cyanEssenceKeys" :key="key">
                 <span class="ess-icon" :style="essenceIconStyle(key)" />
               </template>
             </template>
             <template v-if="magentaEssences > 0">
-              <template v-if="preview.emptyCells > 0 || cyanEssences > 0">, </template>
+              <template v-if="preview.emptyCells > 0 || preview.waferChargeSuccessChanceBonus > 0 || cyanEssences > 0">, </template>
               +{{ magentaPenalty }}% from {{ magentaEssences }}
               <template v-for="key in magentaEssenceKeys" :key="key">
                 <span class="ess-icon" :style="essenceIconStyle(key)" />
               </template>
             </template>
             <template v-if="preview.signatureSuccessChanceBonus > 0">
-              <template v-if="preview.emptyCells > 0 || cyanEssences > 0 || magentaEssences > 0">, </template>
+              <template v-if="preview.emptyCells > 0 || preview.waferChargeSuccessChanceBonus > 0 || cyanEssences > 0 || magentaEssences > 0">, </template>
               -{{ preview.signatureSuccessChanceBonus }}% from signatures
             </template>
             <template v-if="preview.newSignatureSuccessChanceBonus > 0">
-              <template v-if="preview.emptyCells > 0 || cyanEssences > 0 || magentaEssences > 0 || preview.signatureSuccessChanceBonus > 0">, </template>
+              <template v-if="preview.emptyCells > 0 || preview.waferChargeSuccessChanceBonus > 0 || cyanEssences > 0 || magentaEssences > 0 || preview.signatureSuccessChanceBonus > 0">, </template>
               -{{ preview.newSignatureSuccessChanceBonus }}% from NEW signatures
             </template>
           </span>
@@ -190,6 +198,9 @@ export interface GearOutputPreview {
 
 export interface WaferInfoPreview {
   totalYieldPct: number;
+  waferCharge: number;
+  waferChargeYieldBonus: number;
+  waferChargeSuccessChanceBonus: number;
   signatureYieldBonus: number;
   newSignatureYieldBonus: number;
   signatureSuccessChanceBonus: number;

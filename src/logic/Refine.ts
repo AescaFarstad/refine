@@ -73,6 +73,7 @@ export function resolveRefineryDone(gs: GameState): void {
       applyReward(gs, { kind: 'discovery', discoveryId: DISCOVERY.WHITE_SPICE });
       applyReward(gs, { kind: 'show_ui', ui: 'RUIWhiteSpice' });
     }
+    gs.waferCharge = whiteCount;
 
     for (const gearOutput of preview.gearOutputs) {
       if (gearOutput.count > 0) {
@@ -117,6 +118,7 @@ export function resolveRefineryDone(gs: GameState): void {
     outcome.chronotracesGained = outputs.chrono;
     outcome.timeFluxGained = outputs.flux;
   } else {
+    gs.waferCharge = 0;
     discover(gs, DISCOVERY.REFINEMENT_FAILED);
 
     const shardAmount =

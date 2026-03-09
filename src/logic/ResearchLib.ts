@@ -27,7 +27,6 @@ export interface ResearchObstacleVisualDef {
 
 export interface ResearchArchetypeDef {
   type: ResearchNodeType;
-  oracle?: ResearchArchetypeOracleDef;
   title?: string;
   description?: string;
   ownedTitle?: string;
@@ -46,6 +45,7 @@ export interface ResearchArchetypeDef {
 export interface ResearchPlacementInput {
   archetypeId: string;
   cells: Point2 | Point2[];
+  oracle?: ResearchArchetypeOracleDef;
   /**
    * Optional hex radius around the provided cell(s).
    * When specified, the final node cells are generated as the union
@@ -64,7 +64,6 @@ export interface ResearchPlacementInput {
 export interface ResearchArchetype {
   id: string;
   type: ResearchNodeType;
-  oracle: ResearchArchetypeOracleDef | null;
   title: string;
   description: string;
   ownedTitle: string;
@@ -92,6 +91,7 @@ export interface ResearchNodeInstance {
   nodeId: number;
   archetypeId: string;
   cells: Point2[];
+  oracle: ResearchArchetypeOracleDef | null;
   centerCell?: Point2;
   initiallyOwned: boolean;
 }
@@ -160,7 +160,6 @@ export class ResearchLib {
       const arch: ResearchArchetype = {
         id,
         type: input.type,
-        oracle: input.oracle ?? null,
         title: input.title ?? '',
         description: input.description ?? '',
         ownedTitle: input.ownedTitle ?? '',
@@ -187,7 +186,6 @@ export class ResearchLib {
           const arch: ResearchArchetype = {
             id: archetypeId,
             type: 'gear',
-            oracle: null,
             title: '',
             description: '',
             ownedTitle: '',
@@ -225,6 +223,7 @@ export class ResearchLib {
         nodeId: nodeIndex++,
         archetypeId: input.archetypeId,
         cells: cells,
+        oracle: input.oracle ?? null,
         centerCell,
         initiallyOwned: input.initiallyOwned ?? false,
       };
@@ -242,6 +241,7 @@ export class ResearchLib {
           nodeId: nodeIndex++,
           archetypeId,
           cells: [{ x: p.x, y: p.y }],
+          oracle: null,
           initiallyOwned: false,
         };
 

@@ -120,7 +120,6 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
         params: { bonusPct: CYAN_YIELD_BONUS_PCT, color: 'cyan' },
       },
     ],
-    oracle: { signatureId: 's15', riddle: '...' }
   },
   disc_essence_anomaly_magenta: {
     type: 'discovery',
@@ -141,7 +140,6 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
         params: { bonusPct: MAGENTA_YIELD_BONUS_PCT, color: 'magenta' },
       },
     ],
-    oracle: { signatureId: 's1', riddle: '...' }
   },
   disc_essence_monochrome_inversion: {
     type: 'discovery',
@@ -161,7 +159,6 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     ownedIcon: { kind: 'itemImage', key: 'red', scale: 1.3, offset: { x: 0, y: 4 } },
     revealedIcon: { kind: 'itemImage', key: 'red', scale: 1.3, offset: { x: 0, y: 4 } },
     rewards: [{ kind: 'refining_red_essence_resource_bonus', amount: 1 }],
-    oracle: { signatureId: 's2', riddle: '...' }
   },
   disc_essence_anomaly_green: {
     type: 'refining',
@@ -174,7 +171,6 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     ownedIcon: { kind: 'itemImage', key: 'green', scale: 1.3, offset: { x: 0, y: 4 } },
     revealedIcon: { kind: 'itemImage', key: 'green', scale: 1.3, offset: { x: 0, y: 4 } },
     rewards: [{ kind: 'refining_green_essence_resource_bonus', amount: 1 }],
-    oracle: { signatureId: 's3', riddle: '...' }
   },
   disc_essence_anomaly_blue: {
     type: 'refining',
@@ -187,7 +183,6 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     ownedIcon: { kind: 'itemImage', key: 'blue', scale: 1.3, offset: { x: 0, y: 4 } },
     revealedIcon: { kind: 'itemImage', key: 'blue', scale: 1.3, offset: { x: 0, y: 4 } },
     rewards: [{ kind: 'refining_blue_essence_resource_bonus', amount: 1 }],
-    oracle: { signatureId: 's4', riddle: '...' }
   },
   disc_essence_anomaly_yellow: {
     type: 'refining',
@@ -200,7 +195,6 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     ownedIcon: { kind: 'itemImage', key: 'yellow', scale: 1.3, offset: { x: 0, y: 4 } },
     revealedIcon: { kind: 'itemImage', key: 'yellow', scale: 1.3, offset: { x: 0, y: 4 } },
     rewards: [{ kind: 'refining_yellow_neighbor_bonus', amount: 1 }],
-    oracle: { signatureId: 's5', riddle: '...' }
   },
   disc_maze_navigation: {
     type: 'discovery',

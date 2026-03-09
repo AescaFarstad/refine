@@ -131,8 +131,7 @@ export interface OwnedMazeOracle {
 export function getOwnedMazeOracles(gs: ReadonlyGameState): OwnedMazeOracle[] {
   const oracles: OwnedMazeOracle[] = [];
   for (const node of gs.lib.research.nodes.values()) {
-    const archetype = gs.lib.research.archetypes.get(node.archetypeId)!;
-    if (archetype.oracle === null) continue;
+    if (node.oracle === null) continue;
 
     let owned = false;
     for (const cell of node.cells) {
@@ -153,9 +152,8 @@ export function getOwnedMazeOracles(gs: ReadonlyGameState): OwnedMazeOracle[] {
   return oracles;
 }
 
-function getMazeOracleArchetype(gs: ReadonlyGameState, nodeId: number) {
-  const node = gs.lib.research.nodes.get(nodeId)!;
-  return gs.lib.research.archetypes.get(node.archetypeId)!;
+function getMazeOracleNode(gs: ReadonlyGameState, nodeId: number) {
+  return gs.lib.research.nodes.get(nodeId)!;
 }
 
 export function isMazeOracleCell(gs: ReadonlyGameState, cell: Point2): boolean {
@@ -164,7 +162,7 @@ export function isMazeOracleCell(gs: ReadonlyGameState, cell: Point2): boolean {
   const researchCell = gs.researchCells[idx]!;
   if (!researchCell.owned) return false;
   if (researchCell.nodeId < 0) return false;
-  return getMazeOracleArchetype(gs, researchCell.nodeId).oracle !== null;
+  return getMazeOracleNode(gs, researchCell.nodeId).oracle !== null;
 }
 
 export function getMazeOracleNodeIdAtCell(gs: ReadonlyGameState, cell: Point2): number {
@@ -172,15 +170,14 @@ export function getMazeOracleNodeIdAtCell(gs: ReadonlyGameState, cell: Point2): 
   if (idx === -1) return -1;
   const researchCell = gs.researchCells[idx]!;
   if (!researchCell.owned || researchCell.nodeId < 0) return -1;
-  if (getMazeOracleArchetype(gs, researchCell.nodeId).oracle === null) return -1;
+  if (getMazeOracleNode(gs, researchCell.nodeId).oracle === null) return -1;
   return researchCell.nodeId;
 }
 
 export function syncMazeOracleStates(gs: GameState): void {
   const next: Record<string, MazeOracleState> = {};
   for (const node of gs.lib.research.nodes.values()) {
-    const archetype = gs.lib.research.archetypes.get(node.archetypeId)!;
-    if (archetype.oracle === null) continue;
+    if (node.oracle === null) continue;
     const key = String(node.nodeId);
     next[key] = gs.mazeOracleStateByNodeId[key] ?? 'riddling';
   }

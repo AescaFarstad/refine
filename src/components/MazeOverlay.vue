@@ -98,7 +98,7 @@
         </div>
       </div>
 
-      <div class="maze-panel panel-center attempt-panel">
+      <div v-if="hasAttemptResources" class="maze-panel panel-center attempt-panel">
         <div
           v-for="(row, rowIdx) in attemptEntryRows"
           :key="`attempt-row-${rowIdx}`"
@@ -223,7 +223,7 @@ function buildEntryRows(entries: readonly ResourceEntry[]): ResourceEntry[][] {
 
 const attemptEntries = computed(() => buildEntries(props.attemptResources));
 const highEntries = computed(() => buildEntries(props.highResources));
-const attemptEntryRows = computed(() => buildEntryRows(attemptEntries.value).filter((row) => row.some((entry) => entry.amount > 0)));
+const attemptEntryRows = computed(() => buildEntryRows(attemptEntries.value));
 const highEntryRows = computed(() => buildEntryRows(highEntries.value).filter((row) => row.some((entry) => entry.amount > 0)));
 const hasAttemptResources = computed(() => attemptEntries.value.some((entry) => entry.amount > 0));
 const hasAnyHighResources = computed(() => highEntries.value.some((entry) => entry.amount > 0));
@@ -379,7 +379,6 @@ function solidPillBackground(hexColor: string): string {
   box-shadow: none;
   backdrop-filter: none;
   padding: 2px 4px;
-  pointer-events: auto;
 }
 
 .accumulated-bonus-panel {
@@ -528,7 +527,8 @@ function solidPillBackground(hexColor: string): string {
   position: relative;
   display: flex;
   justify-content: center;
-  flex: 0 0 86px;
+  flex: 0 0 92px;
+  pointer-events: none;
 }
 
 .resource-chip {
@@ -547,6 +547,7 @@ function solidPillBackground(hexColor: string): string {
   text-underline-offset: 3px;
   text-decoration-thickness: 1px;
   cursor: default;
+  pointer-events: auto;
 }
 
 .resource-chip-icon {

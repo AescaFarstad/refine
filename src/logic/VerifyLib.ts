@@ -230,8 +230,12 @@ export function verifyTransmutations(lib: Lib, errors: VerifyErrors): void {
 
 export function verifyResearch(lib: Lib, errors: VerifyErrors): void {
   for (const node of lib.research.nodes.values()) {
+    const context = `ResearchNode[${node.nodeId}]`;
     if (!lib.research.archetypes.has(node.archetypeId)) {
-      errors.push(`ResearchNode[${node.nodeId}] references missing archetype: ${node.archetypeId}`);
+      errors.push(`${context} references missing archetype: ${node.archetypeId}`);
+    }
+    if (node.oracle !== null) {
+      ensureExists(errors, lib.signatures, node.oracle.signatureId, context, 'signature');
     }
   }
   for (const archetype of lib.research.archetypes.values()) {

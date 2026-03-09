@@ -8,7 +8,7 @@ import { getHypRepresentation } from './HypNumbers';
 import { calculateShardFontSize } from '../utils/ShardDisplay';
 import { EvtRefineryDone } from './evt/Evt';
 import { discover } from './Discover';
-import { DISCOVERY } from './DiscoveryLib';
+import { DISCOVERY, getMonochromeEssenceBehavior } from './DiscoveryLib';
 import { applyReward } from './Reward';
 
 const FAILED_SHARD_PICKUP_GRACE_SEC = 2.4;
@@ -53,6 +53,8 @@ export function resolveRefineryDone(gs: GameState): void {
   outcome.success = succeeded;
 
   if (succeeded) {
+    const monochromeBehavior = getMonochromeEssenceBehavior(gs.discoveries);
+
     for (const item of wafer.items) {
       if (!item) continue;
       gs.refinedUniqueItemIds[item.id] = true;
@@ -63,17 +65,17 @@ export function resolveRefineryDone(gs: GameState): void {
       applyReward(gs, { kind: 'discovery', discoveryId: DISCOVERY.MAGENTA_CRYSTALS });
       applyReward(gs, { kind: 'show_ui', ui: 'RUIMagentaCrystals' });
     }
-    const blackCount = preview.essenceTotals['black'] || 0;
-    if (blackCount > 0 && !gs.discoveries[DISCOVERY.BLACK_FRACTALS]) {
-      applyReward(gs, { kind: 'discovery', discoveryId: DISCOVERY.BLACK_FRACTALS });
+    const fractalCount = preview.essenceTotals[monochromeBehavior.fractalYieldEssence] || 0;
+    if (fractalCount > 0 && !gs.discoveries[DISCOVERY.FRACTAL_ESSENCE_YIELD]) {
+      applyReward(gs, { kind: 'discovery', discoveryId: DISCOVERY.FRACTAL_ESSENCE_YIELD });
       applyReward(gs, { kind: 'show_ui', ui: 'RUIBlackFractals' });
     }
-    const whiteCount = preview.essenceTotals['white'] || 0;
-    if (whiteCount > 0 && !gs.discoveries[DISCOVERY.WHITE_SPICE]) {
-      applyReward(gs, { kind: 'discovery', discoveryId: DISCOVERY.WHITE_SPICE });
+    const spiceCount = preview.essenceTotals[monochromeBehavior.spiceYieldEssence] || 0;
+    if (spiceCount > 0 && !gs.discoveries[DISCOVERY.SPICE_ESSENCE_YIELD]) {
+      applyReward(gs, { kind: 'discovery', discoveryId: DISCOVERY.SPICE_ESSENCE_YIELD });
       applyReward(gs, { kind: 'show_ui', ui: 'RUIWhiteSpice' });
     }
-    gs.waferCharge = whiteCount;
+    gs.waferCharge = preview.essenceTotals[monochromeBehavior.waferChargeEssence] || 0;
 
     for (const gearOutput of preview.gearOutputs) {
       if (gearOutput.count > 0) {

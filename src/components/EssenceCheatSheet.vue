@@ -42,7 +42,7 @@ import { globalInputQueue } from '../logic/Model';
 import { CmdMarkEssencesSeen } from '../logic/input/InputCommands';
 import atlasStorage from '../logic/AtlasStorage';
 import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
-import { DISCOVERY } from '../logic/DiscoveryLib';
+import { DISCOVERY, getMonochromeEssenceBehavior } from '../logic/DiscoveryLib';
 import {
   CYAN_SUCCESS_BONUS_PCT,
   CYAN_YIELD_BONUS_PCT,
@@ -160,6 +160,26 @@ function hasDiscovery(discoveryId: string): boolean {
   return getGameState().discoveries[discoveryId] === true;
 }
 
+function monochromeEssenceEffectHtml(essenceKey: 'black' | 'white'): string {
+  const behavior = getMonochromeEssenceBehavior(getGameState().discoveries);
+  const parts: string[] = [];
+
+  if (behavior.yieldPenaltyEssence === essenceKey) {
+    parts.push('-50% refining yield');
+  } else {
+    parts.push('Charges the wafer');
+  }
+
+  if (behavior.fractalYieldEssence === essenceKey && uiState.hasDiscoveredFractalEssenceYield) {
+    parts.push(`yields Fractal ${gearInlineIcon('fractal')}`);
+  }
+  if (behavior.spiceYieldEssence === essenceKey && uiState.hasDiscoveredSpiceEssenceYield) {
+    parts.push(`yields Spice ${gearInlineIcon('spice')}`);
+  }
+
+  return parts.join(', ');
+}
+
 function essenceEffectHtml(k: string): string {
   switch (k) {
     case 'red':
@@ -181,11 +201,9 @@ function essenceEffectHtml(k: string): string {
     case 'orange':
       return 'Doubles adjacent';
     case 'black':
-      return '-50% refining yield'
-        + (uiState.hasDiscoveredBlackFractals ? `, yields Fractal ${gearInlineIcon('fractal')}` : '');
+      return monochromeEssenceEffectHtml('black');
     case 'white':
-      return 'Charges the wafer'
-        + (uiState.hasDiscoveredWhiteSpice ? `, yields Spice ${gearInlineIcon('spice')}` : '');
+      return monochromeEssenceEffectHtml('white');
     case 'cyan':
       return `${CYAN_SUCCESS_BONUS_PCT}% refining success` + (uiState.hasDiscoveredCyanYield ? `, +${CYAN_YIELD_BONUS_PCT}% yield` : '');
     case 'magenta':

@@ -28,8 +28,9 @@ const ids = [
   'UI_WAFER_INFO',
   'UI_SIGNATURE_INFO',
   'MAGENTA_CRYSTALS',
-  'BLACK_FRACTALS',
-  'WHITE_SPICE',
+  'FRACTAL_ESSENCE_YIELD',
+  'SPICE_ESSENCE_YIELD',
+  'WHITE_BLACK_ESSENCE_SWAP',
   'MAZE_NEXUS',
   'REFINEMENT_FAILED',
   'YOU_WON_SEEN',
@@ -42,6 +43,36 @@ export const DISCOVERY = ids.reduce((acc, id) => {
   acc[id] = id;
   return acc;
 }, {} as any) as { [K in DiscoveryKey]: K };
+
+export interface MonochromeEssenceBehavior {
+  waferChargeEssence: 'black' | 'white';
+  yieldPenaltyEssence: 'black' | 'white';
+  fractalYieldEssence: 'black' | 'white';
+  spiceYieldEssence: 'black' | 'white';
+}
+
+const DEFAULT_MONOCHROME_ESSENCE_BEHAVIOR: MonochromeEssenceBehavior = {
+  waferChargeEssence: 'white',
+  yieldPenaltyEssence: 'black',
+  fractalYieldEssence: 'black',
+  spiceYieldEssence: 'white',
+};
+
+const SWAPPED_MONOCHROME_ESSENCE_BEHAVIOR: MonochromeEssenceBehavior = {
+  waferChargeEssence: 'black',
+  yieldPenaltyEssence: 'white',
+  fractalYieldEssence: 'white',
+  spiceYieldEssence: 'black',
+};
+
+export function getMonochromeEssenceBehavior(
+  discoveries: Readonly<Record<string, boolean | undefined>>,
+): MonochromeEssenceBehavior {
+  if (discoveries[DISCOVERY.WHITE_BLACK_ESSENCE_SWAP] === true) {
+    return SWAPPED_MONOCHROME_ESSENCE_BEHAVIOR;
+  }
+  return DEFAULT_MONOCHROME_ESSENCE_BEHAVIOR;
+}
 
 // Prefer using `DISCOVERY.*` literals, but allow ad-hoc string ids too.
 export type DiscoveryId = (typeof DISCOVERY)[keyof typeof DISCOVERY] | string;

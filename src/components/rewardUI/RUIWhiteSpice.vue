@@ -15,7 +15,7 @@
           />
         </div>
         <p class="description-text">
-          White essences now leave behind a stable concentrate.<br /> Each refined
+          {{ sourceEssenceLabel }} essences now leave behind a stable concentrate.<br /> Each refined
           <span class="essence-icon" :style="essenceStyle" />
           will now give <span class="highlight">Spice</span>
         </p>
@@ -30,10 +30,11 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import GearItem from '../GearItem.vue';
-import { uiState } from '../../logic/UIState';
+import { getGameState, uiState } from '../../logic/UIState';
 import atlasStorage from '../../logic/AtlasStorage';
 import { atlasSpriteStyle } from '../../logic/AtlasSpriteStyle';
 import type { Reward } from '../../logic/Reward';
+import { getMonochromeEssenceBehavior } from '../../logic/DiscoveryLib';
 
 const emit = defineEmits<{
   close: [rewards?: Reward[]]
@@ -47,12 +48,20 @@ const spiceCount = computed(() => uiState.countableGear.spice || 0);
 
 const source = atlasStorage.getItemsSource();
 
-const whiteFrame = computed(() => {
-  return atlasStorage.getItemsFrame('white')!;
+const sourceEssenceKey = computed(() => {
+  return getMonochromeEssenceBehavior(getGameState().discoveries).spiceYieldEssence;
+});
+
+const sourceEssenceLabel = computed(() => {
+  return sourceEssenceKey.value === 'black' ? 'Black' : 'White';
+});
+
+const sourceFrame = computed(() => {
+  return atlasStorage.getItemsFrame(sourceEssenceKey.value)!;
 });
 
 const essenceStyle = computed(() => {
-  const f = whiteFrame.value;
+  const f = sourceFrame.value;
   return atlasSpriteStyle(source, f, { size: 20, mode: 'fit', allowUpscale: false });
 });
 

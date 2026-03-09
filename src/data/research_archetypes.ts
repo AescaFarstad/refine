@@ -143,6 +143,13 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     ],
     oracle: { signatureId: 's1', riddle: '...' }
   },
+  disc_essence_monochrome_inversion: {
+    type: 'discovery',
+    title: 'Monochrome inversion',
+    description: 'White and black essences swap both their refining effects and their gear yields.',
+    icon: { kind: 'glyph', glyph: '⇄', scale: 1.4, offset: { x: 0, y: 0 } },
+    rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.WHITE_BLACK_ESSENCE_SWAP }],
+  },
   disc_essence_anomaly_red: {
     type: 'refining',
     title: 'Essence anomaly',

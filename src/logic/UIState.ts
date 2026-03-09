@@ -141,8 +141,8 @@ function createDefaultUIState() {
     hasDiscoveredRaidSelection: false,
     hasDiscoveredCyanYield: false,
     hasDiscoveredMagentaYield: false,
-    hasDiscoveredBlackFractals: false,
-    hasDiscoveredWhiteSpice: false,
+    hasDiscoveredFractalEssenceYield: false,
+    hasDiscoveredSpiceEssenceYield: false,
     hasDiscoveredSignatureInfo: false,
     hasVisitedRefineTab: false,
     hasVisitedResearchTab: false,
@@ -502,8 +502,8 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.hasDiscoveredRaidSelection = game.discoveries[DISCOVERY.UI_RAID_SELECTION] === true;
   uiState.hasDiscoveredCyanYield = game.discoveries[DISCOVERY.CYAN_YIELD] === true;
   uiState.hasDiscoveredMagentaYield = game.discoveries[DISCOVERY.MAGENTA_YIELD] === true;
-  uiState.hasDiscoveredBlackFractals = game.discoveries[DISCOVERY.BLACK_FRACTALS] === true;
-  uiState.hasDiscoveredWhiteSpice = game.discoveries[DISCOVERY.WHITE_SPICE] === true;
+  uiState.hasDiscoveredFractalEssenceYield = game.discoveries[DISCOVERY.FRACTAL_ESSENCE_YIELD] === true;
+  uiState.hasDiscoveredSpiceEssenceYield = game.discoveries[DISCOVERY.SPICE_ESSENCE_YIELD] === true;
   uiState.hasDiscoveredSignatureInfo = game.discoveries[DISCOVERY.UI_SIGNATURE_INFO] === true;
   uiState.hasVisitedRefineTab = game.discoveries[DISCOVERY.TAB_REFINE_VISITED] === true;
   uiState.hasVisitedResearchTab = game.discoveries[DISCOVERY.TAB_RESEARCH_VISITED] === true;

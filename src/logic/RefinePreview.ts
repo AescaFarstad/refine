@@ -20,7 +20,7 @@ import {
 } from './Const';
 import { getWaferBuffAt } from './waferLayout';
 import { scanWaferForNewSignatures, sumSignatureRefiningRewards } from './Signatures';
-import { DISCOVERY } from './DiscoveryLib';
+import { DISCOVERY, getMonochromeEssenceBehavior } from './DiscoveryLib';
 import type { ReadonlyGameState } from './UIState';
 import {
     convertFamilyEssence,
@@ -51,6 +51,7 @@ export interface RefinePreviewChem {
     cyanYieldBonus: number;
     magentaYieldBonus: number;
     blackYieldPenalty: number;
+    yieldPenaltyEssence: 'black' | 'white';
     uniqueItemsYieldBonus: number;
 
     totalYieldPct: number;
@@ -512,6 +513,7 @@ export function computeRefinePreviewChem(gs: ReadonlyGameState): RefinePreviewCh
     const yellowNeighborBonus = gs.refiningYellowNeighborBonus + newSignatureRewards.refiningYellowNeighborBonus;
 
     const { essenceTotals, cellEffectiveCounts } = computeEffectiveEssenceTotals(gs.wafer, yellowNeighborBonus);
+    const monochromeBehavior = getMonochromeEssenceBehavior(gs.discoveries);
 
     const cyanCount = essenceTotals['cyan'] || 0;
     const cyanReduction = cyanCount * CYAN_SUCCESS_BONUS_PCT;
@@ -539,8 +541,8 @@ export function computeRefinePreviewChem(gs: ReadonlyGameState): RefinePreviewCh
     const magentaYieldBonus = gs.discoveries[DISCOVERY.MAGENTA_YIELD]
         ? magentaCount * MAGENTA_YIELD_BONUS_PCT
         : 0;
-    const blackCount = essenceTotals['black'] || 0;
-    const blackYieldPenalty = blackCount * BLACK_YIELD_PENALTY_PCT;
+    const yieldPenaltyCount = essenceTotals[monochromeBehavior.yieldPenaltyEssence] || 0;
+    const blackYieldPenalty = yieldPenaltyCount * BLACK_YIELD_PENALTY_PCT;
     const uniqueItemsYieldBonus = computeUniqueItemsYieldBonusPct(
         gs.refinedUniqueItemIds,
         gs.wafer.items,
@@ -580,19 +582,20 @@ export function computeRefinePreviewChem(gs: ReadonlyGameState): RefinePreviewCh
             fromEssence: 'magenta',
         });
     }
-    if (gs.discoveries[DISCOVERY.BLACK_FRACTALS] && blackCount > 0) {
+    const fractalCount = essenceTotals[monochromeBehavior.fractalYieldEssence] || 0;
+    if (gs.discoveries[DISCOVERY.FRACTAL_ESSENCE_YIELD] && fractalCount > 0) {
         gearOutputs.push({
             gearId: 'fractal',
-            count: Math.floor(blackCount * BLACK_FRACTAL_YIELD_PER_ESSENCE * yieldMultiplier),
-            fromEssence: 'black',
+            count: Math.floor(fractalCount * BLACK_FRACTAL_YIELD_PER_ESSENCE * yieldMultiplier),
+            fromEssence: monochromeBehavior.fractalYieldEssence,
         });
     }
-    const whiteCount = essenceTotals['white'] || 0;
-    if (gs.discoveries[DISCOVERY.WHITE_SPICE] && whiteCount > 0) {
+    const spiceCount = essenceTotals[monochromeBehavior.spiceYieldEssence] || 0;
+    if (gs.discoveries[DISCOVERY.SPICE_ESSENCE_YIELD] && spiceCount > 0) {
         gearOutputs.push({
             gearId: 'spice',
-            count: Math.floor(whiteCount * WHITE_SPICE_YIELD_PER_ESSENCE * yieldMultiplier),
-            fromEssence: 'white',
+            count: Math.floor(spiceCount * WHITE_SPICE_YIELD_PER_ESSENCE * yieldMultiplier),
+            fromEssence: monochromeBehavior.spiceYieldEssence,
         });
     }
 
@@ -612,6 +615,7 @@ export function computeRefinePreviewChem(gs: ReadonlyGameState): RefinePreviewCh
         cyanYieldBonus,
         magentaYieldBonus,
         blackYieldPenalty,
+        yieldPenaltyEssence: monochromeBehavior.yieldPenaltyEssence,
         uniqueItemsYieldBonus,
         totalYieldPct,
         expectedCredits,

@@ -15,7 +15,7 @@
           />
         </div>
         <p class="description-text">
-          The residue from black essences condenses.<br /> Each refined
+          The residue from {{ sourceEssenceLabel }} essences condenses.<br /> Each refined
           <span class="essence-icon" :style="essenceStyle" />
           will now give a <span class="highlight">Fractal</span>
         </p>
@@ -30,10 +30,11 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import GearItem from '../GearItem.vue';
-import { uiState } from '../../logic/UIState';
+import { getGameState, uiState } from '../../logic/UIState';
 import atlasStorage from '../../logic/AtlasStorage';
 import { atlasSpriteStyle } from '../../logic/AtlasSpriteStyle';
 import type { Reward } from '../../logic/Reward';
+import { getMonochromeEssenceBehavior } from '../../logic/DiscoveryLib';
 
 const emit = defineEmits<{
   close: [rewards?: Reward[]]
@@ -47,12 +48,20 @@ const fractalCount = computed(() => uiState.countableGear.fractal || 0);
 
 const source = atlasStorage.getItemsSource();
 
-const blackFrame = computed(() => {
-  return atlasStorage.getItemsFrame('black')!;
+const sourceEssenceKey = computed(() => {
+  return getMonochromeEssenceBehavior(getGameState().discoveries).fractalYieldEssence;
+});
+
+const sourceEssenceLabel = computed(() => {
+  return sourceEssenceKey.value === 'black' ? 'black' : 'white';
+});
+
+const sourceFrame = computed(() => {
+  return atlasStorage.getItemsFrame(sourceEssenceKey.value)!;
 });
 
 const essenceStyle = computed(() => {
-  const f = blackFrame.value;
+  const f = sourceFrame.value;
   return atlasSpriteStyle(source, f, { size: 20, mode: 'fit', allowUpscale: false });
 });
 

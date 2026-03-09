@@ -267,6 +267,7 @@ const preview = computed(() => {
       cyanYieldBonus: 0,
       magentaYieldBonus: 0,
       blackYieldPenalty: 0,
+      yieldPenaltyEssence: 'black' as const,
       uniqueItemsYieldBonus: 0,
       signatureYieldBonus: 0,
       newSignatureYieldBonus: 0,

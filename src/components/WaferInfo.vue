@@ -55,8 +55,8 @@
             </template>
             <template v-if="preview.blackYieldPenalty > 0">
               <template v-if="preview.waferChargeYieldBonus > 0 || preview.signatureYieldBonus > 0 || preview.newSignatureYieldBonus > 0 || preview.cyanYieldBonus > 0 || preview.magentaYieldBonus > 0"> </template>
-              -{{ preview.blackYieldPenalty }}% from {{ blackEssences }}
-              <template v-for="key in blackEssenceKeys" :key="key">
+              -{{ preview.blackYieldPenalty }}% from {{ yieldPenaltyEssences }}
+              <template v-for="key in yieldPenaltyEssenceKeys" :key="key">
                 <span class="ess-icon" :style="essenceIconStyle(key)" />
               </template>
             </template>
@@ -211,6 +211,7 @@ export interface WaferInfoPreview {
   cyanYieldBonus: number;
   magentaYieldBonus: number;
   blackYieldPenalty: number;
+  yieldPenaltyEssence: 'black' | 'white';
   uniqueItemsYieldBonus: number;
 
   expectedCredits: number;
@@ -305,12 +306,12 @@ const magentaPenalty = computed(() => {
   return magentaEssences.value * MAGENTA_SUCCESS_PENALTY_PCT;
 });
 
-const blackEssences = computed(() => {
-  return props.preview.essenceTotals.black || 0;
+const yieldPenaltyEssences = computed(() => {
+  return props.preview.essenceTotals[props.preview.yieldPenaltyEssence] || 0;
 });
 
-const blackEssenceKeys = computed(() => {
-  return blackEssences.value > 0 ? ['black'] : [];
+const yieldPenaltyEssenceKeys = computed(() => {
+  return yieldPenaltyEssences.value > 0 ? [props.preview.yieldPenaltyEssence] : [];
 });
 
 const failureClass = computed(() => {

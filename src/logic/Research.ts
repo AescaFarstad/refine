@@ -47,6 +47,7 @@ export function initResearchCells(gs: GameState, lib: ResearchLib): void {
       // Default to the generic obstacle archetype so unspecified cells
       // behave and render as single-cell obstacles.
       archetypeId: 'obs',
+      oracleId: '',
       nexusId: '',
       nexusPlacementId: 0,
       passable: true,
@@ -93,6 +94,7 @@ export function initResearchCells(gs: GameState, lib: ResearchLib): void {
       gs.researchCells[idx] = {
         nodeId: node.nodeId,
         archetypeId: node.archetypeId,
+        oracleId: '',
         nexusId: '',
         nexusPlacementId: 0,
         passable: !cellBlocked,

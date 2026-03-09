@@ -15,3 +15,4 @@ dist
 !/data/img/pipeline*
 /public/
 /history/
+.claude/.fuse_hidden*

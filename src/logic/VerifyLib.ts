@@ -229,14 +229,18 @@ export function verifyTransmutations(lib: Lib, errors: VerifyErrors): void {
 }
 
 export function verifyResearch(lib: Lib, errors: VerifyErrors): void {
+  let oracleSlotCount = 0;
   for (const node of lib.research.nodes.values()) {
     const context = `ResearchNode[${node.nodeId}]`;
     if (!lib.research.archetypes.has(node.archetypeId)) {
       errors.push(`${context} references missing archetype: ${node.archetypeId}`);
     }
-    if (node.oracle !== null) {
-      ensureExists(errors, lib.signatures, node.oracle.signatureId, context, 'signature');
+    if (node.oracleSlot) {
+      oracleSlotCount++;
     }
+  }
+  if (oracleSlotCount !== lib.oracles.size) {
+    errors.push(`Oracle slot count ${oracleSlotCount} does not match oracle definition count ${lib.oracles.size}`);
   }
   for (const archetype of lib.research.archetypes.values()) {
     const context = `ResearchArchetype[${archetype.id}]`;
@@ -255,6 +259,12 @@ export function verifySignatures(lib: Lib, errors: VerifyErrors): void {
   }
 }
 
+export function verifyOracles(lib: Lib, errors: VerifyErrors): void {
+  for (const oracle of lib.oracles.values()) {
+    ensureExists(errors, lib.signatures, oracle.signatureId, `Oracle[${oracle.id}]`, 'signature');
+  }
+}
+
 export function verifyLibIntegrity(lib: Lib): void {
   const errors: VerifyErrors = [];
   verifyRaids(lib, errors);
@@ -264,6 +274,7 @@ export function verifyLibIntegrity(lib: Lib): void {
   verifyTransmutations(lib, errors);
   verifyResearch(lib, errors);
   verifySignatures(lib, errors);
+  verifyOracles(lib, errors);
 
   if (errors.length > 0) {
     const count = errors.length;

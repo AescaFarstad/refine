@@ -5,6 +5,7 @@ import type { EncounterDef, RaidDefinition } from './RaidLib';
 import { getEffectiveRaidDefinition } from './Raid';
 import { computeRefinePreviewChem } from './RefinePreview';
 import type { Lib } from './Lib';
+import type { OracleSealColor } from './Oracle';
 import { createWafer, type Wafer } from './Wafer';
 import type { Point2 } from './ItemLib';
 import { DISCOVERY } from './DiscoveryLib';
@@ -178,6 +179,8 @@ function createDefaultUIState() {
     mazeTransmutationMenuOpen: false,
     mazeOracleMenuOpen: false,
     mazeVisitedOracleNodeId: -1,
+    mazeOracleSealCellColors: {} as Record<string, OracleSealColor | null>,
+    mazeOracleSealMismatchMarkerKeys: [] as string[],
     mazeNexusAvailableUpgradeIds: [] as string[],
     mazeNexusPlacedUpgradeIds: [] as string[],
     mazeNexusUpgradeOpportunityCount: 1,

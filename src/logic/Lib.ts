@@ -10,6 +10,8 @@ import type { ItemDefinition } from "./ItemLib";
 import { parseItemDefinitionsWithOrder } from "./ItemLib";
 import type { SignatureDefinition } from './SignatureLib';
 import { parseSignatureDefinitions } from './SignatureLib';
+import type { OracleDefinition } from './OracleLib';
+import { parseOracleDefinitions } from './OracleLib';
 import type { MonsterDefinition } from './MonsterLib';
 import { parseMonsterDefinitions } from './MonsterLib';
 import type { NexusItemDefinition } from './NexusLib';
@@ -24,6 +26,7 @@ import gearData from '../data/gear';
 import gearCategoriesData from '../data/gear_categories';
 import itemsData from '../data/items';
 import signaturesData from '../data/signatures';
+import oracleRiddlesData from '../data/oracle_riddles';
 import nexusData from '../data/nexus';
 import signatureLayoutsData from '../data/signature_layouts';
 import transmutationData from '../data/transmutation';
@@ -44,6 +47,7 @@ export class Lib {
   public gearCategories: Map<string, GearCategoryDefinition> = new Map();
   public items: Map<string, ItemDefinition> = new Map();
   public signatures: Map<string, SignatureDefinition> = new Map();
+  public oracles: Map<string, OracleDefinition> = new Map();
   public monsters: Map<string, MonsterDefinition> = new Map();
   public nexusItems: Map<string, NexusItemDefinition> = new Map();
   public transmutations: Map<string, TransmutationDefinition> = new Map();
@@ -59,6 +63,10 @@ export class Lib {
 
   public getSignature(id: string): SignatureDefinition {
     return this.signatures.get(id)!;
+  }
+
+  public getOracle(id: string): OracleDefinition {
+    return this.oracles.get(id)!;
   }
 
   private _emptyItemPoolsByRarity(): Record<LootRarity, string[]> {
@@ -118,6 +126,7 @@ export class Lib {
       this.gear = parseGearDefinitions(gearData);
       this.items = parseItemDefinitionsWithOrder(itemsData, this.raids.values());
       this.signatures = parseSignatureDefinitions(signaturesData, signatureLayoutsData);
+      this.oracles = parseOracleDefinitions(oracleRiddlesData);
 
       for (const raid of this.raidSources.values()) {
         raid.itemPoolsByRarity = this.buildItemPoolsByRarity(raid.items);

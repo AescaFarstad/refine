@@ -7,6 +7,7 @@ import { getPivotHex, rotateMolecule, translateMolecule } from "./MoleculeUtils"
 import type { EncounterDef } from "./RaidLib";
 import { recomputeActiveRaidEstimates, recomputeActiveRaidParams } from "./Raid";
 import { applyMazeNexusPlacementAtCell, computeMazeResourceSpawns, resetMazeTransient } from "./Maze";
+import { randomizeOracles } from "./RandomizeOracles";
 
 // This file must not contain fallbacks for anything. Fail fast.
 
@@ -392,6 +393,7 @@ function rehydrateGameState(input: AnonymousObject): GameState | false {
   computeEffectiveEssences(gameState.wafer);
 
   initResearchCells(gameState, gameState.lib.research);
+  randomizeOracles(gameState);
   for (const cell of gameState.researchCells) {
     if (!cell.blocked) cell.owned = false;
   }

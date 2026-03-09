@@ -5,7 +5,9 @@ import path from 'path';
 interface PlacementNode {
   archetypeId: string;
   cells: Array<{ x: number; y: number }>;
+  oracleSlot?: boolean;
   radius: number;
+  centerCell?: { x: number; y: number };
   type: string; // 'gear' | 'stat' | 'resource' | 'discovery' | etc.
   initiallyOwned?: boolean;
 }
@@ -16,17 +18,39 @@ interface SaveResearchBody {
   voidCells: Array<{ x: number; y: number }>;
 }
 
+function formatStringLiteral(value: string): string {
+  return `'${value.replaceAll('\\', '\\\\').replaceAll("'", "\\'")}'`;
+}
+
+function formatPoint(point: { x: number; y: number }): string {
+  return `{ x: ${point.x}, y: ${point.y} }`;
+}
+
 function formatCells(cells: Array<{ x: number; y: number }>): string {
   if (cells.length === 1) {
-    return `{ x: ${cells[0].x}, y: ${cells[0].y} }`;
+    return formatPoint(cells[0]!);
   }
-  return `[${cells.map(c => `{ x: ${c.x}, y: ${c.y} }`).join(', ')}]`;
+  return `[${cells.map(formatPoint).join(', ')}]`;
+}
+
+function hasImplicitCenterCell(node: PlacementNode): boolean {
+  if (!node.centerCell) return false;
+  if (node.radius <= 0) return false;
+  if (node.cells.length !== 1) return false;
+  const cell = node.cells[0]!;
+  return cell.x === node.centerCell.x && cell.y === node.centerCell.y;
 }
 
 function formatPlacement(node: PlacementNode): string {
-  let line = `  { archetypeId: '${node.archetypeId}', cells: ${formatCells(node.cells)}`;
+  let line = `  { archetypeId: ${formatStringLiteral(node.archetypeId)}, cells: ${formatCells(node.cells)}`;
+  if (node.oracleSlot) {
+    line += ', oracleSlot: true';
+  }
   if (node.radius > 0) {
     line += `, radius: ${node.radius}`;
+  }
+  if (node.centerCell && !hasImplicitCenterCell(node)) {
+    line += `, centerCell: ${formatPoint(node.centerCell)}`;
   }
   if (node.initiallyOwned) {
     line += `, initiallyOwned: true`;

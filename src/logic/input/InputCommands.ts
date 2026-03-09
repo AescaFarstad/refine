@@ -1,5 +1,6 @@
 import type { Point2 } from '../core/math';
 import type { Molecule } from '../ItemLib';
+import type { OracleSealColor } from '../Oracle';
 
 export interface CmdInput {
   name: string;
@@ -243,6 +244,16 @@ export class CmdMazeActivateNexusSpecialUpgrade implements CmdInput {
 
 export class CmdMazeResetHighMovement implements CmdInput {
   readonly name = 'CmdMazeResetHighMovement';
+}
+
+export class CmdMazeValidateOracleSeal implements CmdInput {
+  readonly name = 'CmdMazeValidateOracleSeal';
+  readonly nodeId: number;
+  readonly cellColors: Record<string, OracleSealColor>;
+  constructor(args: { nodeId: number; cellColors: Record<string, OracleSealColor> }) {
+    this.nodeId = args.nodeId;
+    this.cellColors = args.cellColors;
+  }
 }
 
 export class CmdTransmutate implements CmdInput {

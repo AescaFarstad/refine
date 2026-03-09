@@ -56,64 +56,72 @@
             </div>
           </div>
 
-          <div class="discovery-panel">
-            <button
-              class="btn discovery-toggle-all"
-              :class="{ primary: allDiscovered }"
-              type="button"
-              @click="toggleAllDiscoveries"
-            >
-              {{ allDiscovered ? 'ALL ON' : 'ALL OFF' }}
-            </button>
-            <div class="discovery-grid">
+          <div class="discovery-area">
+            <div class="discovery-panel">
               <button
-                v-for="id in tabDiscoveryIds"
-                :key="id"
-                class="btn discovery-btn"
-                :class="{ primary: isDiscovered(id) }"
+                class="btn discovery-toggle-all"
+                :class="{ primary: allDiscovered }"
                 type="button"
-                @click="toggleDiscovery(id)"
+                @click="toggleAllDiscoveries"
               >
-                {{ formatDiscoveryLabel(id) }}
+                {{ allDiscovered ? 'ALL ON' : 'ALL OFF' }}
               </button>
+              <div class="discovery-grid">
+                <button
+                  v-for="id in tabDiscoveryIds"
+                  :key="id"
+                  class="btn discovery-btn"
+                  :class="{ primary: isDiscovered(id) }"
+                  type="button"
+                  @click="toggleDiscovery(id)"
+                >
+                  {{ formatDiscoveryLabel(id) }}
+                </button>
+              </div>
+              <hr class="discovery-separator" />
+              <div class="discovery-grid">
+                <button
+                  v-for="id in uiDiscoveryIds"
+                  :key="id"
+                  class="btn discovery-btn"
+                  :class="{ primary: isDiscovered(id) }"
+                  type="button"
+                  @click="toggleDiscovery(id)"
+                >
+                  {{ formatDiscoveryLabel(id) }}
+                </button>
+              </div>
+              <hr class="discovery-separator" />
+              <div class="discovery-grid">
+                <button
+                  v-for="id in otherDiscoveryIds"
+                  :key="id"
+                  class="btn discovery-btn"
+                  :class="{ primary: isDiscovered(id) }"
+                  type="button"
+                  @click="toggleDiscovery(id)"
+                >
+                  {{ formatDiscoveryLabel(id) }}
+                </button>
+              </div>
+              <hr class="discovery-separator" />
+              <div class="discovery-grid">
+                <button
+                  v-for="id in refineEssenceIds"
+                  :key="id"
+                  class="btn discovery-btn"
+                  :class="{ primary: isDiscovered(id) }"
+                  type="button"
+                  @click="toggleDiscovery(id)"
+                >
+                  {{ formatDiscoveryLabel(id) }}
+                </button>
+              </div>
             </div>
-            <hr class="discovery-separator" />
-            <div class="discovery-grid">
-              <button
-                v-for="id in uiDiscoveryIds"
-                :key="id"
-                class="btn discovery-btn"
-                :class="{ primary: isDiscovered(id) }"
-                type="button"
-                @click="toggleDiscovery(id)"
-              >
-                {{ formatDiscoveryLabel(id) }}
-              </button>
-            </div>
-            <hr class="discovery-separator" />
-            <div class="discovery-grid">
-              <button
-                v-for="id in otherDiscoveryIds"
-                :key="id"
-                class="btn discovery-btn"
-                :class="{ primary: isDiscovered(id) }"
-                type="button"
-                @click="toggleDiscovery(id)"
-              >
-                {{ formatDiscoveryLabel(id) }}
-              </button>
-            </div>
-            <hr class="discovery-separator" />
-            <div class="discovery-grid">
-              <button
-                v-for="id in refineEssenceIds"
-                :key="id"
-                class="btn discovery-btn"
-                :class="{ primary: isDiscovered(id) }"
-                type="button"
-                @click="toggleDiscovery(id)"
-              >
-                {{ formatDiscoveryLabel(id) }}
+
+            <div class="discovery-actions">
+              <button v-if="activeMazeOracleNodeId >= 0" class="btn primary discovery-action-btn" type="button" @click="solveOracle">
+                Solve oracle
               </button>
             </div>
           </div>
@@ -151,7 +159,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { uiState, getGameStateMutable } from '../logic/UIState';
+import { getGameState, uiState, getGameStateMutable } from '../logic/UIState';
 import DevAtlasView from './DevAtlasView.vue';
 import DevMoleculeEditor from './DevMoleculeEditor.vue';
 import { listAtlasKeys, type AtlasKey } from '../logic/AtlasStorage';
@@ -163,6 +171,8 @@ import atlasStorage from '../logic/AtlasStorage';
 import { CheatCompleteSignatures, CheatUnlockAllNexusUpgrades } from '../logic/cheat/CheatCommands';
 import gearData from '../data/gear';
 import { processCheats } from '../logic/cheat/CheatProcessor';
+import { getMazeOracleNodeIdAtCell } from '../logic/Maze';
+import { getOracleSealSolutionCellColors } from '../logic/Oracle';
 
 const open = computed(() => uiState.cheatOpen);
 
@@ -312,6 +322,13 @@ const otherDiscoveryIds = computed<DiscoveryId[]>(() =>
 const refineEssenceIds = computed<DiscoveryId[]>(() =>
   Object.values(DISCOVERY).filter(id => REFINE_ESSENCE_IDS.has(id))
 );
+const activeMazeOracleNodeId = computed(() => {
+  uiState.activeTab;
+  uiState.mazeVersion;
+  if (uiState.activeTab !== 'maze') return -1;
+  const gs = getGameState();
+  return getMazeOracleNodeIdAtCell(gs, gs.maze.avatarCell);
+});
 
 function grantResource(key: ResourceKey, amount: number) {
   getGameStateMutable()[key] += amount;
@@ -389,6 +406,16 @@ function toggleAllDiscoveries(): void {
     }
   }
   gs.discoveryCounter++;
+}
+
+function solveOracle(): void {
+  const nodeId = activeMazeOracleNodeId.value;
+  if (nodeId < 0) return;
+  const gs = getGameState();
+  uiState.mazeVisitedOracleNodeId = nodeId;
+  uiState.mazeOracleMenuOpen = true;
+  uiState.mazeOracleSealMismatchMarkerKeys = [];
+  uiState.mazeOracleSealCellColors = getOracleSealSolutionCellColors(gs, nodeId);
 }
 
 function formatDiscoveryLabel(id: DiscoveryId): string {
@@ -499,10 +526,27 @@ function closeAll() {
 }
 .resource-and-discovery {
   display: grid;
-  grid-template-columns: max-content minmax(340px, 480px);
+  grid-template-columns: max-content minmax(484px, 624px);
   gap: 12px;
   align-items: start;
   justify-content: start;
+}
+.discovery-area {
+  display: grid;
+  grid-template-columns: minmax(340px, 480px) 132px;
+  gap: 12px;
+}
+.discovery-panel {
+  min-width: 0;
+}
+.discovery-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 132px;
+}
+.discovery-action-btn {
+  width: 100%;
 }
 .resource-grid {
   display: flex;
@@ -553,6 +597,14 @@ function closeAll() {
 @media (max-width: 820px) {
   .resource-and-discovery {
     grid-template-columns: 1fr;
+  }
+
+  .discovery-area {
+    grid-template-columns: 1fr;
+  }
+
+  .discovery-actions {
+    width: 100%;
   }
 }
 

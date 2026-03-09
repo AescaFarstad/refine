@@ -14,6 +14,7 @@ import gearCategories from "../data/gear_categories";
 import type { RaidEventLog } from './RaidLog';
 import type { RaidMutation, MutationDescription } from './RaidMutation';
 import type { Reward, UIModalEntry } from './Reward';
+import { randomizeOracles } from './RandomizeOracles';
 
 /*
   When adding/editing properties here, make sure save-loading is compatible.
@@ -164,6 +165,7 @@ export class GameState {
       this.gearLevels[categoryId] = 1;
     }
     initResearchCells(this, this.lib.research);
+    randomizeOracles(this);
     computeMazeResourceSpawns(this, this.lib.research);
   }
 }
@@ -338,6 +340,7 @@ export function createMazeVisibilityState(): MazeVisibilityState {
 export interface ResearchCell {
   nodeId: number;
   archetypeId: string;
+  oracleId: string;
   nexusId: string;
   nexusPlacementId: number;
   passable: boolean;

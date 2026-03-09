@@ -577,6 +577,8 @@ async function saveToFiles() {
     cells: Array<{ x: number; y: number }>;
     radius: number;
     type: string;
+    oracleSlot?: boolean;
+    centerCell?: Point2;
     initiallyOwned?: boolean;
   };
 
@@ -621,8 +623,10 @@ async function saveToFiles() {
       placements.push({
         archetypeId: nodeInstance.archetypeId,
         cells: outCells,
+        oracleSlot: nodeInstance.oracleSlot || undefined,
         radius,
         type: archetype.type,
+        centerCell: nodeInstance.centerCell ? { x: nodeInstance.centerCell.x, y: nodeInstance.centerCell.y } : undefined,
         initiallyOwned: nodeInstance.initiallyOwned || undefined,
       });
 

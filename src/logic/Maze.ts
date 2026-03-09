@@ -131,7 +131,10 @@ export interface OwnedMazeOracle {
 export function getOwnedMazeOracles(gs: ReadonlyGameState): OwnedMazeOracle[] {
   const oracles: OwnedMazeOracle[] = [];
   for (const node of gs.lib.research.nodes.values()) {
-    if (node.oracle === null) continue;
+    const firstCell = node.cells[0]!;
+    const firstIdx = axialToIndex(firstCell.x, firstCell.y);
+    if (firstIdx === -1) continue;
+    if (gs.researchCells[firstIdx]!.oracleId === '') continue;
 
     let owned = false;
     for (const cell of node.cells) {
@@ -152,17 +155,13 @@ export function getOwnedMazeOracles(gs: ReadonlyGameState): OwnedMazeOracle[] {
   return oracles;
 }
 
-function getMazeOracleNode(gs: ReadonlyGameState, nodeId: number) {
-  return gs.lib.research.nodes.get(nodeId)!;
-}
-
 export function isMazeOracleCell(gs: ReadonlyGameState, cell: Point2): boolean {
   const idx = axialToIndex(cell.x, cell.y);
   if (idx === -1) return false;
   const researchCell = gs.researchCells[idx]!;
   if (!researchCell.owned) return false;
   if (researchCell.nodeId < 0) return false;
-  return getMazeOracleNode(gs, researchCell.nodeId).oracle !== null;
+  return researchCell.oracleId !== '';
 }
 
 export function getMazeOracleNodeIdAtCell(gs: ReadonlyGameState, cell: Point2): number {
@@ -170,14 +169,17 @@ export function getMazeOracleNodeIdAtCell(gs: ReadonlyGameState, cell: Point2): 
   if (idx === -1) return -1;
   const researchCell = gs.researchCells[idx]!;
   if (!researchCell.owned || researchCell.nodeId < 0) return -1;
-  if (getMazeOracleNode(gs, researchCell.nodeId).oracle === null) return -1;
+  if (researchCell.oracleId === '') return -1;
   return researchCell.nodeId;
 }
 
 export function syncMazeOracleStates(gs: GameState): void {
   const next: Record<string, MazeOracleState> = {};
   for (const node of gs.lib.research.nodes.values()) {
-    if (node.oracle === null) continue;
+    const firstCell = node.cells[0]!;
+    const firstIdx = axialToIndex(firstCell.x, firstCell.y);
+    if (firstIdx === -1) continue;
+    if (gs.researchCells[firstIdx]!.oracleId === '') continue;
     const key = String(node.nodeId);
     next[key] = gs.mazeOracleStateByNodeId[key] ?? 'riddling';
   }

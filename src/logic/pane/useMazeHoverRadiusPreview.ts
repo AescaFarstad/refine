@@ -3,7 +3,7 @@ import type { Point2 } from '../ItemLib';
 import { axialToIndex, indexToAxial } from '../Research';
 import { getMazeNexusItemEffectiveRadius, getMazeNexusItemPlacementCells } from '../Maze';
 import type { getGameState } from '../UIState';
-import { REFRESHER_PANEL_ID } from '../NexusLib';
+import { ANTIVOID_PANEL_ID, REFRESHER_PANEL_ID } from '../NexusLib';
 
 type GameStateAccessor = typeof getGameState;
 type State = ReturnType<GameStateAccessor>;
@@ -81,7 +81,7 @@ export function useMazeHoverRadiusPreview(options: {
     const hoveredIdx = axialToIndex(hoverCell.x, hoverCell.y);
     if (hoveredIdx !== -1) {
       const hoveredResearchCell = gs.researchCells[hoveredIdx]!;
-      if (hoveredResearchCell.nexusId) {
+      if (hoveredResearchCell.nexusId && hoveredResearchCell.nexusId !== ANTIVOID_PANEL_ID) {
         if (!Number.isInteger(hoveredResearchCell.nexusPlacementId) || hoveredResearchCell.nexusPlacementId <= 0) {
           throw new Error(`Invalid nexus placement id at cell index ${hoveredIdx}`);
         }

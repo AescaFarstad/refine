@@ -10,11 +10,6 @@ export type ResearchArchetypeIcon =
   | { kind: 'glyph'; glyph: string; scale?: number; offset?: Point2 }
   | { kind: 'itemImage'; key: string; scale?: number; offset?: Point2 };
 
-export interface ResearchArchetypeOracleDef {
-  signatureId: string;
-  riddle: string;
-}
-
 export interface ResearchObstacleVisualInput {
   direction?: number;
   highlightCells?: number;
@@ -45,7 +40,7 @@ export interface ResearchArchetypeDef {
 export interface ResearchPlacementInput {
   archetypeId: string;
   cells: Point2 | Point2[];
-  oracle?: ResearchArchetypeOracleDef;
+  oracleSlot?: boolean;
   /**
    * Optional hex radius around the provided cell(s).
    * When specified, the final node cells are generated as the union
@@ -91,7 +86,7 @@ export interface ResearchNodeInstance {
   nodeId: number;
   archetypeId: string;
   cells: Point2[];
-  oracle: ResearchArchetypeOracleDef | null;
+  oracleSlot: boolean;
   centerCell?: Point2;
   initiallyOwned: boolean;
 }
@@ -223,7 +218,7 @@ export class ResearchLib {
         nodeId: nodeIndex++,
         archetypeId: input.archetypeId,
         cells: cells,
-        oracle: input.oracle ?? null,
+        oracleSlot: input.oracleSlot ?? false,
         centerCell,
         initiallyOwned: input.initiallyOwned ?? false,
       };
@@ -241,7 +236,7 @@ export class ResearchLib {
           nodeId: nodeIndex++,
           archetypeId,
           cells: [{ x: p.x, y: p.y }],
-          oracle: null,
+          oracleSlot: false,
           initiallyOwned: false,
         };
 

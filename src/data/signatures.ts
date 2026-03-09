@@ -5,6 +5,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     name: 'Objectify',
     group: 'starter',
     layout: 'insipre',
+    difficulty: 2,
     colors: ['red'],
     rewards: [{ kind: 'refining_yield_pct_bonus', amount: 25 }],
   },
@@ -12,6 +13,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     name: 'Delineate',
     group: 'starter',
     layout: 'up_triangle',
+    difficulty: 3,
     colors: ['gray'],
     rewards: [
       { kind: 'refining_yield_pct_bonus', amount: 20 },
@@ -23,6 +25,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     name: 'Summarize',
     group: 'starter',
     layout: 'sun',
+    difficulty: 0,
     colors: ['blue'],
     rewards: [
       { kind: 'refining_yield_pct_bonus', amount: 20 },
@@ -33,6 +36,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     name: 'Amplify',
     group: 'starter',
     layout: 'h',
+    difficulty: 2,
     colors: ['red'],
     rewards: [
       { kind: 'refining_yield_pct_bonus', amount: 15 },
@@ -43,6 +47,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     name: 'Mesmerize',
     group: 'starter',
     layout: 'up_serpinski',
+    difficulty: 0,
     colors: ['blue'],
     rewards: [
       { kind: 'refining_yield_pct_bonus', amount: 15 },
@@ -53,6 +58,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     name: 'Pulverize',
     group: 'starter',
     layout: 'up_blunt_triangle',
+    difficulty: 3,
     colors: ['magenta'],
     rewards: [
       { kind: 'refining_yield_pct_bonus', amount: 25 },
@@ -64,6 +70,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     name: 'Harmonize',
     group: 'starter',
     layout: 'candy_left',
+    difficulty: 2,
     colors: ['green'],
     rewards: [
       { kind: 'refining_yield_pct_bonus', amount: 15 },
@@ -75,6 +82,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     name: 'Patronize',
     group: 'starter',
     layout: 'shelf_left',
+    difficulty: 3,
     colors: ['gray'],
     rewards: [
       { kind: 'refining_yield_pct_bonus', amount: 25 },
@@ -88,6 +96,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     name: 'Galvanize',
     group: 'starter',
     layout: 'down_trihex',
+    difficulty: 1,
     colors: ['blue'],
     rewards: [
       { kind: 'refining_yield_pct_bonus', amount: 15 },
@@ -98,6 +107,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     name: 'Codify',
     group: 'starter',
     layout: 'down_triangle',
+    difficulty: 0,
     colors: ['red'],
     rewards: [
       { kind: 'refining_yield_pct_bonus', amount: 25 },
@@ -107,6 +117,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     name: 'Simplify',
     group: 'starter',
     layout: 'hexagon',
+    difficulty: 0,
     colors: ['green'],
     rewards: [
       { kind: 'refining_yield_pct_bonus', amount: 25 },
@@ -116,6 +127,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     name: 'Encapsulate',
     group: 'starter',
     layout: 'ex',
+    difficulty: 2,
     colors: ['blue'],
     rewards: [
       { kind: 'refining_speed_pct_bonus', amount: 40 },
@@ -125,6 +137,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     name: 'Stipulate',
     group: 'starter',
     layout: 'down_serpinski',
+    difficulty: 3,
     colors: ['green'],
     rewards: [
       { kind: 'refining_yield_pct_bonus', amount: 20 },
@@ -135,6 +148,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     name: 'Downgrade',
     group: 'starter',
     layout: 'arrow',
+    difficulty: 1,
     colors: ['blue'],
     rewards: [
       { kind: 'refining_yield_pct_bonus', amount: 20 },
@@ -145,6 +159,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     name: 'Uplift',
     group: 'starter',
     layout: 'candy_right',
+    difficulty: 1,
     colors: ['red'],
     rewards: [
       { kind: 'refining_yield_pct_bonus', amount: 20 },
@@ -156,6 +171,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     name: 'Formulate',
     group: 'starter',
     layout: 'shelf_right',
+    difficulty: 3,
     colors: ['yellow'],
     rewards: [
       { kind: 'refining_yield_pct_bonus', amount: 15 },

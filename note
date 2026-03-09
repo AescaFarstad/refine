@@ -95,7 +95,7 @@ ferbruary 26, 27
 march 6
   tesseracts, resource collection
 march 7, 8, 9
-  transmutation, white, black, lava, frozen, lush essences
+  transmutation, white, black, lava, frozen, lush essences, oracles menu, riddles
 
 npx tsc --noEmit
 npx vue-tsc --noEmit

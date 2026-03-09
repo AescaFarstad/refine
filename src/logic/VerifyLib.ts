@@ -253,6 +253,9 @@ export function verifyResearch(lib: Lib, errors: VerifyErrors): void {
 export function verifySignatures(lib: Lib, errors: VerifyErrors): void {
   for (const signature of lib.signatures.values()) {
     const context = `Signature[${signature.id}]`;
+    if (!Number.isInteger(signature.difficulty) || signature.difficulty < 0 || signature.difficulty > 3) {
+      errors.push(`${context} has invalid difficulty ${signature.difficulty}; expected integer in range 0..3`);
+    }
     for (const reward of signature.rewards) {
       verifyRewardRefs(reward, context, lib, errors);
     }

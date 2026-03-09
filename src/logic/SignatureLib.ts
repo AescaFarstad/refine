@@ -7,6 +7,7 @@ export interface SignatureDefinition {
   id: string;
   name: string;
   level: number;
+  difficulty: number;
   group: string;
   molecule: SignatureMolecule;
   color: string;
@@ -19,6 +20,7 @@ export interface ReadonlySignatureDefinition {
   readonly id: string;
   readonly name: string;
   readonly level: number;
+  readonly difficulty: number;
   readonly group: string;
   readonly molecule: ReadonlySignatureMolecule;
   readonly color: string;
@@ -33,6 +35,7 @@ export type RawSignatureDefinition = {
   name: string;
   layout: string;
   colors: string[];
+  difficulty: number;
   rewards?: readonly Reward[];
   level?: number;
   group?: string;
@@ -69,11 +72,15 @@ export function parseSignatureDefinitions(
     if (!layout) {
       throw new Error(`Signature '${id}': layout '${d.layout}' not found in rawLayouts`);
     }
+    if (!Number.isInteger(d.difficulty) || d.difficulty < 0 || d.difficulty > 3) {
+      throw new Error(`Signature '${id}': difficulty must be an integer between 0 and 3`);
+    }
     const molecule = instantiateMolecule(layout, d.colors);
     map.set(id, {
       id,
       name: d.name,
       level: d.level ?? 1,
+      difficulty: d.difficulty,
       group: d.group ?? 'default',
       molecule,
       color: computeSignatureColorFromColors(d.colors),

@@ -13,6 +13,8 @@ export const ANTIVOID_PANEL_ID = 'antivoid_panel';
 export const CREDITS_PANEL_ID = 'credits_panel';
 export const CHRONOTRACES_PANEL_ID = 'chronotraces_panel';
 export const CRYSTAL_PANEL_ID = 'crystal_panel';
+export const FRACTAL_PANEL_ID = 'fractal_panel';
+export const SPICE_PANEL_ID = 'spice_panel';
 
 export type PlacableInstanceDescription = {
   passable: boolean;

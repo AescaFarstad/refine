@@ -248,3 +248,7 @@ make oracle: { signatureId: 's4', riddle: '...' } not part of the archetype, but
 Milestones - show how well you're doing. You are X days ahead of schedule. You are early. You are late.
 
 refining speed depends on the number of essences
+
+
+
+bonuses:

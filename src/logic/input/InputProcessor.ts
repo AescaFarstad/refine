@@ -92,10 +92,8 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
   const raidEntry = gs.unlockedRaids.find(r => r.id === c.id)!;
   const loadoutPassiveCreditsPerHour = getLoadoutPassiveCreditsPerHour(gs, c.id);
   const loadoutResourceStorageBonus = getLoadoutResourceStorageBonus(gs, c.id);
-  if (!gs.raid.preventsGlobalTimeAdvance) {
-    gs.gameTime += result.timeSpentSec;
-    accumulateRaidResources(gs, result.timeSpentSec);
-  }
+  gs.gameTime += result.timeSpentSec;
+  accumulateRaidResources(gs, result.timeSpentSec);
 
   if (result.success && loadoutPassiveCreditsPerHour > 0) {
     raidEntry.passiveCreditsPerHour += loadoutPassiveCreditsPerHour;

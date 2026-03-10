@@ -50,4 +50,13 @@ export const MAZE_RESOURCE_SPECS: Record<MazeResourceVisualKey, MazeResourceVisu
     pillRow: 1,
     iconImage: 'bismuth',
   },
+  spice: {
+    key: 'spice',
+    name: 'Spice',
+    glyph: '✶',
+    color: '#fbbf24',
+    bgColor: 'rgba(251, 191, 36, 0.10)',
+    pillRow: 1,
+    iconImage: 'salt',
+  },
 };

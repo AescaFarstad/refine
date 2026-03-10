@@ -326,6 +326,7 @@ const mockHintCell = computed((): ResearchCell => {
   return {
     nodeId: -1,
     archetypeId: hoveredArchetype.value?.id || '',
+    oracleId: '',
     nexusId: '',
     nexusPlacementId: 0,
     passable: true,

@@ -541,9 +541,8 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 0,
     image: 'salt',
     perk: 'Time dilation',
-    preventsGlobalTimeAdvance: true,
     preventsSuccessZoneDeterioration: true,
-    description: 'Time spent in the raid does not advance the global time.\nThe zone does not deteriorate on raid success.',
+    description: 'The zone does not deteriorate on raid success.',
   },
 
   // ── Medicine ───────────────────────────────────────────────────────

@@ -286,7 +286,7 @@ export function computeMazeResourceSpawns(gs: GameState, lib: ResearchLib): void
 
     if (!resourceKey) continue;
 
-    const amount = (resourceKey === 'zone_crystal' || resourceKey === 'fractal')
+    const amount = (resourceKey === 'zone_crystal' || resourceKey === 'fractal' || resourceKey === 'spice')
       ? 1
       : Math.max(1, axialDistance(center, origin));
 
@@ -517,6 +517,9 @@ function collectResourceAtCell(gs: GameState, cell: Point2): void {
       case 'fractal':
         gs.maze.collectedFractal += spawn.amount;
         break;
+      case 'spice':
+        gs.maze.collectedSpice += spawn.amount;
+        break;
     }
 
     grantMazeIncrementalPickupBonus(gs, spawn.resourceKey);
@@ -546,6 +549,7 @@ function applyMazePayout(gs: GameState): void {
   const payoutShardDust = Math.max(0, m.collectedShardDust - gs.mazeHighShardDust);
   const payoutZoneCrystal = Math.max(0, m.collectedZoneCrystal - gs.mazeHighZoneCrystal);
   const payoutFractal = Math.max(0, m.collectedFractal - gs.mazeHighFractal);
+  const payoutSpice = Math.max(0, m.collectedSpice - gs.mazeHighSpice);
 
   // Update persistent highs
   gs.mazeHighCredits = Math.max(gs.mazeHighCredits, m.collectedCredits);
@@ -553,6 +557,7 @@ function applyMazePayout(gs: GameState): void {
   gs.mazeHighShardDust = Math.max(gs.mazeHighShardDust, m.collectedShardDust);
   gs.mazeHighZoneCrystal = Math.max(gs.mazeHighZoneCrystal, m.collectedZoneCrystal);
   gs.mazeHighFractal = Math.max(gs.mazeHighFractal, m.collectedFractal);
+  gs.mazeHighSpice = Math.max(gs.mazeHighSpice, m.collectedSpice);
 
   // Apply payouts to actual resources
   gs.credits += payoutCredits;
@@ -568,6 +573,12 @@ function applyMazePayout(gs: GameState): void {
     gs.countableGear.fractal = (gs.countableGear.fractal || 0) + payoutFractal;
     if (!gs.unlockedGear.includes('fractal')) {
       gs.unlockedGear.push('fractal');
+    }
+  }
+  if (payoutSpice > 0) {
+    gs.countableGear.spice = (gs.countableGear.spice || 0) + payoutSpice;
+    if (!gs.unlockedGear.includes('spice')) {
+      gs.unlockedGear.push('spice');
     }
   }
 }

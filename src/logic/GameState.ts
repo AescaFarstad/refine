@@ -86,6 +86,7 @@ export class GameState {
   public mazeHighShardDust: number = 0;
   public mazeHighZoneCrystal: number = 0;
   public mazeHighFractal: number = 0;
+  public mazeHighSpice: number = 0;
   public mazeHighMovementUsed: number = 0;
   public mazeNextNexusPlacementId: number = 1;
   public mazeNexusPlacementRotationSteps: Record<string, number> = {};
@@ -200,7 +201,6 @@ export class ActiveRaid {
   public biopsyChance: number = 0;      // chance to successfully harvest monster loot
   public reimbursedPct: number = 0;     // % of gear price reimbursed on combat death
   public rarityBuff: number = 0;        // bonus to loot rarity from gear
-  public preventsGlobalTimeAdvance: boolean = false;
   public preventsSuccessZoneDeterioration: boolean = false;
 }
 
@@ -289,7 +289,7 @@ export interface Shard {
 
 export interface MazeResourceSpawn {
   cell: Point2;
-  resourceKey: 'credits' | 'chronotraces' | 'shardDust' | 'zone_crystal' | 'fractal';
+  resourceKey: 'credits' | 'chronotraces' | 'shardDust' | 'zone_crystal' | 'fractal' | 'spice';
   amount: number;
 }
 
@@ -302,6 +302,7 @@ export interface MazeTransient {
   collectedShardDust: number;
   collectedZoneCrystal: number;
   collectedFractal: number;
+  collectedSpice: number;
   takenCells: Point2[];
   version: number;
 }
@@ -323,6 +324,7 @@ export function createMazeTransient(avatarCell: Point2 = { x: 0, y: 0 }): MazeTr
     collectedShardDust: 0,
     collectedZoneCrystal: 0,
     collectedFractal: 0,
+    collectedSpice: 0,
     takenCells: [],
     version: 0,
   };

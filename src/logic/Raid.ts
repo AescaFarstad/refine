@@ -1003,7 +1003,6 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
   gs.raid.biopsyChance = 0;
   gs.raid.reimbursedPct = 0;
   gs.raid.rarityBuff = 0;
-  gs.raid.preventsGlobalTimeAdvance = false;
   gs.raid.preventsSuccessZoneDeterioration = false;
   gs.selectedGearPrice = 0;
 
@@ -1039,7 +1038,6 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
     gs.raid.biopsyChance += g.biopsyChance;
     gs.raid.reimbursedPct += g.reimbursed;
     gs.raid.rarityBuff += g.rarityBuff;
-    gs.raid.preventsGlobalTimeAdvance = gs.raid.preventsGlobalTimeAdvance || g.preventsGlobalTimeAdvance;
     gs.raid.preventsSuccessZoneDeterioration = gs.raid.preventsSuccessZoneDeterioration || g.preventsSuccessZoneDeterioration;
     if (g.perk) gs.raid.perks.push(g.perk);
     const priceAdjustment = raidEntry.gearPriceAdjustments[gid] ?? 0;

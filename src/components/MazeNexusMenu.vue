@@ -8,7 +8,7 @@
           Fail items refinement at least once to access the Nexus
         </button>
       </div>
-      <div v-if="canAccessNexus" class="nexus-items" :class="{ 'nexus-items-two-col': availableItems.length > 6 }">
+      <div v-if="canAccessNexus" class="nexus-items" :class="nexusItemsColClass">
         <template v-for="entry in availableItems" :key="`${entry.id}:${entry.rotationStep}`">
           <MazeNexusMenuItem
             v-if="entry.item.specialAction === ''"
@@ -54,7 +54,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import type { NexusItemDefinition } from '../logic/NexusLib';
 import { startMazeManualDrag } from '../logic/MazeNexusDnd';
 import type { DeepReadonly } from '../logic/UIState';
@@ -96,6 +96,14 @@ type UINexusMenuEntry = {
 const selectionModalOpen = ref(false);
 const refundResetRegretModalVisible = ref(false);
 const selectedSpecialUpgradeId = ref('');
+const windowHeight = ref(window.innerHeight);
+
+function onResize(): void {
+  windowHeight.value = window.innerHeight;
+}
+
+onMounted(() => window.addEventListener('resize', onResize));
+onUnmounted(() => window.removeEventListener('resize', onResize));
 
 const canAccessNexus = computed(() => {
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions
@@ -162,6 +170,19 @@ const canOfferNextUpgrade = computed(() => {
 
   const gs = getGameState();
   return canChooseMazeNexusUpgrade(gs);
+});
+
+const nexusItemsColClass = computed(() => {
+  const count = availableItems.value.length;
+  if (count <= 1) return '';
+  // 64px top-panel bar + 12px menu top offset + ~48px nexus header + 12px bottom margin + 66px buffer
+  const reservedHeight = 202;
+  // ~66px per item row (60px min-height + 6px gap)
+  const maxRows = Math.max(1, Math.floor((windowHeight.value - reservedHeight) / 66));
+  const cols = Math.ceil(count / maxRows);
+  if (cols >= 3) return 'nexus-items-three-col';
+  if (cols >= 2) return 'nexus-items-two-col';
+  return '';
 });
 
 const showAddUpgradeAction = computed(() => canAccessNexus.value && canOfferNextUpgrade.value);
@@ -326,6 +347,12 @@ function goToRefineTab(): void {
 .nexus-items-two-col {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.nexus-items-three-col {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
 }
 

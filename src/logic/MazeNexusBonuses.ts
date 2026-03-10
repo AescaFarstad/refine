@@ -12,11 +12,13 @@ import {
   CREDITS_DOUBLER_PANEL_ID,
   CREDITS_PANEL_ID,
   DOUBLER_PANEL_ID,
+  FRACTAL_PANEL_ID,
   INCREMENTAL_PANEL_ID,
   PLUS_ONE_PANEL_ID,
   PLUS_ONE_RADIUS_PANEL_ID,
   REFRESHER_PANEL_ID,
   SHARDS_REFRESHER_PANEL_ID,
+  SPICE_PANEL_ID,
 } from './NexusLib';
 
 export const REFRESHER_PANEL_PAUSE_MS = 200;
@@ -41,6 +43,8 @@ export type MazeRefresherRefresh = {
 
 const UNIT_ORIGIN: Point2 = { x: 0, y: 0 };
 const HEX_ROTATION_STEP_COUNT = 6;
+const GEAR_RESOURCE_PANEL_IDS = new Set([CRYSTAL_PANEL_ID, FRACTAL_PANEL_ID, SPICE_PANEL_ID]);
+const GEAR_RESOURCE_KEYS = new Set<MazeResourceSpawn['resourceKey']>(['zone_crystal', 'fractal', 'spice']);
 
 function sameCell(a: Point2, b: Point2): boolean {
   return a.x === b.x && a.y === b.y;
@@ -263,9 +267,10 @@ function circlesOverlap(a: Point2, ar: number, b: Point2, br: number): boolean {
   return dx * dx + dy * dy < r * r;
 }
 
-function getLimitResourceKeyForItem(itemId: string): MazeResourceSpawn['resourceKey'] | null {
-  if (itemId === CREDITS_PANEL_ID) return 'credits';
-  if (itemId === CHRONOTRACES_PANEL_ID) return 'chronotraces';
+function getLimitResourceKeysForItem(itemId: string): Set<MazeResourceSpawn['resourceKey']> | null {
+  if (itemId === CREDITS_PANEL_ID) return new Set(['credits']);
+  if (itemId === CHRONOTRACES_PANEL_ID) return new Set(['chronotraces']);
+  if (GEAR_RESOURCE_PANEL_IDS.has(itemId)) return GEAR_RESOURCE_KEYS;
   return null;
 }
 
@@ -273,12 +278,12 @@ export function getMazeNexusLimitDisks(gs: ReadonlyGameState, itemId: string): M
   const def = gs.lib.nexusItems.get(itemId)!;
   if (def.limitRadius <= 0) return [];
 
-  const limitResourceKey = getLimitResourceKeyForItem(itemId);
-  if (limitResourceKey !== null) {
+  const limitResourceKeys = getLimitResourceKeysForItem(itemId);
+  if (limitResourceKeys !== null) {
     const disks: MazeNexusLimitDisk[] = [];
     for (let i = 0; i < gs.mazeResourceSpawns.length; i++) {
       const spawn = gs.mazeResourceSpawns[i]!;
-      if (spawn.resourceKey !== limitResourceKey) continue;
+      if (!limitResourceKeys.has(spawn.resourceKey)) continue;
       disks.push({
         itemId,
         placementId: i + 1,
@@ -395,6 +400,20 @@ export function getMazeNexusResourcePanelSpawnAtCell(
     return {
       cell: { x: center.x, y: center.y },
       resourceKey: 'zone_crystal',
+      amount: 1,
+    };
+  }
+  if (itemId === FRACTAL_PANEL_ID) {
+    return {
+      cell: { x: center.x, y: center.y },
+      resourceKey: 'fractal',
+      amount: 1,
+    };
+  }
+  if (itemId === SPICE_PANEL_ID) {
+    return {
+      cell: { x: center.x, y: center.y },
+      resourceKey: 'spice',
       amount: 1,
     };
   }
@@ -546,6 +565,9 @@ export function grantMazeIncrementalPickupBonus(gs: GameState, resourceKey: Maze
       break;
     case 'fractal':
       gs.maze.collectedFractal += bonusAmount;
+      break;
+    case 'spice':
+      gs.maze.collectedSpice += bonusAmount;
       break;
   }
 

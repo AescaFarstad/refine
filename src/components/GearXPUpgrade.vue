@@ -2,8 +2,14 @@
   <section class="xp-pane">
     <div class="xp-pane-header">Upgrade or downgrade items in exchange for skill points {{ skillPointsSpec.glyph }}</div>
     <div class="xp-gear-list">
-      <div v-for="entry in gearEntries" :key="entry.id" :class="['xp-gear-card', { 'no-upgrades': !entry.hasUpgrades }]">
-        <div v-if="entry.hasUpgrades" class="xp-gear-hint">
+      <div
+        v-for="entry in gearEntries"
+        :key="entry.id"
+        :class="['xp-gear-card', { 'no-upgrades': !entry.hasUpgrades }]"
+        @mouseenter="entry.hasUpgrades ? showHint($event, entry) : undefined"
+        @mouseleave="hideHint()"
+      >
+        <div v-if="entry.hasUpgrades" :class="['xp-gear-hint', { visible: entry.id === hoveredGearId }]" :ref="el => { if (entry.id === hoveredGearId && el) positionHint(el as HTMLElement) }">
           <GearStatsHint :gear="entry.gear" />
         </div>
 
@@ -54,8 +60,8 @@
               </div>
               <div v-else class="xp-upgrade-forgo">forgo<br>upgrade</div>
             </div>
-            <div v-if="!upgrade.purchased && upgrade.skillPoints < 0" :class="['xp-upgrade-cost', { 'xp-upgrade-cost-hidden': entry.maskLevel !== 'none' }]">{{ skillPointsSpec.glyph }}</div>
-            <div v-else-if="!upgrade.purchased && upgrade.skillPoints > 0" :class="['xp-upgrade-cost', 'grants', { 'xp-upgrade-cost-hidden': entry.maskLevel !== 'none' }]">{{ skillPointsSpec.glyph }}</div>
+            <div v-if="upgrade.skillPoints < 0" :class="['xp-upgrade-cost', { 'xp-upgrade-cost-hidden': entry.maskLevel !== 'none', 'purchased': upgrade.purchased }]">{{ skillPointsSpec.glyph }}</div>
+            <div v-else-if="upgrade.skillPoints > 0" :class="['xp-upgrade-cost', 'grants', { 'xp-upgrade-cost-hidden': entry.maskLevel !== 'none', 'purchased': upgrade.purchased }]">{{ skillPointsSpec.glyph }}</div>
           </button>
         </div>
       </div>
@@ -65,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import atlasStorage from '../logic/AtlasStorage';
 import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 import type { GearDefinition, GearUpgradeDefinition } from '../logic/GearLib';
@@ -90,6 +96,25 @@ type GearEntry = {
   maskLevel: 'full' | 'partial' | 'none';
   upgrades: UpgradeEntry[];
 };
+
+const hoveredGearId = ref<string | null>(null);
+
+function showHint(_event: MouseEvent, entry: GearEntry): void {
+  hoveredGearId.value = entry.id;
+}
+
+function hideHint(): void {
+  hoveredGearId.value = null;
+}
+
+function positionHint(el: HTMLElement): void {
+  const card = el.parentElement;
+  if (!card) return;
+  const rect = card.getBoundingClientRect();
+  el.style.top = `${rect.top + rect.height / 2}px`;
+  el.style.right = `${window.innerWidth - rect.left + 12}px`;
+  el.style.transform = 'translateY(-50%)';
+}
 
 const noSkillPoints = computed(() => (uiState.skillPoints ?? 0) < 1);
 const source = atlasStorage.getItemsSource();
@@ -240,8 +265,7 @@ function upgradeGear(gearId: string, upgradeId: string): void {
 .xp-gear-card {
   position: relative;
   display: grid;
-  grid-template-columns: 140px 1fr;
-  min-width: 650px;
+  grid-template-columns: 140px minmax(0, 1fr);
   gap: 12px;
   align-items: center;
   padding: 10px 12px;
@@ -251,12 +275,9 @@ function upgradeGear(gearId: string, upgradeId: string): void {
 }
 
 .xp-gear-hint {
-  position: absolute;
-  right: calc(100% + 12px);
-  top: 50%;
-  transform: translateY(-50%);
-  display: none;
+  position: fixed;
   z-index: 10060;
+  display: none;
   padding: 4px 10px;
   background: var(--hint-bg);
   border: 1px solid var(--hint-border);
@@ -283,12 +304,8 @@ function upgradeGear(gearId: string, upgradeId: string): void {
   transform: translateY(-50%) rotate(45deg);
 }
 
-.xp-gear-card:hover .xp-gear-hint {
+.xp-gear-hint.visible {
   display: block;
-}
-
-.xp-gear-card.no-upgrades:hover .xp-gear-hint {
-  display: none;
 }
 
 .xp-gear-top {
@@ -329,9 +346,10 @@ function upgradeGear(gearId: string, upgradeId: string): void {
 
 .xp-upgrade-list {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: stretch;
+  min-width: 0;
 }
 
 .xp-upgrade-panel {
@@ -339,7 +357,8 @@ function upgradeGear(gearId: string, upgradeId: string): void {
   display: grid;
   grid-template-columns: 1fr auto;
   grid-template-rows: auto 1fr;
-  flex: 0 0 auto;
+  flex: 0 0 240px;
+  width: 240px;
   padding: 0;
   background: var(--raid-item-bg, rgba(255,255,255,0.08));
   border-radius: 4px;
@@ -371,8 +390,8 @@ function upgradeGear(gearId: string, upgradeId: string): void {
   padding-right: 14px;
 }
 
-.xp-upgrade-panel.purchased .xp-upgrade-content {
-  padding-right: 14px;
+.xp-upgrade-cost.purchased {
+  visibility: hidden;
 }
 
 .xp-upgrade-panel.disabled {

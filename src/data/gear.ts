@@ -43,6 +43,7 @@ const gear: Record<string, RawGearDefinition> = {
     xp: [14, 20, 30],
     ups:{
       up1:{
+        skillPoints: 0,
         removePerk: true,
         rarityBuff: 20,
         changeDescription:'',

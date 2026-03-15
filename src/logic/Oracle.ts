@@ -26,6 +26,11 @@ export interface OracleSealSubmissionResult extends OracleSealEvaluation {
   submitted: boolean;
 }
 
+export interface OracleSealAttempt {
+  cellColors: Record<string, OracleSealColor>;
+  mismatchMarkerKeys: string[];
+}
+
 export function getOracleWaferCells(): Point2[] {
   return ORACLE_WAFER_CELLS.map((cell) => ({ x: cell.x, y: cell.y }));
 }
@@ -43,6 +48,16 @@ export function compactOracleSealColors(
     compact[key] = color;
   }
   return compact;
+}
+
+export function createOracleSealAttempt(
+  cellColors: Readonly<Record<string, OracleSealColor | null | undefined>>,
+  fit: Pick<BestSignatureFit, 'wrongColorCellKeys' | 'extraLitCellKeys'>
+): OracleSealAttempt {
+  return {
+    cellColors: compactOracleSealColors(cellColors),
+    mismatchMarkerKeys: [...fit.wrongColorCellKeys, ...fit.extraLitCellKeys],
+  };
 }
 
 function toOracleSealColor(color: string): OracleSealColor {
@@ -199,6 +214,8 @@ export function submitOracleSeal(
   gs.chronotraces -= ORACLE_VALIDATE_COST;
   if (evaluation.success) {
     gs.mazeOracleStateByNodeId[String(nodeId)] = 'riddlePassed';
+  } else {
+    gs.mazeOracleLastFailedSealAttemptByNodeId[String(nodeId)] = createOracleSealAttempt(cellColors, evaluation.fit);
   }
 
   return { ...evaluation, submitted: true };

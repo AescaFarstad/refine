@@ -15,6 +15,7 @@ import type { RaidEventLog } from './RaidLog';
 import type { RaidMutation, MutationDescription } from './RaidMutation';
 import type { Reward, UIModalEntry } from './Reward';
 import { randomizeOracles } from './RandomizeOracles';
+import type { OracleSealAttempt } from "./Oracle";
 
 /*
   When adding/editing properties here, make sure save-loading is compatible.
@@ -97,6 +98,7 @@ export class GameState {
   public mazeNexusUpgradeSeedCursor: number = 0;
   public mazeNexusRefundResetRegretUsed: boolean = false;
   public mazeOracleStateByNodeId: Record<string, MazeOracleState> = {};
+  public mazeOracleLastFailedSealAttemptByNodeId: Record<string, OracleSealAttempt> = {};
   public mazeResetEntranceCell: Point2 = { x: 0, y: 0 };
   public mazeIncrementalBonusPerPickup: number = 0;
   public mazeHasShardsRefresherPanel: boolean = false;

@@ -1,10 +1,38 @@
 <template>
   <div v-if="visible" class="maze-oracle-menu" @click.stop>
     <div class="oracle-panel">
-      <div class="oracle-header">ORACLE</div>
+      <div v-if="oracleState === 'riddling'" class="oracle-header">ORACLE</div>
 
       <div v-if="oracleState === 'riddling'" class="oracle-body">
-        <div ref="oracleTopRowRef" class="oracle-top-row">
+        <div ref="oracleTopRowRef" class="oracle-top-row" style="position: relative;">
+          <div
+            v-if="lastFailedSealAttempt"
+            class="oracle-last-anchor"
+            @mouseenter="showLastFailedSealAttempt"
+            @mouseleave="hideLastFailedSealAttempt"
+          >
+            <div
+              v-if="hoveredLastFailedSealAttempt"
+              ref="oracleLastPreviewRef"
+              class="oracle-last-preview"
+            >
+              <OracleWafer
+                :cell-colors="hoveredLastFailedSealAttempt.cellColors"
+                :marker-keys="hoveredLastFailedSealAttempt.mismatchMarkerKeys"
+                :interactive="false"
+              />
+            </div>
+
+            <button
+              type="button"
+              class="oracle-last-btn"
+              @focus="showLastFailedSealAttempt"
+              @blur="hideLastFailedSealAttempt"
+            >
+              Last
+            </button>
+          </div>
+
           <div class="oracle-seal">
             <OracleWafer
               :cell-colors="sealColors"
@@ -41,9 +69,8 @@
               </span>
             </button>
 
-            <div v-if="sealFailed" class="validate-error">The seal did not fit</div>
-            <div v-else-if="!canValidateSeal" class="validate-hint">
-              Need {{ ORACLE_VALIDATE_COST }} chronotraces
+            <div class="validate-message-slot">
+              <div v-if="sealFailed" class="validate-error">The seal did not fit</div>
             </div>
           </div>
         </div>
@@ -53,13 +80,16 @@
         </div>
       </div>
 
-      <div v-else-if="oracleState === 'riddlePassed'" class="oracle-body">
-        <div class="oracle-riddle" :style="oracleRiddleStyle">
-          <div class="oracle-riddle-text">{{ currentOracleRiddle }}</div>
+      <template v-else-if="oracleState === 'riddlePassed'">
+        <div class="oracle-header">ORACLES OPENED: {{ oraclesOpened }} / {{ oraclesTotal }}</div>
+        <div class="oracle-escape-hint">
+          <div class="oracle-escape-hint-text">Open all oracles to escape the time loop.</div>
         </div>
-        <div class="oracle-passed">
-          <div class="oracle-passed-text">Accepted.</div>
-        </div>
+      </template>
+
+      <div v-if="oracleState === 'riddling'" class="oracle-help-section" :style="oracleRiddleStyle">
+        <span class="oracle-help-label">How to crack the oracle</span>
+        <span class="oracle-help-detail">Guess the missing word in [...] and find a way to express it on the wafer. <br>Offset doesn't matter.<br>Rotation does.</span>
       </div>
     </div>
   </div>
@@ -76,11 +106,12 @@ import {
   getOracleRiddle,
   ORACLE_VALIDATE_COST,
   type OracleSealColor,
+  type OracleSealAttempt,
   type OracleSealCellColors,
 } from '../logic/Oracle';
 import { ESSENCE_COLORS } from '../logic/RenderConstants';
 import { getResourceSpec } from '../logic/Resources';
-import { getGameState, uiState } from '../logic/UIState';
+import { getGameState, uiState, type DeepReadonly } from '../logic/UIState';
 import { CmdMazeValidateOracleSeal } from '../logic/input/InputCommands';
 
 defineProps<{
@@ -100,7 +131,9 @@ const selectedColor = ref<OracleSealColor>('red');
 const sealColors = computed<OracleSealCellColors>(() => uiState.mazeOracleSealCellColors);
 const mismatchMarkerKeys = computed(() => uiState.mazeOracleSealMismatchMarkerKeys);
 const oracleTopRowRef = ref<HTMLElement | null>(null);
+const oracleLastPreviewRef = ref<HTMLElement | null>(null);
 const oracleTopRowWidth = ref(0);
+const hoveredLastFailedSealAttempt = ref<DeepReadonly<OracleSealAttempt> | null>(null);
 const chronotracesSpec = getResourceSpec('chronotraces');
 
 const currentOracleNode = computed(() => {
@@ -124,12 +157,33 @@ const oracleState = computed(() => {
   return getMazeOracleState(getGameState(), nodeId);
 });
 
-const canValidateSeal = computed(() => {
-  uiState.chronotraces;
-  return uiState.chronotraces >= ORACLE_VALIDATE_COST && oracleState.value === 'riddling';
+const hasSealColors = computed(() => {
+  const cellColors = uiState.mazeOracleSealCellColors;
+  return Object.values(cellColors).some((c) => c != null);
 });
 
-const sealFailed = computed(() => mismatchMarkerKeys.value.length > 0);
+const canValidateSeal = computed(() => {
+  uiState.chronotraces;
+  return uiState.chronotraces >= ORACLE_VALIDATE_COST && oracleState.value === 'riddling' && hasSealColors.value;
+});
+
+const sealFailed = ref(false);
+const lastFailedSealAttempt = computed(() => {
+  uiState.mazeVersion;
+  const nodeId = uiState.mazeVisitedOracleNodeId;
+  if (nodeId < 0) return null;
+  return getGameState().mazeOracleLastFailedSealAttemptByNodeId[String(nodeId)] ?? null;
+});
+const oraclesTotal = computed(() => {
+  uiState.mazeVersion;
+  return Object.keys(getGameState().mazeOracleStateByNodeId).length;
+});
+
+const oraclesOpened = computed(() => {
+  uiState.mazeVersion;
+  return Object.values(getGameState().mazeOracleStateByNodeId).filter(s => s === 'riddlePassed').length;
+});
+
 const oracleRiddleStyle = computed(() => {
   if (oracleTopRowWidth.value > 0) {
     return {
@@ -141,6 +195,7 @@ const oracleRiddleStyle = computed(() => {
 });
 
 watch(() => uiState.mazeVisitedOracleNodeId, clearSeal, { flush: 'sync' });
+watch(() => uiState.mazeVisitedOracleNodeId, hideLastFailedSealAttempt, { flush: 'sync' });
 watch([oracleState, () => uiState.mazeVisitedOracleNodeId], async () => {
   await nextTick();
   bindOracleTopRowObserver();
@@ -149,6 +204,7 @@ watch([oracleState, () => uiState.mazeVisitedOracleNodeId], async () => {
 let oracleTopRowObserver: ResizeObserver | null = null;
 
 function toggleSealCell(key: string) {
+  sealFailed.value = false;
   uiState.mazeOracleSealMismatchMarkerKeys = [];
   const cellColors = uiState.mazeOracleSealCellColors;
   cellColors[key] = cellColors[key] === selectedColor.value ? null : selectedColor.value;
@@ -161,6 +217,7 @@ function colorButtonStyle(hex: string) {
 }
 
 function clearSeal() {
+  sealFailed.value = false;
   uiState.mazeOracleSealMismatchMarkerKeys = [];
   uiState.mazeOracleSealCellColors = {};
 }
@@ -169,14 +226,16 @@ function onValidateSeal() {
   const node = currentOracleNode.value;
   if (!node || !canValidateSeal.value) return;
 
-  const evaluation = evaluateOracleSeal(getGameState(), node.nodeId, uiState.mazeOracleSealCellColors);
+  const cellColors = compactOracleSealColors(uiState.mazeOracleSealCellColors);
+  const evaluation = evaluateOracleSeal(getGameState(), node.nodeId, cellColors);
+  sealFailed.value = !evaluation.success;
   uiState.mazeOracleSealMismatchMarkerKeys = evaluation.success
     ? []
     : [...evaluation.fit.wrongColorCellKeys, ...evaluation.fit.extraLitCellKeys];
 
   globalInputQueue.push(new CmdMazeValidateOracleSeal({
     nodeId: node.nodeId,
-    cellColors: compactOracleSealColors(uiState.mazeOracleSealCellColors),
+    cellColors,
   }));
 }
 
@@ -194,8 +253,19 @@ function bindOracleTopRowObserver() {
   oracleTopRowObserver.observe(topRow);
 }
 
+async function showLastFailedSealAttempt() {
+  const node = currentOracleNode.value;
+  if (!node) return;
+  hoveredLastFailedSealAttempt.value = getGameState().mazeOracleLastFailedSealAttemptByNodeId[String(node.nodeId)] ?? null;
+}
+
+function hideLastFailedSealAttempt() {
+  hoveredLastFailedSealAttempt.value = null;
+}
+
 onUnmounted(() => {
   oracleTopRowObserver?.disconnect();
+  hideLastFailedSealAttempt();
 });
 </script>
 
@@ -209,11 +279,63 @@ onUnmounted(() => {
 }
 
 .oracle-panel {
+  position: relative;
   border: none;
   border-radius: 4px;
   color: rgba(226, 232, 240, 0.95);
   padding: 0;
   max-width: calc(100vw - 24px);
+}
+
+.oracle-last-anchor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 0;
+  z-index: 3;
+}
+
+.oracle-last-btn {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  min-width: 36px;
+  min-height: 24px;
+  padding: 0 6px;
+  border: none;
+  border-radius: 3px;
+  background: rgba(51, 65, 85, 0.96);
+  color: rgba(226, 232, 240, 0.92);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: default;
+  box-shadow: 0 4px 12px rgba(2, 6, 23, 0.22);
+}
+
+.oracle-last-preview {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 6px;
+  min-width: max-content;
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--panel-bg);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.oracle-last-preview::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -24px;
+  width: 24px;
 }
 
 .oracle-header {
@@ -366,6 +488,10 @@ onUnmounted(() => {
   border-color: rgba(148, 163, 184, 0.4);
 }
 
+.validate-message-slot {
+  min-height: 1.4em;
+}
+
 .validate-error {
   color: rgba(248, 113, 113, 0.95);
   font-size: 12px;
@@ -373,11 +499,6 @@ onUnmounted(() => {
   line-height: 1.4;
 }
 
-.validate-hint {
-  color: rgba(248, 113, 113, 0.7);
-  font-size: 11px;
-  line-height: 1.4;
-}
 
 .oracle-riddle {
   background: var(--panel-bg);
@@ -413,6 +534,58 @@ onUnmounted(() => {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.oracle-escape-hint {
+  background: var(--panel-bg);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 6px;
+}
+
+.oracle-escape-hint-text {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: rgba(148, 163, 184, 0.7);
+}
+
+.oracle-help-section {
+  background: var(--panel-bg);
+  border-radius: 8px;
+  padding: 10px 16px;
+  box-sizing: border-box;
+  max-width: calc(100vw - 24px);
+  text-align: right;
+  cursor: default;
+}
+
+.oracle-help-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(148, 163, 184, 0.7);
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(148, 163, 184, 0.35);
+}
+
+.oracle-help-detail {
+  display: none;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: rgba(148, 163, 184, 0.55);
+}
+
+.oracle-help-section:hover .oracle-help-label {
+  display: none;
+}
+
+.oracle-help-section:hover .oracle-help-detail {
+  display: block;
+  text-align: left;
 }
 
 @media (max-width: 480px) {

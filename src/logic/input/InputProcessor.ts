@@ -566,6 +566,8 @@ handlersByName.set('CmdMazeValidateOracleSeal', (gs, cmd) => {
   if (result.success) {
     gs.maze.version++;
     uiState.mazeVersion = gs.maze.version;
+  } else {
+    uiState.mazeVersion++;
   }
   saveAutosave(gs);
 });

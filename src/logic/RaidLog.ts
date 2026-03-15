@@ -86,6 +86,9 @@ export interface FightEvent {
   timeRegenHpBefore: number;  // HP before time-based regen this round
   timeRegenHpAfter: number;   // HP after time-based regen this round
   timeRegenDurationSec: number; // Total elapsed time when regen triggered
+  armorTorn: number;          // armor torn this round (Armor Tearing perk)
+  armorBefore: number;        // enemy armor before tearing
+  armorAfter: number;         // enemy armor after tearing
 }
 
 export interface FightEncounterLogEntry extends RaidLogEntryBase {
@@ -100,6 +103,8 @@ export interface FightEncounterLogEntry extends RaidLogEntryBase {
   summoned: boolean; // true if this fight was summoned by another monster (doesn't count toward progress)
   skipped: boolean; // true if the fight was avoided (e.g., via Safer Routes perk)
   skipReason: '' | 'safer_routes' | 'camouflage';
+  armorCrushedFrom: number; // original armor before Armor Crushing perk
+  armorCrushedTo: number;   // armor after Armor Crushing halved it
 }
 
 export interface LootEncounterLogEntry extends RaidLogEntryBase {
@@ -294,6 +299,9 @@ export function createFightEvent(init: Partial<FightEvent> = {}): FightEvent {
     timeRegenHpBefore: 0,
     timeRegenHpAfter: 0,
     timeRegenDurationSec: 0,
+    armorTorn: 0,
+    armorBefore: 0,
+    armorAfter: 0,
     ...init,
   };
 }
@@ -322,6 +330,8 @@ export function createFightEncounterLogEntry(init: Partial<FightEncounterLogEntr
     summoned: false,
     skipped: false,
     skipReason: '',
+    armorCrushedFrom: 0,
+    armorCrushedTo: 0,
     ...rest,
   };
 }

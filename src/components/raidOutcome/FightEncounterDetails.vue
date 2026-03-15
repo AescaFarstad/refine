@@ -1,5 +1,6 @@
 <template>
   <div class="fight-rows" v-if="!entry.skipped">
+    <div class="note-row armor-crush-note" v-if="entry.armorCrushedFrom > 0 && shownStep >= 1">Crushed enemy's armor {{ entry.armorCrushedFrom }} → <b>{{ entry.armorCrushedTo }}</b></div>
     <template v-for="(ev, j) in (entry.fightLog || [])" :key="'fe-'+j">
       <template v-if="shownStep >= (Number(j) + 1)">
         <div class="fr-grid">
@@ -13,6 +14,7 @@
           <div class="cell after" v-html="ev.hitLanded ? hpChange('their', ev.theirHpBefore, ev.theirHpAfter) : ''"></div>
         </div>
 
+        <div class="note-row armor-tear-note" v-if="ev.armorTorn > 0">Tore {{ ev.armorTorn }} armor: {{ ev.armorBefore }} → <b>{{ ev.armorAfter }}</b></div>
         <div class="note-row stun-note" v-if="ev.stunTriggered" v-html="stunLine(ev)"></div>
 
         <template v-if="!ev.monsterStunned && (!ev.hitLanded || (ev.hitLanded && ev.theirHitValue > 0))">
@@ -31,7 +33,7 @@
         </template>
 
         <div class="note-row summon-note" v-if="ev.summonTriggered"><b>Another {{ entry.monsterName }} joins the fray!</b></div>
-        <div class="note-row time-regen-note" v-if="ev.timeRegenHealed > 0">Regenerated {{ ev.timeRegenHealed }} hp {{ ev.timeRegenHpBefore }} → <b>{{ ev.timeRegenHpAfter }}</b> over the last {{ formatDuration(ev.timeRegenDurationSec) }}</div>
+        <div class="note-row time-regen-note" v-if="ev.timeRegenHealed > 0">Regenerated {{ ev.timeRegenHealed }} hp: {{ ev.timeRegenHpBefore }} → <b>{{ ev.timeRegenHpAfter }}</b> over the last {{ formatDuration(ev.timeRegenDurationSec) }}</div>
       </template>
     </template>
   </div>
@@ -73,12 +75,12 @@ function hpChange(who: 'their' | 'your', before: number, after: number, _terse =
 }
 
 function reflectLine(ev: FightEvent): string {
-  const on = ev.blocked ? 'miss' : 'hit';
-  return `They take reflected damage on ${on}. ${hpChange('their', ev.theirHpBefore, ev.theirHpAfter, true)}`;
+  const on = ev.blocked ? 'when blocked' : 'when they hit';
+  return `They take reflected damage ${on}. ${hpChange('their', ev.theirHpBefore, ev.theirHpAfter, true)}`;
 }
 
 function stunLine(_ev: FightEvent): string {
-  return `You stun the target. The enemy can't retaliate!`;
+  return `Stunned! The enemy can't retaliate!`;
 }
 
 function enemyAttackHit(ev: FightEvent): boolean {

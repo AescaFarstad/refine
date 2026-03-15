@@ -92,11 +92,23 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
   const theirAccuracy = m.accuracy;
   const theirDamage = m.damage;
 
-  const roundTime = 60 + (r.perks.includes(Perks.AIMING) ? 60 : 0);
+  const roundTime = Math.max(0, 60 + (r.perks.includes(Perks.AIMING) ? 60 : 0) + (r.perks.includes(Perks.SPRAY_AND_PRAY) ? -60 : 0));
   const canSummon = m.features.includes(FEATURE_SUMMON);
   const canSummon2 = m.features.includes(FEATURE_SUMMON2);
   const canSelfDestruct = m.features.includes(FEATURE_SELF_DESTRUCT);
-  const armor = r.perks.includes(Perks.ARMOR_PIERCING) ? Math.floor(m.armor / 2) : m.armor;
+  const hasArmorTearing = r.perks.includes(Perks.ARMOR_TEARING);
+  const hasArmorCrushing = r.perks.includes(Perks.ARMOR_CRUSHING);
+  const hasFanTheHammer = r.perks.includes(Perks.FAN_THE_HAMMER);
+  // Pre-compute the damage contribution of the Fan the Hammer gear item
+  let fanDamage = 0;
+  if (hasFanTheHammer) {
+    for (const g of Object.values(r.effectiveGearById)) {
+      if (g && g.perk === Perks.FAN_THE_HAMMER) { fanDamage += g.damage; }
+    }
+  }
+  const armorCrushedFrom = m.armor;
+  let armor = hasArmorCrushing ? Math.floor(m.armor / 2) : m.armor;
+  const armorCrushedTo = armor;
   const damageCap = m.damageCap;
 
   const fightLog: FightEvent[] = [];
@@ -120,8 +132,15 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
     if (myRoll <= hitCheck) {
       // Hit landed
       let dmg = r.damage;
+      // Fan the Hammer: item contributes double damage on odd rounds (1,3,5…), zero on even (2,4,6…)
+      if (hasFanTheHammer) {
+        dmg += (round % 2 === 0) ? fanDamage : -fanDamage;
+      }
       if (damageCap > 0) dmg = Math.min(dmg, damageCap);
       dmg = Math.max(0, dmg - armor);
+      const armorBeforeTear = armor;
+      if (hasArmorTearing && armor > 0) armor -= 1;
+      const armorTornThisRound = armorBeforeTear - armor;
       const theirHpAfter = theirHpBefore - dmg;
 
       // Roll for stun on landed hit: stunned monsters don't retaliate.
@@ -185,6 +204,9 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         timeRegenHpBefore: regen.hpBefore,
         timeRegenHpAfter: regen.hpAfter,
         timeRegenDurationSec: regen.ticksCrossed * REGEN_INTERVAL_SEC,
+        armorTorn: armorTornThisRound,
+        armorBefore: armorBeforeTear,
+        armorAfter: armor,
       };
       fightLog.push(ev);
       totalTime += thisRoundTime;
@@ -281,6 +303,9 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         timeRegenHpBefore: regen.hpBefore,
         timeRegenHpAfter: regen.hpAfter,
         timeRegenDurationSec: regen.ticksCrossed * REGEN_INTERVAL_SEC,
+        armorTorn: 0,
+        armorBefore: armor,
+        armorAfter: armor,
       };
       fightLog.push(ev);
       totalTime += thisRoundTime;
@@ -311,6 +336,8 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
     timeSpentSec: totalTime,
     selfDestructed: monsterSelfDestructed,
     injected,
+    armorCrushedFrom: hasArmorCrushing ? armorCrushedFrom : 0,
+    armorCrushedTo: hasArmorCrushing ? armorCrushedTo : 0,
     // Time regen is shown per-round now, not as a fight summary
     timeRegenHpBefore: 0,
     timeRegenHpAfter: 0,

@@ -66,6 +66,9 @@ export function buildEffectiveGear(base: Readonly<GearDefinition>, upgrades: rea
       effective.perk = '';
       effective.description = '';
     }
+    if (upgrade.replacePerk) {
+      effective.perk = upgrade.replacePerk;
+    }
     if (upgrade.changeDescription) {
       effective.description = upgrade.changeDescription;
     }

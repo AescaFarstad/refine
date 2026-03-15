@@ -3,7 +3,7 @@
     <div class="modal-group">
       <div class="modal-window left-window">
         <div :class="['pane-header', { 'pane-header-gain': hoveredSpDelta > 0, 'pane-header-loss': hoveredSpDelta < 0 }]">
-          <div class="pane-header-title">{{ skillPointsSpec.name }}: {{ skillPoints }} {{ skillPointsSpec.glyph }}<span v-if="hoveredSpDelta" :class="['sp-delta', hoveredSpDelta > 0 ? 'sp-gain' : 'sp-loss']">{{ hoveredSpDelta > 0 ? '+1' : '-1' }}</span></div>
+          <div class="pane-header-title">{{ skillPointsSpec.name }}: {{ skillPoints }} {{ skillPointsSpec.glyph }}<span v-if="hoveredSpDelta" :class="['sp-delta', hoveredSpDelta > 0 ? 'sp-gain' : 'sp-loss']">{{ hoveredSpDelta > 0 ? '+' + hoveredSpDelta : hoveredSpDelta }}</span></div>
           <div class="pane-header-subtitle">Increase how many items from the category<br>can be equipped at once</div>
         </div>
 
@@ -28,6 +28,8 @@
                   v-if="canUpgrade(cat.id)"
                   :class="['slot-btn', 'actionable']"
                   @click.stop="upgrade(cat.id)"
+                  @mouseenter="hoverSlot(cat.id)"
+                  @mouseleave="unhoverSlot"
                 >
                   <span class="slot-btn-label">Add slot</span>
                   <span class="slot-btn-cost">{{ getUpgradeCost(cat.id) }} {{ skillPointsSpec.glyph }}</span>
@@ -144,6 +146,15 @@ function upgrade(catId: string): void {
 
 function focus(catId: string): void {
   uiState.gearUpgradeFocusCategory = catId;
+}
+
+function hoverSlot(catId: string): void {
+  const cost = getUpgradeCost(catId);
+  uiState.gearUpgradeHoveredSkillPoints = -cost;
+}
+
+function unhoverSlot(): void {
+  uiState.gearUpgradeHoveredSkillPoints = 0;
 }
 
 function close(): void {

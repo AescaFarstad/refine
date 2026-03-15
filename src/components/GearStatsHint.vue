@@ -167,8 +167,14 @@ const hintRows = computed((): HintRow[] => {
     if (gs && rawGear.xp.length > 0 && (gs.discoveries[DISCOVERY.GEAR_XP] === true || (gs.gearXpById[rawGear.id] ?? 0) > 0 || (gs.gearUpgradeIdsById[rawGear.id]?.length ?? 0) > 0)) {
       const xp = gs.gearXpById[rawGear.id] ?? 0;
       const thresholds = getGearUpgradeThresholds(rawGear);
-      const nextThreshold = thresholds[getAppliedGearUpgradeIds(gs, rawGear.id).length] ?? thresholds[thresholds.length - 1] ?? 0;
-      xpRows.push({ label: 'XP', spans: [bright(`${xp}`), dim(nextThreshold > 0 ? ` / ${nextThreshold}` : '')], className: 'xp-row' });
+      const appliedCount = getAppliedGearUpgradeIds(gs, rawGear.id).length;
+      if (appliedCount < thresholds.length) {
+        const prevThreshold = appliedCount > 0 ? thresholds[appliedCount - 1] : 0;
+        const nextThreshold = thresholds[appliedCount];
+        const relativeXp = xp - prevThreshold;
+        const relativeMax = nextThreshold - prevThreshold;
+        xpRows.push({ label: 'XP', spans: [bright(`${relativeXp}`), dim(` / ${relativeMax}`)], className: 'xp-row' });
+      }
     }
   }
 

@@ -17,7 +17,7 @@
           <div class="xp-gear-icon">
             <div class="xp-gear-sprite" :style="entry.spriteStyle" />
           </div>
-          <div v-if="entry.hasUpgrades && !entry.allPurchased" class="xp-gear-meta">
+          <div v-if="entry.hasUpgrades && !entry.allPurchased && entry.hasMoreLevels" class="xp-gear-meta">
             <div class="xp-gear-progress">{{ entry.currentXp }} / {{ entry.targetXp }} XP</div>
           </div>
         </div>
@@ -31,6 +31,7 @@
               purchased: upgrade.purchased,
               actionable: upgrade.enabled,
               disabled: !upgrade.purchased && !upgrade.enabled,
+              exhausted: !upgrade.purchased && !upgrade.enabled && !entry.hasMoreLevels,
               masked: entry.maskLevel !== 'none',
               unaffordable: !upgrade.purchased && upgrade.skillPoints < 0 && noSkillPoints,
               free: !upgrade.purchased && upgrade.skillPoints === 0,
@@ -58,8 +59,10 @@
                   </span>
                 </div>
               </div>
-              <div v-else class="xp-upgrade-forgo">forgo<br>upgrade</div>
+              <div v-if="upgrade.description" class="xp-upgrade-description">{{ upgrade.description }}</div>
+              <div v-else-if="upgrade.rows.length === 0" class="xp-upgrade-forgo">forgo upgrade</div>
             </div>
+            <div v-if="entry.isLastUpgrade && !upgrade.purchased && hoveredUpgradeId && hoveredUpgradeId !== upgrade.id" class="xp-upgrade-cross" :ref="el => setCrossAngle(el as HTMLElement)" />
             <div v-if="upgrade.skillPoints < 0" :class="['xp-upgrade-cost', { 'xp-upgrade-cost-hidden': entry.maskLevel !== 'none', 'purchased': upgrade.purchased }]">{{ skillPointsSpec.glyph }}</div>
             <div v-else-if="upgrade.skillPoints > 0" :class="['xp-upgrade-cost', 'grants', { 'xp-upgrade-cost-hidden': entry.maskLevel !== 'none', 'purchased': upgrade.purchased }]">{{ skillPointsSpec.glyph }}</div>
           </button>
@@ -84,7 +87,7 @@ import GearStatsHint from './GearStatsHint.vue';
 
 type UpgradeSpan = { text: string; color?: string; weightIcon?: boolean };
 type UpgradeRow = { label: string; spans: UpgradeSpan[] };
-type UpgradeEntry = { id: string; title: string; rows: UpgradeRow[]; purchased: boolean; enabled: boolean; skillPoints: number };
+type UpgradeEntry = { id: string; title: string; description: string; rows: UpgradeRow[]; purchased: boolean; enabled: boolean; skillPoints: number };
 type GearEntry = {
   id: string;
   gear: GearDefinition;
@@ -94,10 +97,13 @@ type GearEntry = {
   hasUpgrades: boolean;
   allPurchased: boolean;
   maskLevel: 'full' | 'partial' | 'none';
+  hasMoreLevels: boolean;
+  isLastUpgrade: boolean;
   upgrades: UpgradeEntry[];
 };
 
 const hoveredGearId = ref<string | null>(null);
+const hoveredUpgradeId = ref<string | null>(null);
 
 function showHint(_event: MouseEvent, entry: GearEntry): void {
   hoveredGearId.value = entry.id;
@@ -163,6 +169,7 @@ function describeUpgrade(upgrade: GearUpgradeDefinition, gear: GearDefinition): 
   if (upgrade.priceChange) rows.push({ label: 'Price change', spans: [textSpan(`${fmtSigned(upgrade.priceChange)}${creditsSpec.glyph}`, creditsSpec.color)] });
   if (upgrade.reimbursed) rows.push({ label: 'Reimbursement', spans: [textSpan(fmtSigned(upgrade.reimbursed, '%'))] });
   if (upgrade.removePerk) rows.push({ label: 'Remove', spans: [textSpan(gear.perk || 'perk', '#ef5350')] });
+  if (upgrade.replacePerk) rows.push({ label: 'Swap perk:', spans: [textSpan(upgrade.replacePerk, '#4ade80')] });
   if (rows.length === 0) return rows; // forgo upgrade — handled separately in template
   return rows;
 }
@@ -208,9 +215,12 @@ const gearEntries = computed<GearEntry[]>(() => {
       hasUpgrades: upgrades.length > 0,
       allPurchased: upgrades.length > 0 && appliedUpgradeIds.length >= upgrades.length,
       maskLevel: xp === 0 ? 'full' : (firstThreshold > 0 && xp < firstThreshold ? 'partial' : 'none'),
+      hasMoreLevels: hasPendingUpgrade || appliedCount < thresholds.length,
+      isLastUpgrade: getPendingGearUpgradeCount(gs, gear.id) === 1 && (upgrades.length - appliedCount) > 1,
       upgrades: upgrades.map((upgrade) => ({
         id: upgrade.id,
         title: upgrade.title,
+        description: upgrade.changeDescription,
         rows: describeUpgrade(upgrade, gear),
         purchased: appliedUpgradeIds.includes(upgrade.id),
         enabled: hasPendingUpgrade && !appliedUpgradeIds.includes(upgrade.id),
@@ -227,13 +237,23 @@ const gearEntries = computed<GearEntry[]>(() => {
   });
 });
 
+function setCrossAngle(el: HTMLElement | null): void {
+  if (!el) return;
+  const parent = el.parentElement;
+  if (!parent) return;
+  const angle = Math.atan2(parent.offsetHeight, parent.offsetWidth) * (180 / Math.PI);
+  el.style.setProperty('--cross-angle', `${angle}deg`);
+}
+
 function hoverUpgrade(upgrade: UpgradeEntry, maskLevel: GearEntry['maskLevel']): void {
   if (upgrade.purchased) return;
   if (maskLevel !== 'none') return;
+  hoveredUpgradeId.value = upgrade.id;
   uiState.gearUpgradeHoveredSkillPoints = upgrade.skillPoints;
 }
 
 function unhoverUpgrade(): void {
+  hoveredUpgradeId.value = null;
   uiState.gearUpgradeHoveredSkillPoints = 0;
 }
 
@@ -241,6 +261,7 @@ function upgradeGear(gearId: string, upgradeId: string): void {
   const gs = getGameState();
   if (getAppliedGearUpgradeIds(gs, gearId).includes(upgradeId)) return;
   if (getPendingGearUpgradeCount(gs, gearId) <= 0) return;
+  hoveredUpgradeId.value = null;
   globalInputQueue.push(new CmdUpgradeGearItem({ gearId, upgradeId }));
 }
 
@@ -387,7 +408,7 @@ function upgradeGear(gearId: string, upgradeId: string): void {
 }
 
 .xp-upgrade-panel.free .xp-upgrade-content {
-  padding-right: 14px;
+  padding-right: 10px;
 }
 
 .xp-upgrade-cost.purchased {
@@ -404,6 +425,11 @@ function upgradeGear(gearId: string, upgradeId: string): void {
 .xp-upgrade-panel.disabled .xp-upgrade-value {
   color: var(--text-secondary);
   opacity: 0.7;
+}
+
+.xp-upgrade-panel.exhausted {
+  opacity: 0.3;
+  pointer-events: none;
 }
 
 .xp-upgrade-panel.masked {
@@ -449,7 +475,7 @@ function upgradeGear(gearId: string, upgradeId: string): void {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 10px 14px;
+  padding: 10px 10px;
 }
 
 .xp-upgrade-stats {
@@ -457,6 +483,14 @@ function upgradeGear(gearId: string, upgradeId: string): void {
   flex-direction: column;
   gap: 4px;
   flex: 1 1 auto;
+}
+
+.xp-upgrade-description {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  line-height: 1.3;
 }
 
 .xp-upgrade-cost {
@@ -515,6 +549,34 @@ function upgradeGear(gearId: string, upgradeId: string): void {
   width: 12px;
   height: 12px;
   display: inline-block;
+}
+
+.xp-upgrade-cross {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  overflow: hidden;
+}
+
+.xp-upgrade-cross::before,
+.xp-upgrade-cross::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 141%;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.7);
+  transform-origin: center;
+}
+
+.xp-upgrade-cross::before {
+  transform: translate(-50%, -50%) rotate(var(--cross-angle));
+}
+
+.xp-upgrade-cross::after {
+  transform: translate(-50%, -50%) rotate(calc(-1 * var(--cross-angle)));
 }
 
 .xp-upgrade-forgo {

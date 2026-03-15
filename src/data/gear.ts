@@ -11,7 +11,7 @@ const gear: Record<string, RawGearDefinition> = {
     price: 20,
     weight: 1,
     image: 'knuckles',
-    xp: [10, 20, 30],
+    xp: [12, 24],
     ups:{
       up1:{
         price: 30,
@@ -40,7 +40,7 @@ const gear: Record<string, RawGearDefinition> = {
     image: 'kukri',
     perk: 'Hack and Slash',
     description: 'Scavenging takes 2 minutes less',
-    xp: [14, 20, 30],
+    xp: [16, 18],
     ups:{
       up1:{
         skillPoints: 0,
@@ -80,8 +80,27 @@ const gear: Record<string, RawGearDefinition> = {
     price: 50,
     weight: 4,
     image: 'sledgehammer',
-    perk: 'Armor Piercing',
+    perk: 'Armor Crushing',
     description: 'Halves enemy\'s armor value',
+    xp: [8, 12],
+    ups:{
+      up1:{
+        skillPoints: 0,
+        damage: 1,
+        weight: 1,
+        title:'Thick Head'
+      },
+      up2:{ 
+        chanceToBlock: 5,
+        weight: -1,
+        title:'Custom handle' 
+      },
+      up3:{
+        replacePerk: "Armor Tearing",
+        changeDescription:'Each hit tears 1 armor',
+        title:'Piercing Head'
+      }
+    },
   },
   walking_stick: {
     name: 'Walking Stick',
@@ -92,6 +111,27 @@ const gear: Record<string, RawGearDefinition> = {
     price: 60,
     weight: 1,
     image: 'walking_stick',
+    xp: [8, 12],
+    ups:{
+      up1:{
+        skillPoints: 0,
+        damage: -1,
+        weight: -1,
+        price: -20,
+        title:'Plastic core'
+      },
+      up2:{ 
+        skillPoints: 0,
+        speedPercent: 10,
+        title:'Well-adjusted' 
+      },
+      up3:{
+        skillPoints: 1,
+        speedFlat: 1,
+        price: 20,
+        title:'Spring system' 
+      }
+    },
   },
   stun_baton: {
     name: 'Stun Gun',
@@ -135,6 +175,25 @@ const gear: Record<string, RawGearDefinition> = {
     image: 'revolver2',
     perk: 'Aiming',
     description: 'Attacks take 1 minute longer',
+    xp: [12, 24],
+    ups:{
+      up1:{
+        damage: 1,
+        price: 10,
+        title:'Polished barrel'
+      },
+      up2:{ 
+        skillPoints: 1,
+        title:'Pratice!' 
+      },
+      up3:{
+        skillPoints: 0,
+        chanceToHit: -5,
+        replacePerk: "Fan the Hammer",
+        changeDescription:'Contributes double damage on odd rounds, no damage on even ones',
+        title:'Fan the Hammer' 
+      }
+    },
   },
   uzi: {
     name: 'Uzi',
@@ -143,6 +202,26 @@ const gear: Record<string, RawGearDefinition> = {
     price: 110,
     weight: 3,
     image: 'uzi2',
+    xp: [8, 14],
+    ups:{
+      up1:{
+        damage: 1,
+        chanceToHit: -10,
+        replacePerk: "Spray and Pray",
+        changeDescription:'Attacks take 1 minute less',
+        title:'Spray and Pray'
+      },
+      up2:{ 
+        skillPoints: 1,
+        title:'Pratice!' 
+      },
+      up3:{
+        damage: -1,
+        weight: -1,
+        price: -40,
+        title:'Simplified model'
+      }
+    },
   },
   shotgun: {
     name: 'Shotgun',

@@ -107,7 +107,7 @@ const monsterRows = computed<MonsterRow[]>(() => {
     const canSummon = m.features.includes(FEATURE_SUMMON);
     const canSummon2 = m.features.includes(FEATURE_SUMMON2);
     const canSelfDestruct = m.features.includes(FEATURE_SELF_DESTRUCT);
-    const hasArmorPiercing = gs.raid.perks.includes(Perks.ARMOR_PIERCING);
+    const hasArmorPiercing = gs.raid.perks.includes(Perks.ARMOR_CRUSHING);
     const armor = hasArmorPiercing ? Math.floor(m.armor / 2) : m.armor;
     const damageCap = m.damageCap;
     rows.push({

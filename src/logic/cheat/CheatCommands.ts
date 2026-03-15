@@ -125,6 +125,11 @@ export class CheatAddResearchVision implements CheatInput {
   }
 }
 
+export class CheatMaxGearXp implements CheatInput {
+  readonly name = 'CheatMaxGearXp';
+  constructor() {}
+}
+
 export class CheatMutateRaid implements CheatInput {
   readonly name = 'CheatMutateRaid';
   readonly raidId: string;

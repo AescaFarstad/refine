@@ -25,14 +25,18 @@
               purchased: upgrade.purchased,
               actionable: upgrade.enabled,
               disabled: !upgrade.purchased && !upgrade.enabled,
-              masked: entry.maskedUpgrades,
-              unaffordable: !upgrade.purchased && noSkillPoints,
+              masked: entry.maskLevel !== 'none',
+              unaffordable: !upgrade.purchased && upgrade.skillPoints < 0 && noSkillPoints,
+              free: !upgrade.purchased && upgrade.skillPoints === 0,
             }]"
             @click="upgradeGear(entry.id, upgrade.id)"
+            @mouseenter="hoverUpgrade(upgrade, entry.maskLevel)"
+            @mouseleave="unhoverUpgrade()"
           >
-            <div v-if="entry.maskedUpgrades" class="xp-upgrade-mask">?</div>
-            <div class="xp-upgrade-body">
-              <div class="xp-upgrade-stats">
+            <div v-if="entry.maskLevel !== 'none' && !upgrade.purchased" :class="['xp-upgrade-mask', { 'has-title': upgrade.title && entry.maskLevel !== 'full' }]">?</div>
+            <div v-if="upgrade.title && entry.maskLevel !== 'full'" class="xp-upgrade-title">{{ upgrade.title }}</div>
+            <div :class="['xp-upgrade-content', { 'xp-upgrade-content-hidden': entry.maskLevel !== 'none' && !upgrade.purchased }]">
+              <div v-if="upgrade.rows.length > 0" class="xp-upgrade-stats">
                 <div v-for="(row, rowIndex) in upgrade.rows" :key="rowIndex" class="xp-upgrade-row">
                   <span class="xp-upgrade-label">{{ row.label }}</span>
                   <span class="xp-upgrade-value">
@@ -48,8 +52,10 @@
                   </span>
                 </div>
               </div>
-              <div v-if="!upgrade.purchased" :class="['xp-upgrade-cost', { invisible: entry.maskedUpgrades }]">{{ skillPointsSpec.glyph }}</div>
+              <div v-else class="xp-upgrade-forgo">forgo<br>upgrade</div>
             </div>
+            <div v-if="!upgrade.purchased && upgrade.skillPoints < 0" :class="['xp-upgrade-cost', { 'xp-upgrade-cost-hidden': entry.maskLevel !== 'none' }]">{{ skillPointsSpec.glyph }}</div>
+            <div v-else-if="!upgrade.purchased && upgrade.skillPoints > 0" :class="['xp-upgrade-cost', 'grants', { 'xp-upgrade-cost-hidden': entry.maskLevel !== 'none' }]">{{ skillPointsSpec.glyph }}</div>
           </button>
         </div>
       </div>
@@ -72,7 +78,7 @@ import GearStatsHint from './GearStatsHint.vue';
 
 type UpgradeSpan = { text: string; color?: string; weightIcon?: boolean };
 type UpgradeRow = { label: string; spans: UpgradeSpan[] };
-type UpgradeEntry = { id: string; rows: UpgradeRow[]; purchased: boolean; enabled: boolean };
+type UpgradeEntry = { id: string; title: string; rows: UpgradeRow[]; purchased: boolean; enabled: boolean; skillPoints: number };
 type GearEntry = {
   id: string;
   gear: GearDefinition;
@@ -81,7 +87,7 @@ type GearEntry = {
   spriteStyle: Record<string, string>;
   hasUpgrades: boolean;
   allPurchased: boolean;
-  maskedUpgrades: boolean;
+  maskLevel: 'full' | 'partial' | 'none';
   upgrades: UpgradeEntry[];
 };
 
@@ -103,7 +109,7 @@ function textSpan(text: string, color?: string): UpgradeSpan {
   return color ? { text, color } : { text };
 }
 
-function describeUpgrade(upgrade: GearUpgradeDefinition): UpgradeRow[] {
+function describeUpgrade(upgrade: GearUpgradeDefinition, gear: GearDefinition): UpgradeRow[] {
   const rows: UpgradeRow[] = [];
   if (upgrade.damage) rows.push({ label: 'Damage', spans: [textSpan(fmtSigned(upgrade.damage))] });
   if (upgrade.speedPercent) rows.push({ label: 'Walking speed', spans: [textSpan(fmtSigned(upgrade.speedPercent, '%'))] });
@@ -131,7 +137,8 @@ function describeUpgrade(upgrade: GearUpgradeDefinition): UpgradeRow[] {
   if (upgrade.zoneBoost) rows.push({ label: 'Zone stability', spans: [textSpan(fmtSigned(upgrade.zoneBoost, 's'))] });
   if (upgrade.priceChange) rows.push({ label: 'Price change', spans: [textSpan(`${fmtSigned(upgrade.priceChange)}${creditsSpec.glyph}`, creditsSpec.color)] });
   if (upgrade.reimbursed) rows.push({ label: 'Reimbursement', spans: [textSpan(fmtSigned(upgrade.reimbursed, '%'))] });
-  if (rows.length === 0) rows.push({ label: 'Effect', spans: [textSpan('No stat change')] });
+  if (upgrade.removePerk) rows.push({ label: 'Remove', spans: [textSpan(gear.perk || 'perk', '#ef5350')] });
+  if (rows.length === 0) return rows; // forgo upgrade — handled separately in template
   return rows;
 }
 
@@ -175,12 +182,14 @@ const gearEntries = computed<GearEntry[]>(() => {
       spriteStyle: atlasSpriteStyle(source, frame, { size: 40, mode: 'fit', allowUpscale: false }),
       hasUpgrades: upgrades.length > 0,
       allPurchased: upgrades.length > 0 && appliedUpgradeIds.length >= upgrades.length,
-      maskedUpgrades: firstThreshold > 0 && xp < firstThreshold,
+      maskLevel: xp === 0 ? 'full' : (firstThreshold > 0 && xp < firstThreshold ? 'partial' : 'none'),
       upgrades: upgrades.map((upgrade) => ({
         id: upgrade.id,
-        rows: describeUpgrade(upgrade),
+        title: upgrade.title,
+        rows: describeUpgrade(upgrade, gear),
         purchased: appliedUpgradeIds.includes(upgrade.id),
         enabled: hasPendingUpgrade && !appliedUpgradeIds.includes(upgrade.id),
+        skillPoints: upgrade.skillPoints,
       })),
     });
   });
@@ -192,6 +201,16 @@ const gearEntries = computed<GearEntry[]>(() => {
     return a.gear.name < b.gear.name ? -1 : 1;
   });
 });
+
+function hoverUpgrade(upgrade: UpgradeEntry, maskLevel: GearEntry['maskLevel']): void {
+  if (upgrade.purchased) return;
+  if (maskLevel !== 'none') return;
+  uiState.gearUpgradeHoveredSkillPoints = upgrade.skillPoints;
+}
+
+function unhoverUpgrade(): void {
+  uiState.gearUpgradeHoveredSkillPoints = 0;
+}
 
 function upgradeGear(gearId: string, upgradeId: string): void {
   const gs = getGameState();
@@ -317,11 +336,11 @@ function upgradeGear(gearId: string, upgradeId: string): void {
 
 .xp-upgrade-panel {
   position: relative;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto 1fr;
   flex: 0 0 auto;
-  flex-direction: column;
-  gap: 4px;
-  padding: 8px 0 8px 10px;
+  padding: 0;
   background: var(--raid-item-bg, rgba(255,255,255,0.08));
   border-radius: 4px;
   border: none;
@@ -337,7 +356,6 @@ function upgradeGear(gearId: string, upgradeId: string): void {
 }
 
 .xp-upgrade-panel.purchased {
-  padding-right: 16px;
   background: rgba(74, 222, 128, 0.25);
   cursor: default;
   pointer-events: none;
@@ -347,6 +365,14 @@ function upgradeGear(gearId: string, upgradeId: string): void {
   background: rgba(239, 83, 80, 0.18);
   cursor: default;
   pointer-events: none;
+}
+
+.xp-upgrade-panel.free .xp-upgrade-content {
+  padding-right: 14px;
+}
+
+.xp-upgrade-panel.purchased .xp-upgrade-content {
+  padding-right: 14px;
 }
 
 .xp-upgrade-panel.disabled {
@@ -363,12 +389,12 @@ function upgradeGear(gearId: string, upgradeId: string): void {
 
 .xp-upgrade-panel.masked {
   user-select: none;
+  cursor: default;
 }
 
-.xp-upgrade-panel.masked .xp-upgrade-row {
-  opacity: 0;
-  user-select: none;
-  pointer-events: none;
+.xp-upgrade-content-hidden,
+.xp-upgrade-cost-hidden {
+  visibility: hidden;
 }
 
 .xp-upgrade-mask {
@@ -381,13 +407,30 @@ function upgradeGear(gearId: string, upgradeId: string): void {
   color: var(--text-primary);
   letter-spacing: 0.02em;
   pointer-events: none;
+  z-index: 1;
 }
 
-.xp-upgrade-body {
+.xp-upgrade-mask.has-title {
+  top: 25px;
+}
+
+.xp-upgrade-title {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-primary);
+  text-align: center;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.xp-upgrade-content {
   display: flex;
-  gap: 12px;
-  align-items: stretch;
-  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
 }
 
 .xp-upgrade-stats {
@@ -398,18 +441,21 @@ function upgradeGear(gearId: string, upgradeId: string): void {
 }
 
 .xp-upgrade-cost {
-  flex: 0 0 auto;
+  grid-column: 2;
+  grid-row: 2;
   display: grid;
   place-items: center;
-  padding: 0 8px;
-  margin: -8px 0;
+  padding: 0 10px;
   background: rgba(239, 83, 80, 0.25);
   font-size: 14px;
   font-weight: 900;
   color: var(--text-primary);
   white-space: nowrap;
   letter-spacing: 0.04em;
-  border-radius: 0 4px 4px 0;
+}
+
+.xp-upgrade-cost.grants {
+  background: rgba(74, 222, 128, 0.25);
 }
 
 .xp-upgrade-cost.invisible {
@@ -419,7 +465,7 @@ function upgradeGear(gearId: string, upgradeId: string): void {
 .xp-upgrade-row {
   display: grid;
   grid-template-columns: max-content 1fr;
-  gap: 4px 8px;
+  gap: 4px 10px;
   align-items: baseline;
 }
 
@@ -450,6 +496,18 @@ function upgradeGear(gearId: string, upgradeId: string): void {
   width: 12px;
   height: 12px;
   display: inline-block;
+}
+
+.xp-upgrade-forgo {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  line-height: 1.3;
+  padding: 4px 8px;
 }
 
 </style>

@@ -116,6 +116,7 @@ function createDefaultUIState() {
 
     gearUpgradeModalOpen: false,
     gearUpgradeFocusCategory: '' as string,
+    gearUpgradeHoveredSkillPoints: 0,
     editGearXpModalOpen: false,
     editGearXpGearId: '' as string,
     hasDiscoveredGear: false,

@@ -1,7 +1,7 @@
 import { Raid, type GameState } from './GameState';
 import { uiState } from './UIState';
 import { DISCOVERY } from './DiscoveryLib';
-import { CheatAddResources, CheatLoadResearchState, CheatUnlockAllRaids, CheatDisableQuestPrereqs, CheatGrantDiscoveries, CheatAddRaidItems, CheatUnlockAllGear, CheatGrantRewards, CheatLearnSignatures, CheatCompleteSignatures, CheatAddItemBans, CheatMaxGearSlots, CheatAddResearchVision, CheatSelectFirstRaid } from './cheat/CheatCommands';
+import { CheatAddResources, CheatLoadResearchState, CheatUnlockAllRaids, CheatDisableQuestPrereqs, CheatGrantDiscoveries, CheatAddRaidItems, CheatUnlockAllGear, CheatGrantRewards, CheatLearnSignatures, CheatCompleteSignatures, CheatAddItemBans, CheatMaxGearSlots, CheatMaxGearXp, CheatAddResearchVision, CheatSelectFirstRaid } from './cheat/CheatCommands';
 import signatures from '../data/signatures';
 import { itemDefinitions } from '../data/items';
 import { recomputeActiveRaidEstimates, recomputeActiveRaidParams } from './Raid';
@@ -71,6 +71,7 @@ export function initDebug(gameState: GameState): void {
     new CheatSelectFirstRaid(),
     new CheatUnlockAllGear(),
     new CheatMaxGearSlots(),
+    new CheatMaxGearXp(),
     new CheatDisableQuestPrereqs({ disabled: true }),
     new CheatGrantRewards({ rewards: [{ kind: 'countable_gear', gearId: 'xeno_bait', amount: 10 }] }),
     new CheatGrantRewards({ rewards: [{ kind: 'countable_gear', gearId: 'zone_crystal', amount: 10 }] }),

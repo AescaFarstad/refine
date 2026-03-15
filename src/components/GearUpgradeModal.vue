@@ -4,7 +4,7 @@
       <div class="modal-left">
         <header class="modal-header">
           <div>
-            <h3 class="modal-title">{{ skillPointsSpec.name }}: {{ skillPoints }} ◌</h3>
+            <h3 class="modal-title">{{ skillPointsSpec.name }}: {{ skillPoints }} ◌<span v-if="hoveredSpDelta" :class="['sp-delta', hoveredSpDelta > 0 ? 'sp-gain' : 'sp-loss']">{{ hoveredSpDelta > 0 ? '+1' : '-1' }}</span></h3>
             <p class="modal-subtitle">Increase how many items from the category can be equipped at once</p>
           </div>
         </header>
@@ -66,6 +66,7 @@ const skillPoints = computed(() => {
 const skillPointsSpec = getResourceSpec('skillPoints');
 const skillPointsLabelLower = skillPointsSpec.name.toLowerCase();
 
+const hoveredSpDelta = computed(() => uiState.gearUpgradeHoveredSkillPoints);
 const focusCategory = computed(() => uiState.gearUpgradeFocusCategory);
 const showGearXpPane = computed(() => {
   uiState.discoveryCounter;
@@ -164,13 +165,13 @@ function close(): void {
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7), inset 0 1px 0 var(--panel-shine);
   padding: 16px;
   display: grid;
-  grid-template-columns: 420px;
+  grid-template-columns: 560px;
   gap: 16px;
   max-height: 90vh;
 }
 
 .modal.with-xp-pane {
-  grid-template-columns: 420px max-content;
+  grid-template-columns: 560px max-content;
 }
 
 .modal-left {
@@ -225,8 +226,12 @@ function close(): void {
   padding: 10px 12px;
   background: rgba(255, 255, 255, 0.03);
   border-radius: 4px;
-  transition: background 0.3s ease;
+  transition: background 0.15s ease;
   cursor: pointer;
+}
+
+.category-row:hover {
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .category-row.highlighted {
@@ -348,5 +353,20 @@ function close(): void {
 .cost-dim {
   font-weight: 700;
   opacity: 0.8;
+}
+
+.sp-delta {
+  font-size: inherit;
+  font-weight: 900;
+  margin-left: 6px;
+  letter-spacing: 0.02em;
+}
+
+.sp-gain {
+  color: #86efac;
+}
+
+.sp-loss {
+  color: #ef5350;
 }
 </style>

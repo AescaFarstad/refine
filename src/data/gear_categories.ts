@@ -2,7 +2,7 @@ import type { GearCategoryDefinition } from '../logic/GearCategoryLib';
 
 // All categories per new_concept.md; ids are lowercase
 const gearCategories: Record<string, Omit<GearCategoryDefinition, 'id'>> = {
-  melee_weapons:      { name: 'Melee Weapons',      unlockCost: [1, 2, 3] },
+  melee_weapons:      { name: 'Melee',      unlockCost: [1, 2, 3] },
   ranged_weapons:     { name: 'Firearms',           unlockCost: [1, 2, 3] },
   accessories:        { name: 'Accessories',        unlockCost: [1, 2, 3] },
   armor:              { name: 'Armor',              unlockCost: [1, 2, 3] },

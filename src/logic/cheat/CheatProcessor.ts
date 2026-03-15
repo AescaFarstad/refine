@@ -1,6 +1,6 @@
 import { type GameState, Raid } from '../GameState';
 import type { CheatInput } from './CheatCommands';
-import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources, CheatUnlockAllRaids, CheatLoadResearchState, CheatUnlockAllQuests, CheatDisableQuestPrereqs, CheatGrantDiscoveries, CheatGrantRewards, CheatLearnSignatures, CheatCompleteSignatures, CheatAddItemBans, CheatUnlockAllNexusUpgrades, CheatMaxGearSlots, CheatAddResearchVision, CheatSelectFirstRaid, CheatMutateRaid } from './CheatCommands';
+import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources, CheatUnlockAllRaids, CheatLoadResearchState, CheatUnlockAllQuests, CheatDisableQuestPrereqs, CheatGrantDiscoveries, CheatGrantRewards, CheatLearnSignatures, CheatCompleteSignatures, CheatAddItemBans, CheatUnlockAllNexusUpgrades, CheatMaxGearSlots, CheatMaxGearXp, CheatAddResearchVision, CheatSelectFirstRaid, CheatMutateRaid } from './CheatCommands';
 import type { EncounterDef } from '../RaidLib';
 import { applyResearchNodeEffect, axialToIndex, calculateVisibility } from '../Research';
 import { setEnableQuestPrereqs } from '../Const';
@@ -189,6 +189,15 @@ handlersByName.set('CheatMaxGearSlots', (gs) => {
   for (const [catId, def] of gs.lib.gearCategories) {
     if (def.hidden || def.unlimited) continue;
     gs.gearLevels[catId] = def.unlockCost.length + 1; // 1 base slot + all unlockable slots
+  }
+});
+
+handlersByName.set('CheatMaxGearXp', (gs) => {
+  for (const [gearId, gear] of gs.lib.gear) {
+    if (gear.xp.length === 0) continue;
+    let total = 0;
+    for (const cost of gear.xp) total += Math.max(0, cost | 0);
+    gs.gearXpById[gearId] = total;
   }
 });
 

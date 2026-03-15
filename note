@@ -96,7 +96,8 @@ march 6
   tesseracts, resource collection
 march 7, 8, 9
   transmutation, white, black, lava, frozen, lush essences, oracles menu, riddles
-
+march 15
+  opened oracle info, item upgrades
 npx tsc --noEmit
 npx vue-tsc --noEmit
 npm run build

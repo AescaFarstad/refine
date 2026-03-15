@@ -62,6 +62,13 @@ export function buildEffectiveGear(base: Readonly<GearDefinition>, upgrades: rea
     for (const key of GEAR_UPGRADE_STAT_KEYS) {
       effective[key] += upgrade[key];
     }
+    if (upgrade.removePerk) {
+      effective.perk = '';
+      effective.description = '';
+    }
+    if (upgrade.changeDescription) {
+      effective.description = upgrade.changeDescription;
+    }
   }
 
   return effective;
@@ -93,17 +100,28 @@ export function addGearXp(gs: GameState, gearIds: readonly string[], amount: num
   }
 }
 
+export function getUpgradeSkillPointsCost(gs: GameState, gearId: string, upgradeId: string): number {
+  const gear = gs.lib.gear.get(gearId)!;
+  const upgrade = gear.ups[upgradeId];
+  if (!upgrade) return -1;
+  return upgrade.skillPoints; // -1 = costs 1, 0 = free, 1 = grants 1
+}
+
 export function canApplyGearUpgrade(gs: GameState, gearId: string, upgradeId: string): boolean {
   const gear = gs.lib.gear.get(gearId)!;
   if (!gear.ups[upgradeId]) return false;
-  if (gs.skillPoints <= 0) return false;
+  const spCost = gear.ups[upgradeId].skillPoints;
+  // spCost < 0 means it costs skill points; check we have enough
+  if (spCost < 0 && gs.skillPoints < -spCost) return false;
   if (getPendingGearUpgradeCount(gs, gearId) <= 0) return false;
   return !getAppliedGearUpgradeIds(gs, gearId).includes(upgradeId);
 }
 
 export function applyGearUpgrade(gs: GameState, gearId: string, upgradeId: string): boolean {
   if (!canApplyGearUpgrade(gs, gearId, upgradeId)) return false;
-  gs.skillPoints -= 1;
+  const gear = gs.lib.gear.get(gearId)!;
+  const spCost = gear.ups[upgradeId].skillPoints;
+  gs.skillPoints -= -spCost; // spCost=-1 => skillPoints -= 1; spCost=1 => skillPoints += 1
   const next = getAppliedGearUpgradeIds(gs, gearId).slice();
   next.push(upgradeId);
   gs.gearUpgradeIdsById[gearId] = next;

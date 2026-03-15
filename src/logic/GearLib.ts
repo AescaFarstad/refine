@@ -104,6 +104,10 @@ export interface GearUpgradeStats {
 
 export interface GearUpgradeDefinition extends GearUpgradeStats {
   id: string;
+  title: string;
+  removePerk: boolean;
+  changeDescription: string;
+  skillPoints: number; // -1 = costs 1 SP (default), 0 = free, 1 = grants 1 SP
 }
 
 export const GEAR_UPGRADE_STAT_KEYS = [
@@ -174,7 +178,12 @@ export function createEmptyGearUpgradeStats(): GearUpgradeStats {
   };
 }
 
-export type RawGearUpgradeDefinition = Partial<GearUpgradeStats>;
+export type RawGearUpgradeDefinition = Partial<GearUpgradeStats> & {
+  title?: string;
+  removePerk?: boolean;
+  changeDescription?: string;
+  skillPoints?: number;
+};
 
 // Raw data type for data files: allows omitting numbers which will default to 0 at load time
 export type RawGearDefinition =
@@ -185,6 +194,10 @@ function parseGearUpgradeDefinition(id: string, raw: RawGearUpgradeDefinition | 
   const stats = createEmptyGearUpgradeStats();
   return {
     id,
+    title: raw?.title ?? '',
+    removePerk: raw?.removePerk ?? false,
+    changeDescription: raw?.changeDescription ?? '',
+    skillPoints: raw?.skillPoints ?? -1,
     speedPercent: raw?.speedPercent ?? stats.speedPercent,
     speedFlat: raw?.speedFlat ?? stats.speedFlat,
     regenPerKm: raw?.regenPerKm ?? stats.regenPerKm,

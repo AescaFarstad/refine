@@ -10,6 +10,7 @@ import SeededRandom from './core/SeededRandom';
 import { applyRaidMutation, questIsActive, type RaidMutation } from './RaidMutation';
 import type { Reward } from './Reward';
 import { Perks } from './Perks';
+import { buildEffectiveGearForId, cacheActiveRaidEffectiveGear, getCachedActiveRaidGear } from './GearUpgrades';
 
 export interface RaidRunResult {
   success: boolean;
@@ -92,7 +93,10 @@ function applyTimeBasedRegen<T extends RaidEventLogEntry>(
 
 function loadoutGear(gs: GameState, raidId: string): GearDefinition[] {
   const ids: string[] = gs.loadouts[raidId] ?? [];
-  return ids.map(id => gs.lib.gear.get(id)!);
+  if (raidId === gs.raid.id) {
+    return ids.map(id => getCachedActiveRaidGear(gs, id));
+  }
+  return ids.map(id => buildEffectiveGearForId(gs, id));
 }
 
 function hasGatherResourcesTactic(gear: GearDefinition[]): boolean {
@@ -977,6 +981,10 @@ export function recomputeActiveRaidEstimates(gs: GameState, simulations = 100): 
 
 export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
   gs.raid.id = raidId;
+  gs.raid.effectiveGearById = {};
+  gs.lib.gear.forEach((_gear, gearId) => {
+    cacheActiveRaidEffectiveGear(gs, gearId);
+  });
   gs.raid.baseSpeed = gs.speed;
   gs.raid.hp = gs.health;
   gs.raid.speedBonusPct = 0;
@@ -1016,7 +1024,7 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
   const applyGearById = (gid: string): void => {
     if (!gid || appliedGearIds.has(gid)) return;
     appliedGearIds.add(gid);
-    const g = gs.lib.gear.get(gid)!;
+    const g = getCachedActiveRaidGear(gs, gid);
     gs.raid.speedBonusPct += g.speedPercent;
     gs.raid.speedBonusFlat += g.speedFlat;
     gs.raid.regenPerKm += g.regenPerKm;

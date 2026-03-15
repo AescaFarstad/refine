@@ -21,6 +21,7 @@
   <SignaturePlacementDiscoveryModal />
   <RewardUIRouter />
   <ChooseItemToLootModal />
+  <EditGearXP />
   <IntroModal />
   <CheatOverlay />
 </template>
@@ -40,6 +41,7 @@ import RewardUIRouter from './components/rewardUI/RewardUIRouter.vue';
 import CheatOverlay from './components/CheatOverlay.vue';
 import IntroModal from './components/IntroModal.vue';
 import ChooseItemToLootModal from './components/ChooseItemToLootModal.vue';
+import EditGearXP from './components/EditGearXP.vue';
 import { uiState } from './logic/UIState';
 
 type TabKey = 'raid' | 'refine' | 'research' | 'maze';

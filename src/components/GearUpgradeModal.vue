@@ -1,42 +1,49 @@
 <template>
   <div v-if="visible" class="modal-backdrop" @click.self="close">
-    <div class="modal">
-      <header class="modal-header">
-        <div>
-          <h3 class="modal-title">{{ skillPointsSpec.name }}: {{ skillPoints }}</h3>
-          <p class="modal-subtitle">Increase how many items from the category can be equipped at once</p>
-        </div>
-      </header>
+    <div :class="['modal', { 'with-xp-pane': showGearXpPane }]">
+      <div class="modal-left">
+        <header class="modal-header">
+          <div>
+            <h3 class="modal-title">{{ skillPointsSpec.name }}: {{ skillPoints }} ◌</h3>
+            <p class="modal-subtitle">Increase how many items from the category can be equipped at once</p>
+          </div>
+        </header>
 
-      <section class="modal-body">
-        <div class="category-list">
-          <div
-            v-for="cat in visibleCategories"
-            :key="cat.id"
-            :class="['category-row', { 'highlighted': cat.id === focusCategory, 'flash': cat.id === focusCategory }]"
-          >
-            <div class="category-name">{{ cat.name }}</div>
-            <div class="category-slots">{{ slotCircles(cat.id) }}</div>
-            <div class="category-action">
-              <button
-                v-if="canUpgrade(cat.id)"
-                class="btn upgrade"
-                @click="upgrade(cat.id)"
-              >
-                Add slot for <span class="cost-highlight">{{ getUpgradeCost(cat.id) }}</span> {{ skillPointsLabelLower }}
-              </button>
-              <div v-else class="requirement-label">
-                <template v-if="getUpgradeCost(cat.id) >= 999">Maximum reached</template>
-                <template v-else>Requires <span class="cost-dim">{{ getUpgradeCost(cat.id) }}</span> {{ skillPointsLabelLower }}</template>
+        <section class="modal-body">
+          <div class="category-list">
+            <div
+              v-for="cat in visibleCategories"
+              :key="cat.id"
+              :class="['category-row', { 'highlighted': cat.id === focusCategory, 'flash': cat.id === focusCategory }]"
+              @click="focus(cat.id)"
+            >
+              <div class="category-name">{{ cat.name }}</div>
+              <div class="category-slots">{{ slotCircles(cat.id) }}</div>
+              <div class="category-action">
+                <button
+                  v-if="canUpgrade(cat.id)"
+                  class="btn upgrade"
+                  @click.stop="upgrade(cat.id)"
+                >
+                  Add slot for <span class="cost-highlight">{{ getUpgradeCost(cat.id) }}</span> {{ skillPointsLabelLower }}
+                </button>
+                <div v-else class="requirement-label">
+                  <template v-if="getUpgradeCost(cat.id) >= 999">Maximum reached</template>
+                  <template v-else>Requires <span class="cost-dim">{{ getUpgradeCost(cat.id) }}</span> {{ skillPointsLabelLower }}</template>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <footer class="modal-actions">
-        <button class="btn primary" @click="close">Close</button>
-      </footer>
+        <footer class="modal-actions">
+          <button class="btn primary" @click="close">Close</button>
+        </footer>
+      </div>
+
+      <div v-if="showGearXpPane" class="modal-right">
+        <GearXPUpgrade />
+      </div>
     </div>
   </div>
 </template>
@@ -47,6 +54,8 @@ import { uiState, getGameState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
 import { CmdUpgradeGearCategory } from '../logic/input/InputCommands';
 import { getResourceSpec } from '../logic/Resources';
+import { DISCOVERY } from '../logic/DiscoveryLib';
+import GearXPUpgrade from './GearXPUpgrade.vue';
 
 const visible = computed(() => uiState.gearUpgradeModalOpen);
 
@@ -58,6 +67,10 @@ const skillPointsSpec = getResourceSpec('skillPoints');
 const skillPointsLabelLower = skillPointsSpec.name.toLowerCase();
 
 const focusCategory = computed(() => uiState.gearUpgradeFocusCategory);
+const showGearXpPane = computed(() => {
+  uiState.discoveryCounter;
+  return getGameState().discoveries[DISCOVERY.GEAR_XP] === true;
+});
 
 interface CategoryInfo {
   id: string;
@@ -123,6 +136,10 @@ function upgrade(catId: string): void {
   globalInputQueue.push(new CmdUpgradeGearCategory({ categoryId: catId }));
 }
 
+function focus(catId: string): void {
+  uiState.gearUpgradeFocusCategory = catId;
+}
+
 function close(): void {
   uiState.gearUpgradeModalOpen = false;
 }
@@ -139,7 +156,7 @@ function close(): void {
 }
 
 .modal {
-  width: 600px;
+  width: max-content;
   max-width: 96vw;
   background: linear-gradient(180deg, rgba(20, 28, 40, 0.98), rgba(10, 15, 26, 0.94));
   border: 1px solid var(--panel-border);
@@ -147,9 +164,24 @@ function close(): void {
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7), inset 0 1px 0 var(--panel-shine);
   padding: 16px;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-columns: 420px;
   gap: 16px;
   max-height: 90vh;
+}
+
+.modal.with-xp-pane {
+  grid-template-columns: 420px max-content;
+}
+
+.modal-left {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 16px;
+}
+
+.modal-right {
+  padding-top: 24px;
+  overflow: visible;
 }
 
 .modal-header {
@@ -175,12 +207,14 @@ function close(): void {
 }
 
 .modal-body {
-  overflow-y: auto;
+  overflow: auto;
 }
+
 
 .category-list {
   display: grid;
   gap: 8px;
+  min-width: 0;
 }
 
 .category-row {
@@ -192,6 +226,7 @@ function close(): void {
   background: rgba(255, 255, 255, 0.03);
   border-radius: 4px;
   transition: background 0.3s ease;
+  cursor: pointer;
 }
 
 .category-row.highlighted {
@@ -236,6 +271,16 @@ function close(): void {
   justify-content: flex-end;
   min-height: 32px;
   align-items: center;
+}
+
+@media (max-width: 900px) {
+  .modal {
+    width: 96vw;
+  }
+
+  .modal-columns {
+    grid-template-columns: 1fr;
+  }
 }
 
 .requirement-label {

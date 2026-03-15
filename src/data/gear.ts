@@ -11,6 +11,20 @@ const gear: Record<string, RawGearDefinition> = {
     price: 20,
     weight: 1,
     image: 'knuckles',
+    xp: [30, 20, 30],
+    ups:{
+      up1:{
+        price: 30,
+        chanceToHit: 10,
+      },
+      up2:{
+        chanceToHit: 5,
+      },
+      up3:{
+        price: 10,
+        weight: -1,
+      }
+    }
   },
   machete: {
     name: 'Kukri',
@@ -23,6 +37,20 @@ const gear: Record<string, RawGearDefinition> = {
     image: 'kukri',
     perk: 'Hack and Slash',
     description: 'Scavenging takes 2 minutes less',
+    xp: [24, 20, 30],
+    ups:{
+      up1:{
+        price: 30,
+        chanceToHit: 10,
+      },
+      up2:{
+        chanceToHit: 5,
+      },
+      up3:{
+        price: 10,
+        weight: -1,
+      }
+    },
   },
   fire_axe: {
     name: 'Fire Axe',

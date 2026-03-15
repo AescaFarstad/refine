@@ -25,6 +25,10 @@ export function discover(gs: GameState, id: DiscoveryId): boolean {
     discover(gs, DISCOVERY.ESSENCE_RESEARCH_KNOWLEDGE);
   }
 
+  if (id === DISCOVERY.GEAR_XP) {
+    delete gs.discoveries[DISCOVERY.UI_GEAR_UPGRADE_MODAL_OPENED];
+  }
+
   if (id === DISCOVERY.MAZE_NAVIGATION) {
     delete gs.discoveries[DISCOVERY.TAB_MAZE_VISITED];
     gs.discoveryCounter = 0;

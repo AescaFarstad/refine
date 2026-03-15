@@ -58,6 +58,7 @@ function saveReplacer(key: string, value: unknown): unknown {
   if (key === "raidSimulation") return undefined;
   if (key === "acknowledgedRaidOutcome") return undefined;
   if (key === "discoveryCounter") return undefined;
+  if (key === "effectiveGearById") return undefined;
   // Maze transient + derived (not persisted)
   if (key === "maze") return undefined;
   if (key === "mazeVisibility") return undefined;

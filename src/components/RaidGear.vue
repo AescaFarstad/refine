@@ -13,13 +13,29 @@
           <div class="gear-cat">
             <div class="name">{{ displayCategoryName(cat) }}</div>
             <div class="cat-right">
-              <button
-                v-if="canShowUpgradeButton(cat)"
-                :class="['upgrade-btn', { 'pulse': shouldPulseUpgradeButton }]"
-                @click="openUpgradeModal(cat)"
-                title="Upgrade gear categories"
-              >+</button>
-              <div class="slots" :aria-label="usedCount(cat) + '/' + allowedSlots(cat)">{{ slotCircles(cat) }}</div>
+              <template v-if="canRenderUpgradeButton(cat) && !isCategoryMaxed(cat)">
+                <button
+                  :class="['upgrade-btn', 'upgrade-btn-fixed', {
+                    'pulse': canUpgradeNow(cat) && shouldPulseUpgradeButton,
+                    'hover-only': !canUpgradeNow(cat),
+                  }]"
+                  @click="openUpgradeModal(cat)"
+                  title="Upgrade gear categories"
+                >+</button>
+                <div class="slots" :aria-label="usedCount(cat) + '/' + allowedSlots(cat)">{{ slotCircles(cat) }}</div>
+              </template>
+              <div
+                v-else-if="canRenderUpgradeButton(cat)"
+                class="slot-upgrade-wrap"
+              >
+                <button
+                  class="upgrade-btn upgrade-btn-overlay hover-only"
+                  @click="openUpgradeModal(cat)"
+                  title="Upgrade gear categories"
+                >+</button>
+                <div class="slots" :aria-label="usedCount(cat) + '/' + allowedSlots(cat)">{{ slotCircles(cat) }}</div>
+              </div>
+              <div v-else class="slots" :aria-label="usedCount(cat) + '/' + allowedSlots(cat)">{{ slotCircles(cat) }}</div>
             </div>
           </div>
           <div class="gear-items">
@@ -52,6 +68,7 @@ import { CmdToggleGear, CmdOpenGearUpgradeModal, CmdDiscover } from '../logic/in
 import { DISCOVERY } from '../logic/DiscoveryLib';
 import type { GearDefinition } from '../logic/GearLib';
 import type { RaidDefinition } from '../logic/RaidLib';
+import { getCachedActiveRaidGear } from '../logic/GearUpgrades';
 
 const activeRaidId = computed(() => uiState.activeRaidId || (uiState.raidOrder[0] || ''));
 const selectedRaid = computed<RaidDefinition | null>(() => uiState.raids.find(r => r.id === activeRaidId.value) || null);
@@ -123,7 +140,8 @@ function getPrice(g: GearDefinition): number {
   const gs = getGameState();
   const raidEntry = gs?.unlockedRaids.find(r => r.id === activeRaidId.value);
   const adjustment = raidEntry?.gearPriceAdjustments?.[g.id] ?? 0;
-  return Math.max(0, (g.price || 0) + adjustment);
+  const effectiveGear = gs ? getCachedActiveRaidGear(gs, g.id) : g;
+  return Math.max(0, (effectiveGear.price || 0) + adjustment);
 }
 function canAffordItem(g: GearDefinition): boolean { return uiState.credits >= getPrice(g); }
 
@@ -171,25 +189,36 @@ function toggleItemWithLimit(cat: string, id: string): void {
   toggleItem(id);
 }
 
-function canShowUpgradeButton(cat: string): boolean {
-  // Use reactive uiState.skillPoints to trigger re-render when skill points change
-  if ((uiState.skillPoints || 0) <= 0) return false;
-
+function canRenderUpgradeButton(cat: string): boolean {
   const gs = getGameState();
   if (!gs) return false;
 
   const def = gs.lib.gearCategories.get(cat);
   if (!def) return false;
 
-  if ((def as any)?.hidden || (def as any)?.unlimited) return false;
+  return !(def as any)?.hidden && !(def as any)?.unlimited;
+}
+
+function canUpgradeNow(cat: string): boolean {
+  // Use reactive uiState.skillPoints to trigger re-render when skill points change
+  const _skillPoints = uiState.skillPoints || 0;
+  if (_skillPoints <= 0) return false;
+
+  return !isCategoryMaxed(cat);
+}
+
+function isCategoryMaxed(cat: string): boolean {
+  const gs = getGameState();
+  if (!gs) return false;
+
+  const def = gs.lib.gearCategories.get(cat);
+  if (!def) return false;
 
   // Check if category has reached maximum level
   const costs = (def as any).unlockCost || [];
   const currentSlots = Math.max(0, gs.gearLevels?.[cat] ?? 0);
   const nextIndex = currentSlots - 1; // costs[0] is for 2nd slot (from 1 to 2)
-  if (nextIndex < 0 || nextIndex >= costs.length) return false;
-
-  return true;
+  return nextIndex < 0 || nextIndex >= costs.length;
 }
 
 const shouldPulseUpgradeButton = computed(() => {
@@ -252,9 +281,27 @@ function openUpgradeModal(category: string): void {
 .cat-right { display: flex; align-items: center; gap: 6px; }
 .gear-cat .slots { font-weight: 900; color: var(--text-primary); white-space: nowrap; }
 .gear-cat .slots { font-variant-numeric: tabular-nums; }
-.upgrade-btn { padding: 2px 8px; font-size: 14px; font-weight: 900; background: rgba(34, 197, 94, 0.18); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 3px; cursor: pointer; transition: all 100ms ease; }
-.upgrade-btn:hover { background: rgba(34, 197, 94, 0.28); transform: scale(1.05); }
+.slot-upgrade-wrap { position: relative; display: inline-grid; align-items: center; justify-items: end; }
+.slot-upgrade-wrap .slots { transition: opacity 100ms ease; }
+.upgrade-btn { padding: 0 8px; font-size: 14px; font-weight: 900; background: rgba(34, 197, 94, 0.18); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 3px; cursor: pointer; transition: all 100ms ease; }
+.upgrade-btn-fixed { width: 28px; height: 22px; opacity: 1; }
+.upgrade-btn-overlay {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: 28px;
+  height: 22px;
+  transform: translateY(-50%);
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+}
+.upgrade-btn:hover { background: rgba(34, 197, 94, 0.28); }
 .upgrade-btn.pulse { animation: pulse-glow 1.5s ease-in-out infinite; }
+.upgrade-btn.hover-only { opacity: 0; pointer-events: none; }
+.gear-col:hover .upgrade-btn.hover-only { opacity: 1; pointer-events: auto; }
+.gear-col:hover .slot-upgrade-wrap .upgrade-btn { opacity: 1; pointer-events: auto; }
+.gear-col:hover .slot-upgrade-wrap .slots { opacity: 0; }
 @keyframes pulse-glow {
   0%, 100% { box-shadow: 0 0 4px rgba(34, 197, 94, 0.4); }
   50% { box-shadow: 0 0 12px rgba(34, 197, 94, 0.8), 0 0 20px rgba(34, 197, 94, 0.4); }

@@ -1,9 +1,9 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdReviewQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro, CmdPickupShard, CmdSpeedUpRefining, CmdClearShardPickupGrace, CmdMazeMoveTo, CmdMazePrepareUpgradeOffer, CmdMazeSelectNexusUpgrade, CmdMazePlaceNexusItem, CmdMazeActivateNexusSpecialUpgrade, CmdMazeResetHighMovement, CmdMazeValidateOracleSeal, CmdTransmutate } from './InputCommands';
+import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdReviewQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdUpgradeGearItem, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro, CmdPickupShard, CmdSpeedUpRefining, CmdClearShardPickupGrace, CmdMazeMoveTo, CmdMazePrepareUpgradeOffer, CmdMazeSelectNexusUpgrade, CmdMazePlaceNexusItem, CmdMazeActivateNexusSpecialUpgrade, CmdMazeResetHighMovement, CmdMazeValidateOracleSeal, CmdTransmutate } from './InputCommands';
 import { SHARD_PICKUP_DELAY_SEC } from '../Model';
-import { discover, discoverRefineTab, ensureSignatureDiscoveryFromWafer } from '../Discover';
+import { discover, discoverRefineTab, ensureSignatureDiscoveryFromWafer, hasDiscovered } from '../Discover';
 import { DISCOVERY } from '../DiscoveryLib';
 import { computeEffectiveEssences } from '../RefinePreview';
 import { runRaid, recomputeActiveRaidParams, toggleGearForRaid, recomputeActiveRaidEstimates, getEffectiveRaidDefinition, accumulateRaidResources, getLoadoutPassiveCreditsPerHour, getLoadoutResourceStorageBonus } from '../Raid';
@@ -19,6 +19,7 @@ import { prepareMazeNexusUpgradeOffer, selectMazeNexusUpgrade, onMazeNexusUpgrad
 import { transmutate } from '../Transmutation';
 import { uiState } from '../UIState';
 import { submitOracleSeal } from '../Oracle';
+import { addGearXp, applyGearUpgrade, getPendingGearUpgradeCount } from '../GearUpgrades';
 
 
 type Handler = (gs: GameState, cmd: CmdInput) => void;
@@ -68,6 +69,7 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
 
   // Consume countable gear items
   const loadout = gs.loadouts[c.id] || [];
+  const successfulRaidGearIds = loadout.slice();
   const gearToRemove: string[] = [];
   for (const gearId of [...loadout]) {
     const gearDef = gs.lib.gear.get(gearId);
@@ -138,7 +140,24 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
     }
   }
 
+  let newlyUpgradableGearIds: string[] = [];
   if (result.success) {
+    if (hasDiscovered(gs, DISCOVERY.GEAR_XP)) {
+      const pendingUpgradeCountsBefore: Record<string, number> = {};
+      for (const gearId of successfulRaidGearIds) {
+        if (pendingUpgradeCountsBefore[gearId] !== undefined) continue;
+        pendingUpgradeCountsBefore[gearId] = getPendingGearUpgradeCount(gs, gearId);
+      }
+      addGearXp(gs, successfulRaidGearIds, 1);
+      const seenNewlyUpgradable = new Set<string>();
+      for (const gearId of successfulRaidGearIds) {
+        if (seenNewlyUpgradable.has(gearId)) continue;
+        if (getPendingGearUpgradeCount(gs, gearId) <= pendingUpgradeCountsBefore[gearId]) continue;
+        seenNewlyUpgradable.add(gearId);
+        newlyUpgradableGearIds.push(gearId);
+      }
+    }
+
     let hasLootedItems = false;
     for (const [id, qty] of Object.entries(result.bagItemCounts)) {
       const q = qty | 0;
@@ -190,6 +209,7 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
     raidItemsAdded: result.raidItemsAdded,
     lootChanceDeltaApplied: result.lootChanceDeltaApplied,
     lootingRarityBuffDeltaApplied: result.lootingRarityBuffDeltaApplied,
+    newlyUpgradableGearIds: result.success ? newlyUpgradableGearIds : [],
     newQuestsAvailable,
     zoneChange,
     finalHp: gs.raid.hp,
@@ -417,6 +437,17 @@ handlersByName.set('CmdUpgradeGearCategory', (gs, cmd) => {
 
   gs.skillPoints = currentSP - cost;
   gs.gearLevels[catId] = currentSlots + 1;
+  saveAutosave(gs);
+});
+
+handlersByName.set('CmdUpgradeGearItem', (gs, cmd) => {
+  const c = cmd as CmdUpgradeGearItem;
+  const upgraded = applyGearUpgrade(gs, c.gearId, c.upgradeId);
+  if (!upgraded) return;
+  if (gs.raid.id) {
+    recomputeActiveRaidParams(gs, gs.raid.id);
+    recomputeActiveRaidEstimates(gs, 100);
+  }
   saveAutosave(gs);
 });
 

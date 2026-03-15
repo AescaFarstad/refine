@@ -16,6 +16,7 @@ import type { RaidMutation, MutationDescription } from './RaidMutation';
 import type { Reward, UIModalEntry } from './Reward';
 import { randomizeOracles } from './RandomizeOracles';
 import type { OracleSealAttempt } from "./Oracle";
+import type { GearDefinition } from "./GearLib";
 
 /*
   When adding/editing properties here, make sure save-loading is compatible.
@@ -141,6 +142,8 @@ export class GameState {
   public reviewedQuestIds: string[] = [];
   public gearLevels: Record<string, number> = {};
   public skillPoints: number = 0;
+  public gearXpById: Record<string, number> = {};
+  public gearUpgradeIdsById: Record<string, string[]> = {};
   public unlockedGear: string[] = [
     'brass_knuckles', 'bandage', 'pouches', 'no_scavenging',
   ];
@@ -204,6 +207,7 @@ export class ActiveRaid {
   public reimbursedPct: number = 0;     // % of gear price reimbursed on combat death
   public rarityBuff: number = 0;        // bonus to loot rarity from gear
   public preventsSuccessZoneDeterioration: boolean = false;
+  public effectiveGearById: Record<string, GearDefinition> = {};
 }
 
 export class Raid {
@@ -248,6 +252,7 @@ export class RaidOutcome {
   public raidItemsAdded: string[] = [];
   public lootChanceDeltaApplied: number = 0;
   public lootingRarityBuffDeltaApplied: number = 0;
+  public newlyUpgradableGearIds: string[] = [];
   public newQuestsAvailable: string[] = [];
   public zoneChange: MutationDescription | null = null;
   public finalHp: number = 0;

@@ -2,7 +2,7 @@
   <div>
     <div v-if="blocked" class="blocked-warning">No spare slots in this category</div>
     <div v-if="blocked" class="blocked-warning">(Use ◌ skill points to unlock more slots)</div>
-    <div class="hint-row" v-for="(row, i) in hintRows" :key="i">
+    <div :class="['hint-row', row.className]" v-for="(row, i) in hintRows" :key="i">
       <span v-if="row.label" class="hint-label">{{ row.label }}</span>
       <span class="hint-value" :style="!row.label ? { gridColumn: '1 / -1' } : undefined">
         <span v-for="(s, j) in row.spans" :key="j" :class="{ dim: s.dim }" :style="s.color ? { color: s.color } : undefined">{{ s.text }}</span>
@@ -17,6 +17,8 @@ import type { GearDefinition } from '../logic/GearLib';
 import { formatDurationHM } from '../logic/StringUtils';
 import { getResourceSpec } from '../logic/Resources';
 import { getGameState, uiState } from '../logic/UIState';
+import { DISCOVERY } from '../logic/DiscoveryLib';
+import { getAppliedGearUpgradeIds, getCachedActiveRaidGear, getGearUpgradeThresholds } from '../logic/GearUpgrades';
 
 const creditsSpec = getResourceSpec('credits');
 
@@ -37,15 +39,25 @@ function fmtSigned(n: number, suffix = ''): string {
 }
 
 type HintSpan = { text: string; color?: string; dim?: boolean };
-type HintRow = { label: string; spans: HintSpan[] };
+type HintRow = { label: string; spans: HintSpan[]; className?: string };
 
 function bright(text: string): HintSpan { return { text }; }
 function dim(text: string): HintSpan { return { text, dim: true }; }
 function colored(text: string, color: string): HintSpan { return { text, color }; }
 
+const displayGear = computed((): GearDefinition => {
+  if (props.noRaidContext) return props.gear;
+  uiState.raidKey;
+  const gs = getGameState();
+  if (!gs || !gs.raid.id) return props.gear;
+  return getCachedActiveRaidGear(gs, props.gear.id);
+});
+
 const hintRows = computed((): HintRow[] => {
-  const g = props.gear;
+  const g = displayGear.value;
+  const rawGear = props.gear;
   const rows: HintRow[] = [];
+  const xpRows: HintRow[] = [];
 
   const skipRaid = props.noRaidContext;
 
@@ -145,6 +157,22 @@ const hintRows = computed((): HintRow[] => {
 
   // Description (skip for gather_resources, already shown above)
   if (g.description && g.id !== 'gather_resources') rows.push({ label: '', spans: [bright(g.description)] });
+
+  if (!skipRaid) {
+    uiState.gearXpById;
+    uiState.gearUpgradeIdsById;
+    uiState.skillPoints;
+    uiState.discoveryCounter;
+    const gs = getGameState();
+    if (gs && rawGear.xp.length > 0 && (gs.discoveries[DISCOVERY.GEAR_XP] === true || (gs.gearXpById[rawGear.id] ?? 0) > 0 || (gs.gearUpgradeIdsById[rawGear.id]?.length ?? 0) > 0)) {
+      const xp = gs.gearXpById[rawGear.id] ?? 0;
+      const thresholds = getGearUpgradeThresholds(rawGear);
+      const nextThreshold = thresholds[getAppliedGearUpgradeIds(gs, rawGear.id).length] ?? thresholds[thresholds.length - 1] ?? 0;
+      xpRows.push({ label: 'XP', spans: [bright(`${xp}`), dim(nextThreshold > 0 ? ` / ${nextThreshold}` : '')], className: 'xp-row' });
+    }
+  }
+
+  rows.push(...xpRows);
   return rows;
 });
 </script>
@@ -166,6 +194,10 @@ const hintRows = computed((): HintRow[] => {
   gap: 4px 8px;
   align-items: baseline;
   margin: 2px 0;
+}
+
+.hint-row.xp-row {
+  margin-top: 10px;
 }
 
 .hint-label {

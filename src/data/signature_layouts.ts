@@ -64,7 +64,6 @@ const signatureLayouts: Record<string, RawSignatureLayoutDefinition> = {
         { color: 'color_1', x: -3, y: 0 },
         { color: 'color_1', x: -2, y: 0 },
         { color: 'color_1', x: -1, y: 0 },
-        { color: 'color_1', x: 0, y: 0 },
         { color: 'color_1', x: 1, y: 0 },
         { color: 'color_1', x: -1, y: 1 },
         { color: 'color_1', x: 0, y: 1 },

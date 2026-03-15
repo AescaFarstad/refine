@@ -64,10 +64,159 @@ export interface GearDefinition {
 
   // Optional custom description
   description: string;
+
+  xp: readonly number[];
+  ups: Readonly<Record<string, GearUpgradeDefinition>>;
 }
 
+export interface GearUpgradeStats {
+  speedPercent: number;
+  speedFlat: number;
+  regenPerKm: number;
+  regenAfterCombat: number;
+  regenPer10Minutes: number;
+  weight: number;
+  maxWeight: number;
+  hp: number;
+  volume: number;
+  lootChance: number;
+  damage: number;
+  price: number;
+  chanceToHit: number;
+  chanceToBlock: number;
+  armor: number;
+  attackSkipCount: number;
+  stunChance: number;
+  reflectOnHitPct: number;
+  reflectOnBlockPct: number;
+  biopsyChance: number;
+  reimbursed: number;
+  rarityBuff: number;
+  prepTimeMin: number;
+  walkMultiplier: number;
+  walkDelta: number;
+  hpMult: number;
+  raidPassiveCreditsPerHour: number;
+  raidResourceStorageBonus: number;
+  zoneBoost: number;
+  priceChange: number;
+}
+
+export interface GearUpgradeDefinition extends GearUpgradeStats {
+  id: string;
+}
+
+export const GEAR_UPGRADE_STAT_KEYS = [
+  'speedPercent',
+  'speedFlat',
+  'regenPerKm',
+  'regenAfterCombat',
+  'regenPer10Minutes',
+  'weight',
+  'maxWeight',
+  'hp',
+  'volume',
+  'lootChance',
+  'damage',
+  'price',
+  'chanceToHit',
+  'chanceToBlock',
+  'armor',
+  'attackSkipCount',
+  'stunChance',
+  'reflectOnHitPct',
+  'reflectOnBlockPct',
+  'biopsyChance',
+  'reimbursed',
+  'rarityBuff',
+  'prepTimeMin',
+  'walkMultiplier',
+  'walkDelta',
+  'hpMult',
+  'raidPassiveCreditsPerHour',
+  'raidResourceStorageBonus',
+  'zoneBoost',
+  'priceChange',
+] as const satisfies readonly (keyof GearUpgradeStats)[];
+
+export function createEmptyGearUpgradeStats(): GearUpgradeStats {
+  return {
+    speedPercent: 0,
+    speedFlat: 0,
+    regenPerKm: 0,
+    regenAfterCombat: 0,
+    regenPer10Minutes: 0,
+    weight: 0,
+    maxWeight: 0,
+    hp: 0,
+    volume: 0,
+    lootChance: 0,
+    damage: 0,
+    price: 0,
+    chanceToHit: 0,
+    chanceToBlock: 0,
+    armor: 0,
+    attackSkipCount: 0,
+    stunChance: 0,
+    reflectOnHitPct: 0,
+    reflectOnBlockPct: 0,
+    biopsyChance: 0,
+    reimbursed: 0,
+    rarityBuff: 0,
+    prepTimeMin: 0,
+    walkMultiplier: 0,
+    walkDelta: 0,
+    hpMult: 0,
+    raidPassiveCreditsPerHour: 0,
+    raidResourceStorageBonus: 0,
+    zoneBoost: 0,
+    priceChange: 0,
+  };
+}
+
+export type RawGearUpgradeDefinition = Partial<GearUpgradeStats>;
+
 // Raw data type for data files: allows omitting numbers which will default to 0 at load time
-export type RawGearDefinition = Omit<Partial<GearDefinition>, 'id'> & { name: string; category: string };
+export type RawGearDefinition =
+  Omit<Partial<GearDefinition>, 'id' | 'xp' | 'ups'> &
+  { name: string; category: string; xp?: number[]; ups?: Record<string, RawGearUpgradeDefinition> };
+
+function parseGearUpgradeDefinition(id: string, raw: RawGearUpgradeDefinition | undefined): GearUpgradeDefinition {
+  const stats = createEmptyGearUpgradeStats();
+  return {
+    id,
+    speedPercent: raw?.speedPercent ?? stats.speedPercent,
+    speedFlat: raw?.speedFlat ?? stats.speedFlat,
+    regenPerKm: raw?.regenPerKm ?? stats.regenPerKm,
+    regenAfterCombat: raw?.regenAfterCombat ?? stats.regenAfterCombat,
+    regenPer10Minutes: raw?.regenPer10Minutes ?? stats.regenPer10Minutes,
+    weight: raw?.weight ?? stats.weight,
+    maxWeight: raw?.maxWeight ?? stats.maxWeight,
+    hp: raw?.hp ?? stats.hp,
+    volume: raw?.volume ?? stats.volume,
+    lootChance: raw?.lootChance ?? stats.lootChance,
+    damage: raw?.damage ?? stats.damage,
+    price: raw?.price ?? stats.price,
+    chanceToHit: raw?.chanceToHit ?? stats.chanceToHit,
+    chanceToBlock: raw?.chanceToBlock ?? stats.chanceToBlock,
+    armor: raw?.armor ?? stats.armor,
+    attackSkipCount: raw?.attackSkipCount ?? stats.attackSkipCount,
+    stunChance: raw?.stunChance ?? stats.stunChance,
+    reflectOnHitPct: raw?.reflectOnHitPct ?? stats.reflectOnHitPct,
+    reflectOnBlockPct: raw?.reflectOnBlockPct ?? stats.reflectOnBlockPct,
+    biopsyChance: raw?.biopsyChance ?? stats.biopsyChance,
+    reimbursed: raw?.reimbursed ?? stats.reimbursed,
+    rarityBuff: raw?.rarityBuff ?? stats.rarityBuff,
+    prepTimeMin: raw?.prepTimeMin ?? stats.prepTimeMin,
+    walkMultiplier: raw?.walkMultiplier ?? stats.walkMultiplier,
+    walkDelta: raw?.walkDelta ?? stats.walkDelta,
+    hpMult: raw?.hpMult ?? stats.hpMult,
+    raidPassiveCreditsPerHour: raw?.raidPassiveCreditsPerHour ?? stats.raidPassiveCreditsPerHour,
+    raidResourceStorageBonus: raw?.raidResourceStorageBonus ?? stats.raidResourceStorageBonus,
+    zoneBoost: raw?.zoneBoost ?? stats.zoneBoost,
+    priceChange: raw?.priceChange ?? stats.priceChange,
+  };
+}
 
 // Normalize raw gear data into fully-typed GearDefinition map with defaults
 export function parseGearDefinitions(raw: Record<string, RawGearDefinition>): Map<string, GearDefinition> {
@@ -119,6 +268,10 @@ export function parseGearDefinitions(raw: Record<string, RawGearDefinition>): Ma
       preventsSuccessZoneDeterioration: d.preventsSuccessZoneDeterioration ?? false,
       image: d.image ?? '',
       description: d.description ?? '',
+      xp: Array.isArray(d.xp) ? d.xp.map(value => Math.max(0, Math.trunc(value))) : [],
+      ups: Object.fromEntries(
+        Object.entries(d.ups ?? {}).map(([upgradeId, upgrade]) => [upgradeId, parseGearUpgradeDefinition(upgradeId, upgrade)])
+      ),
     };
     map.set(key, def);
   }

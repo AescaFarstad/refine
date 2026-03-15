@@ -5,7 +5,8 @@
     :class="{ selected, unaffordable, blocked, 'hint-right': useRight, 'has-image': !!gearFrame }"
     ref="rootEl"
     @mouseenter="updateHintSide"
-    @click="$emit('toggle')"
+    @click="handleClick"
+    @dblclick.prevent.stop="handleDoubleClick"
   >
     <!-- Gear image sprite -->
     <div class="g-sprite-wrap">
@@ -19,9 +20,19 @@
       <GearStatsHint :gear="gear" :blocked="blocked" />
     </div>
 
+    <div v-if="xpRows.length > 0" class="g-xp" aria-hidden="true">
+      <div v-for="(row, rowIndex) in xpRows" :key="rowIndex" class="g-xp-row">
+        <span
+          v-for="(pip, pipIndex) in row"
+          :key="pipIndex"
+          :class="['g-xp-pip', { completed: pip === '⋆' }]"
+        >{{ pip }}</span>
+      </div>
+    </div>
+
     <!-- Bottom-right weight label (no special background); hidden when zero -->
-    <div class="g-weight" v-if="gear.weight > 0">
-      <span class="g-weight-num">{{ gear.weight }}</span>
+    <div class="g-weight" v-if="effectiveWeight > 0">
+      <span class="g-weight-num">{{ effectiveWeight }}</span>
       <span class="g-weight-icon" :style="weightIconStyle" aria-hidden="true" />
     </div>
 
@@ -32,12 +43,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, toRefs, ref } from 'vue';
+import { computed, toRefs, ref, onBeforeUnmount } from 'vue';
 import type { GearDefinition } from '../logic/GearLib';
 import atlasStorage from '../logic/AtlasStorage';
 import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 import GearStatsHint from './GearStatsHint.vue';
 import { getResourceSpec } from '../logic/Resources';
+import { getGameState, uiState } from '../logic/UIState';
+import { getAppliedGearUpgradeIds, getCachedActiveRaidGear, getGearUpgradeThresholds } from '../logic/GearUpgrades';
+import { DISCOVERY } from '../logic/DiscoveryLib';
 
 const props = defineProps<{
   gear: GearDefinition;
@@ -49,7 +63,7 @@ const props = defineProps<{
   hintRight?: boolean;
 }>();
 
-defineEmits<{ (e: 'toggle'): void }>();
+const emit = defineEmits<{ (e: 'toggle'): void }>();
 
 const creditsSpec = getResourceSpec('credits');
 
@@ -75,11 +89,45 @@ const weightIconStyle = computed(() => {
   return atlasSpriteStyle(source, f, { size: 12, mode: 'fit', allowUpscale: false });
 });
 
+const effectiveWeight = computed(() => {
+  uiState.gearUpgradeIdsById;
+  const gs = getGameState();
+  if (!gs || !gs.raid.id) return props.gear.weight;
+  return getCachedActiveRaidGear(gs, props.gear.id).weight;
+});
+
+const xpRows = computed((): string[][] => {
+  if (props.gear.xp.length === 0) return [];
+
+  uiState.gearXpById;
+  uiState.gearUpgradeIdsById;
+  const gs = getGameState();
+  const xp = gs.gearXpById[props.gear.id] ?? 0;
+  const thresholds = getGearUpgradeThresholds(props.gear);
+  const appliedCount = getAppliedGearUpgradeIds(gs, props.gear.id).length;
+  const target = thresholds[appliedCount] ?? thresholds[thresholds.length - 1] ?? 0;
+  if (target <= 0 || xp <= 0) return [];
+
+  const prevThreshold = appliedCount > 0 ? (thresholds[appliedCount - 1] ?? 0) : 0;
+  const relativeTarget = target - prevThreshold;
+  const relativeXp = xp - prevThreshold;
+  const completed = Math.max(0, Math.min(relativeTarget, relativeXp));
+  const symbols = Array.from({ length: relativeTarget }, (_, index) => (index < completed ? '⋆' : '⋄'));
+
+  const pointsPerRow = symbols.length <= 15 ? symbols.length : Math.ceil(symbols.length / 2);
+  const rows: string[][] = [];
+  for (let i = 0; i < symbols.length; i += pointsPerRow) {
+    rows.push(symbols.slice(i, i + pointsPerRow));
+  }
+  return rows;
+});
+
 // dynamic edge-aware flipping
 const rootEl = ref<HTMLElement | null>(null);
 const hintEl = ref<HTMLElement | null>(null);
 const dynamicRight = ref(false);
 const useRight = computed(() => !!(hintRight?.value) || dynamicRight.value);
+let clickTimerId: number | null = null;
 
 function updateHintSide(): void {
   const el = rootEl.value;
@@ -110,6 +158,51 @@ function updateHintSide(): void {
   // Prefer the side with more available space; flip to right if left is tight
   dynamicRight.value = (spaceLeft < hintW) && (spaceRight >= spaceLeft);
 }
+
+function emitToggle(): void {
+  if (clickTimerId !== null) {
+    clearTimeout(clickTimerId);
+    clickTimerId = null;
+  }
+  emit('toggle');
+}
+
+function handleClick(): void {
+  const gs = getGameState();
+  if (gs.discoveries[DISCOVERY.DEV] !== true) {
+    emit('toggle');
+    return;
+  }
+
+  if (clickTimerId !== null) {
+    clearTimeout(clickTimerId);
+  }
+  clickTimerId = window.setTimeout(() => {
+    clickTimerId = null;
+    emit('toggle');
+  }, 180);
+}
+
+function handleDoubleClick(): void {
+  if (clickTimerId !== null) {
+    clearTimeout(clickTimerId);
+    clickTimerId = null;
+  }
+  const gs = getGameState();
+  if (gs.discoveries[DISCOVERY.DEV] !== true) {
+    emitToggle();
+    return;
+  }
+  uiState.editGearXpGearId = props.gear.id;
+  uiState.editGearXpModalOpen = true;
+}
+
+onBeforeUnmount(() => {
+  if (clickTimerId !== null) {
+    clearTimeout(clickTimerId);
+    clickTimerId = null;
+  }
+});
 
 </script>
 
@@ -159,7 +252,10 @@ function updateHintSide(): void {
   image-rendering: auto;
 }
 
-.g-name { font-weight: 800; }
+.g-name {
+  font-weight: 800;
+  transform: translateY(1px);
+}
 
 /* Styled tooltip shown instantly on hover */
 .hint {
@@ -206,6 +302,44 @@ function updateHintSide(): void {
   border-bottom: 1px solid var(--hint-border);
 }
 .gear-item:hover .hint { display: block; }
+
+.g-xp {
+  position: absolute;
+  left: 6px;
+  right: 34px;
+  bottom: 3px;
+  pointer-events: none;
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 0.75;
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
+  overflow: hidden;
+}
+
+.g-xp-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.g-xp-pip {
+  display: inline-block;
+  color: rgba(139, 152, 168, 0.42);
+}
+
+.g-xp-pip.completed {
+  color: var(--text-primary);
+  transform: scale(1.18);
+  transform-origin: center;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.18), 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.gear-item.has-image .g-xp {
+  left: 64px;
+}
 
 .g-weight {
   position: absolute;

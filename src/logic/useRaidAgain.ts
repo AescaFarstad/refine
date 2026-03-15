@@ -23,18 +23,10 @@ export function hasMissingRequiredQuestGear(gs: ReadonlyGameState, raidId: strin
 }
 
 export function getRaidGearCost(gs: ReadonlyGameState, raidId: string): number {
-  const gearIds = gs.loadouts[raidId] ?? [];
-  const raidEntry = gs.unlockedRaids.find(r => r.id === raidId);
-  const seen = new Set<string>();
-  let total = 0;
-  for (const gearId of gearIds) {
-    if (seen.has(gearId)) continue;
-    seen.add(gearId);
-    const gear = gs.lib.gear.get(gearId)!;
-    const priceAdjustment = raidEntry?.gearPriceAdjustments?.[gearId] ?? 0;
-    total += Math.max(0, gear.price + priceAdjustment);
+  if (raidId !== gs.raid.id) {
+    throw new Error(`getRaidGearCost expects active raid "${gs.raid.id}", got "${raidId}"`);
   }
-  return Math.max(0, Math.floor(total));
+  return Math.max(0, Math.floor(gs.selectedGearPrice));
 }
 
 export function getRaidStartFailureReason(gs: ReadonlyGameState, raidId: string): string {

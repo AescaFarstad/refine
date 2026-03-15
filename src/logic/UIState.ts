@@ -70,6 +70,8 @@ function createDefaultUIState() {
     unlockedRaidIds: [] as string[],
     unlockedGear: [] as string[],
     unlockedGearCategories: [] as string[],
+    gearXpById: {} as Record<string, number>,
+    gearUpgradeIdsById: {} as Record<string, string[]>,
     countableGear: {} as Record<string, number>,
     transmutationCraftCounts: {} as Record<string, number>,
     activeQuests: [] as string[],
@@ -114,6 +116,8 @@ function createDefaultUIState() {
 
     gearUpgradeModalOpen: false,
     gearUpgradeFocusCategory: '' as string,
+    editGearXpModalOpen: false,
+    editGearXpGearId: '' as string,
     hasDiscoveredGear: false,
     hasDiscoveredGearUpgradeModal: false,
     hasEverHadShards: false,
@@ -285,12 +289,16 @@ function buildEffectiveRaidsSyncKey(game: GameState): string {
 
   const activeQuestsKey = [...game.activeQuests].sort().join(',');
   const completedQuestsKey = [...game.completedQuests].sort().join(',');
+  const gearUpgradesKey = Object.keys(game.gearUpgradeIdsById)
+    .sort()
+    .map(gearId => `${gearId}:${(game.gearUpgradeIdsById[gearId] ?? []).join(',')}`)
+    .join(';');
   const unlockedRaidProgressKey = game.unlockedRaids
     .map(r => `${r.id}:${r.successes}:${r.questCompletions}`)
     .sort()
     .join(',');
 
-  return `${uiState.questPrereqsVersion}|${activeQuestsKey}|${completedQuestsKey}|${unlockedRaidProgressKey}|${loadoutKeys.join(';')}|${raidKeys.join(';')}`;
+  return `${uiState.questPrereqsVersion}|${activeQuestsKey}|${completedQuestsKey}|${gearUpgradesKey}|${unlockedRaidProgressKey}|${loadoutKeys.join(';')}|${raidKeys.join(';')}`;
 }
 
 function overwriteUIState(next: UIState): void {
@@ -325,6 +333,10 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.timeFlux = game.timeFlux ?? 0;
   uiState.shardDust = game.shardDust || 0;
   uiState.skillPoints = game.skillPoints || 0;
+  uiState.gearXpById = { ...game.gearXpById };
+  uiState.gearUpgradeIdsById = Object.fromEntries(
+    Object.entries(game.gearUpgradeIdsById).map(([gearId, upgradeIds]) => [gearId, [...upgradeIds]])
+  );
   uiState.countableGear = { ...game.countableGear };
   uiState.transmutationCraftCounts = { ...game.transmutationCraftCounts };
   // Model tracks time in seconds; UI needs minutes for display
@@ -336,9 +348,10 @@ export function SyncUIFromGameState(game: GameState): void {
   if (activeTab === 'raid') {
     const loadoutIds = (game.loadouts && game.raid && game.raid.id) ? game.loadouts[game.raid.id] : null;
     const loadoutKey = Array.isArray(loadoutIds) ? [...loadoutIds].sort().join(',') : '';
+    const purchasedGearUpgradeCount = Object.values(game.gearUpgradeIdsById).reduce((total, upgradeIds) => total + upgradeIds.length, 0);
     const activeRaidEntry = game.raid?.id ? game.unlockedRaids.find(r => r.id === game.raid.id) : null;
     const rk = game.raid
-      ? `${game.raid.id}|${game.raid.hp}|${game.raid.maxHp}|${game.raid.baseSpeed}|${game.raid.speedBonusPct}|${game.raid.speedBonusFlat}|${game.raid.regenPerKm}|${game.raid.regenAfterCombat}|${game.raid.weight}|${game.raid.maxWeight}|${(game.raid.damage ?? game.damage ?? 1)}|${game.raid.bagsVolume}|${game.raid.usedVolume}|${game.raid.lootChanceBonus}|${game.raid.tmpLootBuffAppliedPct}|${game.raid.hitChance}|${game.raid.blockChance}|${game.raid.armor}|${game.raid.reflectOnHitPct}|${game.raid.reflectOnBlockPct}|${game.raid.biopsyChance}|${activeRaidEntry?.uncollectedCredits ?? 0}|${activeRaidEntry?.maxStoredCredits ?? 0}|${activeRaidEntry?.passiveCreditsPerHour ?? 0}|${loadoutKey}`
+      ? `${game.raid.id}|${game.raid.hp}|${game.raid.maxHp}|${game.raid.baseSpeed}|${game.raid.speedBonusPct}|${game.raid.speedBonusFlat}|${game.raid.regenPerKm}|${game.raid.regenAfterCombat}|${game.raid.weight}|${game.raid.maxWeight}|${(game.raid.damage ?? game.damage ?? 1)}|${game.raid.bagsVolume}|${game.raid.usedVolume}|${game.raid.lootChanceBonus}|${game.raid.tmpLootBuffAppliedPct}|${game.raid.hitChance}|${game.raid.blockChance}|${game.raid.armor}|${game.raid.reflectOnHitPct}|${game.raid.reflectOnBlockPct}|${game.raid.biopsyChance}|${activeRaidEntry?.uncollectedCredits ?? 0}|${activeRaidEntry?.maxStoredCredits ?? 0}|${activeRaidEntry?.passiveCreditsPerHour ?? 0}|${purchasedGearUpgradeCount}|${loadoutKey}`
       : '';
     if (rk !== syncCache.lastRaidKey) {
       uiState.raidKey = rk;

@@ -190,6 +190,17 @@ export function verifyGear(lib: Lib, errors: VerifyErrors): void {
   for (const gear of lib.gear.values()) {
     const context = `Gear[${gear.id}]`;
     ensureExists(errors, lib.gearCategories, gear.category, context, 'gear category');
+    if (gear.xp.length === 0 && Object.keys(gear.ups).length > 0) {
+      errors.push(`${context} defines upgrades but has no xp thresholds`);
+    }
+    if (gear.xp.length > Object.keys(gear.ups).length) {
+      errors.push(`${context} has more xp thresholds than upgrade options`);
+    }
+    for (const xp of gear.xp) {
+      if (!Number.isInteger(xp) || xp < 0) {
+        errors.push(`${context} has invalid xp threshold entry: ${xp}`);
+      }
+    }
     for (const categoryId of Object.keys(gear.bonusDamagePerCategory)) {
       ensureExists(errors, lib.gearCategories, categoryId, context, 'gear category');
     }

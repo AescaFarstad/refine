@@ -48,6 +48,7 @@
         </template>
         <button v-else-if="!timelineComplete" class="btn primary" @click="fastForward">Fast-forward</button>
         <template v-else>
+          <button v-if="canUpgradeGearFromOutcome" class="btn yellow" @click="goUpgradeGear">Upgrade gear</button>
           <span class="btn-wrap" :class="{ 'has-tooltip': !canRaidAgain }">
             <button
               class="btn green"
@@ -70,7 +71,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { uiState, getGameLib } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
-import { CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdSwitchTab } from '../logic/input/InputCommands';
+import { CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdOpenGearUpgradeModal, CmdSwitchTab } from '../logic/input/InputCommands';
 import { formatDurationHM } from '../logic/StringUtils';
 import { useRaidAgain } from '../logic/useRaidAgain';
 import type { RaidEventLogEntry } from '../logic/RaidLog';
@@ -221,6 +222,8 @@ watch(timeBarFlashingCondition, (shouldFlash) => {
 
 const newQuestsAvailableCount = computed(() => outcome.value.newQuestsAvailable.length);
 const gainedItemsCount = computed(() => outcome.value.looted.filter(it => it.quantity > 0).length);
+const firstNewlyUpgradableGearId = computed(() => outcome.value.newlyUpgradableGearIds[0] ?? '');
+const canUpgradeGearFromOutcome = computed(() => !readonlyView.value && timelineComplete.value && firstNewlyUpgradableGearId.value !== '');
 
 function clearFlashTimeouts() {
   if (healthFlashTimeout) { clearTimeout(healthFlashTimeout); healthFlashTimeout = null; }
@@ -285,6 +288,15 @@ function closeModal() {
 function goRefine() {
   globalInputQueue.push(new CmdAcknowledgeOutcome());
   globalInputQueue.push(new CmdSwitchTab({ tab: 'refine' }));
+}
+
+function goUpgradeGear() {
+  const gearId = firstNewlyUpgradableGearId.value;
+  if (!gearId) return;
+  uiState.gearUpgradeFocusCategory = getGameLib().gear.get(gearId)!.category;
+  uiState.gearUpgradeModalOpen = true;
+  globalInputQueue.push(new CmdOpenGearUpgradeModal());
+  globalInputQueue.push(new CmdAcknowledgeOutcome());
 }
 
 function formatHMS(totalSec?: number): string { return formatDurationHM(totalSec); }
@@ -375,6 +387,8 @@ function formatHMS(totalSec?: number): string { return formatDurationHM(totalSec
 .btn:hover { background: rgba(255,255,255,0.08); }
 .btn.primary { background: rgba(79, 209, 197, 0.14); color: var(--accent); }
 .btn.primary:hover { background: rgba(79, 209, 197, 0.22); }
+.btn.yellow { background: rgba(234, 179, 8, 0.18); color: #fde047; border-color: rgba(234, 179, 8, 0.35); }
+.btn.yellow:hover { background: rgba(234, 179, 8, 0.28); }
 .btn.green { background: rgba(34, 197, 94, 0.18); color: #86efac; border-color: rgba(34, 197, 94, 0.35); }
 .btn.green:hover { background: rgba(34, 197, 94, 0.28); }
 .btn.disabled, .btn:disabled { opacity: 0.5; cursor: not-allowed; }

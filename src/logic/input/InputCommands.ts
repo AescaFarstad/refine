@@ -137,6 +137,16 @@ export class CmdUpgradeGearCategory implements CmdInput {
   }
 }
 
+export class CmdUpgradeGearItem implements CmdInput {
+  readonly name = 'CmdUpgradeGearItem';
+  readonly gearId: string;
+  readonly upgradeId: string;
+  constructor(args: { gearId: string; upgradeId: string }) {
+    this.gearId = args.gearId;
+    this.upgradeId = args.upgradeId;
+  }
+}
+
 export class CmdOpenGearUpgradeModal implements CmdInput {
   readonly name = 'CmdOpenGearUpgradeModal';
 }

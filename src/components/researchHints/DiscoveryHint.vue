@@ -5,13 +5,14 @@
         <template v-if="!cell.owned">Unlock: </template>
         <span class="disc-name">{{ title }}</span>
       </div>
-      <div v-if="description" class="disc-desc">{{ description }}</div>
+      <div v-if="description" class="disc-desc"><RichHintText :text="description" /></div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import RichHintText from './RichHintText.vue';
 import { getGameState, uiState } from '../../logic/UIState';
 import { isResearchArchetypeRevealedByDiscovery } from '../../logic/ResearchLib';
 import type { ReadonlyResearchArchetype, ReadonlyResearchCell, ReadonlyResearchNodeInstance } from '../../logic/UIState';
@@ -71,6 +72,6 @@ const description = computed(() => {
   font-size: 13px;
   font-weight: 500;
   opacity: 0.9;
-  max-width: 320px;
+  max-width: 420px;
 }
 </style>

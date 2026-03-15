@@ -580,6 +580,7 @@ async function saveToFiles() {
     type: string;
     oracleSlot?: boolean;
     centerCell?: Point2;
+    autocenter?: boolean;
     initiallyOwned?: boolean;
   };
 
@@ -628,6 +629,7 @@ async function saveToFiles() {
         radius,
         type: archetype.type,
         centerCell: nodeInstance.centerCell ? { x: nodeInstance.centerCell.x, y: nodeInstance.centerCell.y } : undefined,
+        autocenter: archetype.autocenter || undefined,
         initiallyOwned: nodeInstance.initiallyOwned || undefined,
       });
 

@@ -35,6 +35,7 @@ export interface ResearchArchetypeDef {
   obstacleVisual?: ResearchObstacleVisualInput;
   rewards: Reward[];
   spawnResource?: MazeResourceSpawn['resourceKey'];
+  autocenter?: boolean;
 }
 
 export interface ResearchPlacementInput {
@@ -72,6 +73,7 @@ export interface ResearchArchetype {
   obstacleVisual: ResearchObstacleVisualDef;
   rewards: Reward[];
   spawnResource: MazeResourceSpawn['resourceKey'] | null;
+  autocenter: boolean;
 }
 
 export function isResearchArchetypeRevealedByDiscovery(
@@ -168,6 +170,7 @@ export class ResearchLib {
         obstacleVisual,
         rewards: input.rewards,
         spawnResource: input.spawnResource ?? null,
+        autocenter: input.autocenter ?? false,
       };
       this.archetypes.set(arch.id, arch);
     }
@@ -194,6 +197,7 @@ export class ResearchLib {
             obstacleVisual: { direction: 0, highlightCells: 0 },
             rewards: [{ kind: 'unlock_gear', gearId: gearId }],
             spawnResource: null,
+            autocenter: false,
           };
           this.archetypes.set(arch.id, arch);
         }
@@ -209,11 +213,17 @@ export class ResearchLib {
       const cells = hasRadius
         ? generateRadiusCells(baseCells, input.radius ?? 0)
         : baseCells;
-      const centerCell = input.centerCell
+      const archetype = archetypes[input.archetypeId];
+      let centerCell: Point2 | undefined = input.centerCell
         ? copy(input.centerCell)
         : hasRadius
           ? copy(baseCells[0]!)
           : undefined;
+      if (!centerCell && archetype?.autocenter && cells.length > 0) {
+        let sx = 0, sy = 0;
+        for (const c of cells) { sx += c.x; sy += c.y; }
+        centerCell = { x: Math.round(sx / cells.length), y: Math.round(sy / cells.length) };
+      }
       const instance: ResearchNodeInstance = {
         nodeId: nodeIndex++,
         archetypeId: input.archetypeId,

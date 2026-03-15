@@ -2,7 +2,7 @@
   <div class="hint-root">
     <div class="hint-body">
       <div v-if="statDescription">Increase {{ statDescription }} by {{ statIncreaseDisplay }}</div>
-      <div v-if="statLongDescription" class="stat-desc">{{ statLongDescription }}</div>
+      <div v-if="statLongDescription" class="stat-desc"><RichHintText :text="statLongDescription" /></div>
       <div v-if="currentValue !== null" class="stat-values">{{ currentValueDisplay }} → <span class="new-value">{{ newValueDisplay }}</span></div>
       <div v-else class="stat-error">Unknown stat</div>
     </div>
@@ -11,6 +11,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import RichHintText from './RichHintText.vue';
 import { getGameState } from '../../logic/UIState';
 import type { ReadonlyResearchArchetype, ReadonlyResearchCell, ReadonlyResearchNodeInstance } from '../../logic/UIState';
 

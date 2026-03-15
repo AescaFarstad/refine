@@ -196,6 +196,14 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     revealedIcon: { kind: 'itemImage', key: 'yellow', scale: 1.3, offset: { x: 0, y: 4 } },
     rewards: [{ kind: 'refining_yellow_neighbor_bonus', amount: 1 }],
   },
+  disc_gear_xp: {
+    type: 'discovery',
+    title: 'Gear XP',
+    description: 'Gain XP with gear you equip and eventually upgrade it.\n(Only certain items get XP)',
+    ownedDescription: 'Gain XP with gear you equip and eventually upgrade it.\n(Only certain items get XP. Click [gear_upgradebutton] in gear category)',
+    icon: { kind: 'glyph', glyph: '◌', scale: 1.4, offset: { x: 0, y: 8 } },
+    rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.GEAR_XP }],
+  },
   disc_maze_navigation: {
     type: 'discovery',
     title: 'A crack in the fabric of continuity',
@@ -209,6 +217,7 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     icon: { kind: 'glyph', glyph: '?', scale: 1.2, offset: { x: 0, y: 0 }},
     ownedIcon: { kind: 'itemImage', key: 'maze_out', scale: 1.5, offset: { x: 0, y: 0 } },
     rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.MAZE_NAVIGATION }],
+    autocenter: true,
   },
   disc_maze_nexus: {
     type: 'discovery',
@@ -221,6 +230,7 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     ownedIcon: { kind: 'itemImage', key: 'eye_in_triangle', scale: 1.5, offset: { x: 0, y: -2 } },
     revealedIcon: { kind: 'itemImage', key: 'eye_in_triangle', scale: 1.5, offset: { x: 0, y: -2 } },
     rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.MAZE_NEXUS }],
+    autocenter: true,
   },
   transmutation_room: {
     type: 'discovery',
@@ -235,6 +245,7 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     ownedIcon: { kind: 'itemImage', key: 'pentagon_concave', scale: 1.0, offset: { x: 0, y: 0 } },
     revealedIcon: { kind: 'itemImage', key: 'pentagon_concave', scale: 1.0, offset: { x: 0, y: 0 } },
     rewards: [],
+    autocenter: true,
   },
 
   gear_zone_crystal: {

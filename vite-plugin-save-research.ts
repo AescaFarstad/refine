@@ -9,6 +9,7 @@ interface PlacementNode {
   radius: number;
   centerCell?: { x: number; y: number };
   type: string; // 'gear' | 'stat' | 'resource' | 'discovery' | etc.
+  autocenter?: boolean;
   initiallyOwned?: boolean;
 }
 
@@ -49,7 +50,7 @@ function formatPlacement(node: PlacementNode): string {
   if (node.radius > 0) {
     line += `, radius: ${node.radius}`;
   }
-  if (node.centerCell && !hasImplicitCenterCell(node)) {
+  if (node.centerCell && !node.autocenter && !hasImplicitCenterCell(node)) {
     line += `, centerCell: ${formatPoint(node.centerCell)}`;
   }
   if (node.initiallyOwned) {

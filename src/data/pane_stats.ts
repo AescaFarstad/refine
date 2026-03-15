@@ -22,7 +22,6 @@ export const paneStats: ResearchPlacementInput[] = [
   { archetypeId: 'stat_vision', cells: { x: 8, y: 2 } },
   { archetypeId: 'stat_hp', cells: { x: -3, y: 5 } },
   { archetypeId: 'stat_hp', cells: { x: -5, y: 7 } },
-  { archetypeId: 'stat_weight', cells: { x: -6, y: -4 } },
   { archetypeId: 'stat_weight', cells: { x: -4, y: -6 } },
   { archetypeId: 'res_skillPoint', cells: { x: 8, y: -11 } },
   { archetypeId: 'stat_weight', cells: { x: 10, y: -12 } },

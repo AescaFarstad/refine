@@ -5,7 +5,7 @@
         <template v-if="!cell.owned">Unlock: </template>
         <span class="disc-name">{{ title }}</span>
       </div>
-      <div v-if="basicDescription" class="basic-desc">{{ basicDescription }}</div>
+      <div v-if="basicDescription" class="basic-desc"><RichHintText :text="basicDescription" /></div>
       <div v-for="(entry, idx) in entries" :key="idx" class="entry">
         <div class="entry-desc">
           <span v-if="entry.iconKey" class="entry-icon" :style="essenceIconStyle(entry.iconKey)" />
@@ -26,6 +26,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import RichHintText from './RichHintText.vue';
 import { getGameState, uiState } from '../../logic/UIState';
 import { ESSENCE_CREDITS, ESSENCE_CHRONOTRACES, ESSENCE_TEMPORAL_FLUX } from '../../logic/Const';
 import { getResourceSpec } from '../../logic/Resources';

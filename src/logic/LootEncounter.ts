@@ -4,6 +4,7 @@ import { createLootEncounterLogEntry, createMonsterLootEncounterLogEntry, type L
 import Perks from './Perks';
 import { TMP_LOOT_BUFF_PER_FULL_BAGS_SKIP_PCT } from './Const';
 import type { ItemDefinition } from './ItemLib';
+import { getEffectiveLootVolume } from './LootVolume';
 
 function clamp(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v));
@@ -23,10 +24,13 @@ function findReplacementCandidate(
   usedVolumeBefore: number,
   capacity: number,
   newItemId: string,
-  bagItemCounts: Record<string, number>
+  bagItemCounts: Record<string, number>,
+  perks: readonly string[],
+  effectiveNewVolume?: number
 ): { replacedItemId: string; usedVolumeAfter: number } | null {
   const newDef = gs.lib.getItem(newItemId);
-  const newAfter = usedVolumeBefore + newDef.volume;
+  const newVol = effectiveNewVolume ?? newDef.volume;
+  const newAfter = usedVolumeBefore + newVol;
   if (newAfter <= capacity) return null;
 
   let best: { replacedItemId: string; usedVolumeAfter: number; replacedScore: number; replacedVolume: number } | null = null;
@@ -34,7 +38,8 @@ function findReplacementCandidate(
   for (const [oldItemId, count] of Object.entries(bagItemCounts)) {
     if (count <= 0) continue;
     const oldDef = gs.lib.getItem(oldItemId);
-    const usedAfter = usedVolumeBefore - oldDef.volume + newDef.volume;
+    const oldVol = getEffectiveLootVolume(perks, oldDef.volume);
+    const usedAfter = usedVolumeBefore - oldVol + newVol;
     if (usedAfter > capacity) continue;
 
     const newScoreOkHigherRarity = (newDef.score >= oldDef.score * 1.1) && (rarityRank(newDef.rarity) > rarityRank(oldDef.rarity));
@@ -182,7 +187,8 @@ export function handleLootLikeEncounter(
   }
 
   const def = gs.lib.getItem(picked);
-  const after = before + def.volume;
+  const effectiveVolume = getEffectiveLootVolume(r.perks, def.volume);
+  const after = before + effectiveVolume;
 
   entry.itemId = picked;
   entry.volumeBefore = before;
@@ -194,7 +200,7 @@ export function handleLootLikeEncounter(
     entry.discarded = false;
     bagItemCounts[picked] = (bagItemCounts[picked] ?? 0) + 1;
   } else {
-    const replacement = findReplacementCandidate(gs, before, r.bagsVolume, picked, bagItemCounts);
+    const replacement = findReplacementCandidate(gs, before, r.bagsVolume, picked, bagItemCounts, r.perks, effectiveVolume);
     if (replacement) {
       r.usedVolume = replacement.usedVolumeAfter;
       entry.volumeAfter = replacement.usedVolumeAfter;
@@ -270,7 +276,8 @@ export function handleMonsterLootEncounter(
   }
 
   const def = gs.lib.getItem(itemId);
-  const after = before + def.volume;
+  const effectiveVolume = getEffectiveLootVolume(r.perks, def.volume);
+  const after = before + effectiveVolume;
 
   if (after <= r.bagsVolume) {
     r.usedVolume = after;
@@ -278,7 +285,7 @@ export function handleMonsterLootEncounter(
     entry.discarded = false;
     bagItemCounts[itemId] = (bagItemCounts[itemId] ?? 0) + 1;
   } else {
-    const replacement = findReplacementCandidate(gs, before, r.bagsVolume, itemId, bagItemCounts);
+    const replacement = findReplacementCandidate(gs, before, r.bagsVolume, itemId, bagItemCounts, r.perks, effectiveVolume);
     if (replacement) {
       r.usedVolume = replacement.usedVolumeAfter;
       entry.volumeAfter = replacement.usedVolumeAfter;

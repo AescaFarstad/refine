@@ -40,6 +40,7 @@ import ItemGrid from './ItemGrid.vue';
 import { globalInputQueue } from '../logic/Model';
 import { CmdStartRaid } from '../logic/input/InputCommands';
 import { clearChooseItemToLootModalState } from '../logic/startRaidWithPerkFlow';
+import { getEffectiveLootVolume } from '../logic/LootVolume';
 
 const visible = computed(() => uiState.chooseItemToLootModalOpen);
 
@@ -79,7 +80,8 @@ const bagsUsedBefore = computed(() => {
 const selectedItemVolume = computed(() => {
   const id = selectedItemId.value;
   if (!id) return 0;
-  return getGameState().lib.getItem(id).volume;
+  const gs = getGameState();
+  return getEffectiveLootVolume(gs.raid.perks, gs.lib.getItem(id).volume);
 });
 const canProceed = computed(() => !!selectedItemId.value);
 

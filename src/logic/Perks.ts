@@ -17,6 +17,9 @@ export class Perks {
   static readonly ARMOR_TEARING = 'Armor Tearing';
   static readonly FAN_THE_HAMMER = 'Fan the Hammer';
   static readonly SPRAY_AND_PRAY = 'Spray and Pray';
+  static readonly HANOI_PACKING = 'Hanoi Packing';
+  static readonly DELIVERY_SERVICE = 'Delivery Service';
+  static readonly TETRIS_LEGACY = 'Tetris Legacy';
 }
 
 export default Perks;

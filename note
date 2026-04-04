@@ -98,6 +98,10 @@ march 7, 8, 9
   transmutation, white, black, lava, frozen, lush essences, oracles menu, riddles
 march 15
   opened oracle info, item upgrades
+april 4
+  gear upgrades
+
+
 npx tsc --noEmit
 npx vue-tsc --noEmit
 npm run build
@@ -253,3 +257,32 @@ refining speed depends on the number of essences
 
 
 bonuses:
+
+
+receive double xp for gear witrh spice
+
+
+Timeline feature:
+displayed on the top panel
+advances when the time passes
+has small lines for hours, larger lines for 6 hours, full lines for days
+can have marked events
+hovering over those shows hint about what it is
+
+data:
+TimelineMod
+  start time
+  effect
+  period
+
+
+possible effects:
+  -X resource
+  raid mutation (perhaps ina  specific way)
+
+
+if several events coincide, their effects should be summed by type. i.e. several resource modifications should display one resource mod event
+
+
+Timeline events:
+  type, display option

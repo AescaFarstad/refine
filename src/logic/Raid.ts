@@ -11,6 +11,7 @@ import { applyRaidMutation, questIsActive, type RaidMutation } from './RaidMutat
 import type { Reward } from './Reward';
 import { Perks } from './Perks';
 import { buildEffectiveGearForId, cacheActiveRaidEffectiveGear, getCachedActiveRaidGear } from './GearUpgrades';
+import { getEffectiveLootVolume } from './LootVolume';
 
 export interface RaidRunResult {
   success: boolean;
@@ -329,7 +330,8 @@ function applyMaterializationLootAtStart(
 ): void {
   const before = Math.max(0, raid.usedVolume || 0);
   const def = gs.lib.getItem(itemId);
-  const after = before + def.volume;
+  const effectiveVolume = getEffectiveLootVolume(raid.perks, def.volume);
+  const after = before + effectiveVolume;
 
   const entry = createLootEncounterLogEntry({
     injected: true,
@@ -1055,7 +1057,25 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
 
   for (const gid of gearIds) applyGearById(gid);
 
+  // Delivery Service perk: grenades don't contribute weight
+  if (gs.raid.perks.includes(Perks.DELIVERY_SERVICE)) {
+    for (const gid of appliedGearIds) {
+      const g = getCachedActiveRaidGear(gs, gid);
+      if (g.category === 'grenades') gs.raid.weight -= g.weight;
+    }
+  }
+
   if (gs.raid.weight > gs.raid.maxWeight) applyGearById('overweight');
+
+  // Hanoi Packing perk: each equipped item with volume > 0 grants +2 volume
+  if (gs.raid.perks.includes(Perks.HANOI_PACKING)) {
+    let count = 0;
+    for (const gid of appliedGearIds) {
+      const g = getCachedActiveRaidGear(gs, gid);
+      if (g.volume > 0) count++;
+    }
+    gs.raid.bagsVolume += 2 * count;
+  }
 
   gs.raid.maxHp = gs.raid.hp;
 

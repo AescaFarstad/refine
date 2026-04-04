@@ -3,10 +3,10 @@
     <div class="xp-pane-header">Upgrade or downgrade items in exchange for skill points {{ skillPointsSpec.glyph }}</div>
     <div class="xp-gear-list">
       <div
-        v-for="entry in gearEntries"
+        v-for="entry in entriesWithUpgrades"
         :key="entry.id"
-        :class="['xp-gear-card', { 'no-upgrades': !entry.hasUpgrades }]"
-        @mouseenter="entry.hasUpgrades ? showHint($event, entry) : undefined"
+        class="xp-gear-card"
+        @mouseenter="showHint($event, entry)"
         @mouseleave="hideHint()"
       >
         <div v-if="entry.hasUpgrades" :class="['xp-gear-hint', { visible: entry.id === hoveredGearId }]" :ref="el => { if (entry.id === hoveredGearId && el) positionHint(el as HTMLElement) }">
@@ -41,7 +41,11 @@
             @mouseleave="unhoverUpgrade()"
           >
             <div v-if="entry.maskLevel !== 'none' && !upgrade.purchased" :class="['xp-upgrade-mask', { 'has-title': upgrade.title && entry.maskLevel !== 'full' }]">?</div>
-            <div v-if="upgrade.title && entry.maskLevel !== 'full'" class="xp-upgrade-title">{{ upgrade.title }}</div>
+            <div v-if="(upgrade.title && entry.maskLevel !== 'full') || upgrade.skillPoints !== 0" :class="['xp-upgrade-title', { 'xp-upgrade-title-cost': upgrade.skillPoints < 0, 'xp-upgrade-title-grant': upgrade.skillPoints > 0 }]">
+              <span v-if="upgrade.title && entry.maskLevel !== 'full'">{{ upgrade.title }}</span>
+              <span v-if="upgrade.skillPoints < 0" class="xp-upgrade-title-sp">- {{ skillPointsSpec.glyph }}</span>
+              <span v-else-if="upgrade.skillPoints > 0" class="xp-upgrade-title-sp">+ {{ skillPointsSpec.glyph }}</span>
+            </div>
             <div :class="['xp-upgrade-content', { 'xp-upgrade-content-hidden': entry.maskLevel !== 'none' && !upgrade.purchased }]">
               <div v-if="upgrade.rows.length > 0" class="xp-upgrade-stats">
                 <div v-for="(row, rowIndex) in upgrade.rows" :key="rowIndex" class="xp-upgrade-row">
@@ -63,10 +67,15 @@
               <div v-else-if="upgrade.rows.length === 0" class="xp-upgrade-forgo">forgo upgrade</div>
             </div>
             <div v-if="entry.isLastUpgrade && !upgrade.purchased && hoveredUpgradeId && hoveredUpgradeId !== upgrade.id" class="xp-upgrade-cross" :ref="el => setCrossAngle(el as HTMLElement)" />
-            <div v-if="upgrade.skillPoints < 0" :class="['xp-upgrade-cost', { 'xp-upgrade-cost-hidden': entry.maskLevel !== 'none', 'purchased': upgrade.purchased }]">{{ skillPointsSpec.glyph }}</div>
-            <div v-else-if="upgrade.skillPoints > 0" :class="['xp-upgrade-cost', 'grants', { 'xp-upgrade-cost-hidden': entry.maskLevel !== 'none', 'purchased': upgrade.purchased }]">{{ skillPointsSpec.glyph }}</div>
           </button>
         </div>
+      </div>
+
+      <div v-if="entriesWithoutUpgrades.length > 0" class="xp-no-upgrade-row">
+        <div v-for="entry in entriesWithoutUpgrades" :key="entry.id" class="xp-no-upgrade-icon">
+          <div class="xp-gear-sprite" :style="entry.spriteStyle" />
+        </div>
+        <span class="xp-no-upgrade-label">Don't have upgrades</span>
       </div>
     </div>
   </section>
@@ -169,7 +178,7 @@ function describeUpgrade(upgrade: GearUpgradeDefinition, gear: GearDefinition): 
   if (upgrade.priceChange) rows.push({ label: 'Price change', spans: [textSpan(`${fmtSigned(upgrade.priceChange)}${creditsSpec.glyph}`, creditsSpec.color)] });
   if (upgrade.reimbursed) rows.push({ label: 'Reimbursement', spans: [textSpan(fmtSigned(upgrade.reimbursed, '%'))] });
   if (upgrade.removePerk) rows.push({ label: 'Remove', spans: [textSpan(gear.perk || 'perk', '#ef5350')] });
-  if (upgrade.replacePerk) rows.push({ label: 'Swap perk:', spans: [textSpan(upgrade.replacePerk, '#4ade80')] });
+  if (upgrade.replacePerk) rows.push({ label: gear.perk ? 'Swap perk:' : 'Add perk:', spans: [textSpan(upgrade.replacePerk, '#4ade80')] });
   if (rows.length === 0) return rows; // forgo upgrade — handled separately in template
   return rows;
 }
@@ -236,6 +245,9 @@ const gearEntries = computed<GearEntry[]>(() => {
     return a.gear.name < b.gear.name ? -1 : 1;
   });
 });
+
+const entriesWithUpgrades = computed(() => gearEntries.value.filter(e => e.hasUpgrades));
+const entriesWithoutUpgrades = computed(() => gearEntries.value.filter(e => !e.hasUpgrades));
 
 function setCrossAngle(el: HTMLElement | null): void {
   if (!el) return;
@@ -376,7 +388,7 @@ function upgradeGear(gearId: string, upgradeId: string): void {
 .xp-upgrade-panel {
   position: relative;
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr;
   grid-template-rows: auto 1fr;
   flex: 0 0 240px;
   width: 240px;
@@ -407,13 +419,6 @@ function upgradeGear(gearId: string, upgradeId: string): void {
   pointer-events: none;
 }
 
-.xp-upgrade-panel.free .xp-upgrade-content {
-  padding-right: 10px;
-}
-
-.xp-upgrade-cost.purchased {
-  visibility: hidden;
-}
 
 .xp-upgrade-panel.disabled {
   background: rgba(255,255,255,0.05);
@@ -437,8 +442,7 @@ function upgradeGear(gearId: string, upgradeId: string): void {
   cursor: default;
 }
 
-.xp-upgrade-content-hidden,
-.xp-upgrade-cost-hidden {
+.xp-upgrade-content-hidden {
   visibility: hidden;
 }
 
@@ -461,6 +465,10 @@ function upgradeGear(gearId: string, upgradeId: string): void {
 
 .xp-upgrade-title {
   grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   font-size: 11px;
   font-weight: 900;
   text-transform: uppercase;
@@ -469,6 +477,20 @@ function upgradeGear(gearId: string, upgradeId: string): void {
   text-align: center;
   padding: 6px 12px;
   background: rgba(255, 255, 255, 0.06);
+}
+
+.xp-upgrade-title-cost {
+  background: rgba(239, 83, 80, 0.2);
+}
+
+.xp-upgrade-title-grant {
+  background: rgba(74, 222, 128, 0.2);
+}
+
+.xp-upgrade-title-sp {
+  margin-left: auto;
+  font-size: 12px;
+  letter-spacing: 0.04em;
 }
 
 .xp-upgrade-content {
@@ -493,27 +515,6 @@ function upgradeGear(gearId: string, upgradeId: string): void {
   line-height: 1.3;
 }
 
-.xp-upgrade-cost {
-  grid-column: 2;
-  grid-row: 2;
-  display: grid;
-  place-items: center;
-  padding: 0 10px;
-  background: rgba(239, 83, 80, 0.25);
-  font-size: 14px;
-  font-weight: 900;
-  color: var(--text-primary);
-  white-space: nowrap;
-  letter-spacing: 0.04em;
-}
-
-.xp-upgrade-cost.grants {
-  background: rgba(74, 222, 128, 0.25);
-}
-
-.xp-upgrade-cost.invisible {
-  visibility: hidden;
-}
 
 .xp-upgrade-row {
   display: grid;
@@ -577,6 +578,31 @@ function upgradeGear(gearId: string, upgradeId: string): void {
 
 .xp-upgrade-cross::after {
   transform: translate(-50%, -50%) rotate(calc(-1 * var(--cross-angle)));
+}
+
+.xp-no-upgrade-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  opacity: 0.45;
+}
+
+.xp-no-upgrade-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.xp-no-upgrade-label {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  white-space: nowrap;
 }
 
 .xp-upgrade-forgo {

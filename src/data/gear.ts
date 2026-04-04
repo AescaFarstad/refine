@@ -187,7 +187,7 @@ const gear: Record<string, RawGearDefinition> = {
         title:'Pratice!' 
       },
       up3:{
-        skillPoints: 0,
+        skillPoints: 1,
         chanceToHit: -5,
         replacePerk: "Fan the Hammer",
         changeDescription:'Contributes double damage on odd rounds, no damage on even ones',
@@ -239,6 +239,29 @@ const gear: Record<string, RawGearDefinition> = {
     price: 300,
     weight: 4,
     image: 'ak_rifle',
+    xp: [8, 16],
+    ups:{
+      up1:{
+        skillPoints: -1,
+        damage: 2,
+        weight: 1,
+        price: 50,
+        title:'Milled Receiver'
+      },
+      up2:{ 
+        skillPoints: -1,
+        damage: 2,
+        price: 100,
+        title:'Tungsten Ammo'
+      },
+      up3:{
+        skillPoints: -1,
+        damage: 2,
+        chanceToHit: -10,
+        price: 50,
+        title:'Large Gas Port'
+      }
+    },
   },
   m4_rifle: {
     name: 'Spec Ops Rifle',
@@ -271,6 +294,24 @@ const gear: Record<string, RawGearDefinition> = {
     price: 30,
     weight: 0,
     image: 'trainers',
+    xp: [8, 16],
+    ups:{
+      up1:{
+        skillPoints: -1,
+        price: 20,
+        speedPercent: 25,
+        title:'Aeroweave Mesh'
+      },
+      up2:{ 
+        skillPoints: 1,
+        title:'Pratice!' 
+      },
+      up3:{
+        skillPoints: 0,
+        price: -10,
+        title:'Streamlined'
+      }
+    },
   },
   sprint_boots: {
     name: 'Spring Boots',
@@ -280,6 +321,26 @@ const gear: Record<string, RawGearDefinition> = {
     price: 75,
     weight: 1,
     image: 'spring_boots2',
+    xp: [8, 12],
+    ups:{
+      up1:{
+        skillPoints: -1,
+        weight: 1,
+        speedFlat: 1,
+        title:'Dual-Spring'
+      },
+      up2:{ 
+        skillPoints: -1,
+        maxWeight: 4,
+        price: 15,
+        title:'Support Harness' 
+      },
+      up3:{
+        skillPoints: -1,
+        price: -20,
+        title:'Riveted Assembly'
+      }
+    },
   },
   oxygen_mask: {
     name: 'Oxygen Mask',
@@ -289,6 +350,25 @@ const gear: Record<string, RawGearDefinition> = {
     speedPercent: 20,
     weight: 1,
     image: 'gas_mask',
+    xp: [8, 12],
+    ups:{
+      up1:{
+        skillPoints: -1,
+        weight: -1,
+        title:'Closed-Cycle'
+      },
+      up2:{ 
+        skillPoints: 1,
+        title:'Pratice!' 
+      },
+      up3:{
+        skillPoints: -1,
+        weight: 1,
+        hp: 7,
+        price: 20,
+        title:'Ionizing Filter'
+      }
+    },
   },
   scope: {
     name: 'Scope',
@@ -308,6 +388,26 @@ const gear: Record<string, RawGearDefinition> = {
     price: 80,
     weight: 1,
     image: 'binoculars',
+    xp: [8, 12],
+    ups:{
+      up1:{
+        skillPoints: -1,
+        lootChance: 15,
+        price: 20,
+        title:'Anti-Glare'
+      },
+      up2:{ 
+        skillPoints: -1,
+        rarityBuff: 15,
+        price: 20,
+        title:'Infrared Filter' 
+      },
+      up3:{
+        skillPoints: -1,
+        chanceToHit: 10,
+        title:'Rangefindery'
+      }
+    },
   },
   laser_sight: {
     name: 'Laser Sight',
@@ -328,17 +428,60 @@ const gear: Record<string, RawGearDefinition> = {
     price: 90,
     weight: 0,
     image: 'pack_of_syringes',
+    xp: [5, 15],
+    ups:{
+      up1:{
+        skillPoints: 0,
+        hp: 10,
+        regenPerKm: -1,
+        title:'Cortisol Injection'
+      },
+      up2:{ 
+        skillPoints: 0,
+        speedPercent: 50,
+        regenAfterCombat: -1,
+        title:'Epinephrine Injection' 
+      },
+      up3:{
+        skillPoints: 0,
+        price: -70,
+        hp: -5,
+        title:'Synthetic Fillers'
+      }
+    },
   },
 
   // ── Armor ──────────────────────────────────────────────────────────
   padded_jacket: {
-    name: 'Padded Jacket',
+    name: 'Jacket',
     category: 'armor',
     volume: 5,
     hp: 5,
     price: 30,
     weight: 1,
     image: 'padded_jacket',
+    xp: [12, 24],
+    ups:{
+      up1:{
+        skillPoints: -1,
+        volume: 10,
+        weight: 1,
+        price: 20,
+        title:'Webbing Grid'
+      },
+      up2:{ 
+        skillPoints: -1,
+        hp: 5,
+        price: 20,
+        title:'Gel Padding' 
+      },
+      up3:{
+        skillPoints: -1,
+        chanceToBlock: 10,
+        weight: 1,
+        title:'Ballistic Inserts'
+      }
+    },
   },
   kevlar_helmet: {
     name: 'Kevlar Helmet',
@@ -348,6 +491,24 @@ const gear: Record<string, RawGearDefinition> = {
     price: 80,
     weight: 2,
     image: 'helmet',
+    xp: [10, 16],
+    ups:{
+      up1:{
+        skillPoints: -1,
+        weight: -1,
+        title:'Carbon Fiber Shell'
+      },
+      up2:{ 
+        skillPoints: -1,
+        hp: 5,
+        title:'Shock-Absorbers' 
+      },
+      up3:{
+        skillPoints: -1,
+        price: -40,
+        title:'Injection-Molding'
+      }
+    },
   },
   armor_plates: {
     name: 'Armor Plates',
@@ -415,6 +576,24 @@ const gear: Record<string, RawGearDefinition> = {
     price: 60,
     weight: 2,
     image: 'backpack',
+    xp: [12, 18],
+    ups:{
+      up1:{
+        skillPoints: -1,
+        weight: -1,
+        title:'Ripstop Nylon'
+      },
+      up2:{ 
+        skillPoints: 1,
+        title:'Pratice!'
+      },
+      up3:{
+        skillPoints: -1,
+        replacePerk: "Hanoi Packing",
+        changeDescription: '+2 volume per gear item with volume',
+        title:'Injection-Molding'
+      }
+    },
   },
   rucksack: {
     name: 'Rucksack',
@@ -424,6 +603,27 @@ const gear: Record<string, RawGearDefinition> = {
     maxWeight: 5,
     weight: 2,
     image: 'rucksack',
+    xp: [8, 14],
+    ups:{
+      up1:{
+        skillPoints: -1,
+        maxWeight: 5,
+        weight: 1,
+        title:'Steel Frame'
+      },
+      up2:{ 
+        skillPoints: -1,
+        volume: 10,
+        price: 30,
+        title:'Roll-Top Extension' 
+      },
+      up3:{
+        skillPoints: -1,
+        replacePerk: "Tetris Legacy",
+        changeDescription: 'Looted items take up 1 less volume (min 1)',
+        title:'Tetris Legacy'
+      }
+    },
   },
   reinforced_case: {
     name: 'Reinforced Case',
@@ -471,6 +671,27 @@ const gear: Record<string, RawGearDefinition> = {
     image: 'bone_saw',
     biopsyChance: 20,
     description: 'Allows extracting monster remains',
+    xp: [18, 24],
+    ups:{
+      up1:{
+        skillPoints: -1,
+        weight: 2,
+        biopsyChance: 10,
+        title:'Raker Teeth'
+      },
+      up2:{ 
+        skillPoints: -1,
+        damage: 1,
+        price: 30,
+        title:'Carbide Teeth'
+      },
+      up3:{
+        skillPoints: -1,
+        biopsyChance: 10,
+        regenAfterCombat: -2,
+        title:'Blood Channel'
+      }
+    },
   },
   aspirator_probe: {
     name: 'Aspirator Probe',
@@ -499,6 +720,24 @@ const gear: Record<string, RawGearDefinition> = {
     price: 100,
     weight: 1,
     image: 'mine_sweeper',
+    xp: [10, 16],
+    ups:{
+      up1:{
+        skillPoints: 0,
+        weight: 1,
+        rarityBuff: 20,
+        title:'Oversize Dish'
+      },
+      up2:{
+        skillPoints: 1,
+        title:'Pratice!'
+      },
+      up3:{
+        skillPoints: -1,
+        lootChance: 15,
+        title:'Spectrum Filter'
+      }
+    },
   },
   distress_beacon: {
     name: 'Distress Beacon',
@@ -536,6 +775,25 @@ const gear: Record<string, RawGearDefinition> = {
     attackSkipCount: 2,
     image: 'decoy',
     description: 'Negates 2 successful enemy hits in each fight',
+    xp: [16, 20],
+    ups:{
+      up1:{
+        skillPoints: -1,
+        attackSkipCount: 1,
+        changeDescription: 'Negates 3 successful enemy hits in each fight',
+        title:'Onion packing'
+      },
+      up2:{ 
+        skillPoints: -1,
+        weight: -1,
+        title:'Hollow Knight'
+      },
+      up3:{
+        skillPoints: 0,
+        price: -30,
+        title:'Recycled parts'
+      }
+    },
   },
   combat_drone: {
     name: 'Combat Drone',
@@ -544,6 +802,25 @@ const gear: Record<string, RawGearDefinition> = {
     price: 80,
     weight: 0,
     image: 'fighter_drone',
+    xp: [12, 18],
+    ups:{
+      up1:{
+        skillPoints: -1,
+        damage: 1,
+        price: 40,
+        title:'Dual-Axis Gimbal'
+      },
+      up2:{
+        skillPoints: 1,
+        title:'Pratice!'
+      },
+      up3:{
+        skillPoints: -1,
+        replacePerk: "Delivery Service",
+        changeDescription: 'Grenades don\'t contribute weight',
+        title:'Grenade mounts'
+      }
+    },
   },
   cargo_drone: {
     name: 'Cargo Drone',
@@ -603,7 +880,24 @@ const gear: Record<string, RawGearDefinition> = {
     price: 60,
     weight: 1,
     image: 'flashbang',
-    description: 'Negates 1 successful enemy hit in each fight',
+    xp: [8, 16],
+    ups:{
+      up1:{
+        skillPoints: -1,
+        attackSkipCount: 1,
+        changeDescription: 'Negates 1 successful enemy hits in each fight',
+        title:'Glass Capsule'
+      },
+      up2:{
+        skillPoints: 1,
+        title:'Pratice!'
+      },
+      up3:{
+        skillPoints: -1,
+        stunChance: 10,
+        title:'Magnesium Core'
+      }
+    },
   },
   frag_grenade: {
     name: 'Frag Grenade',
@@ -614,6 +908,24 @@ const gear: Record<string, RawGearDefinition> = {
     image: 'frag_grenade2',
     perk: 'Explosive',
     description: '40% chance to spoil the monster remains',
+    xp: [8, 12],
+    ups:{
+      up1:{
+        skillPoints: -1,
+        damage: 1,
+        price: 20,
+        title:'Octol Charge'
+      },
+      up2:{
+        skillPoints: 1,
+        title:'Pratice!'
+      },
+      up3:{
+        skillPoints: 0,
+        price: -40,
+        title:'Cast Iron Casing'
+      }
+    },
   },
   smoke_grenade: {
     name: 'Smoke Grenade',
@@ -649,6 +961,23 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 1,
     image: 'quartz',
     zoneBoost: 10 * 60,
+    xp: [5, 7],
+    ups:{
+      up1:{
+        skillPoints: 0,
+        zoneBoost: 10 * 60,
+        title:'Supercharged'
+      },
+      up2:{
+        skillPoints: 1,
+        title:'Pratice!'
+      },
+      up3:{
+        skillPoints: 0,
+        weight: -1,
+        title:'Cleaned'
+      }
+    },
   },
   spice: {
     name: 'Spice',
@@ -658,7 +987,7 @@ const gear: Record<string, RawGearDefinition> = {
     image: 'salt',
     perk: 'Time dilation',
     preventsSuccessZoneDeterioration: true,
-    description: 'The zone does not deteriorate on raid success.',
+    description: 'The zone does not deteriorate after a successful raid.',
   },
 
   // ── Medicine ───────────────────────────────────────────────────────
@@ -671,6 +1000,23 @@ const gear: Record<string, RawGearDefinition> = {
     perk: 'Painkiller',
     image: 'syringe',
     description: 'Prevents speed loss due to missing health',
+    xp: [16, 24],
+    ups:{
+      up1:{
+        skillPoints: -1,
+        hp: 6,
+        title:'Marrow Catalyst'
+      },
+      up2:{
+        skillPoints: 1,
+        title:'Pratice!'
+      },
+      up3:{
+        skillPoints: -1,
+        regenPerKm: 1,
+        title:'Extended Half-Life'
+      }
+    },
   },
   bandage: {
     name: 'Bandage',
@@ -679,6 +1025,24 @@ const gear: Record<string, RawGearDefinition> = {
     price: 30,
     weight: 1,
     image: 'bandage',
+    xp: [16, 24],
+    ups:{
+      up1:{
+        skillPoints: -1,
+        attackSkipCount: 1,
+        changeDescription: 'Negates 1 successful enemy hit in each fight',
+        title:'Chitin-Fiber Dressing'
+      },
+      up2:{
+        skillPoints: 1,
+        title:'Pratice!'
+      },
+      up3:{
+        skillPoints: -1,
+        regenPerKm: 1,
+        title:'Collagen Matrix'
+      }
+    },
   },
   stim_patch: {
     name: 'Stim Patch',
@@ -687,6 +1051,23 @@ const gear: Record<string, RawGearDefinition> = {
     price: 90,
     weight: 0,
     image: 'stim_patch',
+    xp: [10, 16],
+    ups:{
+      up1:{
+        skillPoints: 0,
+        regenPerKm: 1,
+        title:'Platelet Infusion'
+      },
+      up2:{
+        skillPoints: 1,
+        title:'Pratice!'
+      },
+      up3:{
+        skillPoints: 0,
+        price: -40,
+        title:'Homemade adhesive'
+      }
+    },
   },
   medkit_basic: {
     name: 'Medkit',
@@ -695,6 +1076,24 @@ const gear: Record<string, RawGearDefinition> = {
     price: 180,
     weight: 2,
     image: 'ambulance_case',
+    xp: [12, 18],
+    ups:{
+      up1:{
+        skillPoints: -1,
+        hpMult: 0.5,
+        weight: 1,
+        title:'Tissue Library'
+      },
+      up2:{
+        skillPoints: 1,
+        title:'Pratice!'
+      },
+      up3:{
+        skillPoints: 0,
+        price: -80,
+        title:'Break-To-Open Housing'
+      }
+    },
   },
   plasma_bag: {
     name: 'Plasma Bag',
@@ -721,6 +1120,26 @@ const gear: Record<string, RawGearDefinition> = {
     price: 200,
     weight: 2,
     image: 'trauma_kit',
+    xp: [8, 12],
+    ups:{
+      up1:{
+        skillPoints: -1,
+        hp: 12,
+        weight: 1,
+        title:'Exoskeletal Support Rig'
+      },
+      up2:{
+        skillPoints: -1,
+        regenPerKm: 3,
+        weight: 1,
+        title:'Dialysis Module'
+      },
+      up3:{
+        skillPoints: 0,
+        price: -80,
+        title:'Minimum Spec'
+      }
+    },
   },
 
   // ── Tactics ────────────────────────────────────────────────────────

@@ -12,6 +12,8 @@ import type { Reward } from './Reward';
 import { Perks } from './Perks';
 import { buildEffectiveGearForId, cacheActiveRaidEffectiveGear, getCachedActiveRaidGear } from './GearUpgrades';
 import { getEffectiveLootVolume } from './LootVolume';
+import { discover } from './Discover';
+import { DISCOVERY } from './DiscoveryLib';
 
 export interface RaidRunResult {
   success: boolean;
@@ -534,6 +536,9 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         raid.usedVolume = volumeAfter;
         if (!dryRun) {
           raidEntry.uncollectedCredits = afterStored;
+          if (creditsCollected > 0) {
+            discover(gsForRun, DISCOVERY.UI_RAID_RESOURCES_COLLECTED);
+          }
         }
         gatheredCredits += creditsCollected;
 
@@ -762,7 +767,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
     }
 
     if (gsForRun.raid.perks.includes(Perks.XENO_HOUND_BAIT)) {
-      const mutation: RaidMutation = { kind: 'AddMonsterMutation', monsterId: 'hound', count: 1 };
+      const mutation: RaidMutation = { kind: 'AddMonsterMutation', monsterId: 'arch_hound', count: 1 };
       const raidDefToChange = gsForRun.lib.raids.get(raidId)!;
       applyRaidMutation(raidDefToChange, mutation);
       raidMutationsApplied.push(mutation);

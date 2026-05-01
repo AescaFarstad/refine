@@ -5,6 +5,7 @@
     :class="{ selected, unaffordable, blocked, 'hint-right': useRight, 'has-image': !!gearFrame }"
     ref="rootEl"
     @mouseenter="updateHintSide"
+    @mouseleave="clearRaidResourceInfoHover"
     @click="handleClick"
     @dblclick.prevent.stop="handleDoubleClick"
   >
@@ -89,11 +90,15 @@ const weightIconStyle = computed(() => {
   return atlasSpriteStyle(source, f, { size: 12, mode: 'fit', allowUpscale: false });
 });
 
-const effectiveWeight = computed(() => {
+const effectiveGear = computed(() => {
   uiState.gearUpgradeIdsById;
   const gs = getGameState();
-  if (!gs || !gs.raid.id) return props.gear.weight;
-  return getCachedActiveRaidGear(gs, props.gear.id).weight;
+  if (!gs || !gs.raid.id) return props.gear;
+  return getCachedActiveRaidGear(gs, props.gear.id);
+});
+
+const effectiveWeight = computed(() => {
+  return effectiveGear.value.weight;
 });
 
 const xpRows = computed((): string[][] => {
@@ -157,6 +162,16 @@ function updateHintSide(): void {
   const spaceRight = vw - rect.right - gap;
   // Prefer the side with more available space; flip to right if left is tight
   dynamicRight.value = (spaceLeft < hintW) && (spaceRight >= spaceLeft);
+
+  const g = effectiveGear.value;
+  if (g.gatherRaidResources || g.raidPassiveCreditsPerHour > 0 || g.raidResourceStorageBonus > 0) {
+    uiState.raidResourceInfoHoverGearId = props.gear.id;
+  }
+}
+
+function clearRaidResourceInfoHover(): void {
+  if (uiState.raidResourceInfoHoverGearId !== props.gear.id) return;
+  uiState.raidResourceInfoHoverGearId = '';
 }
 
 function emitToggle(): void {
@@ -202,6 +217,7 @@ onBeforeUnmount(() => {
     clearTimeout(clickTimerId);
     clickTimerId = null;
   }
+  clearRaidResourceInfoHover();
 });
 
 </script>

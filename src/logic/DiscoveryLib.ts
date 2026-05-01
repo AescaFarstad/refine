@@ -25,6 +25,7 @@ const ids = [
   'UI_RAID_LOOT',
   'UI_RAID_SPEED',
   'UI_RAID_SELECTION',
+  'UI_RAID_RESOURCES_COLLECTED',
   'GEAR_XP',
   'UI_WAFER_INFO',
   'UI_SIGNATURE_INFO',
@@ -73,6 +74,24 @@ export function getMonochromeEssenceBehavior(
     return SWAPPED_MONOCHROME_ESSENCE_BEHAVIOR;
   }
   return DEFAULT_MONOCHROME_ESSENCE_BEHAVIOR;
+}
+
+const GATHER_RESOURCES_UNLOCK_SOURCE_GEAR_IDS = ['scaffold', 'tesseract'] as const;
+const GATHER_RESOURCES_TACTIC_GEAR_ID = 'gather_resources';
+
+export function syncDerivedGearUnlocks(unlockedGear: string[]): boolean {
+  if (unlockedGear.includes(GATHER_RESOURCES_TACTIC_GEAR_ID)) {
+    return false;
+  }
+
+  for (const gearId of GATHER_RESOURCES_UNLOCK_SOURCE_GEAR_IDS) {
+    if (unlockedGear.includes(gearId)) {
+      unlockedGear.push(GATHER_RESOURCES_TACTIC_GEAR_ID);
+      return true;
+    }
+  }
+
+  return false;
 }
 
 // Prefer using `DISCOVERY.*` literals, but allow ad-hoc string ids too.

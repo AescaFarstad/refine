@@ -14,7 +14,7 @@
             <th>Count</th>
             <th>Find item chance</th>
             <th>Rarity %</th>
-            <th v-if="showResourcesColumn">✦ Resources</th>
+            <th v-if="showResourcesColumn" :class="{ 'resource-highlight': highlightResourcesInfo }">✦ Resources</th>
           </tr>
         </thead>
         <tbody>
@@ -39,7 +39,7 @@
                 <span class="rarity-val" :class="prob.rarity">{{ formatRarityPct(prob.pct) }}</span>
               </template>
             </td>
-            <td v-if="showResourcesColumn" class="resource-compact">{{ resourcesCompact }}</td>
+            <td v-if="showResourcesColumn" :class="['resource-compact', { 'resource-highlight': highlightResourcesInfo }]">{{ resourcesCompact }}</td>
           </tr>
         </tbody>
       </table>
@@ -97,6 +97,12 @@ const raidResourceInfo = computed(() => {
 });
 
 const showResourcesColumn = computed(() => raidResourceInfo.value.stored > 0);
+const highlightResourcesInfo = computed(() =>
+  showResourcesColumn.value && (
+    uiState.raidResourceInfoHoverGearId.length > 0
+    || !uiState.hasDiscoveredRaidResourcesCollected
+  )
+);
 
 const resourcesCompact = computed(() => {
   const info = raidResourceInfo.value;
@@ -204,6 +210,11 @@ function formatRarityPct(pct: number): string {
 .table th:nth-child(2), .table td:nth-child(2) { min-width: 60px; }
 .table thead th:not(:first-child) { border-bottom: 1px solid rgba(255,255,255,0.28); }
 .table thead th { font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; }
+.resource-highlight {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+}
 
 .discover-container {
   display: flex;

@@ -943,7 +943,7 @@ const gear: Record<string, RawGearDefinition> = {
     weight: 1,
     image: 'bait',
     perk: 'Xeno hound Bait',
-    description: 'Permanently attracts a xeno hound to the raid',
+    description: 'Permanently attracts an Xeno Arch-hound to the raid',
   },
   fractal: {
     name: 'Fractal',

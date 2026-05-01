@@ -7,7 +7,14 @@
           v-for="recipe in recipes"
           :key="recipe.id"
           class="tm-recipe"
+          :class="{ 'tm-recipe--transmuting': transmutationWaveRuns[recipe.id] !== undefined }"
         >
+          <div
+            v-if="transmutationWaveRuns[recipe.id] !== undefined"
+            :key="transmutationWaveRuns[recipe.id]"
+            class="tm-recipe-wave"
+            aria-hidden="true"
+          />
           <div class="tm-recipe-flow">
             <!-- Gear ingredient slots only (resources are in the button) -->
             <div class="tm-slots">
@@ -37,7 +44,14 @@
               <div class="tm-recipe-top">
                 <span class="tm-recipe-name">{{ recipe.name }}</span>
               </div>
-              <div class="tm-result-slot" :class="{ 'tm-result-slot--resource': !recipe.resultGearImage }" :style="{ '--result-color': recipe.resultColor }">
+              <div
+                class="tm-result-slot"
+                :class="{
+                  'tm-result-slot--resource': !recipe.resultGearImage,
+                  'tm-result-slot--transmuting': transmutationWaveRuns[recipe.id] !== undefined,
+                }"
+                :style="{ '--result-color': recipe.resultColor }"
+              >
                 <div v-if="recipe.resultGearImage" class="tm-slot-icon">
                   <div class="tm-slot-sprite" :style="recipe.resultSpriteStyle" />
                 </div>
@@ -110,7 +124,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, type CSSProperties } from 'vue';
+import { computed, onBeforeUnmount, ref, type CSSProperties } from 'vue';
 import { RESOURCE_KEYS, getResourceSpec, type ResourceKey, type ResourceSpec } from '../logic/Resources';
 import type { GearDefinition } from '../logic/GearLib';
 import { getGameLib, uiState } from '../logic/UIState';
@@ -126,7 +140,11 @@ defineProps<{
 }>();
 
 const SPRITE_SIZE = 56;
+const TRANSMUTATION_WAVE_DURATION_MS = 820;
 const OMITTED_OWNED_RESOURCE_KEYS: ResourceKey[] = ['credits', 'chronotraces'];
+const transmutationWaveRuns = ref<Record<string, number>>({});
+const waveTimeouts = new Map<string, number>();
+let nextTransmutationWaveRunId = 0;
 
 interface GearIngredientViewModel {
   id: string;
@@ -353,9 +371,35 @@ const ownedItems = computed<OwnedItemViewModel[]>(() => {
   return items;
 });
 
+function triggerTransmutationWave(transmutationId: string): void {
+  const existingTimeout = waveTimeouts.get(transmutationId);
+  if (existingTimeout !== undefined) window.clearTimeout(existingTimeout);
+
+  const runId = ++nextTransmutationWaveRunId;
+  transmutationWaveRuns.value = {
+    ...transmutationWaveRuns.value,
+    [transmutationId]: runId,
+  };
+
+  const timeoutId = window.setTimeout(() => {
+    if (transmutationWaveRuns.value[transmutationId] !== runId) return;
+    const { [transmutationId]: _, ...remainingRuns } = transmutationWaveRuns.value;
+    transmutationWaveRuns.value = remainingRuns;
+    waveTimeouts.delete(transmutationId);
+  }, TRANSMUTATION_WAVE_DURATION_MS);
+
+  waveTimeouts.set(transmutationId, timeoutId);
+}
+
 function craft(transmutationId: string): void {
+  triggerTransmutationWave(transmutationId);
   globalInputQueue.push(new CmdTransmutate({ transmutationId }));
 }
+
+onBeforeUnmount(() => {
+  for (const timeoutId of waveTimeouts.values()) window.clearTimeout(timeoutId);
+  waveTimeouts.clear();
+});
 </script>
 
 <style scoped>
@@ -394,18 +438,67 @@ function craft(transmutationId: string): void {
 /* Recipe card */
 .tm-recipe {
   position: relative;
+  isolation: isolate;
   background: var(--panel-bg);
   border-radius: 8px;
   padding: 30px 16px 14px;
-  transition: background 0.15s;
+  transition: background 0.15s, box-shadow 0.15s ease;
 }
 
 .tm-recipe:hover {
   background: rgba(255, 255, 255, 0.08);
 }
 
+.tm-recipe--transmuting {
+  box-shadow: 0 0 0 1px rgba(103, 232, 249, 0.18), 0 0 18px rgba(45, 212, 191, 0.18);
+}
+
+.tm-recipe-wave {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.tm-recipe-wave::before {
+  content: '';
+  position: absolute;
+  inset: -18% -12%;
+  background:
+    linear-gradient(
+      102deg,
+      transparent 0%,
+      rgba(56, 189, 248, 0.06) 24%,
+      rgba(45, 212, 191, 0.28) 40%,
+      rgba(244, 244, 245, 0.74) 50%,
+      rgba(74, 222, 128, 0.3) 60%,
+      rgba(56, 189, 248, 0.08) 76%,
+      transparent 100%
+    );
+  filter: blur(6px);
+  transform: translateX(-125%);
+  animation: tm-transmutation-wave var(--tm-wave-duration, 820ms) cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+.tm-recipe-wave::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 18% 50%, rgba(191, 219, 254, 0.16), transparent 22%),
+    radial-gradient(circle at 36% 50%, rgba(153, 246, 228, 0.12), transparent 28%),
+    radial-gradient(circle at 54% 50%, rgba(255, 255, 255, 0.08), transparent 22%);
+  opacity: 0;
+  transform: translateX(-32%);
+  animation: tm-transmutation-ripple var(--tm-wave-duration, 820ms) ease-out forwards;
+}
+
 /* Flow: ingredients → result */
 .tm-recipe-flow {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: flex-end;
   gap: 14px;
@@ -571,10 +664,15 @@ function craft(transmutationId: string): void {
   align-items: center;
   border-radius: 4px;
   background: color-mix(in srgb, var(--result-color) 10%, rgba(255, 255, 255, 0.08));
+  transform-origin: center;
 }
 
 .tm-result-slot--resource {
   background: none;
+}
+
+.tm-result-slot--transmuting {
+  animation: tm-result-pop 360ms ease-out 100ms;
 }
 
 /* Result corner count badge — hidden by default when no default content, shown on hover */
@@ -706,5 +804,52 @@ function craft(transmutationId: string): void {
   font-variant-numeric: tabular-nums;
   line-height: 1;
   white-space: nowrap;
+}
+
+@keyframes tm-transmutation-wave {
+  0% {
+    transform: translateX(-125%);
+  }
+
+  100% {
+    transform: translateX(125%);
+  }
+}
+
+@keyframes tm-transmutation-ripple {
+  0% {
+    opacity: 0;
+    transform: translateX(-32%);
+  }
+
+  18% {
+    opacity: 0.18;
+  }
+
+  56% {
+    opacity: 0.28;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(20%);
+  }
+}
+
+@keyframes tm-result-pop {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+
+  45% {
+    transform: scale(1.12);
+    filter: brightness(1.18);
+  }
+
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
 }
 </style>

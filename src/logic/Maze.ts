@@ -320,7 +320,7 @@ function rollbackMazeNexusItemPurchase(def: { price: number; priceIncrease: numb
     rolledPriceIncrease[i]! -= rolledPriceIncrease[i + 1]!;
   }
 
-  const paidPrice = def.price - rolledPriceIncrease[0]!;
+  const paidPrice = def.price - (rolledPriceIncrease[0] ?? 0);
   def.price = paidPrice;
   def.priceIncrease = rolledPriceIncrease;
   return paidPrice;

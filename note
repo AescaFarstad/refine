@@ -292,31 +292,8 @@ Timeline events:
   type, display option
 
 
-
-why does it indicate that the first upgrade will block both other upgrades?
-disabled and enabled gear upgrades look the same
-purchased gear upgrades should not display price
-highlight gear ready to upgrade
-
-items row displays don't display 'new' if this is the only item
-
-
-transmutation animation
-
-
 secret items: available in each raid with fractals
-delay incremental upgrade. delay upgrade progression (or increase their price)
 
 it feels like not enough is gated by raids progression. just stay on the first raid and that's all
 
-packs of xeno-hounds in shegolskoe are too easy
-
-xeno bait should attract arch hounds
-
-we got a tesseract into raid, but there is no tactic to gather resources
-
-
-
-ResearchNode[2] (archetype disc_essence_anomaly_red, cells (-10,-6),(-9,-6),(-10,-5)) should be pointed at by exactly 3 arrows but is pointed at by 0 (none)
-->
-disc_essence_anomaly_red, (-10,-6),(-9,-6),(-10,-5) is pointed at by 0
+xp stars are ugly

@@ -16,8 +16,8 @@ const RESEARCH_COLOR_OWNED_BG = 'rgb(50, 140, 80)';
 const RESEARCH_COLOR_OWNED_BG_IMPASSABLE_NEXUS = 'rgb(22, 65, 39)';
 const RESEARCH_COLOR_UNOWNED_BG = 'rgb(35, 45, 70)';
 const RESEARCH_COLOR_SPECIAL_UNOWNED_BG = 'rgb(140, 110, 25)'; // yellowish for special nodes
-const RESEARCH_COLOR_OBSTACLE_MARKER = '#444f60';
-const RESEARCH_COLOR_OBSTACLE_MARKER_ANTIVOID = '#2b3445';
+const RESEARCH_COLOR_OBSTACLE_MARKER = 'rgb(68, 79, 96)';
+const RESEARCH_COLOR_OBSTACLE_MARKER_ANTIVOID = 'rgb(50, 58, 73)';
 const HEX_DIRECTION_ROTATION_STEP_RAD = -Math.PI / 3;
 const RESEARCH_OWNED_ICON_ALPHA = 0.25;
 
@@ -194,8 +194,15 @@ function getVisualStyle(archetype: ReadonlyResearchArchetype | null, owned: bool
   };
 }
 
-function hasOwnedImpassableCell(cells: readonly ResearchCellInfo[]): boolean {
-  return cells.some((cell) => cell.owned && !cell.passable);
+function getCellBackgroundFillColor(
+  archetype: ReadonlyResearchArchetype | null,
+  owned: boolean,
+  passable: boolean,
+): string {
+  if (owned && !passable) {
+    return RESEARCH_COLOR_OWNED_BG_IMPASSABLE_NEXUS;
+  }
+  return getVisualStyle(archetype, owned).fillColor;
 }
 
 function traceHexBoundaryPath(
@@ -362,9 +369,7 @@ function drawMergedNode(
   backgroundHexSize: number,
   gearDef: GearIconDefinition | null
 ): void {
-  const style = owned && hasOwnedImpassableCell(cells)
-    ? { fillColor: RESEARCH_COLOR_OWNED_BG_IMPASSABLE_NEXUS }
-    : getVisualStyle(archetype, owned);
+  const style = getVisualStyle(archetype, owned);
   const loops = computeHexBoundary(cells.map((cell) => cell.axial)).map(loop => loop.points);
   const placement = computeNodeRenderPlacement(cells, 1, { x: 0, y: 0 });
 
@@ -384,7 +389,7 @@ function drawMergedNode(
   for (const info of cells) {
     const center = axialToPixel(info.axial, hexSize, origin);
     drawHexagon(ctx, center, backgroundHexSize, {
-      fillColor: style.fillColor,
+      fillColor: getCellBackgroundFillColor(archetype, info.owned, info.passable),
       strokeColor: 'rgba(0, 0, 0, 0)',
       lineWidth: 0,
     });
@@ -405,9 +410,9 @@ function drawSingleCell(
   backgroundHexSize: number,
   gearDef: GearIconDefinition | null
 ): void {
-  const style = owned && hasOwnedImpassableCell([info])
-    ? { fillColor: RESEARCH_COLOR_OWNED_BG_IMPASSABLE_NEXUS }
-    : getVisualStyle(archetype, owned);
+  const style = {
+    fillColor: getCellBackgroundFillColor(archetype, info.owned, info.passable),
+  };
   const center = axialToPixel(info.axial, hexSize, origin);
   const isObstacleLike = !!archetype && archetype.type === 'obstacle';
 

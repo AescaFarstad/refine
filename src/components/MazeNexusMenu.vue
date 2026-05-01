@@ -175,8 +175,9 @@ const canOfferNextUpgrade = computed(() => {
 const nexusItemsColClass = computed(() => {
   const count = availableItems.value.length;
   if (count <= 1) return '';
+  const earlyColumnBumpPx = 100;
   // 64px top-panel bar + 12px menu top offset + ~48px nexus header + 12px bottom margin + 66px buffer
-  const reservedHeight = 202;
+  const reservedHeight = 202 + earlyColumnBumpPx;
   // ~66px per item row (60px min-height + 6px gap)
   const maxRows = Math.max(1, Math.floor((windowHeight.value - reservedHeight) / 66));
   const cols = Math.ceil(count / maxRows);

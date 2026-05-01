@@ -145,6 +145,8 @@ function createDefaultUIState() {
     hasDiscoveredRaidLoot: false,
     hasDiscoveredRaidSpeed: false,
     hasDiscoveredRaidSelection: false,
+    hasDiscoveredRaidResourcesCollected: false,
+    raidResourceInfoHoverGearId: '' as string,
     hasDiscoveredCyanYield: false,
     hasDiscoveredMagentaYield: false,
     hasDiscoveredFractalEssenceYield: false,
@@ -533,6 +535,7 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.hasDiscoveredRaidLoot = game.discoveries[DISCOVERY.UI_RAID_LOOT] === true;
   uiState.hasDiscoveredRaidSpeed = game.discoveries[DISCOVERY.UI_RAID_SPEED] === true;
   uiState.hasDiscoveredRaidSelection = game.discoveries[DISCOVERY.UI_RAID_SELECTION] === true;
+  uiState.hasDiscoveredRaidResourcesCollected = game.discoveries[DISCOVERY.UI_RAID_RESOURCES_COLLECTED] === true;
   uiState.hasDiscoveredCyanYield = game.discoveries[DISCOVERY.CYAN_YIELD] === true;
   uiState.hasDiscoveredMagentaYield = game.discoveries[DISCOVERY.MAGENTA_YIELD] === true;
   uiState.hasDiscoveredFractalEssenceYield = game.discoveries[DISCOVERY.FRACTAL_ESSENCE_YIELD] === true;

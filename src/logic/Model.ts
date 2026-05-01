@@ -4,6 +4,7 @@ import { processEvt } from './evt/EvtProcessor';
 import { processCheats } from './cheat/CheatProcessor';
 import { calculateVisibility } from "./Research";
 import { ensureShardDiscovery, ensureResearchTabDiscovery, ensureMazeTabDiscovery } from "./Discover";
+import { syncDerivedGearUnlocks } from "./DiscoveryLib";
 import { saveAutosave } from "./SaveLoad";
 import { accumulateRaidResources } from './Raid';
 
@@ -28,6 +29,7 @@ export function update(gs: GameState, deltaTime: number): void {
     processCheats(gs);
   }
 
+  syncDerivedGearUnlocks(gs.unlockedGear);
   updateShards(gs, deltaTime);
   ensureShardDiscovery(gs);
 
@@ -114,6 +116,7 @@ function updateShards(gs: GameState, dt: number) {
         if (!gs.unlockedGear.includes(shard.resource)) {
           gs.unlockedGear.push(shard.resource);
         }
+        syncDerivedGearUnlocks(gs.unlockedGear);
       }
       gs.shards[i] = null as any;
     }

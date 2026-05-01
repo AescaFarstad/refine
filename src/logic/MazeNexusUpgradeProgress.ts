@@ -15,6 +15,15 @@ function hasPlacedMazeNexusItem(gs: ReadonlyGameState, itemId: string): boolean 
   return false;
 }
 
+function isInstantMazeNexusUpgrade(itemId: string, gs: ReadonlyGameState): boolean {
+  return gs.lib.nexusItems.get(itemId)!.specialAction !== '';
+}
+
+function consumeInstantMazeNexusUpgrade(gs: GameState, nexusItemId: string, availableIndex: number): void {
+  gs.mazeNexusAvailableUpgradeIds.splice(availableIndex, 1);
+  gs.mazeNexusPlacedUpgradeIds.push(nexusItemId);
+}
+
 function canOfferMazeNexusUpgrade(gs: ReadonlyGameState, itemId: string): boolean {
   if (gs.mazeNexusAvailableUpgradeIds.includes(itemId)) return false;
   const def = gs.lib.nexusItems.get(itemId)!;
@@ -70,7 +79,9 @@ export function selectMazeNexusUpgrade(gs: GameState, nexusItemId: string): bool
   }
 
   gs.mazeNexusAvailableUpgradeIds.push(nexusItemId);
-  gs.mazeNexusUpgradeOpportunityCount--;
+  if (!isInstantMazeNexusUpgrade(nexusItemId, gs)) {
+    gs.mazeNexusUpgradeOpportunityCount--;
+  }
   clearMazeNexusUpgradeOffer(gs);
   return true;
 }
@@ -104,7 +115,6 @@ export function activateMazeNexusSpecialUpgrade(gs: GameState, nexusItemId: stri
     if (gs.mazeNexusRefundResetRegretUsed) return false;
     if (gs.timeFlux < def.price) return false;
     const refundedPlacementItemIds = Array.from(getMazeNexusPlacementCountsByItem(gs).keys());
-    gs.mazeNexusAvailableUpgradeIds.splice(availableIndex, 1);
     gs.timeFlux -= def.price;
     refundAllPlacedMazeNexusItems(gs);
     for (const refundedItemId of refundedPlacementItemIds) {
@@ -113,19 +123,20 @@ export function activateMazeNexusSpecialUpgrade(gs: GameState, nexusItemId: stri
       }
     }
     gs.mazeNexusRefundResetRegretUsed = true;
+    consumeInstantMazeNexusUpgrade(gs, nexusItemId, availableIndex);
   } else if (def.specialAction === 'time_singularity') {
     if (gs.chronotraces < def.price) return false;
-    gs.mazeNexusAvailableUpgradeIds.splice(availableIndex, 1);
     gs.chronotraces -= def.price;
+    consumeInstantMazeNexusUpgrade(gs, nexusItemId, availableIndex);
     gs.pendingUIModals.push({ ui: 'you_won' });
   } else {
     throw new Error(`Unsupported nexus special action: ${def.specialAction}`);
   }
-  onMazeNexusUpgradePlaced(gs, nexusItemId);
   return true;
 }
 
 export function willPlacementGrantMazeNexusUpgradeOpportunity(gs: ReadonlyGameState, nexusItemId: string): boolean {
+  if (isInstantMazeNexusUpgrade(nexusItemId, gs)) return false;
   if (gs.mazeNexusPlacedUpgradeIds.includes(nexusItemId)) return false;
   return getMazeNexusUpgradeOfferPool(gs).length > 0;
 }

@@ -2,7 +2,7 @@ import { Raid, type GameState } from './GameState';
 import type { RaidMutation } from './RaidMutation';
 import { applyPermanentRaidMutation } from './RaidMutation';
 import { discover, ensureResearchTabDiscovery, ensureMazeTabDiscovery } from './Discover';
-import { DISCOVERY } from './DiscoveryLib';
+import { DISCOVERY, syncDerivedGearUnlocks } from './DiscoveryLib';
 import { grantMazeNexusUpgradeOpportunities } from './MazeNexusUpgradeProgress';
 
 export interface RefiningRewardBonus {
@@ -69,6 +69,13 @@ export interface RewardContext {
   raidEntry?: { lootingRarityBuff: number };
 }
 
+function unlockGear(gs: GameState, gearId: string): void {
+  if (!gs.unlockedGear.includes(gearId)) {
+    gs.unlockedGear.push(gearId);
+  }
+  syncDerivedGearUnlocks(gs.unlockedGear);
+}
+
 export function applyReward(gs: GameState, reward: Reward, context: RewardContext = {}): void {
   switch (reward.kind) {
     case 'resource':
@@ -118,8 +125,7 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
       break;
 
     case 'unlock_gear':
-      if (!gs.unlockedGear.includes(reward.gearId))
-        gs.unlockedGear.push(reward.gearId);
+      unlockGear(gs, reward.gearId);
       break;
 
     case 'unlock_raid':
@@ -159,10 +165,7 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
 
     case 'countable_gear':
       gs.countableGear[reward.gearId] = (gs.countableGear[reward.gearId] || 0) + reward.amount;
-      // Auto-unlock the gear if not already unlocked
-      if (!gs.unlockedGear.includes(reward.gearId)) {
-        gs.unlockedGear.push(reward.gearId);
-      }
+      unlockGear(gs, reward.gearId);
       break;
 
     case 'maze_nexus_upgrade_opportunity':

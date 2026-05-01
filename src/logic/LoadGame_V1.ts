@@ -9,6 +9,7 @@ import type { EncounterDef } from "./RaidLib";
 import { recomputeActiveRaidEstimates, recomputeActiveRaidParams } from "./Raid";
 import { applyMazeNexusPlacementAtCell, computeMazeResourceSpawns, resetMazeTransient } from "./Maze";
 import { randomizeOracles } from "./RandomizeOracles";
+import { syncDerivedGearUnlocks } from "./DiscoveryLib";
 
 // This file must not contain fallbacks for anything. Fail fast.
 
@@ -435,6 +436,8 @@ function rehydrateGameState(input: AnonymousObject): GameState | false {
     recomputeActiveRaidParams(gameState, gameState.raid.id);
     recomputeActiveRaidEstimates(gameState, 100);
   }
+
+  syncDerivedGearUnlocks(gameState.unlockedGear);
 
   return gameState;
 }

@@ -13,11 +13,13 @@ import type { ReadonlyGameState, ReadonlyLib, ReadonlyResearchArchetype } from '
 type GearIconDefinition = { readonly image: string };
 
 const RESEARCH_COLOR_OWNED_BG = 'rgb(50, 140, 80)';
+const RESEARCH_COLOR_OWNED_BG_IMPASSABLE_NEXUS = 'rgb(22, 65, 39)';
 const RESEARCH_COLOR_UNOWNED_BG = 'rgb(35, 45, 70)';
 const RESEARCH_COLOR_SPECIAL_UNOWNED_BG = 'rgb(140, 110, 25)'; // yellowish for special nodes
 const RESEARCH_COLOR_OBSTACLE_MARKER = '#444f60';
 const RESEARCH_COLOR_OBSTACLE_MARKER_ANTIVOID = '#2b3445';
 const HEX_DIRECTION_ROTATION_STEP_RAD = -Math.PI / 3;
+const RESEARCH_OWNED_ICON_ALPHA = 0.25;
 
 interface StatIconSpec {
   offsetX: number;
@@ -77,6 +79,8 @@ export interface ResearchCellInfo {
   idx: number;
   axial: Point2;
   owned: boolean;
+  nexusId: string;
+  passable: boolean;
   archetypeId: string;
   nodeId: number;
   filledByAntiVoid: boolean;
@@ -116,6 +120,8 @@ export function renderResearchBaseLayer(
       idx,
       axial: { x: axial.x, y: axial.y },
       owned: cell.owned,
+      nexusId: cell.nexusId,
+      passable: cell.passable,
       archetypeId: cell.archetypeId,
       nodeId: cell.nodeId,
       filledByAntiVoid: cell.filledByAntiVoid,
@@ -186,6 +192,10 @@ function getVisualStyle(archetype: ReadonlyResearchArchetype | null, owned: bool
   return {
     fillColor: isSpecial ? RESEARCH_COLOR_SPECIAL_UNOWNED_BG : RESEARCH_COLOR_UNOWNED_BG,
   };
+}
+
+function hasOwnedImpassableCell(cells: readonly ResearchCellInfo[]): boolean {
+  return cells.some((cell) => cell.owned && !cell.passable);
 }
 
 function traceHexBoundaryPath(
@@ -337,6 +347,10 @@ function drawCenteredItemImage(
   ctx.restore();
 }
 
+function getNodeIconAlpha(owned: boolean, unownedAlpha: number): number {
+  return owned ? RESEARCH_OWNED_ICON_ALPHA : unownedAlpha;
+}
+
 function drawMergedNode(
   ctx: CanvasRenderingContext2D,
   game: ReadonlyGameState,
@@ -348,7 +362,9 @@ function drawMergedNode(
   backgroundHexSize: number,
   gearDef: GearIconDefinition | null
 ): void {
-  const style = getVisualStyle(archetype, owned);
+  const style = owned && hasOwnedImpassableCell(cells)
+    ? { fillColor: RESEARCH_COLOR_OWNED_BG_IMPASSABLE_NEXUS }
+    : getVisualStyle(archetype, owned);
   const loops = computeHexBoundary(cells.map((cell) => cell.axial)).map(loop => loop.points);
   const placement = computeNodeRenderPlacement(cells, 1, { x: 0, y: 0 });
 
@@ -389,7 +405,9 @@ function drawSingleCell(
   backgroundHexSize: number,
   gearDef: GearIconDefinition | null
 ): void {
-  const style = getVisualStyle(archetype, owned);
+  const style = owned && hasOwnedImpassableCell([info])
+    ? { fillColor: RESEARCH_COLOR_OWNED_BG_IMPASSABLE_NEXUS }
+    : getVisualStyle(archetype, owned);
   const center = axialToPixel(info.axial, hexSize, origin);
   const isObstacleLike = !!archetype && archetype.type === 'obstacle';
 
@@ -508,7 +526,7 @@ function drawArchetypeIconForNode(
         hexSize,
         iconScale,
         iconRotationRad,
-        owned ? 1 : 0.95,
+        getNodeIconAlpha(owned, 0.95),
       );
       return;
     }
@@ -524,7 +542,7 @@ function drawArchetypeIconForNode(
       centerX + iconOffset.x,
       centerY + iconOffset.y + 2,
       fontSize,
-      owned ? 1 : 0.95,
+      getNodeIconAlpha(owned, 0.95),
       iconRotationRad,
     );
     return;
@@ -538,7 +556,7 @@ function drawArchetypeIconForNode(
     centerX + iconOffset.x,
     centerY + iconOffset.y,
     (maxIconSize != null ? maxIconSize : hexSize * 1.6) * 0.75,
-    owned ? 1 : 0.9,
+    getNodeIconAlpha(owned, 0.9),
     iconScale,
     iconRotationRad,
   );
@@ -641,7 +659,7 @@ function drawStatIconForNode(
   if (spec.kind === 'glyph') {
     const glyphSize = layoutMaxIconSize != null ? layoutMaxIconSize : hexSize * 1.1;
     const fontSize = Math.max(12, glyphSize * spec.scale);
-    drawCenteredGlyph(ctx, spec.key, centerX, centerY, fontSize, owned ? 1 : 0.95);
+    drawCenteredGlyph(ctx, spec.key, centerX, centerY, fontSize, getNodeIconAlpha(owned, 0.95));
     return;
   }
   drawCenteredItemImage(
@@ -650,7 +668,7 @@ function drawStatIconForNode(
     centerX,
     centerY,
     (layoutMaxIconSize != null ? layoutMaxIconSize : hexSize * 1.6) * 0.75,
-    owned ? 1 : 0.9,
+    getNodeIconAlpha(owned, 0.9),
     spec.scale,
   );
 }
@@ -681,7 +699,7 @@ function drawResourceIconForNode(
 
   const glyphSize = maxIconSize != null ? maxIconSize : hexSize * 1.1;
   const fontSize = Math.max(12, glyphSize);
-  drawCenteredGlyph(ctx, glyph, centerX, centerY, fontSize, owned ? 1 : 0.95);
+  drawCenteredGlyph(ctx, glyph, centerX, centerY, fontSize, getNodeIconAlpha(owned, 0.95));
 }
 
 function drawGearIconForNode(
@@ -701,6 +719,6 @@ function drawGearIconForNode(
     placement.centerX,
     placement.centerY,
     placement.layoutMaxIconSize != null ? placement.layoutMaxIconSize : hexSize * 1.6,
-    owned ? 1 : 0.9,
+    getNodeIconAlpha(owned, 0.9),
   );
 }

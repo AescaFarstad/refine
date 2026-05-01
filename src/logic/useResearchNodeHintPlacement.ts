@@ -1,7 +1,7 @@
 import { computed, nextTick, ref, watch, type ComputedRef, type Ref } from 'vue';
 import type { Point2 } from './ItemLib';
 
-const HOVER_HINT_NODE_OFFSET = 40;
+const HOVER_HINT_NODE_OFFSET = 80;
 const HOVER_HINT_DEFAULT_HEIGHT = 220;
 const HOVER_HINT_DEFAULT_WIDTH = 320;
 const HOVER_HINT_EDGE_MARGIN = 8;

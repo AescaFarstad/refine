@@ -33,7 +33,17 @@ const SPECIAL_BOUNDARY_PUSH_AMOUNT = 0.15;
 const INNER_LOOP_RENDER_OFFSET = 0.08;
 const NORMAL_EPS = 1e-8;
 
-const traceBoundaryPath = traceSmoothHexBoundary;
+function traceBoundaryPath(
+  ctx: CanvasRenderingContext2D,
+  loops: readonly (readonly Point2[])[],
+  origin: Point2,
+  scale: number,
+  offset: Point2 = { x: 0, y: 0 },
+): void {
+  traceSmoothHexBoundary(ctx, loops, origin, scale, offset, {
+    invertConcavityForNegativeAreaLoops: true,
+  });
+}
 
 function buildSpecialBoundaryPushByCell(game: ReadonlyGameState): Map<string, number> {
   const pushByCell = new Map<string, number>();
@@ -135,7 +145,6 @@ function buildBoundaryLoopOutwardNormals(loop: HexBoundaryLoop, points: readonly
       `buildBoundaryLoopOutwardNormals: segment-owner mismatch, segments=${segmentCount}, owners=${loop.edgeOwnerCells.length}.`
     );
   }
-
   const normalX = new Array<number>(segmentCount);
   const normalY = new Array<number>(segmentCount);
   for (let i = 0; i < segmentCount; i++) {

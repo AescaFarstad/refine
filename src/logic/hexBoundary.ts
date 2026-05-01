@@ -112,7 +112,7 @@ function reverseLoopWithOwners(loop: readonly LatticeVertex[], edgeOwners: reado
 
   for (let i = 0; i < segmentCount; i++) {
     reversedLoop[i] = loop[segmentCount - i]!;
-    reversedOwners[i] = edgeOwners[(segmentCount - 2 - i + segmentCount) % segmentCount]!;
+    reversedOwners[i] = edgeOwners[segmentCount - 1 - i]!;
   }
   reversedLoop[segmentCount] = reversedLoop[0]!;
 

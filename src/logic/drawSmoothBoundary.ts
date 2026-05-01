@@ -8,6 +8,7 @@ export interface SmoothBoundaryTraceOptions {
   smoothness?: number;
   concaveBlend?: number;
   concaveBlendNu?: number;
+  invertConcavityForNegativeAreaLoops?: boolean;
 }
 
 function hashCoord01(x: number, y: number): number {
@@ -19,7 +20,12 @@ function hashCoord01(x: number, y: number): number {
   return (h >>> 0) / 4294967295;
 }
 
-function preprocessConcaveLoop(loop: readonly Point2[], blendK: number, blendNu: number): Point2[] {
+function preprocessConcaveLoop(
+  loop: readonly Point2[],
+  blendK: number,
+  blendNu: number,
+  invertConcavityForNegativeAreaLoops: boolean,
+): Point2[] {
   const pointCount = loop.length - 1;
   if (pointCount < 3 || blendK <= 0) return loop.slice(0, pointCount);
 
@@ -34,6 +40,7 @@ function preprocessConcaveLoop(loop: readonly Point2[], blendK: number, blendNu:
   }
   const areaSign = Math.sign(area2);
   if (areaSign === 0) return adjusted;
+  const effectiveAreaSign = invertConcavityForNegativeAreaLoops && areaSign < 0 ? -areaSign : areaSign;
 
   for (let i = 0; i < pointCount; i++) {
     const prev = source[(i - 1 + pointCount) % pointCount]!;
@@ -44,7 +51,7 @@ function preprocessConcaveLoop(loop: readonly Point2[], blendK: number, blendNu:
     const outX = next.x - pos.x;
     const outY = next.y - pos.y;
     const turn = inX * outY - inY * outX;
-    const isConcave = turn * areaSign < 0;
+    const isConcave = turn * effectiveAreaSign < 0;
     if (!isConcave) continue;
 
     const rnd = hashCoord01(pos.x, pos.y);
@@ -71,12 +78,14 @@ export function traceSmoothHexBoundary(
   const smoothness = options.smoothness ?? BOUNDARY_SMOOTHNESS;
   const concaveBlend = options.concaveBlend ?? BOUNDARY_CONCAVE_BLEND;
   const concaveBlendNu = options.concaveBlendNu ?? BOUNDARY_CONCAVE_BLEND_NU;
+  const invertConcavityForNegativeAreaLoops = options.invertConcavityForNegativeAreaLoops ?? false;
   ctx.beginPath();
   for (const loop of loops) {
     const points = preprocessConcaveLoop(
       loop,
       concaveBlend,
       concaveBlendNu,
+      invertConcavityForNegativeAreaLoops,
     );
     const pointCount = points.length;
     const first = points[0]!;

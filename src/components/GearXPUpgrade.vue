@@ -5,7 +5,8 @@
       <div
         v-for="entry in entriesWithUpgrades"
         :key="entry.id"
-        class="xp-gear-card"
+        :class="['xp-gear-card', { 'xp-gear-card-upgrade-ready': entry.upgradeReady }]"
+        :style="entry.readyAnimationStyle"
         @mouseenter="showHint($event, entry)"
         @mouseleave="hideHint()"
       >
@@ -29,11 +30,11 @@
             type="button"
             :class="['xp-upgrade-panel', {
               purchased: upgrade.purchased,
-              actionable: upgrade.enabled,
-              disabled: !upgrade.purchased && !upgrade.enabled,
-              exhausted: !upgrade.purchased && !upgrade.enabled && !entry.hasMoreLevels,
+              actionable: upgrade.available && upgrade.affordable,
+              disabled: !upgrade.purchased && !upgrade.available,
+              exhausted: !upgrade.purchased && !upgrade.available && !entry.hasMoreLevels,
               masked: entry.maskLevel !== 'none',
-              unaffordable: !upgrade.purchased && upgrade.skillPoints < 0 && noSkillPoints,
+              unaffordable: !upgrade.purchased && upgrade.available && !upgrade.affordable,
               free: !upgrade.purchased && upgrade.skillPoints === 0,
             }]"
             @click="upgradeGear(entry.id, upgrade.id)"
@@ -41,10 +42,10 @@
             @mouseleave="unhoverUpgrade()"
           >
             <div v-if="entry.maskLevel !== 'none' && !upgrade.purchased" :class="['xp-upgrade-mask', { 'has-title': upgrade.title && entry.maskLevel !== 'full' }]">?</div>
-            <div v-if="(upgrade.title && entry.maskLevel !== 'full') || upgrade.skillPoints !== 0" :class="['xp-upgrade-title', { 'xp-upgrade-title-cost': upgrade.skillPoints < 0, 'xp-upgrade-title-grant': upgrade.skillPoints > 0 }]">
+            <div v-if="(upgrade.title && entry.maskLevel !== 'full') || (!upgrade.purchased && upgrade.skillPoints !== 0)" :class="['xp-upgrade-title', { 'xp-upgrade-title-cost': !upgrade.purchased && upgrade.skillPoints < 0, 'xp-upgrade-title-grant': !upgrade.purchased && upgrade.skillPoints > 0 }]">
               <span v-if="upgrade.title && entry.maskLevel !== 'full'">{{ upgrade.title }}</span>
-              <span v-if="upgrade.skillPoints < 0" class="xp-upgrade-title-sp">- {{ skillPointsSpec.glyph }}</span>
-              <span v-else-if="upgrade.skillPoints > 0" class="xp-upgrade-title-sp">+ {{ skillPointsSpec.glyph }}</span>
+              <span v-if="!upgrade.purchased && upgrade.skillPoints < 0" class="xp-upgrade-title-sp">- {{ skillPointsSpec.glyph }}</span>
+              <span v-else-if="!upgrade.purchased && upgrade.skillPoints > 0" class="xp-upgrade-title-sp">+ {{ skillPointsSpec.glyph }}</span>
             </div>
             <div :class="['xp-upgrade-content', { 'xp-upgrade-content-hidden': entry.maskLevel !== 'none' && !upgrade.purchased }]">
               <div v-if="upgrade.rows.length > 0" class="xp-upgrade-stats">
@@ -88,7 +89,7 @@ import atlasStorage from '../logic/AtlasStorage';
 import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 import type { GearDefinition, GearUpgradeDefinition } from '../logic/GearLib';
 import { getGameState, uiState } from '../logic/UIState';
-import { getAppliedGearUpgradeIds, getCachedActiveRaidGear, getGearUpgradeThresholds, getPendingGearUpgradeCount } from '../logic/GearUpgrades';
+import { canApplyGearUpgrade, getAppliedGearUpgradeIds, getCachedActiveRaidGear, getGearUpgradeThresholds, getPendingGearUpgradeCount } from '../logic/GearUpgrades';
 import { getResourceSpec } from '../logic/Resources';
 import { globalInputQueue } from '../logic/Model';
 import { CmdUpgradeGearItem } from '../logic/input/InputCommands';
@@ -96,7 +97,16 @@ import GearStatsHint from './GearStatsHint.vue';
 
 type UpgradeSpan = { text: string; color?: string; weightIcon?: boolean };
 type UpgradeRow = { label: string; spans: UpgradeSpan[] };
-type UpgradeEntry = { id: string; title: string; description: string; rows: UpgradeRow[]; purchased: boolean; enabled: boolean; skillPoints: number };
+type UpgradeEntry = {
+  id: string;
+  title: string;
+  description: string;
+  rows: UpgradeRow[];
+  purchased: boolean;
+  available: boolean;
+  affordable: boolean;
+  skillPoints: number;
+};
 type GearEntry = {
   id: string;
   gear: GearDefinition;
@@ -107,6 +117,8 @@ type GearEntry = {
   allPurchased: boolean;
   maskLevel: 'full' | 'partial' | 'none';
   hasMoreLevels: boolean;
+  upgradeReady: boolean;
+  readyAnimationStyle: Record<string, string>;
   isLastUpgrade: boolean;
   upgrades: UpgradeEntry[];
 };
@@ -131,7 +143,6 @@ function positionHint(el: HTMLElement): void {
   el.style.transform = 'translateY(-50%)';
 }
 
-const noSkillPoints = computed(() => (uiState.skillPoints ?? 0) < 1);
 const source = atlasStorage.getItemsSource();
 const creditsSpec = getResourceSpec('credits');
 const skillPointsSpec = getResourceSpec('skillPoints');
@@ -147,6 +158,28 @@ function fmtSigned(n: number, suffix = ''): string {
 
 function textSpan(text: string, color?: string): UpgradeSpan {
   return color ? { text, color } : { text };
+}
+
+function hashString(value: string): number {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function hashUnitInterval(value: string): number {
+  return hashString(value) / 4294967295;
+}
+
+function getReadyAnimationStyle(gearId: string): Record<string, string> {
+  const cycleSec = 3.7 + hashUnitInterval(`${gearId}:cycle`) * 0.9;
+  const delaySec = -hashUnitInterval(`${gearId}:phase`) * cycleSec;
+  return {
+    '--xp-gear-ready-duration': `${cycleSec.toFixed(3)}s`,
+    '--xp-gear-ready-delay': `${delaySec.toFixed(3)}s`,
+  };
 }
 
 function describeUpgrade(upgrade: GearUpgradeDefinition, gear: GearDefinition): UpgradeRow[] {
@@ -214,6 +247,8 @@ const gearEntries = computed<GearEntry[]>(() => {
     const targetXp = thresholds[appliedCount] ?? thresholds[thresholds.length - 1] ?? 0;
     const frame = atlasStorage.getItemsFrame(gear.image)!;
     const upgrades = Object.values(gear.ups);
+    const remainingUpgradeSlots = thresholds.length - appliedCount;
+    const remainingUpgradeChoices = upgrades.length - appliedCount;
 
     entries.push({
       id: gear.id,
@@ -225,16 +260,24 @@ const gearEntries = computed<GearEntry[]>(() => {
       allPurchased: upgrades.length > 0 && appliedUpgradeIds.length >= upgrades.length,
       maskLevel: xp === 0 ? 'full' : (firstThreshold > 0 && xp < firstThreshold ? 'partial' : 'none'),
       hasMoreLevels: hasPendingUpgrade || appliedCount < thresholds.length,
-      isLastUpgrade: getPendingGearUpgradeCount(gs, gear.id) === 1 && (upgrades.length - appliedCount) > 1,
-      upgrades: upgrades.map((upgrade) => ({
-        id: upgrade.id,
-        title: upgrade.title,
-        description: upgrade.changeDescription,
-        rows: describeUpgrade(upgrade, gear),
-        purchased: appliedUpgradeIds.includes(upgrade.id),
-        enabled: hasPendingUpgrade && !appliedUpgradeIds.includes(upgrade.id),
-        skillPoints: upgrade.skillPoints,
-      })),
+      upgradeReady: hasPendingUpgrade,
+      readyAnimationStyle: getReadyAnimationStyle(gear.id),
+      isLastUpgrade: remainingUpgradeSlots === 1 && remainingUpgradeChoices > 1,
+      upgrades: upgrades.map((upgrade) => {
+        const purchased = appliedUpgradeIds.includes(upgrade.id);
+        const available = hasPendingUpgrade && !purchased;
+        const affordable = upgrade.skillPoints >= 0 || (uiState.skillPoints ?? 0) >= -upgrade.skillPoints;
+        return {
+          id: upgrade.id,
+          title: upgrade.title,
+          description: upgrade.changeDescription,
+          rows: describeUpgrade(upgrade, gear),
+          purchased,
+          available,
+          affordable,
+          skillPoints: upgrade.skillPoints,
+        };
+      }),
     });
   });
 
@@ -260,6 +303,7 @@ function setCrossAngle(el: HTMLElement | null): void {
 function hoverUpgrade(upgrade: UpgradeEntry, maskLevel: GearEntry['maskLevel']): void {
   if (upgrade.purchased) return;
   if (maskLevel !== 'none') return;
+  if (!upgrade.available) return;
   hoveredUpgradeId.value = upgrade.id;
   uiState.gearUpgradeHoveredSkillPoints = upgrade.skillPoints;
 }
@@ -271,8 +315,7 @@ function unhoverUpgrade(): void {
 
 function upgradeGear(gearId: string, upgradeId: string): void {
   const gs = getGameState();
-  if (getAppliedGearUpgradeIds(gs, gearId).includes(upgradeId)) return;
-  if (getPendingGearUpgradeCount(gs, gearId) <= 0) return;
+  if (!canApplyGearUpgrade(gs, gearId, upgradeId)) return;
   hoveredUpgradeId.value = null;
   globalInputQueue.push(new CmdUpgradeGearItem({ gearId, upgradeId }));
 }
@@ -305,6 +348,17 @@ function upgradeGear(gearId: string, upgradeId: string): void {
   background: transparent;
   border-radius: 4px;
   overflow: visible;
+}
+
+.xp-gear-card-upgrade-ready {
+  animation: xp-gear-card-ready var(--xp-gear-ready-duration) ease-in-out infinite;
+  animation-delay: var(--xp-gear-ready-delay);
+}
+
+.xp-gear-card-upgrade-ready .xp-gear-icon,
+.xp-gear-card-upgrade-ready .xp-gear-progress {
+  animation: xp-gear-card-ready-accent var(--xp-gear-ready-duration) ease-in-out infinite;
+  animation-delay: var(--xp-gear-ready-delay);
 }
 
 .xp-gear-hint {
@@ -414,9 +468,16 @@ function upgradeGear(gearId: string, upgradeId: string): void {
 }
 
 .xp-upgrade-panel.unaffordable {
-  background: rgba(239, 83, 80, 0.18);
+  background: rgba(239, 83, 80, 0.14);
+  opacity: 0.5;
   cursor: default;
-  pointer-events: none;
+}
+
+.xp-upgrade-panel.unaffordable .xp-upgrade-label,
+.xp-upgrade-panel.unaffordable .xp-upgrade-value,
+.xp-upgrade-panel.unaffordable .xp-upgrade-description,
+.xp-upgrade-panel.unaffordable .xp-upgrade-forgo {
+  opacity: 0.75;
 }
 
 
@@ -615,6 +676,32 @@ function upgradeGear(gearId: string, upgradeId: string): void {
   color: var(--text-secondary);
   line-height: 1.3;
   padding: 4px 8px;
+}
+
+@keyframes xp-gear-card-ready {
+  0%, 21.0526%, 100% {
+    background: rgba(34, 197, 94, 0.04);
+  }
+  10.5263% {
+    background: rgba(34, 197, 94, 0.08);
+  }
+}
+
+@keyframes xp-gear-card-ready-accent {
+  0%, 21.0526%, 100% {
+    filter: brightness(1);
+  }
+  10.5263% {
+    filter: brightness(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xp-gear-card-upgrade-ready,
+  .xp-gear-card-upgrade-ready .xp-gear-icon,
+  .xp-gear-card-upgrade-ready .xp-gear-progress {
+    animation: none;
+  }
 }
 
 </style>

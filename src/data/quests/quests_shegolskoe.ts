@@ -81,7 +81,7 @@ const quests: Record<string, RawQuestDefinition> = {
       { kind: 'raid_rarity_buff', delta: 10 },
       { kind: 'raid_loot_chance', delta: 10 },
       { kind: 'raid_add_item', itemIds: ['pine_cone', 'pine_toy'] },
-      { kind: 'raid_mutation', mutation: { kind: 'AddMonsterMutation', monsterId: 'hound', count: 3 } },
+      { kind: 'raid_mutation', mutation: { kind: 'AddMonsterMutation', monsterId: 'arch_hound', count: 3 } },
     ],
   },
   shegolskoe_powerstation: {
@@ -97,7 +97,6 @@ const quests: Record<string, RawQuestDefinition> = {
     ],
     rewards: [
       { kind: 'raid_mutation', mutation: { kind: 'ZoneCollapseTimeMutation', amount: 1200 } },
-      { kind: 'raid_mutation', mutation: { kind: 'AddMonsterMutation', monsterId: 'hound', count: 3 } },
       { kind: 'raid_mutation', mutation: { kind: 'LootMutation', count: 3 } },
       { kind: 'raid_add_item', itemIds: ['electrical_wire'] },
     ],
@@ -119,7 +118,7 @@ const quests: Record<string, RawQuestDefinition> = {
       { kind: 'show_ui', ui: 'poets_scribbles' },
       { kind: 'raid_mutation', mutation: { kind: 'LootMutation', count: 3 } },
       { kind: 'raid_loot_chance', delta: 10 },
-      { kind: 'raid_mutation', mutation: { kind: 'AddMonsterMutation', monsterId: 'hound', count: 3 } },
+      { kind: 'raid_mutation', mutation: { kind: 'AddMonsterMutation', monsterId: 'arch_hound', count: 3 } },
       { kind: 'raid_add_item', itemIds: ['tall_glass', 'soviet_champagne', 'vodka_bottle', 'corkscrew', 'poetry_book'] },
     ],
   },

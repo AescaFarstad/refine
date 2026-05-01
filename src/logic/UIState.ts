@@ -231,7 +231,7 @@ interface UISyncCache {
   lastWaferCharge: number;
   lastRaidFoundItemsVersion: number;
   lastUnlockedRaidIdsKey: string;
-  lastInventoryItemCount: number;
+  lastUnrefinedOwnedIdsKey: string;
   lastRefinedUniqueCount: number;
   lastUniqueItemsBonusYield: number;
   lastHasUniqueItemsYield: boolean;
@@ -252,7 +252,7 @@ const SYNC_CACHE_DEFAULTS: UISyncCache = {
   lastWaferCharge: Number.NaN,
   lastRaidFoundItemsVersion: -1,
   lastUnlockedRaidIdsKey: '',
-  lastInventoryItemCount: -1,
+  lastUnrefinedOwnedIdsKey: '',
   lastRefinedUniqueCount: -1,
   lastUniqueItemsBonusYield: Number.NaN,
   lastHasUniqueItemsYield: false,
@@ -474,33 +474,49 @@ export function SyncUIFromGameState(game: GameState): void {
     uiState.items = Object.entries(game.items).map(([id, quantity]) => ({ id, quantity }));
     {
       const hasUniqueItemsYield = game.uniqueItemsBonusYield > 0;
-      const inventoryItemCount = Object.values(game.items).reduce((sum, qty) => sum + qty, 0);
       const refinedUniqueCount = Object.keys(game.refinedUniqueItemIds).length;
       if (!hasUniqueItemsYield) {
         if (uiState.unrefinedOwnedItemIds.length > 0) {
           uiState.unrefinedOwnedItemIds = [];
           uiState.unrefinedOwnedItemIdMap = {};
         }
-        syncCache.lastInventoryItemCount = inventoryItemCount;
+        syncCache.lastUnrefinedOwnedIdsKey = '';
         syncCache.lastRefinedUniqueCount = refinedUniqueCount;
         syncCache.lastHasUniqueItemsYield = false;
-      } else if (
-        !syncCache.lastHasUniqueItemsYield ||
-        inventoryItemCount !== syncCache.lastInventoryItemCount ||
-        refinedUniqueCount !== syncCache.lastRefinedUniqueCount
-      ) {
+      } else {
+        const ownedUnrefinedIds = new Set<string>();
         const ids: string[] = [];
         const idMap: Record<string, true> = {};
         for (const id of Object.keys(game.items)) {
           if (game.refinedUniqueItemIds[id]) continue;
-          ids.push(id);
-          idMap[id] = true;
+          ownedUnrefinedIds.add(id);
         }
-        uiState.unrefinedOwnedItemIds = ids;
-        uiState.unrefinedOwnedItemIdMap = idMap;
-        syncCache.lastInventoryItemCount = inventoryItemCount;
-        syncCache.lastRefinedUniqueCount = refinedUniqueCount;
-        syncCache.lastHasUniqueItemsYield = true;
+        for (const item of game.wafer.items) {
+          if (!item || game.refinedUniqueItemIds[item.id]) continue;
+          ownedUnrefinedIds.add(item.id);
+        }
+        ids.push(...ownedUnrefinedIds);
+        ids.sort((a, b) => {
+          const aOrder = game.lib.getItem(a).order;
+          const bOrder = game.lib.getItem(b).order;
+          if (aOrder !== bOrder) return aOrder - bOrder;
+          return a.localeCompare(b);
+        });
+        const unrefinedOwnedIdsKey = ids.join(',');
+        if (
+          !syncCache.lastHasUniqueItemsYield ||
+          refinedUniqueCount !== syncCache.lastRefinedUniqueCount ||
+          unrefinedOwnedIdsKey !== syncCache.lastUnrefinedOwnedIdsKey
+        ) {
+          for (const id of ids) {
+            idMap[id] = true;
+          }
+          uiState.unrefinedOwnedItemIds = ids;
+          uiState.unrefinedOwnedItemIdMap = idMap;
+          syncCache.lastUnrefinedOwnedIdsKey = unrefinedOwnedIdsKey;
+          syncCache.lastRefinedUniqueCount = refinedUniqueCount;
+          syncCache.lastHasUniqueItemsYield = true;
+        }
       }
     }
     uiState.encounteredEssences = Object.keys(game.encounteredEssences);

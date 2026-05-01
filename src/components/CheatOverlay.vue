@@ -167,23 +167,16 @@ import { RESOURCE_SPECS, type ResourceKey } from '../logic/Resources';
 import { DISCOVERY, type DiscoveryId } from '../logic/DiscoveryLib';
 import { discover } from '../logic/Discover';
 import { REWARD_UI_KEYS } from './rewardUI/RewardUIRegistry';
-import atlasStorage from '../logic/AtlasStorage';
 import { CheatCompleteSignatures, CheatUnlockAllNexusUpgrades } from '../logic/cheat/CheatCommands';
 import gearData from '../data/gear';
 import { processCheats } from '../logic/cheat/CheatProcessor';
 import { getMazeOracleNodeIdAtCell } from '../logic/Maze';
 import { getOracleSealSolutionCellColors } from '../logic/Oracle';
+import { getSignatureAtlasVars, getSignatureSpriteStyle } from '../logic/signatureVisuals';
 
 const open = computed(() => uiState.cheatOpen);
 
-// Signature atlas styling
-const moleculesSource = atlasStorage.getMoleculesSource();
-const atlasW = moleculesSource?.naturalWidth ?? 0;
-const atlasH = moleculesSource?.naturalHeight ?? 0;
-const atlasVars = {
-  '--sig-atlas': moleculesSource ? `url(${moleculesSource.src})` : 'none',
-  '--sig-atlas-size': `${atlasW}px ${atlasH}px`,
-} as Record<string, string>;
+const atlasVars = getSignatureAtlasVars();
 
 // All signatures from lib
 const allSignatures = computed(() => {
@@ -254,46 +247,10 @@ function setCompletedSignatures(signatureIds: string[]): void {
 }
 
 function sigCheatSpriteStyle(id: string): Record<string, string> {
-  const sig = uiState.lib?.signatures.get(id);
-  if (!sig) return {};
-  const src = atlasStorage.getMoleculesSource();
-  if (!src) return {};
-
   const isLearned = learnedIdSet.value.has(id);
   const isCompleted = completedIdSet.value.has(id);
-
-  // Use wafer (line) image for unknown, card images for learned/completed
-  if (!isLearned) {
-    // Wafer/line image for unknown - scaled to fit
-    const f = atlasStorage.getMoleculesFrame(`sig:wafer:${id}`);
-    if (!f) return {};
-    const targetSize = 48;
-    const scale = Math.min(targetSize / f.w, targetSize / f.h);
-    return {
-      width: `${Math.round(f.w * scale)}px`,
-      height: `${Math.round(f.h * scale)}px`,
-      backgroundImage: `url(${src.src})`,
-      backgroundRepeat: 'no-repeat',
-      backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
-      backgroundSize: `${src.naturalWidth * scale}px ${src.naturalHeight * scale}px`,
-    };
-  }
-
-  // Card images for learned/completed
-  const key = isCompleted ? `sig:card:done:${id}` : `sig:card:open:${id}`;
-  const f = atlasStorage.getMoleculesFrame(key);
-  if (!f) return {};
-  // Scale card down to be more compact
-  const targetH = 54;
-  const scale = targetH / f.h;
-  return {
-    width: `${Math.round(f.w * scale)}px`,
-    height: `${Math.round(f.h * scale)}px`,
-    backgroundImage: `url(${src.src})`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: `-${f.x * scale}px -${f.y * scale}px`,
-    backgroundSize: `${src.naturalWidth * scale}px ${src.naturalHeight * scale}px`,
-  };
+  if (!isLearned) return getSignatureSpriteStyle(id, 'hidden');
+  return getSignatureSpriteStyle(id, isCompleted ? 'completed' : 'revealed');
 }
 
 const resources = Object.values(RESOURCE_SPECS);

@@ -179,7 +179,7 @@
 import { computed, onBeforeUnmount, ref } from 'vue';
 import { uiState, getGameState, getGameLib, getGameStateMutable } from '../logic/UIState';
 import { indexToAxial } from '../logic/Research';
-import { axialRange } from '../logic/HexMath';
+import { axialRange, axialNeighbors } from '../logic/HexMath';
 import { getStatIcon, getResourceGlyph, type ResearchStatIcon } from '../logic/drawResearch';
 import atlasStorage from '../logic/AtlasStorage';
 import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
@@ -585,7 +585,49 @@ async function saveToFiles() {
   };
 
   const placements: Placement[] = [];
-  const usedByLibNode = new Set<string>(); // "x,y" keys of cells claimed by intact lib nodes
+  const usedByLibNode = new Set<string>(); // "x,y" keys of cells claimed by intact lib nodes or autocenter merges
+
+  // Pre-pass: for archetypes flagged autocenter, group connected same-archetype cells
+  // into a single multi-cell placement. This is independent of cell.nodeId, which can be
+  // stale after HMR or after template-placement edits that overwrite archetypeId without
+  // clearing nodeId.
+  {
+    const cellByKey = new Map<string, { axial: Point2; archetypeId: string }>();
+    for (const c of placementCells) {
+      cellByKey.set(`${c.axial.x},${c.axial.y}`, { axial: c.axial, archetypeId: c.archetypeId });
+    }
+    for (const c of placementCells) {
+      const key = `${c.axial.x},${c.axial.y}`;
+      if (usedByLibNode.has(key)) continue;
+      const archetype = lib.research.archetypes.get(c.archetypeId);
+      if (!archetype || !archetype.autocenter) continue;
+
+      // Flood-fill connected cells with the same archetypeId
+      const componentCells: Point2[] = [];
+      const stack: Point2[] = [c.axial];
+      const seen = new Set<string>([key]);
+      while (stack.length) {
+        const cur = stack.pop()!;
+        componentCells.push(cur);
+        usedByLibNode.add(`${cur.x},${cur.y}`);
+        for (const n of axialNeighbors(cur)) {
+          const nk = `${n.x},${n.y}`;
+          if (seen.has(nk)) continue;
+          const nc = cellByKey.get(nk);
+          if (!nc || nc.archetypeId !== c.archetypeId) continue;
+          seen.add(nk);
+          stack.push(n);
+        }
+      }
+      placements.push({
+        archetypeId: c.archetypeId,
+        cells: componentCells,
+        radius: 0,
+        type: archetype.type,
+        autocenter: true,
+      });
+    }
+  }
 
   // First pass: find lib nodes that are still intact (all cells still have matching archetypeId)
   for (const [nodeId, nodeInstance] of lib.research.nodes) {
@@ -594,6 +636,8 @@ async function saveToFiles() {
     // Skip generic obstacle/empty/void archetypes (but NOT hub which has type 'empty')
     const aid = nodeInstance.archetypeId;
     if (aid === 'obs' || aid === 'obstacle' || aid === 'empty' || aid === 'void') continue;
+    // Autocenter archetypes are already handled by the pre-pass via flood-fill.
+    if (archetype.autocenter) continue;
 
     // Check if all cells of this lib node still have the same archetypeId
     const nodeCells = placementCells.filter(

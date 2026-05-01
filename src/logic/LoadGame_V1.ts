@@ -1,5 +1,6 @@
 import { GameState } from "./GameState";
 import SeededRandom from "./core/SeededRandom";
+import { AdaptiveRoll } from "./core/AdaptiveRoll";
 import { clearWafer, getCell, placeMolecule } from "./Wafer";
 import { computeEffectiveEssences } from "./RefinePreview";
 import { axialToIndex, calculateVisibility, indexToAxial, initResearchCells } from "./Research";
@@ -369,6 +370,9 @@ function rehydrateGameState(input: AnonymousObject): GameState | false {
   gameState.random = new SeededRandom(random);
 
   if (!(gameState.random instanceof SeededRandom)) return false;
+
+  const failureDebt = typeof input.refiningFailureRoll === "number" ? input.refiningFailureRoll : 0;
+  gameState.refiningFailureRoll = new AdaptiveRoll({ debt: failureDebt });
 
   for (const cell of gameState.wafer.cells.values()) {
     cell.enabled = false;

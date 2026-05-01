@@ -43,9 +43,12 @@
       >
         {{ raid.order + 1 }}
       </button>
+      <slot name="raid-filter-actions" />
     </div>
     <div class="grid-wrap">
+      <slot v-if="useCustomGridContent" name="grid-content" />
       <ItemGrid
+        v-else
         :items="sortedItems"
         :dim-ids="dimIds"
         :draggable-ids="draggableIds"
@@ -87,6 +90,7 @@ const props = defineProps<{
   showScores?: boolean;
   showVolumes?: boolean;
   hideSortingUi?: boolean;
+  useCustomGridContent?: boolean;
 }>();
 const emit = defineEmits<{
   (e: 'pick-item', id: string): void;

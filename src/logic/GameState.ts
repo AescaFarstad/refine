@@ -1,6 +1,7 @@
 import { Lib } from "./Lib";
 import type { Evt } from './evt/Evt';
 import SeededRandom from "./core/SeededRandom";
+import { AdaptiveRoll } from "./core/AdaptiveRoll";
 import { Essence } from "./ItemLib";
 import type { Point2 } from "./core/math";
 import type { CheatInput } from './cheat/CheatCommands';
@@ -74,6 +75,7 @@ export class GameState {
   public refiningGreenEssenceResourceBonus: number = 0;
   public refiningBlueEssenceResourceBonus: number = 0;
   public refiningYellowNeighborBonus: number = 0;
+  public refiningFailureRoll: AdaptiveRoll = new AdaptiveRoll({ k: 0.05, step: 0.05, modCap: 0.25, tolerance: 1 });
   public shards: Array<Shard> = [];
   public raid: ActiveRaid = new ActiveRaid();
 

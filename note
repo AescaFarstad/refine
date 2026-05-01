@@ -100,6 +100,10 @@ march 15
   opened oracle info, item upgrades
 april 4
   gear upgrades
+april 30
+  testing, signature editor
+may 1
+  adaptive random, fixes
 
 
 npx tsc --noEmit
@@ -286,3 +290,44 @@ if several events coincide, their effects should be summed by type. i.e. several
 
 Timeline events:
   type, display option
+
+path taken doesn't match path shown
+
+maze need explanation
+
+taken research bonuses should be darker
+
+blue essence bonus is smaller than red
+
+why does it indicate that the first upgrade will block both other upgrades?
+
+I didn't get the loot from burdoks
+
+disabled and enabled gear upgrades look the same
+purchased gear upgrades should not display price
+highlight gear ready to upgrade
+
+items row displays don't display 'new' if this is the only item
+display obstructed maze movement on research screen
+
+it feels like not enough is gated by raids progression. just stay on the first raid and that's all
+additional upgrade unlocked instantly
+
+transmutation animation
+
+
+secret items: available in each raid with fractals
+delay incremental upgrade. delay upgrade progression (or increase their price)
+
+
+packs of xeno-hounds in shegolskoe are too easy
+
+xeno bait should attract arch hounds
+
+we got a tesseract into raid, but there is no tactic to gather resources
+
+
+
+ResearchNode[2] (archetype disc_essence_anomaly_red, cells (-10,-6),(-9,-6),(-10,-5)) should be pointed at by exactly 3 arrows but is pointed at by 0 (none)
+->
+disc_essence_anomaly_red, (-10,-6),(-9,-6),(-10,-5) is pointed at by 0

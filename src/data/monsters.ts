@@ -4,7 +4,7 @@ const monsters: Record<string, RawMonsterDefinition> = {
   burdock: {
     name: 'Burdock',
     hp: 1,
-    dodge: 20,
+    dodge: 60,
     accuracy: 60,
     damage: 5,
     lootItemId: 'burdock_remains',
@@ -35,7 +35,7 @@ const monsters: Record<string, RawMonsterDefinition> = {
   },
   distorted: {
     name: 'Distorted Human',
-    hp: 10,
+    hp: 12,
     dodge: 40,
     accuracy: 0,
     damage: 1,
@@ -65,20 +65,20 @@ const monsters: Record<string, RawMonsterDefinition> = {
   },
   stalker: {
     name: 'Invisible Stalker',
-    hp: 10,
-    dodge: 65,
+    hp: 14,
+    dodge: 75,
     accuracy: 0,
     damage: 4,
     lootItemId: 'stalker_remains',
   },
   spikder: {
     name: 'Spikder',
-    hp: 4,
+    hp: 5,
     dodge: 70,
     accuracy: 0,
     damage: 2,
     lootItemId: 'spikder_remains',
-    upgrade: "octopus"
+    upgrade: "white_octopus"
   },
   scorch: {
     name: 'Scorch',
@@ -87,6 +87,15 @@ const monsters: Record<string, RawMonsterDefinition> = {
     accuracy: 10,
     damage: 7,
     lootItemId: 'scorch_remains',
+  },
+  white_octopus: {
+    name: 'White Octopus',
+    hp: 50,
+    dodge: 50,
+    accuracy: 0,
+    damage: 2,
+    lootItemId: 'octopus_remains',
+    upgrade: "octopus"
   },
   octopus: {
     name: 'Black Octopus',
@@ -100,11 +109,10 @@ const monsters: Record<string, RawMonsterDefinition> = {
   lightning: {
     name: 'Lightning Zealot',
     hp: 10,
-    dodge: 55,
+    dodge: 75,
     accuracy: 40,
     damage: 7,
     lootItemId: 'lightning_remains',
-    features:['self_destruct_on_attack'],
   },
   dendroid: {
     name: 'Dendroid',

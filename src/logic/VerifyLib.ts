@@ -4,6 +4,7 @@ import type { RaidMutation } from './RaidMutation';
 import type { Reward } from './Reward';
 import { DISCOVERY } from './DiscoveryLib';
 import { REWARD_UI_KEYS } from '../components/rewardUI/RewardUIRegistry';
+import { axialNeighbor } from './HexMath';
 
 type VerifyErrors = string[];
 
@@ -258,6 +259,84 @@ export function verifyResearch(lib: Lib, errors: VerifyErrors): void {
     for (const reward of archetype.rewards) {
       verifyRewardRefs(reward, context, lib, errors);
     }
+  }
+
+  verifyEssenceArrowCoverage(lib);
+}
+
+function verifyEssenceArrowCoverage(lib: Lib): void {
+  type ArrowRay = { nodeId: number; archetypeId: string; cells: Set<string> };
+  const cellKey = (x: number, y: number) => `${x},${y}`;
+  const warnings: string[] = [];
+
+  const arrows: ArrowRay[] = [];
+  for (const node of lib.research.nodes.values()) {
+    const archetype = lib.research.archetypes.get(node.archetypeId);
+    if (!archetype) continue;
+    if (archetype.type !== 'obstacle') continue;
+    if (archetype.obstacleVisual.highlightCells <= 0) continue;
+
+    const cellsStr = node.cells.map(c => `(${c.x},${c.y})`).join(',');
+    const context = `${node.archetypeId}, ${cellsStr}`;
+    if (node.cells.length !== 1) {
+      warnings.push(`${context} arrow has ${node.cells.length} cells, expected 1`);
+      continue;
+    }
+
+    const origin = node.cells[0]!;
+    const direction = archetype.obstacleVisual.direction;
+    const count = archetype.obstacleVisual.highlightCells;
+    const cells = new Set<string>();
+    let cursor = origin;
+    for (let i = 1; i <= count; i++) {
+      cursor = axialNeighbor(cursor, direction);
+      cells.add(cellKey(cursor.x, cursor.y));
+    }
+    arrows.push({ nodeId: node.nodeId, archetypeId: node.archetypeId, cells });
+  }
+
+  for (const node of lib.research.nodes.values()) {
+    if (!node.oracleSlot) continue;
+    const cellsStr = node.cells.map(c => `(${c.x},${c.y})`).join(',');
+    const context = `${node.archetypeId}, ${cellsStr}`;
+
+    if (node.cells.length !== 3) {
+      warnings.push(`${context} essence has ${node.cells.length} cells, expected 3`);
+      continue;
+    }
+
+    const cellKeys = node.cells.map(c => cellKey(c.x, c.y));
+    const hitsPerCell = new Map<string, number>();
+    for (const key of cellKeys) hitsPerCell.set(key, 0);
+    const arrowsHitting = new Set<number>();
+
+    for (const arrow of arrows) {
+      let hitsForThisArrow = 0;
+      for (const key of cellKeys) {
+        if (arrow.cells.has(key)) {
+          hitsPerCell.set(key, hitsPerCell.get(key)! + 1);
+          hitsForThisArrow++;
+        }
+      }
+      if (hitsForThisArrow > 0) {
+        arrowsHitting.add(arrow.nodeId);
+      }
+    }
+
+    if (arrowsHitting.size !== 3) {
+      warnings.push(`${context} is pointed at by ${arrowsHitting.size}`);
+    }
+    for (const [key, hits] of hitsPerCell) {
+      if (hits !== 2) {
+        warnings.push(`${context} cell (${key}) is overlapped by ${hits}`);
+      }
+    }
+  }
+
+  if (warnings.length > 0) {
+    const count = warnings.length;
+    const label = count === 1 ? 'issue' : 'issues';
+    console.error(`Essence arrow coverage check found ${count} ${label}:\n${warnings.join('\n')}`);
   }
 }
 

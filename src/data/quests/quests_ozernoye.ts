@@ -68,7 +68,7 @@ const quests: Record<string, RawQuestDefinition> = {
     encounterLine: 'Studying the inscriptions...',
     raidRestriction: ['ozernoye'],
     requiresRaidSuccesses: 6,
-    encounterTimeMin: 90,
+    encounterTimeMin: 70,
     encounters: [
       { kind: 'AddMonsterMutation', monsterId: 'stalker', count: 2 },
     ],
@@ -82,7 +82,7 @@ const quests: Record<string, RawQuestDefinition> = {
     description: 'Collect accumulators from abandoned cars and focus their power to push away the zone boundary via magnetic induction.',
     raidRestriction: ['ozernoye'],
     requiresRaidSuccesses: 4,
-    encounterTimeMin: 80,
+    encounterTimeMin: 60,
     encounters: [
       { kind: 'AddMonsterMutation', monsterId: 'flower', count: 3 },
     ],
@@ -96,8 +96,9 @@ const quests: Record<string, RawQuestDefinition> = {
     description: 'Experiment with electricity and design a device that would prolong the zone\'s stability.',
     raidRestriction: ['ozernoye'],
     requiresQuestIds: ['ozernoye_raise_the_dome'],
-    encounterTimeMin: 140,
+    encounterTimeMin: 100,
     encounters: [
+      { kind: 'AddMonsterMutation', monsterId: 'flower', count: 4 },
     ],
     rewards: [
       { kind: 'unlock_gear', gearId: 'stabilizer_beacon' },
@@ -113,7 +114,7 @@ const quests: Record<string, RawQuestDefinition> = {
     requiresRaidQuestCompletions: 3,
     encounterTimeMin: 30,
     encounters: [
-      { kind: 'AddMonsterMutation', monsterId: 'hound', count: 10 },
+      { kind: 'AddMonsterMutation', monsterId: 'arch_hound', count: 10 },
     ],
     rewards: [
       { kind: 'countable_gear', gearId: 'xeno_bait', amount: 10 },

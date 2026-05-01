@@ -20,50 +20,47 @@
         <div v-if="showYield" class="stat-row">
           <span class="stat-label">Yield:</span>
           <span class="stat-value" :class="{ 'yield-bonus': preview.totalYieldPct > 100 }">{{ preview.totalYieldPct }}%</span>
-          <span class="stat-source">
-            <template v-if="preview.waferChargeYieldBonus > 0">
-              +{{ preview.waferChargeYieldBonus }}% (wafer charge)
-            </template>
-            <template v-if="preview.signatureYieldBonus > 0">
-              <template v-if="preview.waferChargeYieldBonus > 0"> </template>
-              +{{ preview.signatureYieldBonus }}% (signatures)
-            </template>
-            <template v-if="preview.newSignatureYieldBonus > 0">
-              <template v-if="preview.waferChargeYieldBonus > 0 || preview.signatureYieldBonus > 0"> </template>
-              +{{ preview.newSignatureYieldBonus }}% (NEW
+          <span class="stat-source modifier-source">
+            <span v-if="preview.waferChargeYieldBonus > 0" class="modifier-segment">
+              wafer charge: +{{ preview.waferChargeYieldBonus }}%
+            </span>
+            <span v-if="preview.signatureYieldBonus > 0" class="modifier-segment">
+              signatures: +{{ preview.signatureYieldBonus }}%
+            </span>
+            <span v-if="preview.newSignatureYieldBonus > 0" class="modifier-segment">
+              NEW
               <template v-for="sig in preview.newSignatureMatches" :key="sig.id">
                 <span
                   class="sig-inline"
                   :style="signatureInlineStyle(sig.id)"
                 />
               </template>
-              signatures)
-            </template>
-            <template v-if="preview.cyanYieldBonus > 0">
-              <template v-if="preview.waferChargeYieldBonus > 0 || preview.signatureYieldBonus > 0 || preview.newSignatureYieldBonus > 0"> </template>
-              +{{ preview.cyanYieldBonus }}% {{ cyanEssences }}
+              signatures: +{{ preview.newSignatureYieldBonus }}%
+            </span>
+            <span v-if="preview.cyanYieldBonus > 0" class="modifier-segment">
+              {{ cyanEssences }}
               <template v-for="key in cyanEssenceKeys" :key="key">
                 <span class="ess-icon" :style="essenceIconStyle(key)" />
               </template>
-            </template>
-            <template v-if="preview.magentaYieldBonus > 0">
-              <template v-if="preview.waferChargeYieldBonus > 0 || preview.signatureYieldBonus > 0 || preview.newSignatureYieldBonus > 0 || preview.cyanYieldBonus > 0"> </template>
-              +{{ preview.magentaYieldBonus }}% from {{ magentaEssences }}
+              : +{{ preview.cyanYieldBonus }}%
+            </span>
+            <span v-if="preview.magentaYieldBonus > 0" class="modifier-segment">
+              {{ magentaEssences }}
               <template v-for="key in magentaEssenceKeys" :key="key">
                 <span class="ess-icon" :style="essenceIconStyle(key)" />
               </template>
-            </template>
-            <template v-if="preview.blackYieldPenalty > 0">
-              <template v-if="preview.waferChargeYieldBonus > 0 || preview.signatureYieldBonus > 0 || preview.newSignatureYieldBonus > 0 || preview.cyanYieldBonus > 0 || preview.magentaYieldBonus > 0"> </template>
-              -{{ preview.blackYieldPenalty }}% from {{ yieldPenaltyEssences }}
+              : +{{ preview.magentaYieldBonus }}%
+            </span>
+            <span v-if="preview.blackYieldPenalty > 0" class="modifier-segment">
+              {{ yieldPenaltyEssences }}
               <template v-for="key in yieldPenaltyEssenceKeys" :key="key">
                 <span class="ess-icon" :style="essenceIconStyle(key)" />
               </template>
-            </template>
-            <template v-if="preview.uniqueItemsYieldBonus > 0">
-              <template v-if="preview.waferChargeYieldBonus > 0 || preview.signatureYieldBonus > 0 || preview.newSignatureYieldBonus > 0 || preview.cyanYieldBonus > 0 || preview.magentaYieldBonus > 0 || preview.blackYieldPenalty > 0"> </template>
-              +{{ preview.uniqueItemsYieldBonus }}% (unique items)
-            </template>
+              : −{{ preview.blackYieldPenalty }}%
+            </span>
+            <span v-if="preview.uniqueItemsYieldBonus > 0" class="modifier-segment">
+              unique items: +{{ preview.uniqueItemsYieldBonus }}%
+            </span>
           </span>
         </div>
 
@@ -123,37 +120,40 @@
 
         <div class="stat-row" :class="{ 'flash-red': shouldFlashFailure }">
           <span class="stat-label">Failure Chance:</span>
-          <span class="stat-value" :class="failureClass">{{ preview.failureChancePct }}%</span>
-          <span class="stat-source" v-if="preview.emptyCells > 0 || preview.waferChargeSuccessChanceBonus > 0 || cyanEssences > 0 || magentaEssences > 0 || preview.signatureSuccessChanceBonus > 0 || preview.newSignatureSuccessChanceBonus > 0">
-            <template v-if="preview.emptyCells > 0">
-              from {{ preview.emptyCells }} empty cells
-            </template>
-            <template v-if="preview.waferChargeSuccessChanceBonus > 0">
-              <template v-if="preview.emptyCells > 0">, </template>
-              -{{ preview.waferChargeSuccessChanceBonus }}% from wafer charge
-            </template>
-            <template v-if="cyanEssences > 0">
-              <template v-if="preview.emptyCells > 0 || preview.waferChargeSuccessChanceBonus > 0">, </template>
-              {{ cyanReduction }}% success from
+          <span class="stat-value" :class="failureClass">{{ preview.effectiveFailureChancePct }}%</span>
+          <span class="stat-source modifier-source" v-if="preview.adaptiveModifierPct !== 0 || preview.emptyCells > 0 || preview.waferChargeSuccessChanceBonus > 0 || cyanEssences > 0 || magentaEssences > 0 || preview.signatureSuccessChanceBonus > 0 || preview.newSignatureSuccessChanceBonus > 0">
+            <span v-if="preview.adaptiveModifierPct > 0" class="modifier-segment">
+              repeated successes: +{{ preview.adaptiveModifierPct }}%
+            </span>
+            <span v-else-if="preview.adaptiveModifierPct < 0" class="modifier-segment">
+              repeated failures: −{{ -preview.adaptiveModifierPct }}%
+            </span>
+            <span v-if="preview.emptyCells > 0" class="modifier-segment">
+              {{ preview.emptyCells }} empty cells: +{{ preview.emptyCells * FAILURE_PER_EMPTY_CELL }}%
+            </span>
+            <span v-if="preview.waferChargeSuccessChanceBonus > 0" class="modifier-segment">
+              wafer charge: −{{ preview.waferChargeSuccessChanceBonus }}%
+            </span>
+            <span v-if="cyanEssences > 0" class="modifier-segment">
+              {{ cyanEssences }}
               <template v-for="key in cyanEssenceKeys" :key="key">
                 <span class="ess-icon" :style="essenceIconStyle(key)" />
               </template>
-            </template>
-            <template v-if="magentaEssences > 0">
-              <template v-if="preview.emptyCells > 0 || preview.waferChargeSuccessChanceBonus > 0 || cyanEssences > 0">, </template>
-              +{{ magentaPenalty }}% from {{ magentaEssences }}
+              : −{{ cyanReduction }}%
+            </span>
+            <span v-if="magentaEssences > 0" class="modifier-segment">
+              {{ magentaEssences }}
               <template v-for="key in magentaEssenceKeys" :key="key">
                 <span class="ess-icon" :style="essenceIconStyle(key)" />
               </template>
-            </template>
-            <template v-if="preview.signatureSuccessChanceBonus > 0">
-              <template v-if="preview.emptyCells > 0 || preview.waferChargeSuccessChanceBonus > 0 || cyanEssences > 0 || magentaEssences > 0">, </template>
-              -{{ preview.signatureSuccessChanceBonus }}% from signatures
-            </template>
-            <template v-if="preview.newSignatureSuccessChanceBonus > 0">
-              <template v-if="preview.emptyCells > 0 || preview.waferChargeSuccessChanceBonus > 0 || cyanEssences > 0 || magentaEssences > 0 || preview.signatureSuccessChanceBonus > 0">, </template>
-              -{{ preview.newSignatureSuccessChanceBonus }}% from NEW signatures
-            </template>
+              : +{{ magentaPenalty }}%
+            </span>
+            <span v-if="preview.signatureSuccessChanceBonus > 0" class="modifier-segment">
+              signatures: −{{ preview.signatureSuccessChanceBonus }}%
+            </span>
+            <span v-if="preview.newSignatureSuccessChanceBonus > 0" class="modifier-segment">
+              NEW signatures: −{{ preview.newSignatureSuccessChanceBonus }}%
+            </span>
           </span>
         </div>
 
@@ -162,11 +162,11 @@
           <span class="stat-value success">+{{ preview.signatureSpeedBonus + preview.newSignatureSpeedBonus }}%</span>
           <span class="stat-source">
             <template v-if="preview.signatureSpeedBonus > 0">
-              +{{ preview.signatureSpeedBonus }}% (signatures)
+              signatures: +{{ preview.signatureSpeedBonus }}%
             </template>
             <template v-if="preview.newSignatureSpeedBonus > 0">
-              <template v-if="preview.signatureSpeedBonus > 0"> </template>
-              +{{ preview.newSignatureSpeedBonus }}% (NEW signatures)
+              <template v-if="preview.signatureSpeedBonus > 0">, </template>
+              NEW signatures: +{{ preview.newSignatureSpeedBonus }}%
             </template>
           </span>
         </div>
@@ -188,7 +188,7 @@ import { globalInputQueue } from '../logic/Model';
 import type { Point2 } from '../logic/ItemLib';
 import { getResourceSpec } from '../logic/Resources';
 import { uiState, getGameState } from '../logic/UIState';
-import { CYAN_SUCCESS_BONUS_PCT, MAGENTA_SUCCESS_PENALTY_PCT } from '../logic/Const';
+import { CYAN_SUCCESS_BONUS_PCT, FAILURE_PER_EMPTY_CELL, MAGENTA_SUCCESS_PENALTY_PCT } from '../logic/Const';
 
 export interface GearOutputPreview {
   gearId: string;
@@ -223,6 +223,8 @@ export interface WaferInfoPreview {
   fluxEssences: number;
 
   failureChancePct: number;
+  adaptiveModifierPct: number;
+  effectiveFailureChancePct: number;
   emptyCells: number;
   essenceTotals: Record<string, number>;
 
@@ -462,6 +464,23 @@ function cycleInfoTab() {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.modifier-source {
+  flex-wrap: wrap;
+  row-gap: 2px;
+  column-gap: 6px;
+}
+
+.modifier-segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.modifier-segment:not(:last-child)::after {
+  content: ",";
 }
 
 .ess-icon {

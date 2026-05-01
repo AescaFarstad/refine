@@ -255,6 +255,8 @@ const preview = computed(() => {
       expectedFlux: 0,
       timeSec: 0,
       failureChancePct: 0,
+      adaptiveModifierPct: 0,
+      effectiveFailureChancePct: 0,
       waferCharge: 0,
       waferChargeYieldBonus: 0,
       waferChargeSuccessChanceBonus: 0,

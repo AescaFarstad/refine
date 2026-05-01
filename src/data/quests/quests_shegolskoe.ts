@@ -92,7 +92,8 @@ const quests: Record<string, RawQuestDefinition> = {
     raidRestriction: ['shegolskoe'],
     encounters: [
       { kind: 'WalkMutation', count: 1 },
-      { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 7 },
+      { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 8 },
+      { kind: 'AddMonsterMutation', monsterId: 'spikder', count: 6 },
     ],
     rewards: [
       { kind: 'raid_mutation', mutation: { kind: 'ZoneCollapseTimeMutation', amount: 1200 } },
@@ -111,7 +112,8 @@ const quests: Record<string, RawQuestDefinition> = {
     raidRestriction: ['shegolskoe'],
     encounters: [
       { kind: 'WalkMutation', count: 1 },
-      { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 7 },
+      { kind: 'AddMonsterMutation', monsterId: 'spikder', count: 16 },
+      { kind: 'AddMonsterMutation', monsterId: 'burdock', count: 16 },
     ],
     rewards: [
       { kind: 'show_ui', ui: 'poets_scribbles' },

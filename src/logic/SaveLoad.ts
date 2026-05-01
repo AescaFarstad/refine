@@ -1,5 +1,6 @@
 import { GameState } from "./GameState";
 import SeededRandom from "./core/SeededRandom";
+import { AdaptiveRoll } from "./core/AdaptiveRoll";
 import { loadGame_V1 } from "./LoadGame_V1";
 import type { Wafer } from "./Wafer";
 import { getPivotHex } from "./MoleculeUtils";
@@ -66,6 +67,10 @@ function saveReplacer(key: string, value: unknown): unknown {
 
   if (key === "random" && value instanceof SeededRandom) {
     return value.getSeed();
+  }
+
+  if (value instanceof AdaptiveRoll) {
+    return value.getDebt();
   }
 
   if (value instanceof Map) {

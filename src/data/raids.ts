@@ -57,7 +57,7 @@ const raids: Record<string, RawRaidDefinition> = {
     locationImageId: 'ozernoye',
     description: 'A lakeside settlement overtaken by... OH GOD! WHaT IS THSIissisi??!',
     baseLootChance: 40,
-    zoneCollapseSec: 16800,
+    zoneCollapseSec: 14000,
     zoneCollapseStepPerMutation: 360,
     items: [
       'enamel_mug',

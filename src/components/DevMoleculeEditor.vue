@@ -12,10 +12,36 @@
           :active-raid-filter="activeRaidFilter"
           :show-rarity-label="true"
           :hide-sorting-ui="true"
+          :use-custom-grid-content="showSignatures"
           @pick-item="onPickItem"
           @drag-end="onDragEnd"
           @raid-filter="onRaidFilter"
-        />
+        >
+          <template #raid-filter-actions>
+            <button
+              type="button"
+              class="raid-btn signatures-toggle"
+              :class="{ active: showSignatures }"
+              @click="toggleSignatureGrid"
+            >
+              signatures
+            </button>
+          </template>
+          <template #grid-content>
+            <div class="signature-cheat-grid" :style="signatureAtlasVars">
+              <button
+                v-for="signature in allSignatures"
+                :key="signature.id"
+                type="button"
+                class="sig-cheat-entry signature-entry-btn"
+                @click="applySignature(signature.id)"
+              >
+                <div class="sig-cheat-sprite" :style="signatureSpriteStyle(signature.id)" />
+                <div class="sig-cheat-name">{{ signature.name }}</div>
+              </button>
+            </div>
+          </template>
+        </AllItems>
       </div>
 
       <div class="right-panel">
@@ -89,11 +115,12 @@ import AllItems from './AllItems.vue';
 import WaferView from './WaferView.vue';
 import { uiState } from '../logic/UIState';
 import itemsData from '../data/items';
-import { createWafer, type Wafer, getCell, canPlaceMolecule, placeMolecule, removeMolecule, clearWafer } from '../logic/Wafer';
+import { createWafer, type Wafer, getCell, canPlaceMolecule, placeMolecule, removeMolecule, clearWafer, getEnabledCells } from '../logic/Wafer';
 import { translateForSnap, rotateMolecule } from '../logic/MoleculeUtils';
 import { HEX_SIZE, WAFER_CANVAS_WIDTH, WAFER_CANVAS_HEIGHT } from '../logic/RefineUIBehaviour';
 import type { Molecule, Point2 } from '../logic/ItemLib';
 import { updateManualDragMolecule } from '../logic/ManualDrag';
+import { getSignatureAtlasVars, getSignatureSpriteStyle } from '../logic/signatureVisuals';
 
 const emit = defineEmits<{ (e: 'close'): void }>();
 
@@ -112,6 +139,7 @@ const lastHoverPos = ref<Point2 | null>(null);
 const rotation = ref(0);
 const connectMode = ref(false);
 const activeRaidFilter = ref<string | null>(null);
+const showSignatures = ref(false);
 
 const DEV_ESSENCE_ITEMS: Record<string, string> = {
   red: 'dev_atom_red',
@@ -126,6 +154,8 @@ const DEV_ESSENCE_ITEMS: Record<string, string> = {
   gold: 'dev_atom_gold',
   orange: 'dev_atom_orange',
   gray: 'dev_atom_gray',
+  cyan: 'dev_atom_cyan',
+  magenta: 'dev_atom_magenta',
 };
 
 const allItems = computed(() => {
@@ -150,6 +180,15 @@ const availableRaids = computed(() => {
   return raids;
 });
 
+const allSignatures = computed(() => {
+  if (!uiState.lib) return [];
+  const signatures = Array.from(uiState.lib.signatures.values());
+  signatures.sort((a, b) => a.level - b.level || a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+  return signatures;
+});
+
+const signatureAtlasVars = getSignatureAtlasVars();
+
 const filteredItems = computed(() => {
   if (!activeRaidFilter.value) return allItems.value;
   if (!uiState.lib) return allItems.value;
@@ -171,6 +210,15 @@ function onRaidFilter(raidId: string | null) {
   } else {
     activeRaidFilter.value = raidId;
   }
+}
+
+function signatureSpriteStyle(id: string): Record<string, string> {
+  return getSignatureSpriteStyle(id, 'revealed');
+}
+
+function toggleSignatureGrid() {
+  showSignatures.value = !showSignatures.value;
+  clearDragging();
 }
 
 const hoverCoords = computed(() => {
@@ -238,6 +286,108 @@ function onBreakDown() {
 
   for (const p of placements) {
     placeMolecule(w, p.id, p.molecule, 0);
+  }
+
+  bumpWafer();
+  clearDragging();
+}
+
+function getCenteredSignatureOffset(signatureId: string): Point2 {
+  const signature = uiState.lib!.signatures.get(signatureId)!;
+  const enabledCells = getEnabledCells(wafer.value);
+  const enabledKeys = new Set(enabledCells.map((cell) => `${cell.x},${cell.y}`));
+  const candidateOffsets = new Map<string, Point2>();
+
+  for (const cell of enabledCells) {
+    candidateOffsets.set(`${cell.x},${cell.y}`, { x: cell.x, y: cell.y });
+    for (const atom of signature.molecule.atoms) {
+      const offset = {
+        x: cell.x - atom.x,
+        y: cell.y - atom.y,
+      };
+      candidateOffsets.set(`${offset.x},${offset.y}`, offset);
+    }
+  }
+
+  let bestOffset: Point2 | null = null;
+  let bestOnboardCount = -1;
+  let bestDistanceScore = Number.POSITIVE_INFINITY;
+  let bestMaxDistance = Number.POSITIVE_INFINITY;
+
+  for (const offset of candidateOffsets.values()) {
+    let onboardCount = 0;
+    let distanceScore = 0;
+    let maxDistance = 0;
+
+    for (const atom of signature.molecule.atoms) {
+      const x = atom.x + offset.x;
+      const y = atom.y + offset.y;
+      if (!enabledKeys.has(`${x},${y}`)) continue;
+      onboardCount++;
+      const z = -x - y;
+      const distance = Math.max(Math.abs(x), Math.abs(y), Math.abs(z));
+      distanceScore += distance;
+      if (distance > maxDistance) maxDistance = distance;
+    }
+
+    if (onboardCount > bestOnboardCount) {
+      bestOffset = offset;
+      bestOnboardCount = onboardCount;
+      bestDistanceScore = distanceScore;
+      bestMaxDistance = maxDistance;
+      continue;
+    }
+    if (onboardCount < bestOnboardCount) continue;
+
+    if (distanceScore < bestDistanceScore) {
+      bestOffset = offset;
+      bestDistanceScore = distanceScore;
+      bestMaxDistance = maxDistance;
+      continue;
+    }
+    if (distanceScore > bestDistanceScore) continue;
+
+    if (maxDistance < bestMaxDistance) {
+      bestOffset = offset;
+      bestMaxDistance = maxDistance;
+      continue;
+    }
+    if (maxDistance > bestMaxDistance) continue;
+
+    if (bestOffset === null || offset.x < bestOffset.x || (offset.x === bestOffset.x && offset.y < bestOffset.y)) {
+      bestOffset = offset;
+    }
+  }
+
+  if (!bestOffset) {
+    throw new Error(`Unable to place signature '${signatureId}' inside enabled wafer cells`);
+  }
+  if (bestOnboardCount !== signature.molecule.atoms.length) {
+    throw new Error(`Signature '${signatureId}' does not fit in the current wafer`);
+  }
+
+  return bestOffset;
+}
+
+function applySignature(signatureId: string) {
+  const w = wafer.value;
+  const signature = uiState.lib!.signatures.get(signatureId)!;
+  const offset = getCenteredSignatureOffset(signatureId);
+
+  clearWafer(w);
+
+  for (const atom of signature.molecule.atoms) {
+    const placed = placeMolecule(w, DEV_ESSENCE_ITEMS[atom.color] || signatureId, {
+      atoms: [{
+        color: atom.color,
+        x: atom.x + offset.x,
+        y: atom.y + offset.y,
+      }],
+      connections: [],
+    });
+    if (!placed) {
+      throw new Error(`Failed to place signature atom for '${signatureId}'`);
+    }
   }
 
   bumpWafer();
@@ -585,5 +735,83 @@ function onRotate() {
 
 .btn:hover {
   background: rgba(30, 64, 175, 0.6);
+}
+
+.signatures-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 88px;
+  height: 28px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.03);
+  color: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  text-transform: lowercase;
+}
+
+.signatures-toggle:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.5);
+  transform: translateY(-1px);
+}
+
+.signatures-toggle.active {
+  background: rgba(34, 197, 94, 0.25);
+  border-color: rgba(34, 197, 94, 0.7);
+  color: #a7f3d0;
+}
+
+.signature-cheat-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-content: flex-start;
+  min-height: 100%;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.signature-entry-btn {
+  min-width: 52px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.02);
+  color: inherit;
+  cursor: pointer;
+}
+
+.signature-entry-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sig-cheat-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 3px;
+  border: 1px solid transparent;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.sig-cheat-sprite {
+  display: block;
+}
+
+.sig-cheat-name {
+  text-align: center;
+  font-size: 9px;
+  color: var(--text-secondary);
+  line-height: 1;
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

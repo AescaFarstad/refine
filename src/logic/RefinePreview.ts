@@ -37,6 +37,8 @@ export interface GearOutput {
 export interface RefinePreviewChem {
     timeSec: number;
     failureChancePct: number;
+    adaptiveModifierPct: number;
+    effectiveFailureChancePct: number;
     baseYieldPct: number;
     waferCharge: number;
     waferChargeYieldBonus: number;
@@ -529,6 +531,10 @@ export function computeRefinePreviewChem(gs: ReadonlyGameState): RefinePreviewCh
         Math.max(0, baseFailureChance + magentaPenalty - cyanReduction - signatureSuccessChanceBonus - newSignatureSuccessChanceBonus - waferChargeSuccessChanceBonus)
     );
 
+    const modifierFraction = gs.refiningFailureRoll.getModifier(failureChancePct / 100);
+    const adaptiveModifierPct = Math.round(modifierFraction * 100);
+    const effectiveFailureChancePct = Math.min(100, Math.max(0, failureChancePct + adaptiveModifierPct));
+
     const totalSpeedBonusPct = signatureSpeedBonus + newSignatureSpeedBonus;
     const timeSec = REFINE_TIME / (1 + totalSpeedBonusPct / 100);
 
@@ -602,6 +608,8 @@ export function computeRefinePreviewChem(gs: ReadonlyGameState): RefinePreviewCh
     return {
         timeSec,
         failureChancePct,
+        adaptiveModifierPct,
+        effectiveFailureChancePct,
         baseYieldPct,
         waferCharge,
         waferChargeYieldBonus,

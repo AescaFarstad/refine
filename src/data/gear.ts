@@ -591,7 +591,7 @@ const gear: Record<string, RawGearDefinition> = {
         skillPoints: -1,
         replacePerk: "Hanoi Packing",
         changeDescription: '+2 volume per gear item with volume',
-        title:'Injection-Molding'
+        title:'Hanoi Packing'
       }
     },
   },
@@ -679,16 +679,16 @@ const gear: Record<string, RawGearDefinition> = {
         biopsyChance: 10,
         title:'Raker Teeth'
       },
-      up2:{ 
-        skillPoints: -1,
+      up2:{
+        skillPoints: 0,
         damage: 1,
-        price: 30,
+        price: 40,
         title:'Carbide Teeth'
       },
       up3:{
         skillPoints: -1,
         biopsyChance: 10,
-        regenAfterCombat: -2,
+        regenAfterCombat: -1,
         title:'Blood Channel'
       }
     },

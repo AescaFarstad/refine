@@ -13,6 +13,7 @@ interface HeapEntry {
   idx: number;
   cost: number;
   steps: number;
+  interest: number;
 }
 
 class MinHeap {
@@ -40,7 +41,8 @@ class MinHeap {
 
   private compare(a: HeapEntry, b: HeapEntry): number {
     if (a.cost !== b.cost) return a.cost - b.cost;
-    return a.steps - b.steps;
+    if (a.steps !== b.steps) return a.steps - b.steps;
+    return b.interest - a.interest;
   }
 
   private siftUp(startIdx: number): void {
@@ -79,6 +81,46 @@ class MinHeap {
   }
 }
 
+const MAZE_ENTRANCE_ARCHETYPE_ID = 'disc_maze_navigation';
+const MAZE_NEXUS_ARCHETYPE_ID = 'disc_maze_nexus';
+const MAZE_TRANSMUTATION_ROOM_ARCHETYPE_ID = 'transmutation_room';
+
+function buildInterestingMazeCellMask(gs: ReadonlyGameState): Uint8Array {
+  const mask = new Uint8Array(gs.researchCells.length);
+
+  for (const spawn of gs.mazeResourceSpawns) {
+    const idx = axialToIndex(spawn.cell.x, spawn.cell.y);
+    if (idx !== -1) {
+      mask[idx] = 1;
+    }
+  }
+
+  for (let i = 0; i < gs.researchCells.length; i++) {
+    const cell = gs.researchCells[i]!;
+    if (cell.oracleId !== '') {
+      mask[i] = 1;
+      continue;
+    }
+
+    if (
+      cell.archetypeId === MAZE_ENTRANCE_ARCHETYPE_ID
+      || cell.archetypeId === MAZE_NEXUS_ARCHETYPE_ID
+      || cell.archetypeId === MAZE_TRANSMUTATION_ROOM_ARCHETYPE_ID
+    ) {
+      mask[i] = 1;
+      continue;
+    }
+
+    if (!cell.nexusId) continue;
+    const def = gs.lib.nexusItems.get(cell.nexusId)!;
+    if (def.placableInstanceDescription.button) {
+      mask[i] = 1;
+    }
+  }
+
+  return mask;
+}
+
 export function bfsMazePath(
   gs: ReadonlyGameState,
   from: Point2,
@@ -104,15 +146,19 @@ export function bfsMazePath(
   const INF = 2147483647;
   const bestCost = new Int32Array(cellCount);
   const bestSteps = new Int32Array(cellCount);
+  const bestInterest = new Int32Array(cellCount);
   const parent = new Int32Array(cellCount);
   bestCost.fill(INF);
   bestSteps.fill(INF);
+  bestInterest.fill(-INF);
   parent.fill(-1);
+  const interestingCellMask = buildInterestingMazeCellMask(gs);
 
   const heap = new MinHeap();
   bestCost[startIdx] = 0;
   bestSteps[startIdx] = 0;
-  heap.push({ idx: startIdx, cost: 0, steps: 0 });
+  bestInterest[startIdx] = interestingCellMask[startIdx]!;
+  heap.push({ idx: startIdx, cost: 0, steps: 0, interest: bestInterest[startIdx]! });
 
   while (heap.size > 0) {
     const current = heap.pop()!;
@@ -121,6 +167,7 @@ export function bfsMazePath(
     if (
       current.cost !== bestCost[currentIdx]
       || current.steps !== bestSteps[currentIdx]
+      || current.interest !== bestInterest[currentIdx]
     ) {
       continue;
     }
@@ -140,18 +187,21 @@ export function bfsMazePath(
       const stepCost = nCell.mazeMoveCostMult;
       const nextCost = current.cost + stepCost;
       const nextSteps = current.steps + 1;
+      const nextInterest = current.interest + interestingCellMask[nIdx]!;
 
       if (
         nextCost > bestCost[nIdx]
-        || (nextCost === bestCost[nIdx] && nextSteps >= bestSteps[nIdx])
+        || (nextCost === bestCost[nIdx] && nextSteps > bestSteps[nIdx])
+        || (nextCost === bestCost[nIdx] && nextSteps === bestSteps[nIdx] && nextInterest <= bestInterest[nIdx])
       ) {
         continue;
       }
 
       bestCost[nIdx] = nextCost;
       bestSteps[nIdx] = nextSteps;
+      bestInterest[nIdx] = nextInterest;
       parent[nIdx] = currentIdx;
-      heap.push({ idx: nIdx, cost: nextCost, steps: nextSteps });
+      heap.push({ idx: nIdx, cost: nextCost, steps: nextSteps, interest: nextInterest });
     }
   }
 

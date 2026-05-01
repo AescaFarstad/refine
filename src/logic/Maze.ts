@@ -601,7 +601,12 @@ export interface MazeEnterProjection {
   resetEntranceCell: Point2;
 }
 
-export type MazeMoveSegmentPlan = Point2[];
+export interface MazePlannedMoveSegment {
+  path: Point2[];
+  target: Point2;
+}
+
+export type MazeMoveSegmentPlan = MazePlannedMoveSegment[];
 
 export interface MazeEnterProjectionResult {
   success: boolean;
@@ -716,47 +721,38 @@ export function projectMazeEnterCell(
   return { success: true, forcedReset: false, payout: false, nexusReached: isMazeNexusCell(gs, target) };
 }
 
-export interface MazeMoveProjectionResult {
-  success: boolean;
-  path: Point2[];
-  forcedReset: boolean;
-  payout: boolean;
-  nexusReached: boolean;
+function finalizeProjectedMove(gs: ReadonlyGameState, projection: MazeEnterProjection, target: Point2): void {
+  if (!isMazeEntranceCell(gs, target)) return;
+  projection.resetEntranceCell = copy(target);
+  resetProjectionTransient(projection);
 }
 
-export function projectMazeMoveTo(
+export function applyPlannedMazeMoveSegment(
   gs: ReadonlyGameState,
   projection: MazeEnterProjection,
-  target: Point2,
-): MazeMoveProjectionResult {
-  const result = bfsMazePath(gs, projection.avatarCell, target);
-  if (!result.reachable) {
-    return { success: false, path: [], forcedReset: false, payout: false, nexusReached: false };
+  segment: MazePlannedMoveSegment,
+): void {
+  const { path, target } = segment;
+  if (path.length === 0) {
+    const stepResult = projectMazeEnterCell(gs, projection, target);
+    if (!stepResult.success || !stepResult.forcedReset) {
+      throw new Error('applyPlannedMazeMoveSegment: empty segment did not force reset');
+    }
+    return;
   }
 
-  if (result.path.length === 0) {
-    return { success: true, path: [], forcedReset: false, payout: false, nexusReached: false };
-  }
+  const finalPathCell = path[path.length - 1]!;
+  if (!sameCell(finalPathCell, target)) throw new Error('applyPlannedMazeMoveSegment: path target mismatch');
 
-  for (const stepCell of result.path) {
+  for (const stepCell of path) {
     const stepResult = projectMazeEnterCell(gs, projection, stepCell);
-    if (!stepResult.success) {
-      return { success: false, path: [], forcedReset: false, payout: false, nexusReached: false };
-    }
+    if (!stepResult.success) throw new Error('applyPlannedMazeMoveSegment: failed to project step');
     if (stepResult.forcedReset) {
-      return { success: true, path: [], forcedReset: true, payout: false, nexusReached: false };
+      throw new Error('applyPlannedMazeMoveSegment: non-empty segment forced reset');
     }
   }
 
-  const isEntrance = isMazeEntranceCell(gs, target);
-  if (isEntrance) {
-    projection.resetEntranceCell = copy(target);
-    resetProjectionTransient(projection);
-    return { success: true, path: result.path, forcedReset: false, payout: true, nexusReached: false };
-  }
-
-  const isNexus = isMazeNexusCell(gs, target);
-  return { success: true, path: result.path, forcedReset: false, payout: false, nexusReached: isNexus };
+  finalizeProjectedMove(gs, projection, target);
 }
 
 function isMazeBonusCell(gs: ReadonlyGameState, projection: MazeEnterProjection, cell: Point2): boolean {
@@ -790,14 +786,23 @@ export function planMazeMoveSegments(
     const stopOnResource = isFreshResourceCell(gs, projection, stepCell);
     const stopOnBonus = isMazeBonusCell(gs, projection, stepCell);
     const stepResult = projectMazeEnterCell(gs, projection, stepCell);
-    if (!stepResult.success) break;
+    if (!stepResult.success) {
+      throw new Error('planMazeMoveSegments: failed to project planned step');
+    }
 
     if (stepResult.forcedReset) {
       if (currentPath.length > 0) {
-        plan.push(copy(currentPath[currentPath.length - 1]!));
+        const previousTarget = copy(currentPath[currentPath.length - 1]!);
+        plan.push({
+          path: currentPath.map(copy),
+          target: previousTarget,
+        });
         currentPath = [];
       }
-      plan.push(copy(stepCell));
+      plan.push({
+        path: [],
+        target: copy(stepCell),
+      });
       break;
     }
 
@@ -805,7 +810,10 @@ export function planMazeMoveSegments(
     const isLast = i === result.path.length - 1;
     if (!stopOnResource && !stopOnBonus && !stepResult.payout && !isLast) continue;
 
-    plan.push(copy(currentPath[currentPath.length - 1]!));
+    plan.push({
+      path: currentPath.map(copy),
+      target: copy(currentPath[currentPath.length - 1]!),
+    });
     currentPath = [];
   }
 

@@ -10,6 +10,7 @@ import { recomputeActiveRaidEstimates, recomputeActiveRaidParams } from "./Raid"
 import { applyMazeNexusPlacementAtCell, computeMazeResourceSpawns, resetMazeTransient } from "./Maze";
 import { randomizeOracles } from "./RandomizeOracles";
 import { syncDerivedGearUnlocks } from "./DiscoveryLib";
+import { ensureTimelineEventsGenerated } from "./Timeline";
 
 // This file must not contain fallbacks for anything. Fail fast.
 
@@ -45,10 +46,17 @@ const REQUIRED_KEYS: readonly string[] = [
   RESEARCH_NEXUS_IDS_KEY,
   "unlockedRaids",
   "items",
-  "timelineEvents",
-  "timelineCursor",
   "rawNexusLib",
 ];
+
+function failLoad(reason: string, details?: unknown): false {
+  if (details === undefined) {
+    console.warn(`[LoadGame_V1] Load failed: ${reason}`);
+  } else {
+    console.warn(`[LoadGame_V1] Load failed: ${reason}`, details);
+  }
+  return false;
+}
 
 function isObjectRecord(value: unknown): value is AnonymousObject {
   return typeof value === "object" && value !== null;
@@ -126,19 +134,53 @@ function parseSavedWafer(value: unknown): ParsedSavedWafer | false {
 }
 
 function parseSavedTimelineEvents(value: unknown): TimelineScheduledEvent[] | false {
-  if (!Array.isArray(value)) return false;
+  if (!Array.isArray(value)) {
+    console.warn("[LoadGame_V1] Invalid timelineEvents: value is not an array.", { value });
+    return false;
+  }
 
   const out: TimelineScheduledEvent[] = [];
-  for (const rawEntry of value) {
-    if (!isObjectRecord(rawEntry)) return false;
-    if (typeof rawEntry.eventId !== "string") return false;
-    if (typeof rawEntry.archetypeId !== "string") return false;
-    if (typeof rawEntry.at !== "number" || !Number.isFinite(rawEntry.at)) return false;
-    if (typeof rawEntry.repeat !== "number" || !Number.isFinite(rawEntry.repeat)) return false;
-    if (typeof rawEntry.executed !== "boolean") return false;
-    if (typeof rawEntry.resolvedOptionIndex !== "number" || !Number.isInteger(rawEntry.resolvedOptionIndex)) return false;
-    if (typeof rawEntry.resolvedDescription !== "string") return false;
-    if (typeof rawEntry.preferredOptionIndex !== "number" || !Number.isInteger(rawEntry.preferredOptionIndex)) return false;
+  for (let i = 0; i < value.length; i++) {
+    const rawEntry = value[i];
+    if (!isObjectRecord(rawEntry)) {
+      console.warn("[LoadGame_V1] Invalid timelineEvents entry: entry is not an object.", { index: i, rawEntry });
+      return false;
+    }
+    if (typeof rawEntry.eventId !== "string") {
+      console.warn("[LoadGame_V1] Invalid timelineEvents entry: eventId is not a string.", { index: i, rawEntry });
+      return false;
+    }
+    if (typeof rawEntry.archetypeId !== "string") {
+      console.warn("[LoadGame_V1] Invalid timelineEvents entry: archetypeId is not a string.", { index: i, rawEntry });
+      return false;
+    }
+    if (typeof rawEntry.at !== "number" || !Number.isFinite(rawEntry.at)) {
+      console.warn("[LoadGame_V1] Invalid timelineEvents entry: at is not a finite number.", { index: i, rawEntry });
+      return false;
+    }
+    if (typeof rawEntry.repeat !== "number" || !Number.isFinite(rawEntry.repeat)) {
+      console.warn("[LoadGame_V1] Invalid timelineEvents entry: repeat is not a finite number.", { index: i, rawEntry });
+      return false;
+    }
+    if (typeof rawEntry.executed !== "boolean") {
+      console.warn("[LoadGame_V1] Invalid timelineEvents entry: executed is not a boolean.", { index: i, rawEntry });
+      return false;
+    }
+    const resolvedOptionIndex = rawEntry.resolvedOptionIndex === undefined ? -1 : rawEntry.resolvedOptionIndex;
+    if (typeof resolvedOptionIndex !== "number" || !Number.isInteger(resolvedOptionIndex)) {
+      console.warn("[LoadGame_V1] Invalid timelineEvents entry: resolvedOptionIndex is not an integer.", { index: i, rawEntry });
+      return false;
+    }
+    const resolvedDescription = rawEntry.resolvedDescription === undefined ? '' : rawEntry.resolvedDescription;
+    if (typeof resolvedDescription !== "string") {
+      console.warn("[LoadGame_V1] Invalid timelineEvents entry: resolvedDescription is not a string.", { index: i, rawEntry });
+      return false;
+    }
+    const preferredOptionIndex = rawEntry.preferredOptionIndex === undefined ? -1 : rawEntry.preferredOptionIndex;
+    if (typeof preferredOptionIndex !== "number" || !Number.isInteger(preferredOptionIndex)) {
+      console.warn("[LoadGame_V1] Invalid timelineEvents entry: preferredOptionIndex is not an integer.", { index: i, rawEntry });
+      return false;
+    }
 
     out.push({
       eventId: rawEntry.eventId,
@@ -146,9 +188,9 @@ function parseSavedTimelineEvents(value: unknown): TimelineScheduledEvent[] | fa
       at: rawEntry.at,
       repeat: rawEntry.repeat,
       executed: rawEntry.executed,
-      resolvedOptionIndex: rawEntry.resolvedOptionIndex,
-      resolvedDescription: rawEntry.resolvedDescription,
-      preferredOptionIndex: rawEntry.preferredOptionIndex,
+      resolvedOptionIndex,
+      resolvedDescription,
+      preferredOptionIndex,
     });
   }
 
@@ -159,6 +201,13 @@ function parseTimelineCursor(value: unknown, eventCount: number): number | false
   if (typeof value !== "number" || !Number.isInteger(value)) return false;
   if (value < 0 || value > eventCount) return false;
   return value;
+}
+
+function hasSavedTimeline(input: AnonymousObject): boolean | false {
+  const hasEvents = "timelineEvents" in input;
+  const hasCursor = "timelineCursor" in input;
+  if (hasEvents !== hasCursor) return false;
+  return hasEvents;
 }
 
 interface SavedNexusPlacement {
@@ -398,43 +447,58 @@ function assignSavedTimeline(gameState: GameState, events: TimelineScheduledEven
   return true;
 }
 
+function assignImplicitTimeline(gameState: GameState): void {
+  gameState.timelineEvents = [];
+  gameState.timelineCursor = 0;
+  gameState.timelineVersion = 0;
+  ensureTimelineEventsGenerated(gameState);
+}
+
 function rehydrateGameState(input: AnonymousObject): GameState | false {
   for (const requiredKey of REQUIRED_KEYS) {
-    if (!(requiredKey in input)) return false;
+    if (!(requiredKey in input)) return failLoad("missing required key.", { requiredKey });
   }
 
-  if (typeof input.version !== "number") return false;
+  if (typeof input.version !== "number") return failLoad("version is not a number.", { version: input.version });
   const ownedResearchCells = parseOwnedResearchCells(input[RESEARCH_OWNED_CELLS_KEY]);
-  if (ownedResearchCells === false) return false;
+  if (ownedResearchCells === false) return failLoad("invalid researchOwnedCells.", { value: input[RESEARCH_OWNED_CELLS_KEY] });
   const savedWafer = parseSavedWafer(input.wafer);
-  if (savedWafer === false) return false;
+  if (savedWafer === false) return failLoad("invalid wafer.", { wafer: input.wafer });
   const savedRawRaidLib = parseSavedRawRaidLib(input.rawRaidLib);
-  if (savedRawRaidLib === false) return false;
+  if (savedRawRaidLib === false) return failLoad("invalid rawRaidLib.", { rawRaidLib: input.rawRaidLib });
   const savedRawNexusLib = parseSavedRawNexusLib(input.rawNexusLib);
-  if (savedRawNexusLib === false) return false;
+  if (savedRawNexusLib === false) return failLoad("invalid rawNexusLib.", { rawNexusLib: input.rawNexusLib });
   const nexusPlacements = parseResearchNexusIds(input[RESEARCH_NEXUS_IDS_KEY]);
-  if (nexusPlacements === false) return false;
-  const savedTimelineEvents = parseSavedTimelineEvents(input.timelineEvents);
-  if (savedTimelineEvents === false) return false;
-  const savedTimelineCursor = parseTimelineCursor(input.timelineCursor, savedTimelineEvents.length);
-  if (savedTimelineCursor === false) return false;
+  if (nexusPlacements === false) return failLoad("invalid researchNexusIds.", { value: input[RESEARCH_NEXUS_IDS_KEY] });
+  const inputHasSavedTimeline = hasSavedTimeline(input);
+  if (inputHasSavedTimeline === false) return failLoad("timelineEvents and timelineCursor must both be present or both be absent.");
+  const savedTimelineEvents = inputHasSavedTimeline ? parseSavedTimelineEvents(input.timelineEvents) : [];
+  if (savedTimelineEvents === false) return failLoad("invalid timelineEvents.", { timelineEvents: input.timelineEvents });
+  const savedTimelineCursor = inputHasSavedTimeline ? parseTimelineCursor(input.timelineCursor, savedTimelineEvents.length) : 0;
+  if (savedTimelineCursor === false) return failLoad("invalid timelineCursor.", { timelineCursor: input.timelineCursor, eventCount: savedTimelineEvents.length });
 
   const gameState = new GameState();
-  if (!applySavedRawNexusLib(gameState, savedRawNexusLib)) return false;
-  if (!assignSavedTimeline(gameState, savedTimelineEvents, savedTimelineCursor)) return false;
+  if (!applySavedRawNexusLib(gameState, savedRawNexusLib)) return failLoad("saved rawNexusLib references an unknown nexus item.");
+  if (inputHasSavedTimeline && !assignSavedTimeline(gameState, savedTimelineEvents, savedTimelineCursor)) {
+    return failLoad("saved timeline references unknown or mismatched timeline definitions.");
+  }
   const mutableGameState = gameState as unknown as AnonymousObject;
 
   for (const [k, v] of Object.entries(input)) {
     if (k === "lib" || k === "version" || k === "researchCells" || k === RESEARCH_OWNED_CELLS_KEY || k === RESEARCH_NEXUS_IDS_KEY || k === "wafer" || k === "maze" || k === "mazeVisibility" || k === "rawRaidLib" || k === "rawNexusLib" || k === "lastAppliedRaidMutations" || k === "timelineVersion" || k === "timelineEvents" || k === "timelineCursor") continue;
     mutableGameState[k] = v;
   }
+  if (!inputHasSavedTimeline) {
+    console.info("[LoadGame_V1] Save has no timeline state; generating implicit timeline from current definitions.");
+    assignImplicitTimeline(gameState);
+  }
   gameState.discoveryCounter = 0;
 
   const random = input.random;
-  if (typeof random !== "number") return false;
+  if (typeof random !== "number") return failLoad("random seed is not a number.", { random });
   gameState.random = new SeededRandom(random);
 
-  if (!(gameState.random instanceof SeededRandom)) return false;
+  if (!(gameState.random instanceof SeededRandom)) return failLoad("random seed did not hydrate to SeededRandom.");
 
   const failureDebt = typeof input.refiningFailureRoll === "number" ? input.refiningFailureRoll : 0;
   gameState.refiningFailureRoll = new AdaptiveRoll({ debt: failureDebt });
@@ -444,7 +508,7 @@ function rehydrateGameState(input: AnonymousObject): GameState | false {
   }
   for (const enabled of savedWafer.enabledCells) {
     const cell = getCell(gameState.wafer, enabled);
-    if (!cell) return false;
+    if (!cell) return failLoad("saved wafer enabled cell is outside the wafer.", { enabled });
     cell.enabled = true;
   }
   clearWafer(gameState.wafer);
@@ -457,7 +521,7 @@ function rehydrateGameState(input: AnonymousObject): GameState | false {
       y: placedItem.y - pivot.y,
     });
     const placed = placeMolecule(gameState.wafer, placedItem.id, translatedMolecule, placedItem.rotation);
-    if (!placed) return false;
+    if (!placed) return failLoad("saved wafer item could not be placed.", { placedItem });
   }
   computeEffectiveEssences(gameState.wafer);
 
@@ -467,9 +531,9 @@ function rehydrateGameState(input: AnonymousObject): GameState | false {
     if (!cell.blocked) cell.owned = false;
   }
   for (const idx of ownedResearchCells) {
-    if (idx < 0 || idx >= gameState.researchCells.length) return false;
+    if (idx < 0 || idx >= gameState.researchCells.length) return failLoad("saved owned research cell index is out of bounds.", { idx });
     const cell = gameState.researchCells[idx]!;
-    if (cell.blocked) return false;
+    if (cell.blocked) return failLoad("saved owned research cell is blocked.", { idx });
     cell.owned = true;
   }
   let ownedPaidCount = 0;
@@ -494,7 +558,7 @@ function rehydrateGameState(input: AnonymousObject): GameState | false {
   resetMazeTransient(gameState);
   computeMazeResourceSpawns(gameState, gameState.lib.research);
 
-  if (!applySavedRawRaidLib(gameState, savedRawRaidLib)) return false;
+  if (!applySavedRawRaidLib(gameState, savedRawRaidLib)) return failLoad("saved rawRaidLib references an unknown raid.");
 
   if (gameState.raid.id.length > 0 && gameState.lib.raids.has(gameState.raid.id)) {
     recomputeActiveRaidParams(gameState, gameState.raid.id);
@@ -507,8 +571,8 @@ function rehydrateGameState(input: AnonymousObject): GameState | false {
 }
 
 export function loadGame_V1(input: unknown): GameState | false {
-  if (!isObjectRecord(input)) return false;
+  if (!isObjectRecord(input)) return failLoad("input is not an object.", { input });
   const revived = reviveValue(input);
-  if (!isObjectRecord(revived)) return false;
+  if (!isObjectRecord(revived)) return failLoad("revived input is not an object.", { revived });
   return rehydrateGameState(revived);
 }

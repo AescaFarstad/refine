@@ -202,7 +202,10 @@ export function saveToBase64(gameState: GameState): string {
 
 function readSaveVersion(input: AnonymousObject): number | false {
   const version = input.version;
-  if (typeof version !== "number" || !Number.isFinite(version)) return false;
+  if (typeof version !== "number" || !Number.isFinite(version)) {
+    console.warn("[SaveLoad] Load failed: missing or invalid save version.", { version });
+    return false;
+  }
   return version;
 }
 
@@ -211,18 +214,23 @@ function loadByVersion(version: number, input: unknown): GameState | false {
     case 1:
       return loadGame_V1(input);
     default:
+      console.warn("[SaveLoad] Load failed: unsupported save version.", { version });
       return false;
   }
 }
 
 export function loadFromObject(input: unknown): GameState | false {
-  if (!isObjectRecord(input)) return false;
+  if (!isObjectRecord(input)) {
+    console.warn("[SaveLoad] Load failed: parsed save is not an object.", { input });
+    return false;
+  }
 
   try {
     const version = readSaveVersion(input);
     if (version === false) return false;
     return loadByVersion(version, input);
-  } catch {
+  } catch (err) {
+    console.warn("[SaveLoad] Load failed: loader threw an error.", err);
     return false;
   }
 }
@@ -230,7 +238,8 @@ export function loadFromObject(input: unknown): GameState | false {
 export function loadFromJson(json: string): GameState | false {
   try {
     return loadFromObject(JSON.parse(json));
-  } catch {
+  } catch (err) {
+    console.warn("[SaveLoad] Load failed: invalid JSON.", err);
     return false;
   }
 }
@@ -238,7 +247,8 @@ export function loadFromJson(json: string): GameState | false {
 export function loadFromBase64(base64: string): GameState | false {
   try {
     return loadFromJson(base64ToUtf8(base64));
-  } catch {
+  } catch (err) {
+    console.warn("[SaveLoad] Load failed: invalid base64 save.", err);
     return false;
   }
 }

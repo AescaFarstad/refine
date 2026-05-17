@@ -199,6 +199,13 @@ export function applyPermanentRaidMutation(gs: GameState, raidId: string, m: Rai
   applyRaidMutation(gs.lib.raids.get(raidId)!, m);
 }
 
+function recordLastAppliedRaidMutation(gs: GameState, raidId: string, result: WeightedMutation | null): void {
+  gs.lastAppliedRaidMutations.push({
+    raidId,
+    mutation: result ? result.mutation : null,
+  });
+}
+
 // -------- Success-mutation selection logic --------
 
 export interface WeightedMutation { mutation: RaidMutation; weight: number; }
@@ -362,14 +369,22 @@ export function pickAndApplyRaidSuccessMutation(gs: GameState, raidId: string): 
     if (mutationIndex < raidSource.initialMutations.length) {
       const mutation = raidSource.initialMutations[mutationIndex];
       applyPermanentRaidMutation(gs, raidId, mutation);
-      return { mutation, weight: 1 };
+      const result = { mutation, weight: 1 };
+      recordLastAppliedRaidMutation(gs, raidId, result);
+      return result;
     }
   }
 
   const candidates = buildSuccessMutationCandidates(gs, raidId);
-  if (!candidates.length) return null;
+  if (!candidates.length) {
+    recordLastAppliedRaidMutation(gs, raidId, null);
+    return null;
+  }
   const total = candidates.reduce((a, c) => a + c.weight, 0);
-  if (total <= 0) return null;
+  if (total <= 0) {
+    recordLastAppliedRaidMutation(gs, raidId, null);
+    return null;
+  }
   let r = gs.random.get() * total;
   let chosen = candidates[0];
   for (const c of candidates) {
@@ -377,14 +392,21 @@ export function pickAndApplyRaidSuccessMutation(gs: GameState, raidId: string): 
     r -= c.weight;
   }
   applyPermanentRaidMutation(gs, raidId, chosen.mutation);
+  recordLastAppliedRaidMutation(gs, raidId, chosen);
   return chosen;
 }
 
 export function pickAndApplyRaidDeteriorationMutation(gs: GameState, raidId: string): WeightedMutation | null {
   const candidates = buildSuccessMutationCandidates(gs, raidId);
-  if (!candidates.length) return null;
+  if (!candidates.length) {
+    recordLastAppliedRaidMutation(gs, raidId, null);
+    return null;
+  }
   const total = candidates.reduce((a, c) => a + c.weight, 0);
-  if (total <= 0) return null;
+  if (total <= 0) {
+    recordLastAppliedRaidMutation(gs, raidId, null);
+    return null;
+  }
   let r = gs.random.get() * total;
   let chosen = candidates[0];
   for (const c of candidates) {
@@ -392,6 +414,7 @@ export function pickAndApplyRaidDeteriorationMutation(gs: GameState, raidId: str
     r -= c.weight;
   }
   applyPermanentRaidMutation(gs, raidId, chosen.mutation);
+  recordLastAppliedRaidMutation(gs, raidId, chosen);
   return chosen;
 }
 

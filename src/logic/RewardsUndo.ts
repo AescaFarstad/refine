@@ -50,6 +50,10 @@ export function undoReward(gs: GameState, reward: Reward): boolean {
       grantMazeNexusUpgradeOpportunities(gs, -reward.amount);
       return true;
 
+    case 'global_monsters_buff_hp':
+      gs.additionalMonsterHp -= reward.amount;
+      return true;
+
     case 'unlock_gear':
     case 'unlock_raid':
     case 'unlock_quest':
@@ -62,6 +66,7 @@ export function undoReward(gs: GameState, reward: Reward): boolean {
     case 'raid_add_item':
     case 'show_ui':
     case 'timeline_deteriorate_random_raid':
+    case 'timeline_deteriorate_all_raids':
       return false;
   }
 }

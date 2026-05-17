@@ -210,6 +210,18 @@ export class CmdSpeedUpRefining implements CmdInput {
   readonly name = 'CmdSpeedUpRefining';
 }
 
+export class CmdSetTimelinePreferredOption implements CmdInput {
+  readonly name = 'CmdSetTimelinePreferredOption';
+  readonly eventId: string;
+  readonly at: number;
+  readonly optionIndex: number;
+  constructor(args: { eventId: string; at: number; optionIndex: number }) {
+    this.eventId = args.eventId;
+    this.at = args.at;
+    this.optionIndex = args.optionIndex;
+  }
+}
+
 export class CmdClearShardPickupGrace implements CmdInput {
   readonly name = 'CmdClearShardPickupGrace';
 }

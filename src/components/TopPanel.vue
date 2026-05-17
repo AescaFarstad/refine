@@ -3,10 +3,7 @@
     <div class="bar">
       <Tabs />
 
-      <!-- Current time display -->
-      <div class="metric time-metric"><span class="label">Time</span><span class="value time-value">{{ timeDisplay }}</span></div>
-
-      <div class="spacer"></div>
+      <VisualTimeline />
 
       <div class="actions">
         <button v-if="showCheatButton" class="settings-btn" type="button" aria-label="Edit research pane" @click="openEditResearch">
@@ -27,7 +24,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { getGameState, getGameStateMutable, timeDisplay, uiState } from '../logic/UIState';
+import { getGameState, getGameStateMutable, uiState } from '../logic/UIState';
 import atlasStorage from '../logic/AtlasStorage';
 import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 import { DISCOVERY } from '../logic/DiscoveryLib';
@@ -36,6 +33,7 @@ import { CheatAddResearchVision } from '../logic/cheat/CheatCommands';
 import { CmdSwitchTab } from '../logic/input/InputCommands';
 import Tabs from './Tabs.vue';
 import SettingsWindow from './SettingsWindow.vue';
+import VisualTimeline from './VisualTimeline.vue';
 
 const settingsOpen = ref(false);
 const itemsSource = atlasStorage.getItemsSource();
@@ -115,7 +113,6 @@ function closeSettings(): void {
   z-index: 1;
 }
 
-.spacer { flex: 1 1 auto; }
 .actions {
   display: flex;
   align-items: center;
@@ -148,29 +145,4 @@ function closeSettings(): void {
   display: block;
 }
 
-.metric {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.label {
-  font-size: 12px;
-  color: #94a3b8; /* slate-400 */
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.value {
-  font-weight: 600;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-}
-
-/* Reserve stable width for time to avoid layout shift as it changes */
-.time-metric .time-value {
-  display: inline-block;
-  min-width: 5ch;
-  text-align: right;
-  white-space: nowrap;
-}
 </style>

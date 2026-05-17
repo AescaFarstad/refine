@@ -57,7 +57,8 @@ function createDefaultUIState() {
     shardDust: 0,
     skillPoints: 0,
     timeMinutes: 0,
-    canAdvanceTime: false,
+    timelineVersion: 0,
+    hasPendingEvt: false,
     timeActive: false,
     raidKey: '' as string,
 
@@ -146,6 +147,7 @@ function createDefaultUIState() {
     hasDiscoveredRaidSpeed: false,
     hasDiscoveredRaidSelection: false,
     hasDiscoveredRaidResourcesCollected: false,
+    hasDiscoveredTimeline: false,
     raidResourceInfoHoverGearId: '' as string,
     hasDiscoveredCyanYield: false,
     hasDiscoveredMagentaYield: false,
@@ -344,8 +346,9 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.transmutationCraftCounts = { ...game.transmutationCraftCounts };
   // Model tracks time in seconds; UI needs minutes for display
   uiState.timeMinutes = Math.floor((game.gameTime || 0) / 60);
-  uiState.canAdvanceTime = !!game.nextEvt;
+  uiState.hasPendingEvt = !!game.nextEvt;
   uiState.timeActive = game.timeActive;
+  uiState.timelineVersion = game.timelineVersion;
 
   const activeTab = game.activeTab;
   if (activeTab === 'raid') {
@@ -536,6 +539,7 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.hasDiscoveredRaidSpeed = game.discoveries[DISCOVERY.UI_RAID_SPEED] === true;
   uiState.hasDiscoveredRaidSelection = game.discoveries[DISCOVERY.UI_RAID_SELECTION] === true;
   uiState.hasDiscoveredRaidResourcesCollected = game.discoveries[DISCOVERY.UI_RAID_RESOURCES_COLLECTED] === true;
+  uiState.hasDiscoveredTimeline = game.discoveries[DISCOVERY.TIMELINE_DISCOVERY] === true;
   uiState.hasDiscoveredCyanYield = game.discoveries[DISCOVERY.CYAN_YIELD] === true;
   uiState.hasDiscoveredMagentaYield = game.discoveries[DISCOVERY.MAGENTA_YIELD] === true;
   uiState.hasDiscoveredFractalEssenceYield = game.discoveries[DISCOVERY.FRACTAL_ESSENCE_YIELD] === true;

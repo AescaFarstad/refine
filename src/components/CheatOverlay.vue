@@ -2,7 +2,7 @@
   <div v-if="open" class="modal-backdrop" @click.self="closeAll">
     <div class="modal" :class="{ full: hasFullscreen }">
       <section class="modal-body" v-if="!hasFullscreen">
-        <div class="grid">
+        <div class="window-btn-row">
           <button v-for="k in atlasKeys" :key="k" class="btn atlas-btn" @click="openAtlas(k)">
             {{ k.toUpperCase() }}
           </button>
@@ -14,7 +14,7 @@
           </button>
         </div>
 
-        <div class="grid" style="margin-top: 12px;">
+        <div class="window-btn-row" style="margin-top: 6px;">
           <button
             v-for="uiKey in REWARD_UI_KEYS"
             :key="uiKey"
@@ -23,6 +23,31 @@
             @click="triggerUIModal(uiKey)"
           >
             {{ formatUILabel(uiKey) }}
+          </button>
+        </div>
+
+        <h4 class="section-title">Time</h4>
+        <div class="time-cheat-row">
+          <span class="time-cheat-label">{{ timeDisplay }}</span>
+          <button
+            v-for="step in TIME_STEPS"
+            :key="'back-' + step.sec"
+            class="btn time-cheat-btn"
+            type="button"
+            @click="rewindTime(step.sec)"
+          >
+            -{{ step.label }}
+          </button>
+          <span class="time-cheat-divider" />
+          <button
+            v-for="step in TIME_STEPS"
+            :key="'fwd-' + step.sec"
+            class="btn primary time-cheat-btn"
+            type="button"
+            :disabled="!canAdvanceTime"
+            @click="advanceTime(step.sec)"
+          >
+            +{{ step.label }}
           </button>
         </div>
 
@@ -119,11 +144,23 @@
               </div>
             </div>
 
-            <div class="discovery-actions">
-              <button v-if="activeMazeOracleNodeId >= 0" class="btn primary discovery-action-btn" type="button" @click="solveOracle">
-                Solve oracle
-              </button>
-            </div>
+          </div>
+
+          <div class="raid-cheat-column">
+            <button
+              v-for="raid in raidDefs"
+              :key="raid.id"
+              class="btn raid-cheat-btn"
+              :class="{ primary: isRaidUnlocked(raid.id), active: isRaidActive(raid.id) }"
+              :disabled="isRaidActive(raid.id)"
+              type="button"
+              @click="toggleRaidUnlock(raid.id)"
+            >
+              {{ raid.name }}
+            </button>
+            <button v-if="activeMazeOracleNodeId >= 0" class="btn primary discovery-action-btn" type="button" @click="solveOracle">
+              Solve oracle
+            </button>
           </div>
         </div>
 
@@ -159,7 +196,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { getGameState, uiState, getGameStateMutable } from '../logic/UIState';
+import { getGameState, uiState, getGameStateMutable, timeDisplay } from '../logic/UIState';
+import { Raid } from '../logic/GameState';
+import { EvtTimeAdvance } from '../logic/evt/Evt';
 import DevAtlasView from './DevAtlasView.vue';
 import DevMoleculeEditor from './DevMoleculeEditor.vue';
 import { listAtlasKeys, type AtlasKey } from '../logic/AtlasStorage';
@@ -365,6 +404,54 @@ function toggleAllDiscoveries(): void {
   gs.discoveryCounter++;
 }
 
+const raidDefs = computed(() => {
+  const lib = uiState.lib;
+  if (!lib) return [];
+  return Array.from(lib.raids.values()).sort((a, b) => a.order - b.order);
+});
+
+function isRaidUnlocked(id: string): boolean {
+  return uiState.unlockedRaidIds.includes(id);
+}
+
+function isRaidActive(id: string): boolean {
+  return getGameState().raid.id === id;
+}
+
+const TIME_STEPS: Array<{ label: string; sec: number }> = [
+  { label: '1m', sec: 60 },
+  { label: '10m', sec: 600 },
+  { label: '1h', sec: 3600 },
+  { label: '6h', sec: 6 * 3600 },
+  { label: '1d', sec: 24 * 3600 },
+  { label: '1w', sec: 7 * 24 * 3600 },
+];
+
+const canAdvanceTime = computed(() => !uiState.hasPendingEvt);
+
+function rewindTime(deltaSec: number): void {
+  const gs = getGameStateMutable();
+  gs.gameTime = Math.max(0, gs.gameTime - deltaSec);
+}
+
+function advanceTime(deltaSec: number): void {
+  const gs = getGameStateMutable();
+  if (gs.nextEvt) return;
+  gs.nextEvt = new EvtTimeAdvance({ at: gs.gameTime + deltaSec });
+  gs.timeActive = true;
+}
+
+function toggleRaidUnlock(id: string): void {
+  const gs = getGameStateMutable();
+  if (gs.raid.id === id) return;
+  const idx = gs.unlockedRaids.findIndex(r => r.id === id);
+  if (idx >= 0) {
+    gs.unlockedRaids.splice(idx, 1);
+  } else {
+    gs.unlockedRaids.push(new Raid(id));
+  }
+}
+
 function solveOracle(): void {
   const nodeId = activeMazeOracleNodeId.value;
   if (nodeId < 0) return;
@@ -423,19 +510,20 @@ function closeAll() {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: transparent;
   display: grid;
   place-items: center;
   z-index: 20000; /* above other modals */
 }
 .modal {
-  width: min(90vw, 1400px);
+  width: fit-content;
+  max-width: 95vw;
   max-height: 90vh;
   background: linear-gradient(180deg, rgba(20, 28, 40, 0.98), rgba(10, 15, 26, 0.94));
   border: 1px solid var(--panel-border);
   border-radius: 6px;
   box-shadow: 0 24px 64px rgba(0,0,0,0.7), inset 0 1px 0 var(--panel-shine);
-  padding: 16px;
+  padding: 8px;
   display: flex;
   flex-direction: column;
 }
@@ -454,18 +542,25 @@ function closeAll() {
 .modal-header h3 { margin: 0; font-size: 18px; letter-spacing: 0.02em; }
 .spacer { flex: 1; }
 
-.modal-body { margin-top: 10px; overflow-y: auto; flex: 1; min-height: 0; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+.modal-body { margin-top: 4px; overflow-y: auto; flex: 1; min-height: 0; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 4px; }
+.window-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 720px;
+}
+.window-btn-row .btn { flex: 0 0 auto; }
 
-.viewer { margin-top: 10px; overflow: auto; }
+.viewer { margin-top: 4px; overflow: auto; }
 .viewer.fill { margin-top: 0; flex: 1; min-height: 0; }
 
 .btn {
-  padding: 8px 12px;
+  padding: 4px 8px;
   font-weight: 700;
   letter-spacing: 0.06em;
-  border-radius: 4px;
-  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  border: none;
   cursor: pointer;
   background: rgba(255,255,255,0.04);
   color: var(--text-primary);
@@ -476,31 +571,68 @@ function closeAll() {
 .btn.atlas-btn:hover { background: rgba(251, 191, 36, 0.28); }
 
 .section-title {
-  margin: 16px 0 8px;
-  font-size: 14px;
+  margin: 8px 0 4px;
+  font-size: 13px;
   color: var(--text-secondary);
   letter-spacing: 0.04em;
 }
+.time-cheat-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.time-cheat-label {
+  min-width: 100px;
+  font-size: 12px;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.time-cheat-btn {
+  min-width: 44px;
+  padding: 3px 6px;
+  font-size: 11px;
+}
+.time-cheat-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.time-cheat-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--panel-border);
+  margin: 0 2px;
+}
 .resource-and-discovery {
   display: grid;
-  grid-template-columns: max-content minmax(484px, 624px);
-  gap: 12px;
+  grid-template-columns: max-content max-content max-content;
+  gap: 8px;
   align-items: start;
   justify-content: start;
 }
+.raid-cheat-column {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 140px;
+}
+.raid-cheat-btn {
+  text-align: left;
+  font-size: 11px;
+  padding: 3px 6px;
+}
+.raid-cheat-btn.active {
+  outline: 1px solid var(--accent);
+  cursor: default;
+  opacity: 0.85;
+}
 .discovery-area {
   display: grid;
-  grid-template-columns: minmax(340px, 480px) 132px;
-  gap: 12px;
+  grid-template-columns: max-content;
+  gap: 8px;
 }
 .discovery-panel {
   min-width: 0;
-}
-.discovery-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 132px;
 }
 .discovery-action-btn {
   width: 100%;
@@ -508,47 +640,47 @@ function closeAll() {
 .resource-grid {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 3px;
 }
 .resource-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
 }
 .resource-label {
-  min-width: 120px;
-  font-size: 13px;
+  min-width: 100px;
+  font-size: 12px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 .resource-glyph {
-  font-size: 14px;
+  font-size: 13px;
 }
 .discovery-title {
-  margin: 0 0 8px;
+  margin: 0 0 4px;
 }
 .discovery-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 3px;
 }
 .discovery-btn {
   text-transform: uppercase;
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 0.06em;
 }
 .discovery-toggle-all {
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   width: 100%;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
 }
 .discovery-separator {
   border: none;
   border-top: 1px solid var(--panel-border);
-  margin: 10px 0;
+  margin: 6px 0;
 }
 
 @media (max-width: 820px) {
@@ -560,16 +692,16 @@ function closeAll() {
     grid-template-columns: 1fr;
   }
 
-  .discovery-actions {
-    width: 100%;
+  .raid-cheat-column {
+    min-width: 0;
   }
 }
 
 .signature-cheat-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 12px;
+  gap: 2px;
+  margin-top: 6px;
 }
 
 .sig-cheat-entry {
@@ -578,16 +710,15 @@ function closeAll() {
   align-items: center;
   gap: 2px;
   cursor: pointer;
-  padding: 3px;
+  padding: 2px;
   border-radius: 3px;
-  border: 1px solid transparent;
-  transition: background 0.12s, border-color 0.12s;
-  min-width: 52px;
+  border: none;
+  transition: background 0.12s;
+  min-width: 48px;
 }
 
 .sig-cheat-entry:hover {
   background: rgba(255, 255, 255, 0.06);
-  border-color: var(--panel-border);
 }
 
 .sig-cheat-sprite {

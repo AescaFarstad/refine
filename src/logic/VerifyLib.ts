@@ -122,6 +122,8 @@ function verifyRewardRefs(reward: Reward, context: string, lib: Lib, errors: Ver
     case 'learn_n_signatures':
     case 'stat':
     case 'timeline_deteriorate_random_raid':
+    case 'timeline_deteriorate_all_raids':
+    case 'global_monsters_buff_hp':
       return;
   }
 }

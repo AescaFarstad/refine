@@ -113,7 +113,7 @@ const monsterRows = computed<MonsterRow[]>(() => {
     rows.push({
       id,
       name: m.name,
-      hp: Math.max(0, m.hp),
+      hp: Math.max(0, m.hp + gs.additionalMonsterHp),
       damage: Math.max(0, m.damage),
       hitPct: hit,
       blockPct: block,

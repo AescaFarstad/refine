@@ -55,6 +55,8 @@ export type Reward =
   | { kind: 'raid_rarity_buff'; delta: number; targetRaidId?: string; sentiment?: 'positive' | 'negative' }
   | { kind: 'raid_add_item'; itemIds: readonly string[]; targetRaidId?: string; sentiment?: 'positive' | 'negative' }
   | { kind: 'timeline_deteriorate_random_raid' }
+  | { kind: 'timeline_deteriorate_all_raids' }
+  | { kind: 'global_monsters_buff_hp'; amount: number }
 
   // UI interactions
   | { kind: 'show_ui'; ui: string; params?: Record<string, unknown> }
@@ -212,6 +214,7 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
       break;
 
     case 'timeline_deteriorate_random_raid': {
+      gs.lastAppliedRaidMutations.length = 0;
       if (gs.unlockedRaids.length === 0) {
         break;
       }
@@ -220,5 +223,16 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
       pickAndApplyRaidDeteriorationMutation(gs, raidId);
       break;
     }
+
+    case 'timeline_deteriorate_all_raids':
+      gs.lastAppliedRaidMutations.length = 0;
+      for (const raidId of gs.lib.raids.keys()) {
+        pickAndApplyRaidDeteriorationMutation(gs, raidId);
+      }
+      break;
+
+    case 'global_monsters_buff_hp':
+      gs.additionalMonsterHp += reward.amount;
+      break;
   }
 }

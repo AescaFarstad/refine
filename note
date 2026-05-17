@@ -104,6 +104,8 @@ april 30
   testing, signature editor
 may 1
   adaptive random, fixes, transmutation core
+may 17
+  timeline visuals
 
 
 npx tsc --noEmit
@@ -325,7 +327,7 @@ timeline event archtype
   shards_or_refining_failure
     options:[
       take away 100 shard dust
-      refining failure chance +5% (deterioration source)
+      refining failure chance +5% (from deterioration source)
     ]
   chronotraces_or_mass_deterioration
     options:[
@@ -378,6 +380,3 @@ the player can choose what happens - which of the Rewards from the options is go
 Executed events stay in the timeline. gameState keeps a cursor into it.
 
 Before coding, let's discuss it and iron out what is underspecified.
-
-
-

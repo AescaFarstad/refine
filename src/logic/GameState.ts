@@ -18,7 +18,7 @@ import type { Reward, UIModalEntry } from './Reward';
 import { randomizeOracles } from './RandomizeOracles';
 import type { OracleSealAttempt } from "./Oracle";
 import type { GearDefinition } from "./GearLib";
-import type { TimelineEventDefinition } from "./TimelineLib";
+import { ensureTimelineEventsGenerated } from "./Timeline";
 
 /*
   When adding/editing properties here, make sure save-loading is compatible.
@@ -63,6 +63,7 @@ export class GameState {
   public chanceToBlock: number = 0;
   public armor: number = 0;
   public health: number = 10;
+  public additionalMonsterHp: number = 0;
   public itemBans: number = 0;
   public wafer: Wafer = createWafer(2);
   public waferCharge: number = 0;
@@ -161,6 +162,10 @@ export class GameState {
 
   public raidSimulation: RaidSimulation = new RaidSimulation();
   public raidFoundItemsVersion: number = 0;
+  public timelineVersion: number = 0;
+
+  // Transient channel for UI/logging immediately after reward-driven raid mutations.
+  public lastAppliedRaidMutations: AppliedRaidMutation[] = [];
 
   // Queue of UI modal keys to show (from show_ui rewards)
   public pendingUIModals: UIModalEntry[] = [];
@@ -182,10 +187,7 @@ export class GameState {
     randomizeOracles(this);
     computeMazeResourceSpawns(this, this.lib.research);
 
-    for (const eventDef of this.lib.timeline.events) {
-      this.timelineEvents.push(createTimelineScheduledEvent(eventDef));
-    }
-    this.timelineEvents.sort((a, b) => a.at - b.at);
+    ensureTimelineEventsGenerated(this);
   }
 }
 
@@ -313,16 +315,14 @@ export interface TimelineScheduledEvent {
   at: number;
   repeat: number;
   executed: boolean;
+  resolvedOptionIndex: number;
+  resolvedDescription: string;
+  preferredOptionIndex: number;
 }
 
-function createTimelineScheduledEvent(eventDef: TimelineEventDefinition): TimelineScheduledEvent {
-  return {
-    eventId: eventDef.id,
-    archetypeId: eventDef.type,
-    at: eventDef.time,
-    repeat: eventDef.repeat,
-    executed: false,
-  };
+export interface AppliedRaidMutation {
+  raidId: string;
+  mutation: RaidMutation | null;
 }
 
 export interface MazeResourceSpawn {

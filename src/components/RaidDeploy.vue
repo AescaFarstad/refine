@@ -1,8 +1,8 @@
 <template>
   <div class="deploy" v-if="hasDiscoveredMonsters">
     <div class="deploy-row">
-      <span class="btn-wrap" :class="{ 'has-tooltip': !!deployDisabledReason }">
-        <button class="deploy-btn" type="button" :disabled="!canDeploy" @click="deploy" @mouseenter="isDeployHovered = true" @mouseleave="isDeployHovered = false">Deploy</button>
+      <span class="btn-wrap" :class="{ 'has-tooltip': !!deployDisabledReason }" @mouseenter="isDeployHovered = true" @mouseleave="isDeployHovered = false">
+        <button class="deploy-btn" type="button" :disabled="!canDeploy" @click="deploy">Deploy</button>
         <span class="tooltip" v-if="deployDisabledReason">
           <div class="hint-section">
             <div class="section-heading">Cannot Deploy</div>

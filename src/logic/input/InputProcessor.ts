@@ -1,7 +1,7 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdReviewQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdUpgradeGearItem, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro, CmdPickupShard, CmdSpeedUpRefining, CmdClearShardPickupGrace, CmdMazeMoveTo, CmdMazePrepareUpgradeOffer, CmdMazeSelectNexusUpgrade, CmdMazePlaceNexusItem, CmdMazeActivateNexusSpecialUpgrade, CmdMazeResetHighMovement, CmdMazeValidateOracleSeal, CmdMazeActivateOracle, CmdTransmutate } from './InputCommands';
+import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdReviewQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdUpgradeGearItem, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro, CmdPickupShard, CmdSpeedUpRefining, CmdSetTimelinePreferredOption, CmdClearShardPickupGrace, CmdMazeMoveTo, CmdMazePrepareUpgradeOffer, CmdMazeSelectNexusUpgrade, CmdMazePlaceNexusItem, CmdMazeActivateNexusSpecialUpgrade, CmdMazeResetHighMovement, CmdMazeValidateOracleSeal, CmdMazeActivateOracle, CmdTransmutate } from './InputCommands';
 import { SHARD_PICKUP_DELAY_SEC } from '../Model';
 import { discover, discoverRefineTab, ensureSignatureDiscoveryFromWafer, hasDiscovered } from '../Discover';
 import { DISCOVERY } from '../DiscoveryLib';
@@ -527,6 +527,13 @@ handlersByName.set('CmdSpeedUpRefining', (gs) => {
   if (!gs.nextEvt || gs.nextEvt.name !== 'EvtRefineryDone') return;
   gs.timeSpeed = (gs.timeSpeed || 1) * 2;
   gs.timeSpeedMaxBoost = (gs.timeSpeedMaxBoost || 1) * 1.2;
+});
+
+handlersByName.set('CmdSetTimelinePreferredOption', (gs, cmd) => {
+  const c = cmd as CmdSetTimelinePreferredOption;
+  const event = gs.timelineEvents.find(entry => !entry.executed && entry.eventId === c.eventId && entry.at === c.at)!;
+  event.preferredOptionIndex = c.optionIndex;
+  gs.timelineVersion++;
 });
 
 handlersByName.set('CmdClearShardPickupGrace', (gs) => {

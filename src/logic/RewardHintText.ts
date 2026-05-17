@@ -1,4 +1,4 @@
-import type { ReadonlyLib } from './UIState';
+import type { DeepReadonly, ReadonlyLib } from './UIState';
 import { getResourceSpec } from './Resources';
 import type { Reward } from './Reward';
 
@@ -23,7 +23,7 @@ function signed(n: number): string {
   return n >= 0 ? `+${n}` : `${n}`;
 }
 
-export function formatRewardHintText(reward: Reward, lib: ReadonlyLib): string {
+export function formatRewardHintText(reward: DeepReadonly<Reward>, lib: ReadonlyLib): string {
   switch (reward.kind) {
     case 'resource': {
       const spec = getResourceSpec(reward.resource);
@@ -76,10 +76,14 @@ export function formatRewardHintText(reward: Reward, lib: ReadonlyLib): string {
     case 'show_ui':
       return `UI event: ${reward.ui}`;
     case 'timeline_deteriorate_random_raid':
-      return 'Deteriorate a random unlocked raid';
+      return 'A random raid zone deteriorates';
+    case 'timeline_deteriorate_all_raids':
+      return 'All raid zones deteriorate';
+    case 'global_monsters_buff_hp':
+      return `All monsters gain ${signed(reward.amount)} health`;
   }
 }
 
-export function formatRewardsHintText(rewards: readonly Reward[], lib: ReadonlyLib): string[] {
+export function formatRewardsHintText(rewards: readonly DeepReadonly<Reward>[], lib: ReadonlyLib): string[] {
   return rewards.map(r => formatRewardHintText(r, lib));
 }

@@ -8,6 +8,7 @@ export type TimelineArchetypeIcon =
 
 export interface TimelineArchetypeDefinition {
   id: string;
+  sentiment: 'positive' | 'negative';
   options: Reward[];
   icon: TimelineArchetypeIcon;
 }
@@ -20,6 +21,7 @@ export interface TimelineEventDefinition {
 }
 
 export interface RawTimelineArchetypeDefinition {
+  sentiment?: 'positive' | 'negative';
   options?: Reward[];
   icon?: {
     kind?: 'none' | 'glyph' | 'itemImage';
@@ -69,7 +71,7 @@ function parseTimelineIcon(input?: RawTimelineArchetypeDefinition['icon']): Time
 
 export function parseTimelineTimeToSeconds(input: [number, number, number] | undefined): number {
   const [days, hours, minutes] = normalizeTriplet(input);
-  return days * 86400 + hours * 3600 + minutes * 60;
+  return days * 24 * 3600 + hours * 3600 + minutes * 60;
 }
 
 export function parseTimelineArchetypeDefinitions(
@@ -79,6 +81,7 @@ export function parseTimelineArchetypeDefinitions(
   for (const [id, input] of Object.entries(raw)) {
     map.set(id, {
       id,
+      sentiment: input.sentiment ?? 'negative',
       options: [...(input.options ?? [])],
       icon: parseTimelineIcon(input.icon),
     });
@@ -112,4 +115,3 @@ export class TimelineLib {
     this.events = parseTimelineEventDefinitions(rawEvents);
   }
 }
-

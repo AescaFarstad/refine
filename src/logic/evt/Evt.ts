@@ -8,3 +8,9 @@ export class EvtRefineryDone implements Evt {
   readonly at: number;
   constructor(args: { at: number }) { this.at = args.at; }
 }
+
+export class EvtTimeAdvance implements Evt {
+  readonly name = 'EvtTimeAdvance';
+  readonly at: number;
+  constructor(args: { at: number }) { this.at = args.at; }
+}

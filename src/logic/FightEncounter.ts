@@ -83,7 +83,7 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
     });
     return { entry, timeSpentSec: 0, extras: [], summonedMonsterId: null, nextRegenThresholdSec: inputNextThreshold };
   }
-  let monsterHp = m.hp;
+  let monsterHp = m.hp + gs.additionalMonsterHp;
 
   const baseHit = r.hitChance;
   const baseBlock = r.blockChance;

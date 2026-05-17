@@ -1,4 +1,4 @@
-import { GameState } from "./GameState";
+import { GameState, type TimelineScheduledEvent } from "./GameState";
 import SeededRandom from "./core/SeededRandom";
 import { AdaptiveRoll } from "./core/AdaptiveRoll";
 import { clearWafer, getCell, placeMolecule } from "./Wafer";
@@ -45,6 +45,8 @@ const REQUIRED_KEYS: readonly string[] = [
   RESEARCH_NEXUS_IDS_KEY,
   "unlockedRaids",
   "items",
+  "timelineEvents",
+  "timelineCursor",
   "rawNexusLib",
 ];
 
@@ -121,6 +123,42 @@ function parseSavedWafer(value: unknown): ParsedSavedWafer | false {
   }
 
   return { enabledCells, placedItems };
+}
+
+function parseSavedTimelineEvents(value: unknown): TimelineScheduledEvent[] | false {
+  if (!Array.isArray(value)) return false;
+
+  const out: TimelineScheduledEvent[] = [];
+  for (const rawEntry of value) {
+    if (!isObjectRecord(rawEntry)) return false;
+    if (typeof rawEntry.eventId !== "string") return false;
+    if (typeof rawEntry.archetypeId !== "string") return false;
+    if (typeof rawEntry.at !== "number" || !Number.isFinite(rawEntry.at)) return false;
+    if (typeof rawEntry.repeat !== "number" || !Number.isFinite(rawEntry.repeat)) return false;
+    if (typeof rawEntry.executed !== "boolean") return false;
+    if (typeof rawEntry.resolvedOptionIndex !== "number" || !Number.isInteger(rawEntry.resolvedOptionIndex)) return false;
+    if (typeof rawEntry.resolvedDescription !== "string") return false;
+    if (typeof rawEntry.preferredOptionIndex !== "number" || !Number.isInteger(rawEntry.preferredOptionIndex)) return false;
+
+    out.push({
+      eventId: rawEntry.eventId,
+      archetypeId: rawEntry.archetypeId,
+      at: rawEntry.at,
+      repeat: rawEntry.repeat,
+      executed: rawEntry.executed,
+      resolvedOptionIndex: rawEntry.resolvedOptionIndex,
+      resolvedDescription: rawEntry.resolvedDescription,
+      preferredOptionIndex: rawEntry.preferredOptionIndex,
+    });
+  }
+
+  return out;
+}
+
+function parseTimelineCursor(value: unknown, eventCount: number): number | false {
+  if (typeof value !== "number" || !Number.isInteger(value)) return false;
+  if (value < 0 || value > eventCount) return false;
+  return value;
 }
 
 interface SavedNexusPlacement {
@@ -339,6 +377,27 @@ function applySavedRawNexusLib(gameState: GameState, savedNexusItems: Map<string
   return true;
 }
 
+function validateSavedTimelineEvents(gameState: GameState, events: TimelineScheduledEvent[]): boolean {
+  const eventDefs = new Map(gameState.lib.timeline.events.map(eventDef => [eventDef.id, eventDef]));
+
+  for (const entry of events) {
+    const eventDef = eventDefs.get(entry.eventId);
+    if (!eventDef) return false;
+    if (eventDef.type !== entry.archetypeId) return false;
+    if (!gameState.lib.timeline.archetypes.has(entry.archetypeId)) return false;
+  }
+
+  return true;
+}
+
+function assignSavedTimeline(gameState: GameState, events: TimelineScheduledEvent[], cursor: number): boolean {
+  if (!validateSavedTimelineEvents(gameState, events)) return false;
+  gameState.timelineEvents = events;
+  gameState.timelineCursor = cursor;
+  gameState.timelineVersion = 0;
+  return true;
+}
+
 function rehydrateGameState(input: AnonymousObject): GameState | false {
   for (const requiredKey of REQUIRED_KEYS) {
     if (!(requiredKey in input)) return false;
@@ -355,13 +414,18 @@ function rehydrateGameState(input: AnonymousObject): GameState | false {
   if (savedRawNexusLib === false) return false;
   const nexusPlacements = parseResearchNexusIds(input[RESEARCH_NEXUS_IDS_KEY]);
   if (nexusPlacements === false) return false;
+  const savedTimelineEvents = parseSavedTimelineEvents(input.timelineEvents);
+  if (savedTimelineEvents === false) return false;
+  const savedTimelineCursor = parseTimelineCursor(input.timelineCursor, savedTimelineEvents.length);
+  if (savedTimelineCursor === false) return false;
 
   const gameState = new GameState();
   if (!applySavedRawNexusLib(gameState, savedRawNexusLib)) return false;
+  if (!assignSavedTimeline(gameState, savedTimelineEvents, savedTimelineCursor)) return false;
   const mutableGameState = gameState as unknown as AnonymousObject;
 
   for (const [k, v] of Object.entries(input)) {
-    if (k === "lib" || k === "version" || k === "researchCells" || k === RESEARCH_OWNED_CELLS_KEY || k === RESEARCH_NEXUS_IDS_KEY || k === "wafer" || k === "maze" || k === "mazeVisibility" || k === "rawRaidLib" || k === "rawNexusLib") continue;
+    if (k === "lib" || k === "version" || k === "researchCells" || k === RESEARCH_OWNED_CELLS_KEY || k === RESEARCH_NEXUS_IDS_KEY || k === "wafer" || k === "maze" || k === "mazeVisibility" || k === "rawRaidLib" || k === "rawNexusLib" || k === "lastAppliedRaidMutations" || k === "timelineVersion" || k === "timelineEvents" || k === "timelineCursor") continue;
     mutableGameState[k] = v;
   }
   gameState.discoveryCounter = 0;

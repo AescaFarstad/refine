@@ -22,6 +22,7 @@ import questsShegolskoeData from '../data/quests/quests_shegolskoe';
 import questsOzernoyeData from '../data/quests/quests_ozernoye';
 import questsDyatlovskData from '../data/quests/quests_dyatlovsk';
 import questsBirdmundshireData from '../data/quests/quests_birdmundshire';
+import questsKilifiData from '../data/quests/quests_kilifi';
 import gearData from '../data/gear';
 import gearCategoriesData from '../data/gear_categories';
 import itemsData from '../data/items';
@@ -145,6 +146,7 @@ export class Lib {
           questsOzernoyeData,
           questsDyatlovskData,
           questsBirdmundshireData,
+          questsKilifiData,
         ]);
       }
 

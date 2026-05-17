@@ -145,6 +145,29 @@ const raids: Record<string, RawRaidDefinition> = {
       { count: 13, encounter: { type: 'LootEncounter' } }
     ],
   },
+  kilifi: {
+    name: 'Kilifi',
+    locationImageId: 'kilifi',
+    description: 'A Kenyan coastal town split in half by a creek and overrun by mangroves.',
+    baseLootChance: 10,
+    zoneCollapseSec: 16800,
+    zoneCollapseStepPerMutation: 420,
+    items: [
+      'canvas_tent',
+      'frying_pan',
+      'vase',
+      'electrical_wire',
+      'inventory_keys',
+      'work_gloves',
+    ],
+    encounters: [
+      { count: 6, encounter: { type: 'WalkEncounter' } },
+      { count: 5, encounter: { type: 'FightEncounter', monsterId: 'flower' } },
+      { count: 5, encounter: { type: 'FightEncounter', monsterId: 'spikder' } },
+      { count: 3, encounter: { type: 'FightEncounter', monsterId: 'stalker' } },
+      { count: 18, encounter: { type: 'LootEncounter' } }
+    ],
+  },
 };
 
 export default raids;

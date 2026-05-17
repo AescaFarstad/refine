@@ -32,4 +32,11 @@ export const timelineArchetypes: Record<string, RawTimelineArchetypeDefinition> 
     ],
     icon: { kind: 'glyph', glyph: '⧗', scale: 1, offset: { x: 0, y: 1 } },
   },
+  kilifi_raid_access: {
+    sentiment: 'positive',
+    options: [
+      { kind: 'unlock_raid', raidId: 'kilifi' },
+    ],
+    icon: { kind: 'glyph', glyph: '⌖', scale: 1, offset: { x: 0, y: 1 } },
+  },
 };

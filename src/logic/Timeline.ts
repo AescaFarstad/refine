@@ -114,6 +114,10 @@ function applyTimelineReward(gs: GameState, reward: Reward): string {
     return 'All raid zones deteriorated';
   }
 
+  if (reward.kind === 'unlock_raid') {
+    return `Unlocked raid: ${gs.lib.raidSources.get(reward.raidId)!.name}`;
+  }
+
   return '';
 }
 

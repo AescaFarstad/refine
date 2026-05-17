@@ -447,6 +447,7 @@ onBeforeUnmount(() => {
 
 .tm-recipe:hover {
   background: rgba(255, 255, 255, 0.08);
+  z-index: 10;
 }
 
 .tm-recipe--transmuting {

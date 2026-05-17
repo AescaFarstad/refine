@@ -36,6 +36,9 @@ import { researchPane, researchPaneEmptyCells, researchPaneVoidCells } from '../
 import { verifyLibIntegrity } from './VerifyLib';
 import type { TransmutationDefinition } from './TransmutationLib';
 import { parseTransmutationDefinitions } from './TransmutationLib';
+import { TimelineLib } from './TimelineLib';
+import { timelineArchetypes } from '../data/timeline_archetypes';
+import { timelineEvents } from '../data/timeline_events';
 
 export class Lib {
 
@@ -52,6 +55,7 @@ export class Lib {
   public nexusItems: Map<string, NexusItemDefinition> = new Map();
   public transmutations: Map<string, TransmutationDefinition> = new Map();
   public research: ResearchLib = new ResearchLib();
+  public timeline: TimelineLib = new TimelineLib();
 
   constructor() {
     this.loadAllDefinitions();
@@ -158,6 +162,7 @@ export class Lib {
         researchPaneVoidCells,
         this.gear
       );
+      this.timeline.load(timelineArchetypes, timelineEvents);
 
       verifyLibIntegrity(this);
 

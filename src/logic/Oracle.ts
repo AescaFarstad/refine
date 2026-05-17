@@ -220,3 +220,19 @@ export function submitOracleSeal(
 
   return { ...evaluation, submitted: true };
 }
+
+export function activateOracle(gs: GameState, nodeId: number): boolean {
+  const key = String(nodeId);
+  if (gs.mazeOracleStateByNodeId[key] !== 'inert') return false;
+
+  const currentCount = gs.countableGear.philosophers_stone ?? 0;
+  if (currentCount <= 0) return false;
+
+  gs.countableGear.philosophers_stone = currentCount - 1;
+  if (gs.countableGear.philosophers_stone <= 0) {
+    delete gs.countableGear.philosophers_stone;
+  }
+
+  gs.mazeOracleStateByNodeId[key] = 'riddling';
+  return true;
+}

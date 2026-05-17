@@ -1259,6 +1259,15 @@ const gear: Record<string, RawGearDefinition> = {
   */
 
   // ── Hidden ─────────────────────────────────────────────────────────
+  philosophers_stone: {
+    name: 'Philosopher\'s stone',
+    category: 'hidden',
+    countable: true,
+    price: 0,
+    weight: 0,
+    image: 'fracture_4',
+    description: 'Consumed during transmutation.',
+  },
   overweight: {
     name: 'Overweight',
     category: 'hidden',

@@ -252,6 +252,23 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
       imagePlacement: 'center',
     },
   },
+  philosophers_stone_panel: {
+    name: 'Philosopher\'s stone',
+    description: 'Spawns a transmutation core resource.',
+    price: 50,
+    priceIncrease: [50, 100, 200, 400, 800],
+    limitRadius: 3,
+    minAcquiredUpgradesForOffer: 14,
+    placableInstanceDescription: {
+      passable: true,
+      button: false,
+      showInMaze: false,
+      cells: [{ x: 0, y: 0 }],
+      image: 'fracture_4',
+      imageScale: 1.2,
+      imagePlacement: 'center',
+    },
+  },
   refund_reset_regret_panel: {
     name: 'Refund all',
     description: 'Refund and remove all placed nexus upgrades.<br>Can only be used once.',

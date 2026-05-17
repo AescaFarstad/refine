@@ -61,6 +61,7 @@ export function undoReward(gs: GameState, reward: Reward): boolean {
     case 'raid_rarity_buff':
     case 'raid_add_item':
     case 'show_ui':
+    case 'timeline_deteriorate_random_raid':
       return false;
   }
 }

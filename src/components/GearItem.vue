@@ -21,14 +21,8 @@
       <GearStatsHint :gear="gear" :blocked="blocked" />
     </div>
 
-    <div v-if="xpRows.length > 0" class="g-xp" aria-hidden="true">
-      <div v-for="(row, rowIndex) in xpRows" :key="rowIndex" class="g-xp-row">
-        <span
-          v-for="(pip, pipIndex) in row"
-          :key="pipIndex"
-          :class="['g-xp-pip', { completed: pip === '⋆' }]"
-        >{{ pip }}</span>
-      </div>
+    <div v-if="xpProgress > 0" class="g-xp" aria-hidden="true">
+      <div :class="['g-xp-fill', { ready: xpUpgradeReady }]" :style="{ width: `${xpProgress}%` }" />
     </div>
 
     <!-- Bottom-right weight label (no special background); hidden when zero -->
@@ -101,8 +95,8 @@ const effectiveWeight = computed(() => {
   return effectiveGear.value.weight;
 });
 
-const xpRows = computed((): string[][] => {
-  if (props.gear.xp.length === 0) return [];
+const xpProgress = computed((): number => {
+  if (props.gear.xp.length === 0) return 0;
 
   uiState.gearXpById;
   uiState.gearUpgradeIdsById;
@@ -111,20 +105,26 @@ const xpRows = computed((): string[][] => {
   const thresholds = getGearUpgradeThresholds(props.gear);
   const appliedCount = getAppliedGearUpgradeIds(gs, props.gear.id).length;
   const target = thresholds[appliedCount] ?? thresholds[thresholds.length - 1] ?? 0;
-  if (target <= 0 || xp <= 0) return [];
+  if (target <= 0 || xp <= 0) return 0;
 
   const prevThreshold = appliedCount > 0 ? (thresholds[appliedCount - 1] ?? 0) : 0;
   const relativeTarget = target - prevThreshold;
   const relativeXp = xp - prevThreshold;
+  if (relativeTarget <= 0) return 0;
   const completed = Math.max(0, Math.min(relativeTarget, relativeXp));
-  const symbols = Array.from({ length: relativeTarget }, (_, index) => (index < completed ? '⋆' : '⋄'));
+  return (completed / relativeTarget) * 100;
+});
 
-  const pointsPerRow = symbols.length <= 15 ? symbols.length : Math.ceil(symbols.length / 2);
-  const rows: string[][] = [];
-  for (let i = 0; i < symbols.length; i += pointsPerRow) {
-    rows.push(symbols.slice(i, i + pointsPerRow));
-  }
-  return rows;
+const xpUpgradeReady = computed((): boolean => {
+  if (props.gear.xp.length === 0) return false;
+
+  uiState.gearXpById;
+  uiState.gearUpgradeIdsById;
+  const gs = getGameState();
+  const thresholds = getGearUpgradeThresholds(props.gear);
+  const appliedCount = getAppliedGearUpgradeIds(gs, props.gear.id).length;
+  if (appliedCount >= thresholds.length) return false;
+  return (gs.gearXpById[props.gear.id] ?? 0) >= thresholds[appliedCount]!;
 });
 
 // dynamic edge-aware flipping
@@ -323,34 +323,22 @@ onBeforeUnmount(() => {
   position: absolute;
   left: 6px;
   right: 34px;
-  bottom: 3px;
+  bottom: 8px;
+  height: 2px;
   pointer-events: none;
-  color: var(--text-secondary);
-  font-size: 10px;
-  font-weight: 900;
-  line-height: 0.75;
-  letter-spacing: 0.01em;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.28);
+  border-radius: 1px;
   overflow: hidden;
 }
 
-.g-xp-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
+.g-xp-fill {
+  height: 100%;
+  background: currentColor;
+  border-radius: inherit;
 }
 
-.g-xp-pip {
-  display: inline-block;
-  color: rgba(139, 152, 168, 0.42);
-}
-
-.g-xp-pip.completed {
-  color: var(--text-primary);
-  transform: scale(1.18);
-  transform-origin: center;
-  text-shadow: 0 0 6px rgba(255, 255, 255, 0.18), 0 1px 2px rgba(0, 0, 0, 0.8);
+.g-xp-fill.ready {
+  background: #4ade80;
 }
 
 .gear-item.has-image .g-xp {

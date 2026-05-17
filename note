@@ -103,7 +103,7 @@ april 4
 april 30
   testing, signature editor
 may 1
-  adaptive random, fixes
+  adaptive random, fixes, transmutation core
 
 
 npx tsc --noEmit
@@ -297,3 +297,87 @@ secret items: available in each raid with fractals
 it feels like not enough is gated by raids progression. just stay on the first raid and that's all
 
 xp stars are ugly
+
+
+Spendings inside teh maze consume picked-up resource first
+
+
+-100 credits OR single deterioration
+-100 chronotraces OR global deterioration
+-100 shards OR refining failure chance 5%
+
+-1 time flux per hour OR failure
+
+all monsters get +1 HP
+maze movement cost x2
+
+timeline event archtype
+  credits_or_deterioration
+    options:[
+      take away 100 credits
+      deterioration of a random available raid
+    ]
+  chronotraces_or_mass_deterioration
+    options:[
+      take away 100 credits
+      deterioration of all raids
+    ]
+  shards_or_refining_failure
+    options:[
+      take away 100 shard dust
+      refining failure chance +5% (deterioration source)
+    ]
+  chronotraces_or_mass_deterioration
+    options:[
+      start_timeflux_countdown
+    ]
+  all_monsters_get_hp
+    options:[
+      gloabl_monsters_buff_hp
+    ]
+  maze_movement_cost_increase
+    options:[
+      maze_movement_costmultiplier_increase
+    ]
+
+
+timeline_lib:
+  events:[
+    {
+      type:credits_or_deterioration
+      time:[1, 10, 40]
+      repeat:[4, 0, 0]
+    }
+    ]
+
+I need to implement timeline feature:
+TimelineLib
+  consists of a list of events and event archtypes (listed in two separate data files)
+  Example of event_archtype:
+  credits_or_deterioration{
+    options:[ //list of Rewards
+      reward that takes away 100 credits
+      reward which causes deterioration of a random available raid //needs to be implemented
+    ]
+    icon: { kind: 'itemImage', key: 'cyan', scale: 1, offset: { x: 0, y: 0 } },
+  }
+  Example of list of events
+  events:[
+    {
+      type:credits_or_deterioration
+      time:[1, 10, 40] //when event accurs - day, hour, minute. needs to be parsed into a float
+      repeat:[4, 0, 0] //how often does it repeat
+    }
+    ]
+
+GameState has a list of timeline events. all events from the list are placed there is a sorted order. repeated events are only placed once. Whenever time advances it checks if an event is due and teh event is executed. If it is a repeated events - its next installment is added to the timeline
+
+executing event:
+the player can choose what happens - which of the Rewards from the options is going to fire. By default the [0] item is chosen. The user choice will be implemented separately, later in UI. If the player doesn't have enough resources, then the next is choosen.
+
+Executed events stay in the timeline. gameState keeps a cursor into it.
+
+Before coding, let's discuss it and iron out what is underspecified.
+
+
+

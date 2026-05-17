@@ -19,6 +19,7 @@ import {
   REFRESHER_PANEL_ID,
   SHARDS_REFRESHER_PANEL_ID,
   SPICE_PANEL_ID,
+  TRANSMUTATION_CORE_PANEL_ID,
 } from './NexusLib';
 
 export const REFRESHER_PANEL_PAUSE_MS = 200;
@@ -43,8 +44,8 @@ export type MazeRefresherRefresh = {
 
 const UNIT_ORIGIN: Point2 = { x: 0, y: 0 };
 const HEX_ROTATION_STEP_COUNT = 6;
-const GEAR_RESOURCE_PANEL_IDS = new Set([CRYSTAL_PANEL_ID, FRACTAL_PANEL_ID, SPICE_PANEL_ID]);
-const GEAR_RESOURCE_KEYS = new Set<MazeResourceSpawn['resourceKey']>(['zone_crystal', 'fractal', 'spice']);
+const GEAR_RESOURCE_PANEL_IDS = new Set([CRYSTAL_PANEL_ID, FRACTAL_PANEL_ID, SPICE_PANEL_ID, TRANSMUTATION_CORE_PANEL_ID]);
+const GEAR_RESOURCE_KEYS = new Set<MazeResourceSpawn['resourceKey']>(['zone_crystal', 'fractal', 'spice', 'philosophers_stone']);
 
 function sameCell(a: Point2, b: Point2): boolean {
   return a.x === b.x && a.y === b.y;
@@ -417,6 +418,13 @@ export function getMazeNexusResourcePanelSpawnAtCell(
       amount: 1,
     };
   }
+  if (itemId === TRANSMUTATION_CORE_PANEL_ID) {
+    return {
+      cell: { x: center.x, y: center.y },
+      resourceKey: 'philosophers_stone',
+      amount: 1,
+    };
+  }
   return null;
 }
 
@@ -568,6 +576,9 @@ export function grantMazeIncrementalPickupBonus(gs: GameState, resourceKey: Maze
       break;
     case 'spice':
       gs.maze.collectedSpice += bonusAmount;
+      break;
+    case 'philosophers_stone':
+      gs.maze.collectedTransmutationCore += bonusAmount;
       break;
   }
 

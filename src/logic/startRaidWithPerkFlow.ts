@@ -12,7 +12,8 @@ function hasMaterializationPerk(raidId: string): boolean {
 function getKnownRaidItemIds(raidId: string): string[] {
   const gs = getGameState();
   const raidEntry = gs.unlockedRaids.find(r => r.id === raidId)!;
-  return [...raidEntry.foundItemIds];
+  const regularLootItemIds = new Set(gs.lib.raids.get(raidId)!.items);
+  return raidEntry.foundItemIds.filter(itemId => regularLootItemIds.has(itemId));
 }
 
 export function clearChooseItemToLootModalState(): void {

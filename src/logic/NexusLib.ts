@@ -15,6 +15,7 @@ export const CHRONOTRACES_PANEL_ID = 'chronotraces_panel';
 export const CRYSTAL_PANEL_ID = 'crystal_panel';
 export const FRACTAL_PANEL_ID = 'fractal_panel';
 export const SPICE_PANEL_ID = 'spice_panel';
+export const TRANSMUTATION_CORE_PANEL_ID = 'philosophers_stone_panel';
 
 export type PlacableInstanceDescription = {
   passable: boolean;

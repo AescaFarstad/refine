@@ -121,6 +121,7 @@ function verifyRewardRefs(reward: Reward, context: string, lib: Lib, errors: Ver
       return;
     case 'learn_n_signatures':
     case 'stat':
+    case 'timeline_deteriorate_random_raid':
       return;
   }
 }
@@ -358,6 +359,22 @@ export function verifyOracles(lib: Lib, errors: VerifyErrors): void {
   }
 }
 
+export function verifyTimeline(lib: Lib, errors: VerifyErrors): void {
+  for (const eventDef of lib.timeline.events) {
+    const context = `TimelineEvent[${eventDef.id}]`;
+    if (!lib.timeline.archetypes.has(eventDef.type)) {
+      errors.push(`${context} references missing archetype: ${eventDef.type}`);
+    }
+  }
+
+  for (const archetype of lib.timeline.archetypes.values()) {
+    const context = `TimelineArchetype[${archetype.id}]`;
+    for (const reward of archetype.options) {
+      verifyRewardRefs(reward, `${context} option`, lib, errors);
+    }
+  }
+}
+
 export function verifyLibIntegrity(lib: Lib): void {
   const errors: VerifyErrors = [];
   verifyRaids(lib, errors);
@@ -368,6 +385,7 @@ export function verifyLibIntegrity(lib: Lib): void {
   verifyResearch(lib, errors);
   verifySignatures(lib, errors);
   verifyOracles(lib, errors);
+  verifyTimeline(lib, errors);
 
   if (errors.length > 0) {
     const count = errors.length;

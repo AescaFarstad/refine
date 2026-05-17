@@ -7,6 +7,7 @@ import { ensureShardDiscovery, ensureResearchTabDiscovery, ensureMazeTabDiscover
 import { syncDerivedGearUnlocks } from "./DiscoveryLib";
 import { saveAutosave } from "./SaveLoad";
 import { accumulateRaidResources } from './Raid';
+import { processDueTimelineEvents } from './Timeline';
 
 const TIME_SPEED_MAX = 3800;
 const TIME_SPEED_MIN = 300;
@@ -16,7 +17,7 @@ export const globalInputQueue: CmdInput[] = [];
 
 // Duration of the shard pickup animation in seconds;
 export const SHARD_PICKUP_DELAY_SEC = 0.6;
-const COUNTABLE_GEAR_SHARD_RESOURCES = new Set(['zone_crystal', 'fractal', 'spice']);
+const COUNTABLE_GEAR_SHARD_RESOURCES = new Set(['zone_crystal', 'fractal', 'spice', 'philosophers_stone']);
 
 export function setResearchRevealRadius(gs: GameState, radius: number): void {
   gs.researchRevealRadius = radius;
@@ -37,6 +38,8 @@ export function update(gs: GameState, deltaTime: number): void {
     return;
   }
 
+  processDueTimelineEvents(gs);
+
   if (gs.timeActive && gs.nextEvt && gs.gameTime >= gs.nextEvt.at) {
     const evt = gs.nextEvt;
     const timeDelta = Math.max(0, evt.at - gs.gameTime);
@@ -47,6 +50,7 @@ export function update(gs: GameState, deltaTime: number): void {
     if (evt.name === 'EvtRefineryDone') {
       saveAutosave(gs);
     }
+    processDueTimelineEvents(gs);
     gs.timeActive = false;
     return;
   }
@@ -62,6 +66,7 @@ export function update(gs: GameState, deltaTime: number): void {
     const timeDelta = Math.min(scaledDelta, remainingToEvt);
     gs.gameTime += timeDelta;
     accumulateRaidResources(gs, timeDelta);
+    processDueTimelineEvents(gs);
 
     // exponential ramp: multiply by MAX^(dt/T)
     const effectiveMax = TIME_SPEED_MAX * (gs.timeSpeedMaxBoost || 1);

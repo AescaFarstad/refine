@@ -16,7 +16,11 @@
     </div>
     <section class="quest-rewards" v-if="raidSuccess && rewardChips.length">
       <div class="qr-chips">
-        <span v-for="(chip, i) in rewardChips" :key="i" class="chip" :class="chip.class" :style="chip.style">{{ chip.text }}<span v-if="chip.value" class="chip-value">{{ chip.value }}</span></span>
+        <span v-for="(chip, i) in rewardChips" :key="i" class="chip" :class="chip.class" :style="chip.style">
+          <span v-if="chip.iconStyle" class="chip-icon" :style="chip.iconStyle" />
+          {{ chip.text }}
+          <span v-if="chip.value" class="chip-value">{{ chip.value }}</span>
+        </span>
       </div>
     </section>
     <section class="raid-changes" v-if="raidChangesPills.length || zoneChangeParsed">
@@ -58,8 +62,10 @@ import { getGameLib, getGameState } from '../../logic/UIState';
 import type { RaidOutcome } from '../../logic/GameState';
 import { describeMutation, type RaidMutation } from '../../logic/RaidMutation';
 import { getResourceSpec, type ResourceKey } from '../../logic/Resources';
+import atlasStorage from '../../logic/AtlasStorage';
+import { atlasSpriteStyle } from '../../logic/AtlasSpriteStyle';
 
-type RewardChip = { text: string; value?: string; class: string; style?: Record<string, string> };
+type RewardChip = { text: string; value?: string; class: string; style?: Record<string, string>; iconStyle?: Record<string, string> };
 type RaidChangePill = { label: string; value: string; positive: boolean };
 
 const props = defineProps<{
@@ -72,6 +78,7 @@ const discardedItems = computed(() => props.outcome.discarded.filter(it => it.qu
 const zoneChangeParsed = computed(() => props.outcome.zoneChange);
 const barelyInTime = computed(() => props.outcome.barelyInTime);
 const reimbursedCredits = computed(() => props.outcome.reimbursedCredits);
+const itemsAtlasSource = atlasStorage.getItemsSource();
 
 const newQuests = computed(() => {
   const ids = props.outcome.newQuestsAvailable;
@@ -110,8 +117,14 @@ const rewardChips = computed<RewardChip[]>(() => {
   }
 
   for (const [gearId, amount] of Object.entries(gearTotals)) {
-    const gearName = lib.gear.get(gearId)!.name;
-    out.push({ text: gearName, value: `+${amount}`, class: 'gear', style: { background: 'rgba(50, 30, 60, 0.7)', borderColor: 'rgba(139, 92, 246, 0.35)' } });
+    const gear = lib.gear.get(gearId)!;
+    out.push({
+      text: gear.name,
+      value: `+${amount}`,
+      class: 'gear',
+      style: { background: 'rgba(50, 30, 60, 0.7)', borderColor: 'rgba(139, 92, 246, 0.35)' },
+      iconStyle: gearChipIconStyle(gear.image),
+    });
   }
 
   for (const raidId of unlockedRaidIds) {
@@ -125,6 +138,11 @@ const rewardChips = computed<RewardChip[]>(() => {
 function resourceChipStyle(key: ResourceKey): Record<string, string> {
   const spec = getResourceSpec(key);
   return { color: spec.color, background: spec.bgColor };
+}
+
+function gearChipIconStyle(imageKey: string): Record<string, string> {
+  const frame = atlasStorage.getItemsFrame(imageKey)!;
+  return atlasSpriteStyle(itemsAtlasSource, frame, { size: 18, mode: 'fit', allowUpscale: false });
 }
 
 function isMutationPositive(m: RaidMutation): boolean {
@@ -212,6 +230,13 @@ const raidChangesPills = computed<RaidChangePill[]>(() => {
 .quest-rewards { margin-top: 10px; }
 .qr-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip { display: inline-flex; align-items: baseline; padding: 4px 10px; border-radius: 4px; background: rgba(255,255,255,0.06); font-size: 13px; font-weight: 600; }
+.chip-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  margin-right: 6px;
+  align-self: center;
+}
 .chip.gear {
   color: #c4b5fd;
   padding: 6px 14px;
@@ -221,6 +246,7 @@ const raidChangesPills = computed<RaidChangePill[]>(() => {
   letter-spacing: 0.02em;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  align-items: center;
 }
 .chip.raid-unlock {
   color: #fcd34d;

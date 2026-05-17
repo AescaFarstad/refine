@@ -262,8 +262,12 @@
   content: shield1 shield_solid shield_behind shield2
 }
 
-#start
 {
   image:ChatGPT Image Feb 16, 2026, 12_50_02 AM.png
   content:  tetrahedron_inv _ pentagon pentagon_concave
+}
+#start
+{
+  image:ChatGPT Image May 1, 2026, 06_42_46 PM.png
+  content:  fracture_1 fracture_2 fracture_3 fracture_4 
 }

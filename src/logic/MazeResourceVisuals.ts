@@ -59,4 +59,13 @@ export const MAZE_RESOURCE_SPECS: Record<MazeResourceVisualKey, MazeResourceVisu
     pillRow: 1,
     iconImage: 'salt',
   },
+  philosophers_stone: {
+    key: 'philosophers_stone',
+    name: 'Philosopher\'s stone',
+    glyph: '✦',
+    color: '#fb7185',
+    bgColor: 'rgba(251, 113, 133, 0.10)',
+    pillRow: 2,
+    iconImage: 'fracture_4',
+  },
 };

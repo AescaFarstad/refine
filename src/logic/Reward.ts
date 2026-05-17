@@ -1,6 +1,6 @@
 import { Raid, type GameState } from './GameState';
 import type { RaidMutation } from './RaidMutation';
-import { applyPermanentRaidMutation } from './RaidMutation';
+import { applyPermanentRaidMutation, pickAndApplyRaidDeteriorationMutation } from './RaidMutation';
 import { discover, ensureResearchTabDiscovery, ensureMazeTabDiscovery } from './Discover';
 import { DISCOVERY, syncDerivedGearUnlocks } from './DiscoveryLib';
 import { grantMazeNexusUpgradeOpportunities } from './MazeNexusUpgradeProgress';
@@ -54,6 +54,7 @@ export type Reward =
   | { kind: 'raid_loot_chance'; delta: number; targetRaidId?: string; sentiment?: 'positive' | 'negative' }
   | { kind: 'raid_rarity_buff'; delta: number; targetRaidId?: string; sentiment?: 'positive' | 'negative' }
   | { kind: 'raid_add_item'; itemIds: readonly string[]; targetRaidId?: string; sentiment?: 'positive' | 'negative' }
+  | { kind: 'timeline_deteriorate_random_raid' }
 
   // UI interactions
   | { kind: 'show_ui'; ui: string; params?: Record<string, unknown> }
@@ -209,5 +210,15 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
         gs.pendingUIModals.push({ ui: reward.ui, params: reward.params });
       }
       break;
+
+    case 'timeline_deteriorate_random_raid': {
+      if (gs.unlockedRaids.length === 0) {
+        break;
+      }
+      const idx = Math.floor(gs.random.get() * gs.unlockedRaids.length);
+      const raidId = gs.unlockedRaids[idx]!.id;
+      pickAndApplyRaidDeteriorationMutation(gs, raidId);
+      break;
+    }
   }
 }

@@ -18,6 +18,7 @@ import type { Reward, UIModalEntry } from './Reward';
 import { randomizeOracles } from './RandomizeOracles';
 import type { OracleSealAttempt } from "./Oracle";
 import type { GearDefinition } from "./GearLib";
+import type { TimelineEventDefinition } from "./TimelineLib";
 
 /*
   When adding/editing properties here, make sure save-loading is compatible.
@@ -28,7 +29,7 @@ import type { GearDefinition } from "./GearLib";
 export const DEFAULT_SPEED: number = 6;
 export const MIN_WALK_SPEED: number = 1; // km/h
 
-export type MazeOracleState = 'riddling' | 'riddlePassed';
+export type MazeOracleState = 'inert' | 'riddling' | 'riddlePassed';
 
 export class GameState {
   public lib: Lib = new Lib();
@@ -91,6 +92,7 @@ export class GameState {
   public mazeHighZoneCrystal: number = 0;
   public mazeHighFractal: number = 0;
   public mazeHighSpice: number = 0;
+  public mazeHighTransmutationCore: number = 0;
   public mazeHighMovementUsed: number = 0;
   public mazeNextNexusPlacementId: number = 1;
   public mazeNexusPlacementRotationSteps: Record<string, number> = {};
@@ -163,6 +165,10 @@ export class GameState {
   // Queue of UI modal keys to show (from show_ui rewards)
   public pendingUIModals: UIModalEntry[] = [];
 
+  // Executed timeline entries remain in this array; cursor points at next unexecuted entry.
+  public timelineEvents: TimelineScheduledEvent[] = [];
+  public timelineCursor: number = 0;
+
   constructor(seed: number = Date.now()) {
     const normalizedSeed = seed >>> 0;
     this.seed = normalizedSeed;
@@ -175,6 +181,11 @@ export class GameState {
     initResearchCells(this, this.lib.research);
     randomizeOracles(this);
     computeMazeResourceSpawns(this, this.lib.research);
+
+    for (const eventDef of this.lib.timeline.events) {
+      this.timelineEvents.push(createTimelineScheduledEvent(eventDef));
+    }
+    this.timelineEvents.sort((a, b) => a.at - b.at);
   }
 }
 
@@ -296,9 +307,27 @@ export interface Shard {
   launchSpeedMultiplier: number;
 }
 
+export interface TimelineScheduledEvent {
+  eventId: string;
+  archetypeId: string;
+  at: number;
+  repeat: number;
+  executed: boolean;
+}
+
+function createTimelineScheduledEvent(eventDef: TimelineEventDefinition): TimelineScheduledEvent {
+  return {
+    eventId: eventDef.id,
+    archetypeId: eventDef.type,
+    at: eventDef.time,
+    repeat: eventDef.repeat,
+    executed: false,
+  };
+}
+
 export interface MazeResourceSpawn {
   cell: Point2;
-  resourceKey: 'credits' | 'chronotraces' | 'shardDust' | 'zone_crystal' | 'fractal' | 'spice';
+  resourceKey: 'credits' | 'chronotraces' | 'shardDust' | 'zone_crystal' | 'fractal' | 'spice' | 'philosophers_stone';
   amount: number;
 }
 
@@ -312,6 +341,7 @@ export interface MazeTransient {
   collectedZoneCrystal: number;
   collectedFractal: number;
   collectedSpice: number;
+  collectedTransmutationCore: number;
   takenCells: Point2[];
   version: number;
 }
@@ -334,6 +364,7 @@ export function createMazeTransient(avatarCell: Point2 = { x: 0, y: 0 }): MazeTr
     collectedZoneCrystal: 0,
     collectedFractal: 0,
     collectedSpice: 0,
+    collectedTransmutationCore: 0,
     takenCells: [],
     version: 0,
   };

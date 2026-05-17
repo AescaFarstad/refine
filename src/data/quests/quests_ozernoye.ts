@@ -25,6 +25,7 @@ const quests: Record<string, RawQuestDefinition> = {
       { kind: 'AddMonsterMutation', monsterId: 'flower', count: 3 },
     ],
     rewards: [
+      { kind: 'countable_gear', gearId: 'philosophers_stone', amount: 1 },
       { kind: 'raid_mutation', mutation: { kind: 'LootMutation', count: 5 } },
       { kind: 'raid_mutation', mutation: { kind: 'WalkMutation', count: 1 } },
       { kind: 'raid_add_item', itemIds: ['insulation_tape'] },
@@ -41,11 +42,12 @@ const quests: Record<string, RawQuestDefinition> = {
       { kind: 'AddMonsterMutation', monsterId: 'octopus', count: 1 },
     ],
     rewards: [
+      { kind: 'countable_gear', gearId: 'philosophers_stone', amount: 1 },
       { kind: 'raid_loot_chance', delta: 10 },
       { kind: 'raid_mutation', mutation: { kind: 'ZoneCollapseTimeMutation', amount: 900 } },
     ],
   },
-  ozernoye_explore_bus_station_: {
+  ozernoye_explore_bus_station: {
     name: 'Bus station',
     encounterLine: 'Disturb the carnivorous flora inhabiting the bus station. This will spread the pollen, but you can’t make a salad without cutting some veggies.',
     raidRestriction: ['ozernoye'],
@@ -55,6 +57,7 @@ const quests: Record<string, RawQuestDefinition> = {
       { kind: 'AddMonsterMutation', monsterId: 'flower', count: 4 },
     ],
     rewards: [
+      { kind: 'countable_gear', gearId: 'philosophers_stone', amount: 1 },
       { kind: 'raid_loot_chance', delta: 10 },
       { kind: 'raid_add_item', itemIds: ['soviet_knife'] },
       { kind: 'raid_mutation', mutation: { kind: 'LootMutation', count: 3 } },

@@ -266,6 +266,14 @@ export class CmdMazeValidateOracleSeal implements CmdInput {
   }
 }
 
+export class CmdMazeActivateOracle implements CmdInput {
+  readonly name = 'CmdMazeActivateOracle';
+  readonly nodeId: number;
+  constructor(args: { nodeId: number }) {
+    this.nodeId = args.nodeId;
+  }
+}
+
 export class CmdTransmutate implements CmdInput {
   readonly name = 'CmdTransmutate';
   readonly transmutationId: string;

@@ -140,6 +140,7 @@ const attemptResources = computed<MazeResourceTotals>(() => {
     zone_crystal: m.collectedZoneCrystal,
     fractal: m.collectedFractal,
     spice: m.collectedSpice,
+    philosophers_stone: m.collectedTransmutationCore,
   };
 });
 
@@ -156,6 +157,7 @@ const highResources = computed<MazeResourceTotals>(() => {
     zone_crystal: gs.mazeHighZoneCrystal,
     fractal: gs.mazeHighFractal,
     spice: gs.mazeHighSpice,
+    philosophers_stone: gs.mazeHighTransmutationCore,
   };
 });
 

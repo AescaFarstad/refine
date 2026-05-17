@@ -19,6 +19,7 @@
         <div class="section-heading">{{ section.heading }}</div>
         <div v-for="(item, j) in section.items" :key="j" class="hint-item">
           <span class="bullet" :class="item.sentiment"></span>
+          <span v-if="item.iconStyle" class="hint-item-icon" :style="item.iconStyle" />
           <span class="item-text" v-html="highlightNumbers(item.text)"></span>
         </div>
       </div>
@@ -54,7 +55,7 @@ function highlightNumbers(text: string): string {
 
 type ChipStyle = Record<string, string>;
 type HintChip = { text: string; class: string; style?: ChipStyle };
-type HintItem = { text: string; sentiment: 'positive' | 'negative' };
+type HintItem = { text: string; sentiment: 'positive' | 'negative'; iconStyle?: Record<string, string> };
 type GearReqItem = { id: string; name: string };
 type HintSection =
   | { type: 'encounter-line'; text: string }
@@ -200,11 +201,19 @@ const hintSections = computed<HintSection[]>(() => {
     } else if (r.kind === 'unlock_raid' && sentiment) {
       outcomeItems.push({ text: 'Discover a new raid location', sentiment });
     } else if (r.kind === 'unlock_gear' && lib) {
-      const gearName = lib.gear.get(r.gearId)?.name ?? r.gearId;
-      outcomeItems.push({ text: `Gear: ${gearName}`, sentiment: 'positive' });
+      const gear = lib.gear.get(r.gearId);
+      outcomeItems.push({
+        text: `Gear: ${gear?.name ?? r.gearId}`,
+        sentiment: 'positive',
+        iconStyle: gear ? gearIconStyle(r.gearId) : undefined,
+      });
     } else if (r.kind === 'countable_gear' && lib) {
-      const gearName = lib.gear.get(r.gearId)?.name ?? r.gearId;
-      outcomeItems.push({ text: `+${r.amount} ${gearName}`, sentiment: 'positive' });
+      const gear = lib.gear.get(r.gearId);
+      outcomeItems.push({
+        text: `+${r.amount} ${gear?.name ?? r.gearId}`,
+        sentiment: 'positive',
+        iconStyle: gear ? gearIconStyle(r.gearId) : undefined,
+      });
     } else if ((r.kind === 'learn_signatures' || r.kind === 'learn_n_signatures') && !mayLearnSomething) {
       outcomeItems.push({ text: 'You may learn something', sentiment: 'positive' });
       mayLearnSomething = true;
@@ -311,6 +320,12 @@ function gearIconStyle(gearId: string): Record<string, string> {
   align-items: center;
   gap: 8px;
   padding-left: 4px;
+}
+
+.hint-item-icon {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
 }
 
 .bullet {

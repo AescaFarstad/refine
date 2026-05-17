@@ -380,6 +380,21 @@ export function pickAndApplyRaidSuccessMutation(gs: GameState, raidId: string): 
   return chosen;
 }
 
+export function pickAndApplyRaidDeteriorationMutation(gs: GameState, raidId: string): WeightedMutation | null {
+  const candidates = buildSuccessMutationCandidates(gs, raidId);
+  if (!candidates.length) return null;
+  const total = candidates.reduce((a, c) => a + c.weight, 0);
+  if (total <= 0) return null;
+  let r = gs.random.get() * total;
+  let chosen = candidates[0];
+  for (const c of candidates) {
+    if (r < c.weight) { chosen = c; break; }
+    r -= c.weight;
+  }
+  applyPermanentRaidMutation(gs, raidId, chosen.mutation);
+  return chosen;
+}
+
 export interface MutationDescription {
   label: string;
   value: string;

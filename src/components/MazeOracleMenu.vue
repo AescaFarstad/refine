@@ -80,6 +80,17 @@
         </div>
       </div>
 
+      <template v-else-if="oracleState === 'inert'">
+        <div class="oracle-header">ORACLE</div>
+        <div class="oracle-inert">
+          <button type="button" class="oracle-activate-btn" :disabled="!canActivateOracle" @click="onActivateOracle">
+            <span class="oracle-activate-icon" :style="philosophersStoneStyle" />
+            <span>Insert philosopher's stone</span>
+          </button>
+          <div class="oracle-inert-text">Solve the Oracle's riddle to learn how to escape the time loop</div>
+        </div>
+      </template>
+
       <template v-else-if="oracleState === 'riddlePassed'">
         <div class="oracle-header">ORACLES OPENED: {{ oraclesOpened }} / {{ oraclesTotal }}</div>
         <div class="oracle-escape-hint">
@@ -112,7 +123,9 @@ import {
 import { ESSENCE_COLORS } from '../logic/RenderConstants';
 import { getResourceSpec } from '../logic/Resources';
 import { getGameState, uiState, type DeepReadonly } from '../logic/UIState';
-import { CmdMazeValidateOracleSeal } from '../logic/input/InputCommands';
+import { CmdMazeActivateOracle, CmdMazeValidateOracleSeal } from '../logic/input/InputCommands';
+import atlasStorage from '../logic/AtlasStorage';
+import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 
 defineProps<{
   visible: boolean;
@@ -135,6 +148,7 @@ const oracleLastPreviewRef = ref<HTMLElement | null>(null);
 const oracleTopRowWidth = ref(0);
 const hoveredLastFailedSealAttempt = ref<DeepReadonly<OracleSealAttempt> | null>(null);
 const chronotracesSpec = getResourceSpec('chronotraces');
+const itemsAtlasSource = atlasStorage.getItemsSource();
 
 const currentOracleNode = computed(() => {
   uiState.lib;
@@ -165,6 +179,16 @@ const hasSealColors = computed(() => {
 const canValidateSeal = computed(() => {
   uiState.chronotraces;
   return uiState.chronotraces >= ORACLE_VALIDATE_COST && oracleState.value === 'riddling' && hasSealColors.value;
+});
+
+const canActivateOracle = computed(() => {
+  uiState.countableGear;
+  return oracleState.value === 'inert' && (uiState.countableGear.philosophers_stone ?? 0) > 0;
+});
+
+const philosophersStoneStyle = computed<Record<string, string>>(() => {
+  const frame = atlasStorage.getItemsFrame('fracture_4')!;
+  return atlasSpriteStyle(itemsAtlasSource, frame, { size: 20, mode: 'fit', allowUpscale: false });
 });
 
 const sealFailed = ref(false);
@@ -237,6 +261,12 @@ function onValidateSeal() {
     nodeId: node.nodeId,
     cellColors,
   }));
+}
+
+function onActivateOracle() {
+  const node = currentOracleNode.value;
+  if (!node || !canActivateOracle.value) return;
+  globalInputQueue.push(new CmdMazeActivateOracle({ nodeId: node.nodeId }));
 }
 
 function bindOracleTopRowObserver() {
@@ -352,6 +382,60 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+}
+
+.oracle-inert {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--panel-bg);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 6px;
+}
+
+.oracle-activate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 10px 14px;
+  border: 1px solid rgba(251, 113, 133, 0.35);
+  border-radius: 4px;
+  background: rgba(30, 41, 59, 0.9);
+  color: rgba(255, 241, 242, 0.96);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.oracle-activate-btn:hover {
+  background: rgba(51, 65, 85, 0.95);
+}
+
+.oracle-activate-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.oracle-activate-btn:disabled:hover {
+  background: rgba(30, 41, 59, 0.9);
+}
+
+.oracle-activate-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+}
+
+.oracle-inert-text {
+  max-width: 320px;
+  color: rgba(226, 232, 240, 0.82);
+  font-size: 15px;
+  line-height: 1.4;
 }
 
 .oracle-top-row {

@@ -75,6 +75,8 @@ export function formatRewardHintText(reward: Reward, lib: ReadonlyLib): string {
     }
     case 'show_ui':
       return `UI event: ${reward.ui}`;
+    case 'timeline_deteriorate_random_raid':
+      return 'Deteriorate a random unlocked raid';
   }
 }
 

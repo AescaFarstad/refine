@@ -25,8 +25,8 @@ export const timelineEvents: RawTimelineEventDefinition[] = [
     time: [2, 0, 0],
   },
   {
-    id: 'kilifi_raid_access_1',
-    type: 'kilifi_raid_access',
+    id: 'kilava_raid_access_1',
+    type: 'kilava_raid_access',
     time: [3, 0, 0],
   },
 ];

@@ -20,6 +20,7 @@ import { transmutate } from '../Transmutation';
 import { uiState } from '../UIState';
 import { activateOracle, submitOracleSeal } from '../Oracle';
 import { addGearXp, applyGearUpgrade, getPendingGearUpgradeCount } from '../GearUpgrades';
+import { cycleItemImage, getItemImageKey } from '../ItemVisuals';
 
 
 type Handler = (gs: GameState, cmd: CmdInput) => void;
@@ -344,7 +345,8 @@ handlersByName.set('CmdPlaceMolecule', (gs, cmd) => {
   const invQty = gs.items[itemId] ?? 0;
   if (invQty <= 0) return;
 
-  const placed = placeMolecule(gs.wafer, itemId, c.molecule, c.rotation);
+  const imageKey = getItemImageKey(gs, itemId);
+  const placed = placeMolecule(gs.wafer, itemId, c.molecule, c.rotation, imageKey);
   if (!placed) return;
 
   const nextQty = invQty - 1;
@@ -353,6 +355,7 @@ handlersByName.set('CmdPlaceMolecule', (gs, cmd) => {
   } else {
     gs.items[itemId] = nextQty;
   }
+  cycleItemImage(gs, itemId, 1);
 
   computeEffectiveEssences(gs.wafer);
   ensureSignatureDiscoveryFromWafer(gs);
@@ -376,6 +379,7 @@ handlersByName.set('CmdRemoveMolecule', (gs, cmd) => {
     gs.encounteredEssences[k] = true;
   }
   gs.items[itemId] = (gs.items[itemId] ?? 0) + 1;
+  cycleItemImage(gs, itemId, -1);
   saveAutosave(gs);
 });
 

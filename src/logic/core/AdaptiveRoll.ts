@@ -46,6 +46,17 @@ export class AdaptiveRoll {
   }
 }
 
+export const REFINING_FAILURE_ROLL_OPTIONS = {
+  k: 0.05,
+  step: 0.05,
+  modCap: 0.25,
+  tolerance: 1,
+} as const;
+
+export function createRefiningFailureRoll(debt: number = 0): AdaptiveRoll {
+  return new AdaptiveRoll({ ...REFINING_FAILURE_ROLL_OPTIONS, debt });
+}
+
 function clamp(x: number, lo: number, hi: number): number {
   return x < lo ? lo : x > hi ? hi : x;
 }

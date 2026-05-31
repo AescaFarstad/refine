@@ -49,6 +49,7 @@ export interface ItemDefinition {
   id: string;
   name: string;
   volume: number;
+  imageArray: string[];
   essence: Essence;
   remains: boolean;
   // Rarity used for loot tables (always normalized to string values)
@@ -58,11 +59,12 @@ export interface ItemDefinition {
   score: number;
 }
 
-export type RawItemDefinition = Omit<ItemDefinition, 'id' | 'essence' | 'rarity' | 'order' | 'score' | 'molecule' | 'remains'> & {
+export type RawItemDefinition = Omit<ItemDefinition, 'id' | 'imageArray' | 'essence' | 'rarity' | 'order' | 'score' | 'molecule' | 'remains'> & {
   molecule?: Molecule;
   essence?: Essence;
   rarity?: number | ItemDefinition['rarity'];
   devOnly?: boolean;
+  imageArray?: string[];
 };
 
 export function processItemDefinitions(
@@ -126,6 +128,7 @@ export function processItemDefinitions(
     result[key] = {
       ...def,
       id: key,
+      imageArray: def.imageArray ?? [key],
       essence,
       remains: key.endsWith('_remains'),
       rarity,
@@ -164,6 +167,7 @@ export function parseItemDefinitionsWithOrder(
       id: key,
       name: d.name,
       volume: d.volume,
+      imageArray: d.imageArray,
       essence: d.essence,
       remains: d.remains,
       rarity,

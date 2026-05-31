@@ -17,6 +17,7 @@
       <div v-if="optionEntries.length === 1" class="single-option">
         <span :style="{ color: optionEntries[0]!.affordable ? '' : '#fca5a5' }">{{ optionEntries[0]!.line }}</span>
         <span v-if="!optionEntries[0]!.affordable" class="unaffordable-note">Not enough resources right now</span>
+        <span v-if="optionEntries[0]!.note" class="effect-note">{{ optionEntries[0]!.note }}</span>
       </div>
       <div v-else class="hint-options">
         <div class="choice-title">Choose the preferred outcome:</div>
@@ -36,6 +37,7 @@
           <span class="radio-text">
             <span :style="{ color: entry.affordable ? '' : '#fca5a5' }">{{ entry.line }}</span>
             <span v-if="!entry.affordable" class="unaffordable-note">Not enough resources right now</span>
+            <span v-if="entry.note" class="effect-note">{{ entry.note }}</span>
           </span>
         </label>
       </div>
@@ -115,10 +117,35 @@ function optionIsAffordable(idx: number): boolean {
   return uiState[reward.resource] >= -reward.amount;
 }
 
+function countFightEncounters(raidId: string, monsterId: string): number {
+  const raid = getGameLib().raids.get(raidId)!;
+  let count = 0;
+  for (const step of raid.encounters) {
+    if (step.encounter.type !== 'FightEncounter') continue;
+    if (step.encounter.monsterId !== monsterId) continue;
+    count += step.count;
+  }
+  return count;
+}
+
+function noEffectNote(idx: number): string {
+  uiState.raidKey;
+  uiState.timelineVersion;
+  const reward = props.archetype.options[idx]!;
+  if (reward.kind !== 'raid_mutation') return '';
+  if (reward.mutation.kind !== 'AddMonsterMutation') return '';
+  if (reward.mutation.count >= 0) return '';
+  const raidId = reward.targetRaidId!;
+  if (countFightEncounters(raidId, reward.mutation.monsterId) > 0) return '';
+  const monsterName = getGameLib().monsters.get(reward.mutation.monsterId)!.name;
+  return `${monsterName} is not present, so this will have no effect.`;
+}
+
 const optionEntries = computed(() => props.archetype.options.map((reward, idx) => ({
   idx,
   line: formatRewardHintText(reward, getGameLib()),
   affordable: optionIsAffordable(idx),
+  note: noEffectNote(idx),
 })));
 
 const preferredOptionIndex = computed(() => {
@@ -317,6 +344,12 @@ function chooseOption(optionIndex: number): void {
 
 .unaffordable-note {
   color: rgba(248, 113, 113, 0.78);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.effect-note {
+  color: rgba(148, 163, 184, 0.9);
   font-size: 11px;
   font-weight: 700;
 }

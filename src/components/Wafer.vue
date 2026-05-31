@@ -95,7 +95,7 @@
         @mouseenter="setHighlight(entry.idx)"
         @mouseleave="clearHighlight()"
       >
-        <ItemDisplay :id="entry.item.id" :quantity="1" minor no-tooltip />
+        <ItemDisplay :id="entry.item.id" :image-key="entry.item.imageKey" :quantity="1" minor no-tooltip />
         <div class="remove-overlay">
           <span class="remove-cross">×</span>
         </div>

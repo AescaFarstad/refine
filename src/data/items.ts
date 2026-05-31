@@ -8,7 +8,7 @@ const blankMolecule: Molecule = {
 };
 
 // Data shape: rarity is optional and numeric (1..4). It is normalized in Lib to string rarity.
-const rawDefinitions: Record<string, { name: string; volume: number; essence?: Essence; rarity?: number; molecule?: Molecule; devOnly?: boolean }> = {
+const rawDefinitions: Record<string, { name: string; volume: number; imageArray?: string[]; essence?: Essence; rarity?: number; molecule?: Molecule; devOnly?: boolean }> = {
   enamel_mug: {
     name: 'Mug',
     volume: 3,
@@ -527,9 +527,22 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
   },
   work_gloves: {
     name: 'Work Gloves',
-    volume: 1,
-    rarity: 1,
-    molecule: blankMolecule,
+    volume: 2,
+    rarity: 2,
+    molecule: {
+      atoms: [
+        { color: 'green', x: 0, y: -1 },
+        { color: 'green', x: -1, y: 0 },
+        { color: 'red', x: -2, y: 1 },
+        { color: 'red', x: -1, y: 1 },
+      ],
+      connections: [
+        { from: { x: 0, y: -1 }, to: { x: -1, y: 0 } },
+        { from: { x: -1, y: 0 }, to: { x: -2, y: 1 } },
+        { from: { x: -2, y: 1 }, to: { x: -1, y: 1 } },
+        { from: { x: -1, y: 1 }, to: { x: -1, y: 0 } },
+      ],
+    },
   },
   rubber_boots: {
     name: 'Rubber Boot',
@@ -949,8 +962,14 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
   inventory_keys: {
     name: 'Keys',
     volume: 1,
-    rarity: 1,
-    molecule: blankMolecule,
+    rarity: 2,
+    molecule: {
+      atoms: [
+        { color: 'green', x: 0, y: 0 },
+      ],
+      connections: [
+      ],
+    },
   },
   bicycle_pedal: {
     name: 'Bicycle Pedal',
@@ -1015,9 +1034,24 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
   },
   vase: {
     name: 'Vase',
-    volume: 1,
+    volume: 4,
     rarity: 1,
-    molecule: blankMolecule,
+    molecule: {
+      atoms: [
+        { color: 'red', x: 1, y: -2 },
+        { color: 'gray', x: 1, y: -1 },
+        { color: 'red', x: 2, y: -1 },
+        { color: 'red', x: 0, y: 0 },
+        { color: 'red', x: 1, y: 0 },
+      ],
+      connections: [
+        { from: { x: 1, y: -2 }, to: { x: 1, y: -1 } },
+        { from: { x: 1, y: -1 }, to: { x: 2, y: -1 } },
+        { from: { x: 1, y: -1 }, to: { x: 0, y: 0 } },
+        { from: { x: 1, y: 0 }, to: { x: 2, y: -1 } },
+        { from: { x: 1, y: 0 }, to: { x: 0, y: 0 } },
+      ],
+    },
   },
   handkerchief: {
     name: 'Handkerchief',
@@ -1175,9 +1209,26 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
   },
   frying_pan: {
     name: 'Frying Pan',
-    volume: 1,
-    rarity: 1,
-    molecule: blankMolecule,
+    volume: 4,
+    rarity: 2,
+    molecule: {
+      atoms: [
+        { color: 'gray', x: 0, y: -1 },
+        { color: 'red', x: 1, y: -1 },
+        { color: 'red', x: -1, y: 0 },
+        { color: 'gray', x: 1, y: 0 },
+        { color: 'gray', x: -1, y: 1 },
+        { color: 'red', x: 0, y: 1 },
+      ],
+      connections: [
+        { from: { x: 0, y: -1 }, to: { x: 1, y: -1 } },
+        { from: { x: 1, y: -1 }, to: { x: 1, y: 0 } },
+        { from: { x: 1, y: 0 }, to: { x: 0, y: 1 } },
+        { from: { x: -1, y: 0 }, to: { x: 0, y: -1 } },
+        { from: { x: -1, y: 1 }, to: { x: -1, y: 0 } },
+        { from: { x: 0, y: 1 }, to: { x: -1, y: 1 } },
+      ],
+    },
   },
   ruined_ammunition_7_62: {
     name: 'Ruined Ammunition 7.62',
@@ -1568,6 +1619,296 @@ const rawDefinitions: Record<string, { name: string; volume: number; essence?: E
         { from: { x: 1, y: -1 }, to: { x: 2, y: -1 } },
         { from: { x: 0, y: 0 }, to: { x: 1, y: 0 } },
         { from: { x: 2, y: -1 }, to: { x: 1, y: 0 } },
+      ],
+    },
+  },
+  comb: {
+    name: 'Comb',
+    volume: 1,
+    rarity: 1,
+    molecule: {
+      atoms: [
+        { color: 'gray', x: 0, y: -1 },
+        { color: 'red', x: -1, y: 0 },
+        { color: 'gray', x: -1, y: 1 },
+      ],
+      connections: [
+        { from: { x: -1, y: 0 }, to: { x: 0, y: -1 } },
+        { from: { x: -1, y: 0 }, to: { x: -1, y: 1 } },
+      ],
+    },
+  },
+  flipflops: {
+    name: 'Flip-flops',
+    volume: 4,
+    rarity: 1,
+    molecule: {
+      atoms: [
+        { color: 'red', x: 0, y: -1 },
+        { color: 'red', x: 2, y: -1 },
+        { color: 'red', x: -1, y: 0 },
+        { color: 'red', x: 1, y: 0 },
+      ],
+      connections: [
+        { from: { x: 0, y: -1 }, to: { x: -1, y: 0 } },
+        { from: { x: 0, y: -1 }, to: { x: 2, y: -1 } },
+        { from: { x: 2, y: -1 }, to: { x: 1, y: 0 } },
+        { from: { x: 1, y: 0 }, to: { x: -1, y: 0 } },
+      ],
+    },
+  },
+  plate: {
+    name: 'Plate',
+    volume: 3,
+    rarity: 2,
+    molecule: {
+      atoms: [
+        { color: 'green', x: -1, y: -1 },
+        { color: 'green', x: 1, y: -1 },
+        { color: 'green', x: -2, y: 0 },
+        { color: 'green', x: 1, y: 0 },
+        { color: 'green', x: -2, y: 1 },
+        { color: 'green', x: 0, y: 1 },
+      ],
+      connections: [
+        { from: { x: 1, y: -1 }, to: { x: 1, y: 0 } },
+        { from: { x: 1, y: 0 }, to: { x: 0, y: 1 } },
+        { from: { x: -1, y: -1 }, to: { x: -2, y: 0 } },
+        { from: { x: -1, y: -1 }, to: { x: 1, y: -1 } },
+        { from: { x: -2, y: 0 }, to: { x: -2, y: 1 } },
+        { from: { x: -2, y: 1 }, to: { x: 0, y: 1 } },
+      ],
+    },
+  },
+  bike_bell: {
+    name: 'Bike Bell',
+    volume: 2,
+    rarity: 1,
+    molecule: {
+      atoms: [
+        { color: 'blue', x: 1, y: -2 },
+        { color: 'gray', x: 0, y: -1 },
+        { color: 'gray', x: 1, y: -1 },
+        { color: 'blue', x: 0, y: 0 },
+      ],
+      connections: [
+        { from: { x: 1, y: -2 }, to: { x: 1, y: -1 } },
+        { from: { x: 1, y: -2 }, to: { x: 0, y: -1 } },
+        { from: { x: 0, y: -1 }, to: { x: 1, y: -1 } },
+        { from: { x: 1, y: -1 }, to: { x: 0, y: 0 } },
+        { from: { x: 0, y: -1 }, to: { x: 0, y: 0 } },
+      ],
+    },
+  },
+  hard_hat: {
+    name: 'Hard Hat',
+    volume: 3,
+    rarity: 2,
+    molecule: {
+      atoms: [
+        { color: 'gray', x: 0, y: -2 },
+        { color: 'gray', x: 1, y: -2 },
+        { color: 'red', x: -1, y: -1 },
+        { color: 'red', x: 0, y: -1 },
+        { color: 'red', x: 1, y: -1 },
+      ],
+      connections: [
+        { from: { x: 0, y: -1 }, to: { x: -1, y: -1 } },
+        { from: { x: 1, y: -1 }, to: { x: 0, y: -1 } },
+        { from: { x: -1, y: -1 }, to: { x: 0, y: -2 } },
+        { from: { x: 0, y: -2 }, to: { x: 1, y: -2 } },
+        { from: { x: 1, y: -2 }, to: { x: 1, y: -1 } },
+      ],
+    },
+  },
+  bao: {
+    name: 'Bao',
+    volume: 2,
+    rarity: 4,
+    molecule: {
+      atoms: [
+        { color: 'red', x: -2, y: 0 },
+        { color: 'white', x: -1, y: 0 },
+        { color: 'red', x: 0, y: 0 },
+        { color: 'red', x: -3, y: 1 },
+        { color: 'cyan', x: -2, y: 1 },
+        { color: 'red', x: -1, y: 1 },
+      ],
+      connections: [
+        { from: { x: -1, y: 0 }, to: { x: 0, y: 0 } },
+        { from: { x: -1, y: 0 }, to: { x: -1, y: 1 } },
+        { from: { x: -1, y: 0 }, to: { x: -2, y: 0 } },
+        { from: { x: -2, y: 1 }, to: { x: -3, y: 1 } },
+        { from: { x: -2, y: 1 }, to: { x: -1, y: 1 } },
+        { from: { x: -2, y: 1 }, to: { x: -1, y: 0 } },
+        { from: { x: -2, y: 1 }, to: { x: -2, y: 0 } },
+      ],
+    },
+  },
+  pot: {
+    name: 'Pot',
+    volume: 5,
+    rarity: 1,
+    molecule: {
+      atoms: [
+        { color: 'red', x: -1, y: -1 },
+        { color: 'red', x: 1, y: -1 },
+        { color: 'red', x: -2, y: 0 },
+        { color: 'red', x: 1, y: 0 },
+        { color: 'gray', x: -2, y: 1 },
+        { color: 'gray', x: -1, y: 1 },
+        { color: 'gray', x: 0, y: 1 },
+      ],
+      connections: [
+        { from: { x: -2, y: 0 }, to: { x: -1, y: -1 } },
+        { from: { x: 1, y: 0 }, to: { x: 0, y: 1 } },
+        { from: { x: 1, y: -1 }, to: { x: 1, y: 0 } },
+        { from: { x: -2, y: 1 }, to: { x: -2, y: 0 } },
+        { from: { x: -1, y: 1 }, to: { x: -2, y: 1 } },
+        { from: { x: 0, y: 1 }, to: { x: -1, y: 1 } },
+      ],
+    },
+  },
+  mosquito_net: {
+    name: 'Mosquito Net',
+    volume: 5,
+    rarity: 1,
+    molecule: {
+      atoms: [
+        { color: 'red', x: 1, y: -2 },
+        { color: 'gray', x: 0, y: -1 },
+        { color: 'red', x: 2, y: -1 },
+        { color: 'red', x: -1, y: 0 },
+        { color: 'gray', x: 1, y: 0 },
+        { color: 'red', x: 0, y: 1 },
+      ],
+      connections: [
+        { from: { x: 0, y: -1 }, to: { x: 1, y: 0 } },
+        { from: { x: 0, y: -1 }, to: { x: 1, y: -2 } },
+        { from: { x: 0, y: -1 }, to: { x: -1, y: 0 } },
+        { from: { x: 1, y: 0 }, to: { x: 2, y: -1 } },
+        { from: { x: 1, y: 0 }, to: { x: 0, y: 1 } },
+      ],
+    },
+  },
+  fan_blades: {
+    name: 'Fan Blades',
+    volume: 2,
+    rarity: 3,
+    molecule: {
+      atoms: [
+        { color: 'blue', x: -1, y: -1 },
+        { color: 'blue', x: 2, y: -1 },
+        { color: 'blue', x: 0, y: 0 },
+        { color: 'blue', x: -1, y: 2 },
+      ],
+      connections: [
+        { from: { x: -1, y: -1 }, to: { x: 0, y: 0 } },
+        { from: { x: 2, y: -1 }, to: { x: 0, y: 0 } },
+        { from: { x: 0, y: 0 }, to: { x: -1, y: 2 } },
+      ],
+    },
+  },
+  plug_adapter: {
+    name: 'Plug Adapter',
+    volume: 1,
+    rarity: 1,
+    molecule: {
+      atoms: [
+        { color: 'gray', x: 1, y: -1 },
+        { color: 'gray', x: -1, y: 0 },
+        { color: 'cyan', x: 0, y: 0 },
+        { color: 'gray', x: 0, y: 1 },
+      ],
+      connections: [
+        { from: { x: 0, y: 0 }, to: { x: 1, y: -1 } },
+        { from: { x: 0, y: 0 }, to: { x: 0, y: 1 } },
+        { from: { x: 0, y: 0 }, to: { x: -1, y: 0 } },
+      ],
+    },
+  },
+  bag: {
+    name: 'Bag',
+    volume: 4,
+    rarity: 1,
+    molecule: {
+      atoms: [
+        { color: 'red', x: 0, y: -1 },
+        { color: 'green', x: -2, y: 0 },
+        { color: 'green', x: 1, y: 0 },
+        { color: 'red', x: -1, y: 1 },
+      ],
+      connections: [
+        { from: { x: -2, y: 0 }, to: { x: 0, y: -1 } },
+        { from: { x: 1, y: 0 }, to: { x: -1, y: 1 } },
+        { from: { x: -1, y: 1 }, to: { x: -2, y: 0 } },
+        { from: { x: 0, y: -1 }, to: { x: 1, y: 0 } },
+      ],
+    },
+  },
+  spoon: {
+    name: 'Spoon',
+    volume: 2,
+    rarity: 1,
+    molecule: {
+      atoms: [
+        { color: 'red', x: -1, y: 0 },
+        { color: 'red', x: 0, y: 1 },
+      ],
+      connections: [
+        { from: { x: -1, y: 0 }, to: { x: 0, y: 1 } },
+      ],
+    },
+  },
+  painting: {
+    name: 'Painting',
+    imageArray: ['painting_1', 'painting_2', 'painting_3', 'painting_4', 'painting_5', 'painting_6', 'painting_7', 'painting_8'],
+    volume: 2,
+    rarity: 3,
+    molecule: {
+      atoms: [
+        { color: 'blue', x: -1, y: -1 },
+        { color: 'blue', x: 1, y: -1 },
+        { color: 'blue', x: -2, y: 1 },
+        { color: 'blue', x: 0, y: 1 },
+      ],
+      connections: [
+        { from: { x: -1, y: -1 }, to: { x: 1, y: -1 } },
+        { from: { x: -2, y: 1 }, to: { x: -1, y: -1 } },
+        { from: { x: 1, y: -1 }, to: { x: 0, y: 1 } },
+        { from: { x: 0, y: 1 }, to: { x: -2, y: 1 } },
+      ],
+    },
+  },
+  charcoal_stove: {
+    name: 'Charcoal Stove',
+    volume: 5,
+    rarity: 4,
+    molecule: {
+      atoms: [
+        { color: 'gray', x: -1, y: 0 },
+        { color: 'yellow', x: 0, y: 0 },
+        { color: 'gray', x: 1, y: 0 },
+        { color: 'gray', x: -2, y: 1 },
+        { color: 'yellow', x: -1, y: 1 },
+        { color: 'yellow', x: 0, y: 1 },
+        { color: 'gray', x: 1, y: 1 },
+        { color: 'gray', x: -2, y: 2 },
+        { color: 'gray', x: -1, y: 2 },
+        { color: 'gray', x: 0, y: 2 },
+      ],
+      connections: [
+        { from: { x: 0, y: 0 }, to: { x: -1, y: 1 } },
+        { from: { x: 0, y: 1 }, to: { x: 0, y: 0 } },
+        { from: { x: 0, y: 1 }, to: { x: 1, y: 1 } },
+        { from: { x: 0, y: 1 }, to: { x: 0, y: 2 } },
+        { from: { x: -1, y: 1 }, to: { x: 0, y: 1 } },
+        { from: { x: -1, y: 1 }, to: { x: -2, y: 1 } },
+        { from: { x: -1, y: 1 }, to: { x: -2, y: 2 } },
+        { from: { x: -2, y: 2 }, to: { x: -1, y: 2 } },
+        { from: { x: 0, y: 2 }, to: { x: -1, y: 2 } },
+        { from: { x: -2, y: 1 }, to: { x: -1, y: 0 } },
+        { from: { x: 1, y: 1 }, to: { x: 1, y: 0 } },
       ],
     },
   },

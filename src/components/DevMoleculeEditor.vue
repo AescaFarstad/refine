@@ -19,6 +19,17 @@
         >
           <template #raid-filter-actions>
             <button
+              v-for="r in RARITIES"
+              :key="r.key"
+              type="button"
+              class="raid-btn"
+              :class="{ active: activeRarityFilter === r.key }"
+              :style="{ color: rarityColors[r.key] }"
+              @click="toggleRarityFilter(r.key)"
+            >
+              {{ r.letter }}
+            </button>
+            <button
               type="button"
               class="raid-btn signatures-toggle"
               :class="{ active: showSignatures }"
@@ -56,6 +67,14 @@
             </button>
             <button type="button" class="btn" @click="copyToClipboard">
               Copy molecule code
+            </button>
+            <button
+              type="button"
+              class="btn connect-toggle"
+              :class="{ active: giveMode }"
+              @click="giveMode = !giveMode"
+            >
+              Give: {{ giveMode ? 'ON' : 'OFF' }}
             </button>
             <button type="button" class="btn close" @click="$emit('close')">
               Close
@@ -113,7 +132,7 @@
 import { computed, ref, watch } from 'vue';
 import AllItems from './AllItems.vue';
 import WaferView from './WaferView.vue';
-import { uiState } from '../logic/UIState';
+import { uiState, getGameStateMutable } from '../logic/UIState';
 import itemsData from '../data/items';
 import { createWafer, type Wafer, getCell, canPlaceMolecule, placeMolecule, removeMolecule, clearWafer, getEnabledCells } from '../logic/Wafer';
 import { translateForSnap, rotateMolecule } from '../logic/MoleculeUtils';
@@ -138,8 +157,24 @@ const highlightItemIdx = ref<number | null>(null);
 const lastHoverPos = ref<Point2 | null>(null);
 const rotation = ref(0);
 const connectMode = ref(false);
+const giveMode = ref(false);
 const activeRaidFilter = ref<string | null>(null);
+const activeRarityFilter = ref<string | null>(null);
 const showSignatures = ref(false);
+
+const rarityColors: Record<string, string> = {
+  common: '#9ca3af',
+  uncommon: 'white',
+  rare: '#60a5fa',
+  legendary: '#fbbf24',
+};
+
+const RARITIES: ReadonlyArray<{ key: string; letter: string }> = [
+  { key: 'common', letter: 'C' },
+  { key: 'uncommon', letter: 'U' },
+  { key: 'rare', letter: 'R' },
+  { key: 'legendary', letter: 'L' },
+];
 
 const DEV_ESSENCE_ITEMS: Record<string, string> = {
   red: 'dev_atom_red',
@@ -190,18 +225,28 @@ const allSignatures = computed(() => {
 const signatureAtlasVars = getSignatureAtlasVars();
 
 const filteredItems = computed(() => {
-  if (!activeRaidFilter.value) return allItems.value;
-  if (!uiState.lib) return allItems.value;
+  let items = allItems.value;
 
-  const raid = uiState.lib.raids.get(activeRaidFilter.value);
-  if (!raid || !raid.allPotentialItems) return allItems.value;
+  if (activeRaidFilter.value && uiState.lib) {
+    const raid = uiState.lib.raids.get(activeRaidFilter.value);
+    if (raid && raid.allPotentialItems) {
+      const raidItemIds = new Set(raid.allPotentialItems);
+      items = items.filter(item => {
+        if (item.id.startsWith('dev_')) return true;
+        return raidItemIds.has(item.id);
+      });
+    }
+  }
 
-  const raidItemIds = new Set(raid.allPotentialItems);
+  if (activeRarityFilter.value && uiState.lib) {
+    items = items.filter(item => {
+      if (item.id.startsWith('dev_')) return true;
+      const def = uiState.lib!.getItem(item.id);
+      return def.rarity === activeRarityFilter.value;
+    });
+  }
 
-  return allItems.value.filter(item => {
-    if (item.id.startsWith('dev_')) return true;
-    return raidItemIds.has(item.id);
-  });
+  return items;
 });
 
 function onRaidFilter(raidId: string | null) {
@@ -210,6 +255,10 @@ function onRaidFilter(raidId: string | null) {
   } else {
     activeRaidFilter.value = raidId;
   }
+}
+
+function toggleRarityFilter(rarity: string) {
+  activeRarityFilter.value = activeRarityFilter.value === rarity ? null : rarity;
 }
 
 function signatureSpriteStyle(id: string): Record<string, string> {
@@ -228,6 +277,10 @@ const hoverCoords = computed(() => {
 });
 
 function onPickItem(id: string) {
+  if (giveMode.value) {
+    giveItem(id);
+    return;
+  }
   const def = (itemsData as any)[id];
   if (!def || !def.molecule) return;
   draggingItem.value = { id, molecule: def.molecule as Molecule };
@@ -235,6 +288,16 @@ function onPickItem(id: string) {
   if (lastHoverPos.value) {
     onHover(lastHoverPos.value);
   }
+}
+
+function giveItem(id: string) {
+  const gs = getGameStateMutable();
+  const itemDef = gs.lib.getItem(id);
+  for (const [k, v] of Object.entries(itemDef.essence)) {
+    if (!v) continue;
+    gs.encounteredEssences[k] = true;
+  }
+  gs.items[id] = (gs.items[id] ?? 0) + 1;
 }
 
 function onDragEnd() {
@@ -614,6 +677,7 @@ function onRotate() {
 .dev-editor-root {
   display: flex;
   flex-direction: column;
+  width: 100%;
   height: 100%;
   padding: 6px 4px;
   box-sizing: border-box;
@@ -736,6 +800,10 @@ function onRotate() {
 .btn:hover {
   background: rgba(30, 64, 175, 0.6);
 }
+
+.raid-btn { min-width: 28px; height: 28px; padding: 4px 6px; border-radius: 4px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.03); color: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: all 120ms ease; position: relative; }
+.raid-btn:hover { background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.5); transform: translateY(-1px); }
+.raid-btn.active { background: rgba(34, 197, 94, 0.25); border-color: rgba(34, 197, 94, 0.7); color: #a7f3d0; }
 
 .signatures-toggle {
   display: inline-flex;

@@ -23,6 +23,15 @@ function signed(n: number): string {
   return n >= 0 ? `+${n}` : `${n}`;
 }
 
+function formatRaidMutationHint(reward: DeepReadonly<Extract<Reward, { kind: 'raid_mutation' }>>, lib: ReadonlyLib): string {
+  const raidPrefix = reward.targetRaidId ? `${lib.raidSources.get(reward.targetRaidId)!.name}: ` : '';
+  const mutation = reward.mutation;
+  if (mutation.kind === 'AddMonsterMutation') {
+    return `${raidPrefix}${lib.monsters.get(mutation.monsterId)!.name} ${signed(mutation.count)}`;
+  }
+  return `${raidPrefix}Raid mutation`;
+}
+
 export function formatRewardHintText(reward: DeepReadonly<Reward>, lib: ReadonlyLib): string {
   switch (reward.kind) {
     case 'resource': {
@@ -64,7 +73,7 @@ export function formatRewardHintText(reward: DeepReadonly<Reward>, lib: Readonly
     case 'refining_yellow_neighbor_bonus':
       return `${signed(reward.amount)} yellow adjacency bonus`;
     case 'raid_mutation':
-      return 'Raid mutation';
+      return formatRaidMutationHint(reward, lib);
     case 'raid_loot_chance':
       return `Raid loot chance ${signed(reward.delta)}%`;
     case 'raid_rarity_buff':

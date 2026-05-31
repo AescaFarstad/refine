@@ -26,6 +26,7 @@ interface SavedWaferCell {
 
 interface SavedWaferItem {
   id: string;
+  imageKey: string;
   rotation: number;
   x: number;
   y: number;
@@ -68,11 +69,11 @@ function saveReplacer(key: string, value: unknown): unknown {
   if (key === "mazeResourceSpawns") return undefined;
 
   if (key === "random" && value instanceof SeededRandom) {
-    return value.getSeed();
+    return (value as SeededRandom).getSeed();
   }
 
   if (value instanceof AdaptiveRoll) {
-    return value.getDebt();
+    return (value as AdaptiveRoll).getDebt();
   }
 
   if (value instanceof Map) {
@@ -94,6 +95,7 @@ function serializeWafer(wafer: Wafer): SerializedWafer {
     const pivot = getPivotHex(item.molecule);
     placedItems.push({
       id: item.id,
+      imageKey: item.imageKey,
       rotation: item.rotation,
       x: pivot.x,
       y: pivot.y,

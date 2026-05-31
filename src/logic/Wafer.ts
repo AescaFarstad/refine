@@ -18,6 +18,7 @@ export interface WaferCell {
 
 export interface PlacedItem {
   id: string;
+  imageKey: string;
   molecule: Molecule;
   rotation: number;
 }
@@ -126,7 +127,8 @@ export function placeMolecule(
   wafer: Wafer,
   itemId: string,
   molecule: Molecule,
-  rotation: number = 0
+  rotation: number = 0,
+  imageKey: string = itemId
 ): boolean {
   if (!canPlaceMolecule(wafer, molecule)) {
     return false;
@@ -135,6 +137,7 @@ export function placeMolecule(
   const itemIdx = wafer.items.length;
   wafer.items.push({
     id: itemId,
+    imageKey,
     molecule,
     rotation,
   });
@@ -185,10 +188,10 @@ export function moveMolecule(wafer: Wafer, itemIdx: number, offset: Point2): boo
       to: { x: c.to.x + offset.x, y: c.to.y + offset.y },
     })),
   };
-  const success = placeMolecule(wafer, item.id, newMolecule, item.rotation);
+  const success = placeMolecule(wafer, item.id, newMolecule, item.rotation, item.imageKey);
 
   if (!success) {
-    placeMolecule(wafer, item.id, item.molecule, item.rotation);
+    placeMolecule(wafer, item.id, item.molecule, item.rotation, item.imageKey);
     return false;
   }
 

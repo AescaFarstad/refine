@@ -25,6 +25,28 @@ export const timelineArchetypes: Record<string, RawTimelineArchetypeDefinition> 
     ],
     icon: { kind: 'glyph', glyph: '❤︎', scale: 1, offset: { x: 0, y: 2 } },
   },
+  kilava_octopus_add: {
+    sentiment: 'negative',
+    options: [
+      {
+        kind: 'raid_mutation',
+        targetRaidId: 'kilava',
+        mutation: { kind: 'AddMonsterMutation', monsterId: 'octopus', count: 1 },
+      },
+    ],
+    icon: { kind: 'glyph', glyph: '⌁', scale: 1, offset: { x: 0, y: 1 } },
+  },
+  kilava_octopus_remove: {
+    sentiment: 'positive',
+    options: [
+      {
+        kind: 'raid_mutation',
+        targetRaidId: 'kilava',
+        mutation: { kind: 'AddMonsterMutation', monsterId: 'octopus', count: -1 },
+      },
+    ],
+    icon: { kind: 'glyph', glyph: '⌁', scale: 1, offset: { x: 0, y: 1 } },
+  },
   timeline_discovery: {
     sentiment: 'positive',
     options: [
@@ -32,10 +54,10 @@ export const timelineArchetypes: Record<string, RawTimelineArchetypeDefinition> 
     ],
     icon: { kind: 'glyph', glyph: '⧗', scale: 1, offset: { x: 0, y: 1 } },
   },
-  kilifi_raid_access: {
+  kilava_raid_access: {
     sentiment: 'positive',
     options: [
-      { kind: 'unlock_raid', raidId: 'kilifi' },
+      { kind: 'unlock_raid', raidId: 'kilava' },
     ],
     icon: { kind: 'glyph', glyph: '⌖', scale: 1, offset: { x: 0, y: 1 } },
   },

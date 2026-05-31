@@ -98,7 +98,7 @@ const monsters: Record<string, RawMonsterDefinition> = {
     upgrade: "octopus"
   },
   octopus: {
-    name: 'Black Octopus',
+    name: 'Violet Octopus',
     hp: 100,
     dodge: 55,
     accuracy: 10,

@@ -105,8 +105,9 @@ april 30
 may 1
   adaptive random, fixes, transmutation core
 may 17
-  timeline visuals
-
+  timeline visuals, kilifi raid
+may 31
+  kilava items, images
 
 npx tsc --noEmit
 npx vue-tsc --noEmit
@@ -380,3 +381,9 @@ the player can choose what happens - which of the Rewards from the options is go
 Executed events stay in the timeline. gameState keeps a cursor into it.
 
 Before coding, let's discuss it and iron out what is underspecified.
+
+
+mwiko
+jiko
+Kiondo bag
+kenyan painting

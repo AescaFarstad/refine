@@ -529,6 +529,7 @@ function closeAll() {
 }
 .modal.full {
   width: 100vw;
+  max-width: none;
   height: 100vh;
   max-height: none;
   border-radius: 0;

@@ -1,6 +1,6 @@
 import { GameState, type TimelineScheduledEvent } from "./GameState";
 import SeededRandom from "./core/SeededRandom";
-import { AdaptiveRoll } from "./core/AdaptiveRoll";
+import { createRefiningFailureRoll } from "./core/AdaptiveRoll";
 import { clearWafer, getCell, placeMolecule } from "./Wafer";
 import { computeEffectiveEssences } from "./RefinePreview";
 import { axialToIndex, calculateVisibility, indexToAxial, initResearchCells } from "./Research";
@@ -21,6 +21,7 @@ const CELL_PAIR_SEPARATOR = "  ";
 
 interface SavedWaferItem {
   id: string;
+  imageKey: string;
   rotation: number;
   x: number;
   y: number;
@@ -120,10 +121,12 @@ function parseSavedWafer(value: unknown): ParsedSavedWafer | false {
   for (const rawItem of placedItemsInput) {
     if (!isObjectRecord(rawItem)) return false;
     if (typeof rawItem.id !== "string") return false;
+    if (typeof rawItem.imageKey !== "string") return false;
     if (typeof rawItem.rotation !== "number") return false;
     if (typeof rawItem.x !== "number" || typeof rawItem.y !== "number") return false;
     placedItems.push({
       id: rawItem.id,
+      imageKey: rawItem.imageKey,
       rotation: rawItem.rotation,
       x: rawItem.x,
       y: rawItem.y,
@@ -324,13 +327,19 @@ function copyEncounterDef(source: EncounterDef): EncounterDef {
     case "LootEncounter":
       return { type: source.type };
     case "MonsterLootEncounter":
-      return {
+      return source.injected === undefined ? {
+        type: source.type,
+        monsterId: source.monsterId,
+      } : {
         type: source.type,
         monsterId: source.monsterId,
         injected: source.injected,
       };
     case "FightEncounter":
-      return {
+      return source.injected === undefined ? {
+        type: source.type,
+        monsterId: source.monsterId,
+      } : {
         type: source.type,
         monsterId: source.monsterId,
         injected: source.injected,
@@ -501,7 +510,7 @@ function rehydrateGameState(input: AnonymousObject): GameState | false {
   if (!(gameState.random instanceof SeededRandom)) return failLoad("random seed did not hydrate to SeededRandom.");
 
   const failureDebt = typeof input.refiningFailureRoll === "number" ? input.refiningFailureRoll : 0;
-  gameState.refiningFailureRoll = new AdaptiveRoll({ debt: failureDebt });
+  gameState.refiningFailureRoll = createRefiningFailureRoll(failureDebt);
 
   for (const cell of gameState.wafer.cells.values()) {
     cell.enabled = false;
@@ -520,7 +529,7 @@ function rehydrateGameState(input: AnonymousObject): GameState | false {
       x: placedItem.x - pivot.x,
       y: placedItem.y - pivot.y,
     });
-    const placed = placeMolecule(gameState.wafer, placedItem.id, translatedMolecule, placedItem.rotation);
+    const placed = placeMolecule(gameState.wafer, placedItem.id, translatedMolecule, placedItem.rotation, placedItem.imageKey);
     if (!placed) return failLoad("saved wafer item could not be placed.", { placedItem });
   }
   computeEffectiveEssences(gameState.wafer);

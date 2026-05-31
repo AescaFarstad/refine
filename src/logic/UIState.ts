@@ -131,6 +131,7 @@ function createDefaultUIState() {
 
     refinery: null as UIRefinery | null,
     items: [] as Array<{ id: string; quantity: number }>,
+    itemImageCycleIndexes: {} as Record<string, number>,
     unrefinedOwnedItemIds: [] as string[],
     unrefinedOwnedItemIdMap: {} as Record<string, true>,
     encounteredEssences: [] as string[],
@@ -450,6 +451,7 @@ export function SyncUIFromGameState(game: GameState): void {
     uiState.showAcknowledgedOutcome = false;
   }
   uiState.lastRefineryOutcome = game.lastRefineryOutcome;
+  uiState.itemImageCycleIndexes = { ...game.itemImageCycleIndexes };
 
   if (activeTab === 'refine') {
     const hasWafer = !!game.wafer;

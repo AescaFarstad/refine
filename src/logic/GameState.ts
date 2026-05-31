@@ -1,7 +1,7 @@
 import { Lib } from "./Lib";
 import type { Evt } from './evt/Evt';
 import SeededRandom from "./core/SeededRandom";
-import { AdaptiveRoll } from "./core/AdaptiveRoll";
+import { AdaptiveRoll, createRefiningFailureRoll } from "./core/AdaptiveRoll";
 import { Essence } from "./ItemLib";
 import type { Point2 } from "./core/math";
 import type { CheatInput } from './cheat/CheatCommands';
@@ -77,7 +77,7 @@ export class GameState {
   public refiningGreenEssenceResourceBonus: number = 0;
   public refiningBlueEssenceResourceBonus: number = 0;
   public refiningYellowNeighborBonus: number = 0;
-  public refiningFailureRoll: AdaptiveRoll = new AdaptiveRoll({ k: 0.05, step: 0.05, modCap: 0.25, tolerance: 1 });
+  public refiningFailureRoll: AdaptiveRoll = createRefiningFailureRoll();
   public shards: Array<Shard> = [];
   public raid: ActiveRaid = new ActiveRaid();
 
@@ -125,6 +125,7 @@ export class GameState {
   public shardPickupGraceSec: number = 0;
 
   public items: Record<string, number> = {};
+  public itemImageCycleIndexes: Record<string, number> = {};
   public encounteredEssences: Record<string, true> = {};
   public seenEssences: Record<string, true> = {};
   public discoveries: Record<string, true> = {};

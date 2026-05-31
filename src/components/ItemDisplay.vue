@@ -68,7 +68,7 @@ import { uiState } from '../logic/UIState';
 
 defineOptions({ inheritAttrs: false });
 
-const props = defineProps<{ id: string; quantity?: number; minor?: boolean; noTooltip?: boolean; showScore?: boolean; showVolume?: boolean; showEssences?: boolean }>();
+const props = defineProps<{ id: string; imageKey?: string; quantity?: number; minor?: boolean; noTooltip?: boolean; showScore?: boolean; showVolume?: boolean; showEssences?: boolean }>();
 
 const quantity = computed(() => Math.max(1, props.quantity ?? 1));
 const minor = computed(() => !!props.minor);
@@ -139,8 +139,13 @@ const source = atlasStorage.getItemsSource();
 const moleculesSource = atlasStorage.getMoleculesSource();
 
 const itemDef = computed<ItemDefinition>(() => (itemsData as Record<string, ItemDefinition>)[props.id]!);
+const displayImageKey = computed(() => {
+  if (props.imageKey) return props.imageKey;
+  const images = itemDef.value.imageArray;
+  return images[uiState.itemImageCycleIndexes[props.id] ?? 0]!;
+});
 const frame = computed(() => {
-  const itemFrame = atlasStorage.getItemsFrame(props.id);
+  const itemFrame = atlasStorage.getItemsFrame(displayImageKey.value);
   if (itemFrame) return itemFrame;
   const firstAtom = itemDef.value.molecule.atoms[0]!;
   return atlasStorage.getItemsFrame(firstAtom.color)!;

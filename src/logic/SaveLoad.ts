@@ -6,6 +6,7 @@ import type { Wafer } from "./Wafer";
 import { getPivotHex } from "./MoleculeUtils";
 import { indexToAxial } from "./Research";
 import type { EncounterDef } from "./RaidLib";
+import type { AchiState } from "./Achi";
 
 type AnonymousObject = Record<string, unknown>;
 const RESEARCH_OWNED_CELLS_KEY = "researchOwnedCells";
@@ -59,6 +60,17 @@ function isObjectRecord(value: unknown): value is AnonymousObject {
   return typeof value === "object" && value !== null;
 }
 
+function serializeAchiState(achi: Record<string, AchiState>): Record<string, { state: AchiState["state"]; best: number }> {
+  const out: Record<string, { state: AchiState["state"]; best: number }> = {};
+  for (const [id, state] of Object.entries(achi)) {
+    out[id] = {
+      state: state.state,
+      best: state.best,
+    };
+  }
+  return out;
+}
+
 function saveReplacer(key: string, value: unknown): unknown {
   if (key === "lib") return undefined;
   if (key === "researchCells") return undefined;
@@ -69,9 +81,14 @@ function saveReplacer(key: string, value: unknown): unknown {
   if (key === "effectiveGearById") return undefined;
   if (key === "lastAppliedRaidMutations") return undefined;
   if (key === "timelineVersion") return undefined;
+  if (key === "gameNotifs") return undefined;
+  if (key === "dirty") return undefined;
+  if (key === "achiVersion") return undefined;
+  if (key === "achi") return serializeAchiState(value as Record<string, AchiState>);
   // Maze transient + derived (not persisted)
   if (key === "maze") return undefined;
   if (key === "mazeVisibility") return undefined;
+  if (key === "mazeVisitCounter") return undefined;
   if (key === "mazeResourceSpawns") return undefined;
 
   if (key === "random" && value instanceof SeededRandom) {

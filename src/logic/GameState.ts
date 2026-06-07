@@ -19,6 +19,8 @@ import { randomizeOracles } from './RandomizeOracles';
 import type { OracleSealAttempt } from "./Oracle";
 import type { GearDefinition } from "./GearLib";
 import { ensureTimelineEventsGenerated } from "./Timeline";
+import type { AchiState } from "./Achi";
+import type { GameNotif } from "./GameNotif";
 
 /*
   When adding/editing properties here, make sure save-loading is compatible.
@@ -112,6 +114,7 @@ export class GameState {
   // Maze — transient (not saved, reset on load)
   public maze: MazeTransient = createMazeTransient();
   public mazeVisibility: MazeVisibilityState = createMazeVisibilityState();
+  public mazeVisitCounter: number = 1;
 
   // Maze — derived (computed on load + research purchase)
   public mazeResourceSpawns: MazeResourceSpawn[] = [];
@@ -131,6 +134,9 @@ export class GameState {
   public discoveries: Record<string, true> = {};
   public discoveryCounter: number = 0;
   public refinedUniqueItemIds: Record<string, true> = {};
+  public achi: Record<string, AchiState> = {};
+  public achiVersion: number = 0;
+  public gameNotifs: GameNotif[] = [];
 
   // Signature progress
   public signatureLevel: number = 1;
@@ -164,6 +170,7 @@ export class GameState {
   public raidSimulation: RaidSimulation = new RaidSimulation();
   public raidFoundItemsVersion: number = 0;
   public timelineVersion: number = 0;
+  public dirty: boolean = false;
 
   // Transient channel for UI/logging immediately after reward-driven raid mutations.
   public lastAppliedRaidMutations: AppliedRaidMutation[] = [];
@@ -336,6 +343,8 @@ export interface MazeResourceSpawn {
 export interface MazeTransient {
   avatarCell: Point2;
   movementUsed: number;
+  uniqueCellsVisitedCount: number;
+  visitedNodeCount: number;
   incrementalBonusCounter: number;
   collectedCredits: number;
   collectedChronotraces: number;
@@ -359,6 +368,8 @@ export function createMazeTransient(avatarCell: Point2 = { x: 0, y: 0 }): MazeTr
   return {
     avatarCell: { x: avatarCell.x, y: avatarCell.y },
     movementUsed: 0,
+    uniqueCellsVisitedCount: 0,
+    visitedNodeCount: 0,
     incrementalBonusCounter: 0,
     collectedCredits: 0,
     collectedChronotraces: 0,
@@ -389,6 +400,7 @@ export interface ResearchCell {
   nexusPlacementId: number;
   passable: boolean;
   mazeMoveCostMult: number; // derived: movement cost to enter this cell (0 or 1)
+  mazeVisitVersion: number; // transient: maze run marker for unique-cell visits
   revealed: boolean;
   owned: boolean;
   cost: number;

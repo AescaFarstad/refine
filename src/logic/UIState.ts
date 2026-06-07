@@ -138,6 +138,8 @@ function createDefaultUIState() {
     encounteredEssences: [] as string[],
     seenEssences: [] as string[],
     discoveryCounter: 0,
+    achiVersion: 0,
+    achiCount: 0,
     hasDiscoveredSignatures: false,
     showSignaturePlacementDiscoveryModal: false,
     signaturePlacementDiscoveryId: '' as string,
@@ -242,6 +244,8 @@ interface UISyncCache {
   lastRefinedUniqueCount: number;
   lastUniqueItemsBonusYield: number;
   lastHasUniqueItemsYield: boolean;
+  lastAchiVersion: number;
+  lastAchiCount: number;
 }
 
 const SYNC_CACHE_DEFAULTS: UISyncCache = {
@@ -263,6 +267,8 @@ const SYNC_CACHE_DEFAULTS: UISyncCache = {
   lastRefinedUniqueCount: -1,
   lastUniqueItemsBonusYield: Number.NaN,
   lastHasUniqueItemsYield: false,
+  lastAchiVersion: -1,
+  lastAchiCount: -1,
 };
 
 let syncCache: UISyncCache = { ...SYNC_CACHE_DEFAULTS };
@@ -532,6 +538,13 @@ export function SyncUIFromGameState(game: GameState): void {
     uiState.seenEssences = Object.keys(game.seenEssences);
   }
   uiState.discoveryCounter = game.discoveryCounter;
+  const achiCount = Object.keys(game.achi).length;
+  if (game.achiVersion !== syncCache.lastAchiVersion || achiCount !== syncCache.lastAchiCount) {
+    uiState.achiVersion = game.achiVersion;
+    uiState.achiCount = achiCount;
+    syncCache.lastAchiVersion = game.achiVersion;
+    syncCache.lastAchiCount = achiCount;
+  }
   uiState.hasDiscoveredGear = game.discoveries[DISCOVERY.UI_GEAR] === true;
   uiState.hasDiscoveredGearUpgradeModal = game.discoveries[DISCOVERY.UI_GEAR_UPGRADE_MODAL_OPENED] === true;
   uiState.hasDiscoveredSignatures = game.discoveries[DISCOVERY.SIGNATURES] === true;

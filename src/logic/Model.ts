@@ -8,10 +8,12 @@ import { syncDerivedGearUnlocks } from "./DiscoveryLib";
 import { saveAutosave } from "./SaveLoad";
 import { accumulateRaidResources } from './Raid';
 import { processDueTimelineEvents } from './Timeline';
+import { processAchiNotifs } from './Achi';
 
 const TIME_SPEED_MAX = 3800;
 const TIME_SPEED_MIN = 300;
 const TIME_SPEED_RAMP_SEC = 1;
+const GAME_NOTIF_MAX_PROCESS_ITERATIONS = 100;
 
 export const globalInputQueue: CmdInput[] = [];
 
@@ -26,6 +28,15 @@ export function setResearchRevealRadius(gs: GameState, radius: number): void {
 
 // deltaTime is in seconds
 export function update(gs: GameState, deltaTime: number): void {
+  try {
+    updateFrame(gs, deltaTime);
+  } finally {
+    processGameNotifs(gs);
+    saveGameIfDirty(gs);
+  }
+}
+
+function updateFrame(gs: GameState, deltaTime: number): void {
   if (gs.cheats && gs.cheats.length > 0) {
     processCheats(gs);
   }
@@ -48,7 +59,7 @@ export function update(gs: GameState, deltaTime: number): void {
     gs.nextEvt = null;
     processEvt(gs, evt);
     if (evt.name === 'EvtRefineryDone') {
-      saveAutosave(gs);
+      gs.dirty = true;
     }
     processDueTimelineEvents(gs);
     gs.timeActive = false;
@@ -82,6 +93,26 @@ export function update(gs: GameState, deltaTime: number): void {
     gs.timeSpeed = TIME_SPEED_MIN;
     gs.timeSpeedMaxBoost = 1;
   }
+}
+
+function processGameNotifs(gs: GameState): void {
+  let iteration = 0;
+  while (gs.gameNotifs.length > 0) {
+    if (iteration >= GAME_NOTIF_MAX_PROCESS_ITERATIONS) {
+      throw new Error(`GameNotif processing exceeded ${GAME_NOTIF_MAX_PROCESS_ITERATIONS} iterations`);
+    }
+
+    const notifs = gs.gameNotifs;
+    gs.gameNotifs = [];
+    processAchiNotifs(gs, notifs);
+    iteration++;
+  }
+}
+
+function saveGameIfDirty(gs: GameState): void {
+  if (!gs.dirty) return;
+  saveAutosave(gs);
+  gs.dirty = false;
 }
 
 // Shard physics (position, velocity, bouncing) is handled in UI (RefineAnim.vue).
@@ -137,7 +168,7 @@ function updateShards(gs: GameState, dt: number) {
     gs.shards.length = 0;
     gs.lastRefineryOutcome = null;
     if (hadAnyShards) {
-      saveAutosave(gs);
+      gs.dirty = true;
     }
   }
 }

@@ -152,6 +152,7 @@
     <MazeNexusMenu :visible="nexusMenuVisible" />
     <MazeTransmutationMenu :visible="transmutationMenuVisible" />
     <MazeOracleMenu :visible="oracleMenuVisible" />
+    <MazeAchiMenu :visible="achiMenuVisible" />
   </div>
 </template>
 
@@ -169,6 +170,9 @@ import { MAZE_RESOURCE_KEYS } from '../logic/pane/MazeOverlayState';
 import MazeNexusMenu from './MazeNexusMenu.vue';
 import MazeTransmutationMenu from './MazeTransmutationMenu.vue';
 import MazeOracleMenu from './MazeOracleMenu.vue';
+import MazeAchiMenu from './MazeAchiMenu.vue';
+import { getGameState, uiState } from '../logic/UIState';
+import { ACHI_STATE_COMPLETE, ACHI_STATE_TRACKED } from '../logic/Achi';
 
 const props = defineProps<{
   remainingPool: number;
@@ -190,6 +194,17 @@ const emit = defineEmits<{
   (e: 'resource-pill-hover', resourceKey: MazeResourceKey | null): void;
   (e: 'reset-high-movement'): void;
 }>();
+
+const hasTrackedAchi = computed(() => {
+  const achiVersion = uiState.achiVersion;
+  const achiCount = uiState.achiCount;
+  if (achiVersion < 0 || achiCount === 0) return false;
+  return Object.values(getGameState().achi).some((state) => state.state === ACHI_STATE_TRACKED || state.state === ACHI_STATE_COMPLETE);
+});
+
+const achiMenuVisible = computed(() => {
+  return !props.nexusMenuVisible && !props.transmutationMenuVisible && !props.oracleMenuVisible && hasTrackedAchi.value;
+});
 
 interface ResourceEntry {
   key: MazeResourceKey;

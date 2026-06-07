@@ -1,7 +1,7 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdReviewQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdUpgradeGearItem, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro, CmdPickupShard, CmdSpeedUpRefining, CmdSetTimelinePreferredOption, CmdClearShardPickupGrace, CmdMazeMoveTo, CmdMazePrepareUpgradeOffer, CmdMazeSelectNexusUpgrade, CmdMazePlaceNexusItem, CmdMazeActivateNexusSpecialUpgrade, CmdMazeResetHighMovement, CmdMazeValidateOracleSeal, CmdMazeActivateOracle, CmdMazeShowOraclePossibilities, CmdTransmutate } from './InputCommands';
+import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdReviewQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdUpgradeGearItem, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro, CmdPickupShard, CmdSpeedUpRefining, CmdSetTimelinePreferredOption, CmdClearShardPickupGrace, CmdMazeMoveTo, CmdMazePrepareUpgradeOffer, CmdMazeSelectNexusUpgrade, CmdMazePlaceNexusItem, CmdMazeActivateNexusSpecialUpgrade, CmdMazeResetHighMovement, CmdMazeValidateOracleSeal, CmdMazeActivateOracle, CmdMazeShowOraclePossibilities, CmdTriggerOracleStage0, CmdPayAchi, CmdAcknowledgeAchi, CmdTransmutate } from './InputCommands';
 import { SHARD_PICKUP_DELAY_SEC } from '../Model';
 import { discover, discoverRefineTab, ensureSignatureDiscoveryFromWafer, hasDiscovered } from '../Discover';
 import { DISCOVERY } from '../DiscoveryLib';
@@ -13,7 +13,6 @@ import { placeMolecule, removeMolecule, enableCellWithFloodfill, computeWaferUpg
 import { applyResearchPurchase } from '../Research';
 import { startRefining } from '../Refine';
 import { applyReward } from '../Reward';
-import { saveAutosave } from '../SaveLoad';
 import { handleMazeMoveTo, computeMazeResourceSpawns, syncMazeResetEntranceCell, placeMazeNexusItem, isMazeEntranceCell } from '../Maze';
 import { prepareMazeNexusUpgradeOffer, selectMazeNexusUpgrade, onMazeNexusUpgradePlaced, activateMazeNexusSpecialUpgrade } from '../MazeNexusUpgradeProgress';
 import { transmutate } from '../Transmutation';
@@ -22,6 +21,8 @@ import { activateOracle, submitOracleSeal } from '../Oracle';
 import { addGearXp, applyGearUpgrade, getPendingGearUpgradeCount } from '../GearUpgrades';
 import { cycleItemImage, getItemImageKey } from '../ItemVisuals';
 import { ORACLE_POSSIBILITIES_COST } from '../Const';
+import { acknowledgeAchi, payAchi, trackAchi } from '../Achi';
+import { NotifNexusUpgradePlaced, NotifRaidComplete } from '../GameNotif';
 
 
 type Handler = (gs: GameState, cmd: CmdInput) => void;
@@ -222,10 +223,11 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
     reimbursedCredits: result.reimbursedCredits || 0,
     zoneCollapseSec: def.zoneCollapseSec,
   };
+  gs.gameNotifs.push(new NotifRaidComplete({ outcome: gs.lastRaidOutcome }));
 
   recomputeActiveRaidParams(gs, c.id);
   recomputeActiveRaidEstimates(gs, 100);
-  saveAutosave(gs);
+  gs.dirty = true;
 });
 
 handlersByName.set('CmdStartRefining', (gs, cmd) => {
@@ -245,7 +247,7 @@ handlersByName.set('CmdAcknowledgeOutcome', (gs, cmd) => {
   }
   gs.acknowledgedRaidOutcome = gs.lastRaidOutcome;
   gs.lastRaidOutcome = null;
-  saveAutosave(gs);
+  gs.dirty = true;
 });
 
 handlersByName.set('CmdConsumeOutcomeRewards', (gs, cmd) => {
@@ -258,7 +260,7 @@ handlersByName.set('CmdConsumeOutcomeRewards', (gs, cmd) => {
     applyReward(gs, reward, { activeRaidId: raidId, raidEntry });
   }
   outcome.rewardsConsumed = true;
-  saveAutosave(gs);
+  gs.dirty = true;
 });
 
 handlersByName.set('CmdAcknowledgeSignatureLearn', (gs, cmd) => {
@@ -296,14 +298,14 @@ handlersByName.set('CmdSelectRaid', (gs, cmd) => {
 
   recomputeActiveRaidParams(gs, c.id);
   recomputeActiveRaidEstimates(gs, 100);
-  saveAutosave(gs);
+  gs.dirty = true;
 });
 
 handlersByName.set('CmdToggleGear', (gs, cmd) => {
   const c = cmd as CmdToggleGear;
   toggleGearForRaid(gs, c.raidId, c.gearId, c.selected);
   recomputeActiveRaidEstimates(gs, 100);
-  saveAutosave(gs);
+  gs.dirty = true;
 });
 
 handlersByName.set('CmdToggleQuest', (gs, cmd) => {
@@ -328,7 +330,7 @@ handlersByName.set('CmdToggleQuest', (gs, cmd) => {
   }
   if (changed) {
     recomputeActiveRaidEstimates(gs, 100);
-    saveAutosave(gs);
+    gs.dirty = true;
   }
 });
 
@@ -361,7 +363,7 @@ handlersByName.set('CmdPlaceMolecule', (gs, cmd) => {
   computeEffectiveEssences(gs.wafer);
   ensureSignatureDiscoveryFromWafer(gs);
   discover(gs, DISCOVERY.UI_WAFER_INFO);
-  saveAutosave(gs);
+  gs.dirty = true;
 });
 
 handlersByName.set('CmdRemoveMolecule', (gs, cmd) => {
@@ -381,7 +383,7 @@ handlersByName.set('CmdRemoveMolecule', (gs, cmd) => {
   }
   gs.items[itemId] = (gs.items[itemId] ?? 0) + 1;
   cycleItemImage(gs, itemId, -1);
-  saveAutosave(gs);
+  gs.dirty = true;
 });
 
 handlersByName.set('CmdGrowWafer', (gs, cmd) => {
@@ -399,7 +401,7 @@ handlersByName.set('CmdGrowWafer', (gs, cmd) => {
   gs.waferUpgradesPurchased = upgradesPurchased + 1;
   computeEffectiveEssences(gs.wafer);
   ensureSignatureDiscoveryFromWafer(gs);
-  saveAutosave(gs);
+  gs.dirty = true;
 });
 
 handlersByName.set('CmdResearchNode', (gs, cmd) => {
@@ -417,7 +419,7 @@ handlersByName.set('CmdResearchNode', (gs, cmd) => {
     if (!hadMazeEntrance && isMazeEntranceCell(gs, gs.mazeResetEntranceCell)) {
       gs.maze.avatarCell = { x: gs.mazeResetEntranceCell.x, y: gs.mazeResetEntranceCell.y };
     }
-    saveAutosave(gs);
+    gs.dirty = true;
   }
 });
 
@@ -442,7 +444,7 @@ handlersByName.set('CmdUpgradeGearCategory', (gs, cmd) => {
 
   gs.skillPoints = currentSP - cost;
   gs.gearLevels[catId] = currentSlots + 1;
-  saveAutosave(gs);
+  gs.dirty = true;
 });
 
 handlersByName.set('CmdUpgradeGearItem', (gs, cmd) => {
@@ -453,7 +455,7 @@ handlersByName.set('CmdUpgradeGearItem', (gs, cmd) => {
     recomputeActiveRaidParams(gs, gs.raid.id);
     recomputeActiveRaidEstimates(gs, 100);
   }
-  saveAutosave(gs);
+  gs.dirty = true;
 });
 
 handlersByName.set('CmdOpenGearUpgradeModal', (gs) => {
@@ -510,7 +512,7 @@ handlersByName.set('CmdToggleItemBan', (gs, cmd) => {
     }
   }
   if (changed) {
-    saveAutosave(gs);
+    gs.dirty = true;
   }
 });
 
@@ -559,20 +561,20 @@ handlersByName.set('CmdMazeMoveTo', (gs, cmd) => {
       uiState.mazeResetReason = 'banked';
     }
   }
-  saveAutosave(gs);
+  gs.dirty = true;
 });
 
 handlersByName.set('CmdMazePrepareUpgradeOffer', (gs) => {
   const prepared = prepareMazeNexusUpgradeOffer(gs);
   if (!prepared) return;
-  saveAutosave(gs);
+  gs.dirty = true;
 });
 
 handlersByName.set('CmdMazeSelectNexusUpgrade', (gs, cmd) => {
   const c = cmd as CmdMazeSelectNexusUpgrade;
   const selected = selectMazeNexusUpgrade(gs, c.nexusItemId);
   if (!selected) return;
-  saveAutosave(gs);
+  gs.dirty = true;
 });
 
 handlersByName.set('CmdMazePlaceNexusItem', (gs, cmd) => {
@@ -582,9 +584,10 @@ handlersByName.set('CmdMazePlaceNexusItem', (gs, cmd) => {
     return;
   }
   onMazeNexusUpgradePlaced(gs, c.nexusItemId);
+  gs.gameNotifs.push(new NotifNexusUpgradePlaced({ nexusItemId: c.nexusItemId }));
   gs.maze.version++;
   uiState.mazeVersion = gs.maze.version;
-  saveAutosave(gs);
+  gs.dirty = true;
 });
 
 handlersByName.set('CmdMazeActivateNexusSpecialUpgrade', (gs, cmd) => {
@@ -593,13 +596,13 @@ handlersByName.set('CmdMazeActivateNexusSpecialUpgrade', (gs, cmd) => {
   if (!activated) return;
   gs.maze.version++;
   uiState.mazeVersion = gs.maze.version;
-  saveAutosave(gs);
+  gs.dirty = true;
 });
 
 handlersByName.set('CmdMazeResetHighMovement', (gs) => {
   gs.mazeHighMovementUsed = 0;
   uiState.mazeVersion++;
-  saveAutosave(gs);
+  gs.dirty = true;
 });
 
 handlersByName.set('CmdMazeValidateOracleSeal', (gs, cmd) => {
@@ -612,7 +615,7 @@ handlersByName.set('CmdMazeValidateOracleSeal', (gs, cmd) => {
   } else {
     uiState.mazeVersion++;
   }
-  saveAutosave(gs);
+  gs.dirty = true;
 });
 
 handlersByName.set('CmdMazeActivateOracle', (gs, cmd) => {
@@ -621,7 +624,7 @@ handlersByName.set('CmdMazeActivateOracle', (gs, cmd) => {
   if (!activated) return;
   gs.maze.version++;
   uiState.mazeVersion = gs.maze.version;
-  saveAutosave(gs);
+  gs.dirty = true;
 });
 
 handlersByName.set('CmdMazeShowOraclePossibilities', (gs, cmd) => {
@@ -633,14 +636,35 @@ handlersByName.set('CmdMazeShowOraclePossibilities', (gs, cmd) => {
     delete gs.countableGear.philosophers_stone;
   }
   discover(gs, DISCOVERY.ORACLE_HINTS);
-  saveAutosave(gs);
+  gs.dirty = true;
+});
+
+handlersByName.set('CmdTriggerOracleStage0', (gs, cmd) => {
+  if (gs.discoveries[DISCOVERY.ORACLE_STAGE_0] === true) return;
+  discover(gs, DISCOVERY.ORACLE_STAGE_0);
+  trackAchi(gs, 'maze_chrono_t0');
+  gs.dirty = true;
+});
+
+handlersByName.set('CmdPayAchi', (gs, cmd) => {
+  const c = cmd as CmdPayAchi;
+  const paid = payAchi(gs, c.id);
+  if (!paid) return;
+  gs.dirty = true;
+});
+
+handlersByName.set('CmdAcknowledgeAchi', (gs, cmd) => {
+  const c = cmd as CmdAcknowledgeAchi;
+  const ack = acknowledgeAchi(gs, c.id);
+  if (!ack) return;
+  gs.dirty = true;
 });
 
 handlersByName.set('CmdTransmutate', (gs, cmd) => {
   const c = cmd as CmdTransmutate;
   const crafted = transmutate(gs, c.transmutationId);
   if (!crafted) return;
-  saveAutosave(gs);
+  gs.dirty = true;
 });
 
 export function processInputs(gameState: GameState): void {

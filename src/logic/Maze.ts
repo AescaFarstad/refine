@@ -28,6 +28,7 @@ import {
   refundMazeNexusPanelPurchase,
   resolveMazeRefresherStep,
 } from './MazeNexusBonuses';
+import { NotifMazeMoveCommitted, NotifMazeRunDone, NotifNexusUpgradesRefunded } from './GameNotif';
 
 export {
   getMazeNexusLimitBlockingDisks,
@@ -387,6 +388,7 @@ export function refundAllPlacedMazeNexusItems(gs: GameState): number {
   gs.mazeNextNexusPlacementId = 1;
   resetMazeResearchCellsAfterNexusRefund(gs);
   computeMazeResourceSpawns(gs, gs.lib.research);
+  gs.gameNotifs.push(new NotifNexusUpgradesRefunded());
 
   return refundedTimeFlux;
 }
@@ -494,8 +496,15 @@ function isCellTaken(gs: GameState, cell: Point2): boolean {
   return gs.maze.takenCells.some(t => t.x === cell.x && t.y === cell.y);
 }
 
-function collectResourceAtCell(gs: GameState, cell: Point2): void {
-  if (isCellTaken(gs, cell)) return;
+function markMazeCellVisited(gs: GameState, cell: Point2): void {
+  const researchCell = gs.researchCells[axialToIndex(cell.x, cell.y)]!;
+  if (researchCell.mazeVisitVersion === gs.mazeVisitCounter) return;
+  researchCell.mazeVisitVersion = gs.mazeVisitCounter;
+  gs.maze.uniqueCellsVisitedCount++;
+}
+
+function collectResourceAtCell(gs: GameState, cell: Point2): boolean {
+  if (isCellTaken(gs, cell)) return false;
 
   const spawn = gs.mazeResourceSpawns.find(s => s.cell.x === cell.x && s.cell.y === cell.y);
   if (spawn) {
@@ -529,7 +538,7 @@ function collectResourceAtCell(gs: GameState, cell: Point2): void {
     if (isMazeShardRefresherStep(gs, cell)) {
       applyMazeRefresherBonusOnStep(gs, cell);
     }
-    return;
+    return true;
   }
 
   // Nexus items: mark as taken when walked over (only button cells)
@@ -540,8 +549,10 @@ function collectResourceAtCell(gs: GameState, cell: Point2): void {
     if (def && def.placableInstanceDescription.button) {
       applyMazeRefresherBonusOnStep(gs, cell);
       gs.maze.takenCells.push({ x: cell.x, y: cell.y });
+      return true;
     }
   }
+  return false;
 }
 
 function applyMazePayout(gs: GameState): void {
@@ -592,6 +603,24 @@ function applyMazePayout(gs: GameState): void {
       gs.unlockedGear.push('philosophers_stone');
     }
   }
+}
+
+function pushMazeRunDoneNotif(gs: GameState, completed: boolean): void {
+  const m = gs.maze;
+  gs.gameNotifs.push(new NotifMazeRunDone({
+    collectedCredits: m.collectedCredits,
+    collectedChronotraces: m.collectedChronotraces,
+    collectedShardDust: m.collectedShardDust,
+    collectedZoneCrystal: m.collectedZoneCrystal,
+    collectedFractal: m.collectedFractal,
+    collectedSpice: m.collectedSpice,
+    collectedTransmutationCore: m.collectedTransmutationCore,
+    movementUsed: m.movementUsed,
+    uniqueMazeCellsVisited: m.uniqueCellsVisitedCount,
+    mazeNodesVisited: m.visitedNodeCount,
+    completed,
+  }));
+  gs.mazeVisitCounter++;
 }
 
 export interface MazeMoveResult {
@@ -864,6 +893,7 @@ export function handleMazeMoveTo(gs: GameState, target: Point2): MazeMoveResult 
   const remainingPool = gs.timeFlux - gs.maze.movementUsed;
 
   if (result.cost > remainingPool) {
+    pushMazeRunDoneNotif(gs, false);
     resetMazeTransient(gs);
     return {
       success: true,
@@ -880,8 +910,12 @@ export function handleMazeMoveTo(gs: GameState, target: Point2): MazeMoveResult 
   gs.maze.movementUsed += result.cost;
 
   for (const cell of result.path) {
-    collectResourceAtCell(gs, cell);
+    markMazeCellVisited(gs, cell);
+    if (collectResourceAtCell(gs, cell)) {
+      gs.maze.visitedNodeCount++;
+    }
   }
+  gs.gameNotifs.push(new NotifMazeMoveCommitted());
 
   gs.maze.avatarCell = { x: target.x, y: target.y };
 
@@ -890,6 +924,7 @@ export function handleMazeMoveTo(gs: GameState, target: Point2): MazeMoveResult 
     gs.mazeResetEntranceCell = copy(target);
     gs.mazeHighMovementUsed = Math.max(gs.mazeHighMovementUsed, gs.maze.movementUsed);
     applyMazePayout(gs);
+    pushMazeRunDoneNotif(gs, true);
     resetMazeTransient(gs);
     return {
       success: true,

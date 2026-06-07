@@ -196,6 +196,26 @@
             <div class="sig-cheat-name">{{ sig.name }}</div>
           </div>
         </div>
+        <h4 class="section-title">Achievements</h4>
+        <div class="achi-cheat-controls">
+          <button class="btn" type="button" @click="setAllAchi(0)">All Untracked</button>
+          <button class="btn primary" type="button" @click="setAllAchi(1)">All Tracked</button>
+          <button class="btn achi-complete-btn" type="button" @click="setAllAchi(2)">All Complete</button>
+          <button class="btn achi-ack-btn" type="button" @click="setAllAchi(3)">All Acknowledged</button>
+        </div>
+        <div class="achi-cheat-grid">
+          <button
+            v-for="achi in achiDefs"
+            :key="achi.id"
+            class="btn achi-cheat-btn"
+            :class="achiButtonClass(achi.id)"
+            type="button"
+            @click="cycleAchiState(achi.id)"
+            :title="achi.description"
+          >
+            {{ formatAchiLabel(achi.id) }}
+          </button>
+        </div>
       </section>
 
       <section v-else class="viewer" :class="{ fill: hasFullscreen }">
@@ -232,7 +252,7 @@ import { RESOURCE_SPECS, type ResourceKey } from '../logic/Resources';
 import { DISCOVERY, type DiscoveryId } from '../logic/DiscoveryLib';
 import { discover } from '../logic/Discover';
 import { REWARD_UI_KEYS } from './rewardUI/RewardUIRegistry';
-import { CheatCompleteSignatures, CheatUnlockAllNexusUpgrades } from '../logic/cheat/CheatCommands';
+import { CheatCompleteSignatures, CheatCycleAchiState, CheatSetAllAchiState, CheatUnlockAllNexusUpgrades } from '../logic/cheat/CheatCommands';
 import gearData from '../data/gear';
 import { processCheats } from '../logic/cheat/CheatProcessor';
 import atlasStorage from '../logic/AtlasStorage';
@@ -242,6 +262,7 @@ import { getOracleSealSolutionCellColors } from '../logic/Oracle';
 import { getSignatureAtlasVars, getSignatureSpriteStyle } from '../logic/signatureVisuals';
 import { cancelPendingAutosave, flushAutosave, loadFromJson } from '../logic/SaveLoad';
 import { rebuildTimelineEventsAfterRewind } from '../logic/Timeline';
+import { ACHI_STATE_UNTRACKED, ACHI_STATE_TRACKED, ACHI_STATE_COMPLETE, ACHI_STATE_ACKNOWLEDGED } from '../logic/Achi';
 
 const open = computed(() => uiState.cheatOpen);
 const saveLoadStatus = ref('');
@@ -590,6 +611,43 @@ function formatUILabel(key: string): string {
   return key.replaceAll('_', ' ');
 }
 
+const achiDefs = computed(() => {
+  const lib = uiState.lib;
+  if (!lib) return [];
+  return Array.from(lib.achi.items.values());
+});
+
+function getAchiStateValue(id: string): number {
+  const entry = getGameStateMutable().achi[id];
+  return entry ? entry.state : ACHI_STATE_UNTRACKED;
+}
+
+function achiButtonClass(id: string): Record<string, boolean> {
+  const state = getAchiStateValue(id);
+  return {
+    'achi-untracked': state === ACHI_STATE_UNTRACKED,
+    'achi-tracked': state === ACHI_STATE_TRACKED,
+    'achi-complete': state === ACHI_STATE_COMPLETE,
+    'achi-acknowledged': state === ACHI_STATE_ACKNOWLEDGED,
+  };
+}
+
+function cycleAchiState(id: string): void {
+  const gs = getGameStateMutable();
+  gs.cheats.push(new CheatCycleAchiState({ id }));
+  processCheats(gs);
+}
+
+function setAllAchi(state: number): void {
+  const gs = getGameStateMutable();
+  gs.cheats.push(new CheatSetAllAchiState({ state }));
+  processCheats(gs);
+}
+
+function formatAchiLabel(id: string): string {
+  return id.replaceAll('_', ' ');
+}
+
 function closeAll() {
   uiState.cheatOpen = false;
   uiState.devAtlasKey = '';
@@ -875,6 +933,57 @@ function closeAll() {
 }
 .sig-all-btn:hover {
   background: rgba(251, 191, 36, 0.28);
+}
+
+.achi-cheat-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.achi-cheat-grid {
+  columns: 7 150px;
+  column-gap: 3px;
+  max-width: 1150px;
+}
+.achi-cheat-btn {
+  break-inside: avoid;
+  margin-bottom: 3px;
+  width: 100%;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: left;
+}
+.achi-cheat-btn.achi-untracked {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+}
+.achi-cheat-btn.achi-tracked {
+  background: rgba(79, 209, 197, 0.14);
+  color: var(--accent);
+}
+.achi-cheat-btn.achi-complete {
+  background: rgba(251, 191, 36, 0.18);
+  color: rgb(251, 191, 36);
+}
+.achi-cheat-btn.achi-acknowledged {
+  background: rgba(134, 239, 172, 0.18);
+  color: rgb(134, 239, 172);
+}
+.achi-complete-btn {
+  background: rgba(251, 191, 36, 0.18) !important;
+  color: rgb(251, 191, 36) !important;
+}
+.achi-complete-btn:hover {
+  background: rgba(251, 191, 36, 0.28) !important;
+}
+.achi-ack-btn {
+  background: rgba(134, 239, 172, 0.18) !important;
+  color: rgb(134, 239, 172) !important;
+}
+.achi-ack-btn:hover {
+  background: rgba(134, 239, 172, 0.28) !important;
 }
 
 </style>

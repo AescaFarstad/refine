@@ -139,3 +139,19 @@ export class CheatMutateRaid implements CheatInput {
     this.count = args.count;
   }
 }
+
+export class CheatCycleAchiState implements CheatInput {
+  readonly name = 'CheatCycleAchiState';
+  readonly id: string;
+  constructor(args: { id: string }) {
+    this.id = args.id;
+  }
+}
+
+export class CheatSetAllAchiState implements CheatInput {
+  readonly name = 'CheatSetAllAchiState';
+  readonly state: number;
+  constructor(args: { state: number }) {
+    this.state = args.state;
+  }
+}

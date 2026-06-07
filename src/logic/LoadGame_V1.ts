@@ -11,6 +11,7 @@ import { applyMazeNexusPlacementAtCell, computeMazeResourceSpawns, resetMazeTran
 import { randomizeOracles } from "./RandomizeOracles";
 import { syncDerivedGearUnlocks } from "./DiscoveryLib";
 import { ensureTimelineEventsGenerated } from "./Timeline";
+import { ACHI_STATE_ACKNOWLEDGED, ACHI_STATE_COMPLETE, ACHI_STATE_TRACKED, type AchiState } from "./Achi";
 
 // This file must not contain fallbacks for anything. Fail fast.
 
@@ -235,6 +236,27 @@ interface SavedRaidLibEntry {
   items: string[];
   encounters: Array<{ count: number; encounter: EncounterDef }>;
   zoneCollapseSec: number;
+}
+
+function parseSavedAchiState(value: unknown): Record<string, AchiState> | false {
+  if (value === undefined) return {};
+  if (!isObjectRecord(value)) return false;
+
+  const out: Record<string, AchiState> = {};
+  for (const [id, rawState] of Object.entries(value)) {
+    if (!isObjectRecord(rawState)) return false;
+    if (rawState.state !== ACHI_STATE_TRACKED && rawState.state !== ACHI_STATE_COMPLETE && rawState.state !== ACHI_STATE_ACKNOWLEDGED) return false;
+    if (typeof rawState.best !== "number" || !Number.isFinite(rawState.best)) return false;
+    const projectedValue = rawState.projectedValue === undefined ? 0 : rawState.projectedValue;
+    if (typeof projectedValue !== "number" || !Number.isFinite(projectedValue)) return false;
+    out[id] = {
+      state: rawState.state,
+      best: rawState.best,
+      projectedValue,
+    };
+  }
+
+  return out;
 }
 
 function parseResearchNexusIds(value: unknown): SavedNexusPlacement[] | false {
@@ -494,6 +516,8 @@ function rehydrateGameState(input: AnonymousObject): GameState | false {
   if (savedTimelineEvents === false) return failLoad("invalid timelineEvents.", { timelineEvents: input.timelineEvents });
   const savedTimelineCursor = inputHasSavedTimeline ? parseTimelineCursor(input.timelineCursor, savedTimelineEvents.length) : 0;
   if (savedTimelineCursor === false) return failLoad("invalid timelineCursor.", { timelineCursor: input.timelineCursor, eventCount: savedTimelineEvents.length });
+  const savedAchi = parseSavedAchiState(input.achi);
+  if (savedAchi === false) return failLoad("invalid achi.", { achi: input.achi });
 
   const gameState = new GameState();
   gameState.gameTime = input.gameTime;
@@ -508,9 +532,10 @@ function rehydrateGameState(input: AnonymousObject): GameState | false {
   const mutableGameState = gameState as unknown as AnonymousObject;
 
   for (const [k, v] of Object.entries(input)) {
-    if (k === "lib" || k === "version" || k === "researchCells" || k === RESEARCH_OWNED_CELLS_KEY || k === RESEARCH_NEXUS_IDS_KEY || k === "wafer" || k === "maze" || k === "mazeVisibility" || k === "rawRaidLib" || k === "rawNexusLib" || k === "lastAppliedRaidMutations" || k === "timelineVersion" || k === "timelineEvents" || k === "timelineCursor") continue;
+    if (k === "lib" || k === "version" || k === "researchCells" || k === RESEARCH_OWNED_CELLS_KEY || k === RESEARCH_NEXUS_IDS_KEY || k === "wafer" || k === "maze" || k === "mazeVisibility" || k === "mazeVisitCounter" || k === "rawRaidLib" || k === "rawNexusLib" || k === "lastAppliedRaidMutations" || k === "timelineVersion" || k === "timelineEvents" || k === "timelineCursor" || k === "achi" || k === "achiVersion" || k === "gameNotifs" || k === "dirty") continue;
     mutableGameState[k] = v;
   }
+  gameState.achi = savedAchi;
   if (!inputHasSavedTimeline) {
     console.info("[LoadGame_V1] Save has no timeline state; generating implicit timeline from current definitions.");
     assignImplicitTimeline(gameState);

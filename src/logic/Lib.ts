@@ -40,6 +40,8 @@ import { parseTransmutationDefinitions } from './TransmutationLib';
 import { TimelineLib } from './TimelineLib';
 import { timelineArchetypes } from '../data/timeline_archetypes';
 import { timelineEvents } from '../data/timeline_events';
+import { AchiLib } from './AchiLib';
+import achievementsData from '../data/achievements';
 
 export class Lib {
 
@@ -57,6 +59,7 @@ export class Lib {
   public transmutations: Map<string, TransmutationDefinition> = new Map();
   public research: ResearchLib = new ResearchLib();
   public timeline: TimelineLib = new TimelineLib();
+  public achi: AchiLib = new AchiLib();
 
   constructor() {
     this.loadAllDefinitions();
@@ -165,6 +168,7 @@ export class Lib {
         this.gear
       );
       this.timeline.load(timelineArchetypes, timelineEvents);
+      this.achi.load(achievementsData);
 
       verifyLibIntegrity(this);
 

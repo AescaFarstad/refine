@@ -1,6 +1,6 @@
 import { type GameState, Raid } from '../GameState';
 import type { CheatInput } from './CheatCommands';
-import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources, CheatUnlockAllRaids, CheatLoadResearchState, CheatUnlockAllQuests, CheatDisableQuestPrereqs, CheatGrantDiscoveries, CheatGrantRewards, CheatLearnSignatures, CheatCompleteSignatures, CheatAddItemBans, CheatUnlockAllNexusUpgrades, CheatMaxGearSlots, CheatMaxGearXp, CheatAddResearchVision, CheatSelectFirstRaid, CheatMutateRaid } from './CheatCommands';
+import { CheatAddRaidItems, CheatUnlockAllGear, CheatAddResources, CheatUnlockAllRaids, CheatLoadResearchState, CheatUnlockAllQuests, CheatDisableQuestPrereqs, CheatGrantDiscoveries, CheatGrantRewards, CheatLearnSignatures, CheatCompleteSignatures, CheatAddItemBans, CheatUnlockAllNexusUpgrades, CheatMaxGearSlots, CheatMaxGearXp, CheatAddResearchVision, CheatSelectFirstRaid, CheatMutateRaid, CheatCycleAchiState, CheatSetAllAchiState } from './CheatCommands';
 import type { EncounterDef } from '../RaidLib';
 import { applyResearchNodeEffect, axialToIndex, calculateVisibility } from '../Research';
 import { setEnableQuestPrereqs } from '../Const';
@@ -10,6 +10,7 @@ import { undoRewards } from '../RewardsUndo';
 import { MAZE_NEXUS_NO_UPGRADE_OFFER_SEED } from '../MazeNexusUpgradeProgress';
 import { recomputeActiveRaidParams, recomputeActiveRaidEstimates } from '../Raid';
 import { pickAndApplyRaidSuccessMutation } from '../RaidMutation';
+import { ACHI_STATE_ACKNOWLEDGED, ACHI_STATE_COMPLETE, ACHI_STATE_TRACKED, ACHI_STATE_UNTRACKED, type AchiProgressState } from '../Achi';
 
 type Handler = (gs: GameState, cheat: CheatInput) => void;
 const handlersByName = new Map<string, Handler>();
@@ -231,6 +232,45 @@ handlersByName.set('CheatMutateRaid', (gs, cheat) => {
   }
   recomputeActiveRaidParams(gs, gs.raid.id);
   recomputeActiveRaidEstimates(gs, 100);
+});
+
+handlersByName.set('CheatCycleAchiState', (gs, cheat) => {
+  const c = cheat as CheatCycleAchiState;
+  const entry = gs.achi[c.id];
+  const current = entry ? entry.state : ACHI_STATE_UNTRACKED;
+
+  if (current === ACHI_STATE_UNTRACKED) {
+    gs.achi[c.id] = { state: ACHI_STATE_TRACKED, best: 0, projectedValue: 0 };
+  } else if (current === ACHI_STATE_TRACKED) {
+    gs.achi[c.id] = { state: ACHI_STATE_COMPLETE, best: entry!.best, projectedValue: 0 };
+  } else if (current === ACHI_STATE_COMPLETE) {
+    gs.achi[c.id] = { state: ACHI_STATE_ACKNOWLEDGED, best: entry!.best, projectedValue: 0 };
+  } else {
+    delete gs.achi[c.id];
+  }
+  gs.achiVersion++;
+});
+
+handlersByName.set('CheatSetAllAchiState', (gs, cheat) => {
+  const c = cheat as CheatSetAllAchiState;
+  if (
+    c.state !== ACHI_STATE_UNTRACKED &&
+    c.state !== ACHI_STATE_TRACKED &&
+    c.state !== ACHI_STATE_COMPLETE &&
+    c.state !== ACHI_STATE_ACKNOWLEDGED
+  ) {
+    throw new Error(`Unsupported achi cheat state: ${c.state}`);
+  }
+
+  const ids = Array.from(gs.lib.achi.items.keys());
+  if (c.state === ACHI_STATE_UNTRACKED) {
+    for (const id of ids) delete gs.achi[id];
+  } else {
+    for (const id of ids) {
+      gs.achi[id] = { state: c.state as AchiProgressState, best: gs.achi[id]?.best ?? 0, projectedValue: 0 };
+    }
+  }
+  gs.achiVersion++;
 });
 
 export function processCheats(gs: GameState): void {

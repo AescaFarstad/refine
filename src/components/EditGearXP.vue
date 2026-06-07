@@ -30,7 +30,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { getGameStateMutable, uiState } from '../logic/UIState';
-import { saveAutosave } from '../logic/SaveLoad';
 
 const visible = computed(() => uiState.editGearXpModalOpen);
 
@@ -62,7 +61,7 @@ function setXp(nextXp: number): void {
     ...uiState.gearXpById,
     [gearId]: value,
   };
-  saveAutosave(gs);
+  gs.dirty = true;
 }
 
 function adjustXp(delta: number): void {

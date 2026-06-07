@@ -290,6 +290,26 @@ export class CmdMazeShowOraclePossibilities implements CmdInput {
   readonly name = 'CmdMazeShowOraclePossibilities';
 }
 
+export class CmdTriggerOracleStage0 implements CmdInput {
+  readonly name = 'CmdTriggerOracleStage0';
+}
+
+export class CmdPayAchi implements CmdInput {
+  readonly name = 'CmdPayAchi';
+  readonly id: string;
+  constructor(args: { id: string }) {
+    this.id = args.id;
+  }
+}
+
+export class CmdAcknowledgeAchi implements CmdInput {
+  readonly name = 'CmdAcknowledgeAchi';
+  readonly id: string;
+  constructor(args: { id: string }) {
+    this.id = args.id;
+  }
+}
+
 export class CmdTransmutate implements CmdInput {
   readonly name = 'CmdTransmutate';
   readonly transmutationId: string;

@@ -89,7 +89,7 @@ onBeforeUnmount(() => {
   --bg-1: #151d2b;          /* dark blue-gray */
   --bg-2: #1a2332;          /* slightly lighter */
   --bg-2-op: #1a2332e9;          /* slightly lighter */
-  --panel-bg: rgba(23, 33, 47, 0.62); /* dark tactical panel */
+  --panel-bg: rgba(23, 33, 47, 0.81); /* dark tactical panel */
   --panel-border: rgba(100, 120, 140, 0.25); /* subtle blue-gray border */
   --panel-shine: rgba(255, 255, 255, 0.03);
   --accent: #4fd1c5;         /* teal/cyan - primary interactive color */

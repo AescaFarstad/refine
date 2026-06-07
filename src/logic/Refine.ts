@@ -10,6 +10,7 @@ import { EvtRefineryDone } from './evt/Evt';
 import { discover } from './Discover';
 import { DISCOVERY, getMonochromeEssenceBehavior } from './DiscoveryLib';
 import { applyReward } from './Reward';
+import { NotifRefiningComplete } from './GameNotif';
 
 const FAILED_SHARD_PICKUP_GRACE_SEC = 2.4;
 
@@ -136,6 +137,12 @@ export function resolveRefineryDone(gs: GameState): void {
   }
 
   gs.lastRefineryOutcome = outcome;
+  gs.gameNotifs.push(new NotifRefiningComplete({
+    success: outcome.success,
+    creditsGained: outcome.creditsGained,
+    chronotracesGained: outcome.chronotracesGained,
+    timeFluxGained: outcome.timeFluxGained,
+  }));
   clearWafer(gs.wafer);
 }
 

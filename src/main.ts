@@ -10,7 +10,7 @@ import { ensureNexusAtlas } from './logic/NexusAtlas';
 import { getRepresentation } from './logic/LogNumbers';
 import { getHypRepresentation } from './logic/HypNumbers';
 import { initDebug, initQuickstart } from './logic/CheatInit';
-import { flushAutosave, loadAutosave, setAutosaveEnabled } from './logic/SaveLoad';
+import { loadAutosave, setAutosaveEnabled } from './logic/SaveLoad';
 import { loadGameStateFromDevSlot } from './logic/dev/TestSaveLoad';
 import { readURLSettings } from './URLSettings';
 
@@ -38,14 +38,14 @@ getHypRepresentation(2000);
       : (urlSettings.seed === null ? new GameState() : new GameState(urlSettings.seed));
   }
 
-  if (!urlSettings.noSave) {
-    window.addEventListener('pagehide', () => {
-      flushAutosave();
-    });
-    window.addEventListener('beforeunload', () => {
-      flushAutosave();
-    });
-  }
+  // if (!urlSettings.noSave) {
+  //   window.addEventListener('pagehide', () => {
+  //     flushAutosave();
+  //   });
+  //   window.addEventListener('beforeunload', () => {
+  //     flushAutosave();
+  //   });
+  // }
 
   await atlasStorage.loadItemsAtlas();
   await atlasStorage.loadLocationsAtlas();

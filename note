@@ -108,6 +108,8 @@ may 17
   timeline visuals, kilifi raid
 may 31
   kilava items, images, balancing, oracle hint, timeline visuals, balancing
+june 6-7
+  balancing, fixes, oracles, achievements
 
 npx tsc --noEmit
 npx vue-tsc --noEmit
@@ -388,17 +390,6 @@ jiko
 Kiondo bag
 kenyan painting
 
-oracle quest:
-mine 1000 chrono from maze [3000]
-mine 2000 credits from maze [7000]
-visit 100 nodes in maze [200]
-pay 5000 shard dust [12000]
-earn 2000 chrono via refining [5000]
-earn 3000 credits via refining [7000]
-pay 100 zone crystals
-
-
-
 
 oracle bonuses
 reds +1 [6]
@@ -410,8 +401,6 @@ magenta +20% yield [1]
 unique item % +1 [3]
 charge bonus x2 [1]
 refining chance +5%
-
-
 
 
 completing an oracle needs an animation, message, reward
@@ -480,3 +469,5 @@ something must point at an oracle as the means of progressing the game
 "insert philosopher's stone" how many do I have?
 
 inserting stone closes the menu
+
+hide weight and zone collapse time until more ites were researched (also items weight)

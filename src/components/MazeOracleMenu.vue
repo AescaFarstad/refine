@@ -163,13 +163,14 @@ import type { ReadonlySignatureDefinition } from '../logic/SignatureLib';
 import { ESSENCE_COLORS } from '../logic/RenderConstants';
 import { getResourceSpec } from '../logic/Resources';
 import { getGameState, uiState, type DeepReadonly } from '../logic/UIState';
-import { CmdMazeActivateOracle, CmdMazeShowOraclePossibilities, CmdMazeValidateOracleSeal } from '../logic/input/InputCommands';
+import { CmdMazeActivateOracle, CmdMazeShowOraclePossibilities, CmdMazeValidateOracleSeal, CmdTriggerOracleStage0 } from '../logic/input/InputCommands';
 import atlasStorage from '../logic/AtlasStorage';
 import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 import { getSignatureAtlasVars, getSignatureSpriteStyle } from '../logic/signatureVisuals';
 import { ORACLE_POSSIBILITIES_COST } from '../logic/Const';
+import { DISCOVERY } from '../logic/DiscoveryLib';
 
-defineProps<{
+const props = defineProps<{
   visible: boolean;
 }>();
 
@@ -306,6 +307,7 @@ watch([oracleState, () => uiState.mazeVisitedOracleNodeId], async () => {
   await nextTick();
   bindOracleTopRowObserver();
 }, { flush: 'post', immediate: true });
+watch(() => [props.visible, uiState.mazeVisitedOracleNodeId] as const, triggerOracleStage0, { flush: 'sync', immediate: true });
 
 let oracleTopRowObserver: ResizeObserver | null = null;
 
@@ -354,6 +356,13 @@ function onActivateOracle() {
 function onShowPossibilities() {
   if (!canShowPossibilities.value) return;
   globalInputQueue.push(new CmdMazeShowOraclePossibilities());
+}
+
+function triggerOracleStage0() {
+  if (!props.visible) return;
+  if (uiState.mazeVisitedOracleNodeId < 0) return;
+  if (getGameState().discoveries[DISCOVERY.ORACLE_STAGE_0] === true) return;
+  globalInputQueue.push(new CmdTriggerOracleStage0());
 }
 
 function isSignatureDiscovered(id: string): boolean {

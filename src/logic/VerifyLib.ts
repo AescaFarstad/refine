@@ -124,6 +124,7 @@ function verifyRewardRefs(reward: Reward, context: string, lib: Lib, errors: Ver
     case 'timeline_deteriorate_random_raid':
     case 'timeline_deteriorate_all_raids':
     case 'global_monsters_buff_hp':
+    case 'death_due_touniversecollapse':
       return;
   }
 }
@@ -213,6 +214,18 @@ export function verifyGear(lib: Lib, errors: VerifyErrors): void {
     }
     for (const categoryId of Object.keys(gear.bonusBlockChancePerCategory)) {
       ensureExists(errors, lib.gearCategories, categoryId, context, 'gear category');
+    }
+    for (const upgrade of Object.values(gear.ups)) {
+      const upgradeContext = `${context} upgrade[${upgrade.id}]`;
+      for (const categoryId of Object.keys(upgrade.bonusDamagePerCategory)) {
+        ensureExists(errors, lib.gearCategories, categoryId, upgradeContext, 'gear category');
+      }
+      for (const categoryId of Object.keys(upgrade.bonusHpPerCategory)) {
+        ensureExists(errors, lib.gearCategories, categoryId, upgradeContext, 'gear category');
+      }
+      for (const categoryId of Object.keys(upgrade.bonusBlockChancePerCategory)) {
+        ensureExists(errors, lib.gearCategories, categoryId, upgradeContext, 'gear category');
+      }
     }
   }
 }
@@ -362,8 +375,13 @@ export function verifyOracles(lib: Lib, errors: VerifyErrors): void {
 }
 
 export function verifyTimeline(lib: Lib, errors: VerifyErrors): void {
+  const eventIds = new Set<string>();
   for (const eventDef of lib.timeline.events) {
     const context = `TimelineEvent[${eventDef.id}]`;
+    if (eventIds.has(eventDef.id)) {
+      errors.push(`${context} has duplicate id`);
+    }
+    eventIds.add(eventDef.id);
     if (!lib.timeline.archetypes.has(eventDef.type)) {
       errors.push(`${context} references missing archetype: ${eventDef.type}`);
     }
@@ -371,6 +389,9 @@ export function verifyTimeline(lib: Lib, errors: VerifyErrors): void {
 
   for (const archetype of lib.timeline.archetypes.values()) {
     const context = `TimelineArchetype[${archetype.id}]`;
+    if (!Number.isInteger(archetype.severity) || archetype.severity < 0 || archetype.severity > 5) {
+      errors.push(`${context} has invalid severity: ${archetype.severity}`);
+    }
     for (const reward of archetype.options) {
       verifyRewardRefs(reward, `${context} option`, lib, errors);
     }

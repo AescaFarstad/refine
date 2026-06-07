@@ -1,8 +1,8 @@
 <template>
   <component
-    v-if="currentEntry"
+    v-if="currentComponent"
     :is="currentComponent"
-    :params="currentEntry.params"
+    :params="currentEntry!.params"
     @close="dismissCurrent"
   />
 </template>
@@ -16,10 +16,16 @@ import type { Reward } from '../../logic/Reward';
 import { REWARD_UI_COMPONENTS } from './RewardUIRegistry';
 
 const currentEntry = computed(() => uiState.pendingUIModals[0] ?? null);
+const reportedMissingUis = new Set<string>();
 
 const currentComponent = computed(() => {
   if (!currentEntry.value) return null;
-  return REWARD_UI_COMPONENTS[currentEntry.value.ui] ?? null;
+  const component = REWARD_UI_COMPONENTS[currentEntry.value.ui] ?? null;
+  if (!component && !reportedMissingUis.has(currentEntry.value.ui)) {
+    reportedMissingUis.add(currentEntry.value.ui);
+    console.error('[RewardUIRouter] Missing reward UI component.', { entry: currentEntry.value });
+  }
+  return component;
 });
 
 function dismissCurrent(rewards?: Reward[]) {

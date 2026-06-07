@@ -71,6 +71,28 @@ const gear: Record<string, RawGearDefinition> = {
     image: 'axe',
     perk: 'Hack and Crack',
     description: 'Scavenging takes 4 minutes less',
+    xp: [8, 12],
+    ups:{
+      up1:{
+        skillPoints: 1,
+        damage: 2,
+        price: 30,
+        title:'Langet Wrap'
+      },
+      up2:{
+        skillPoints: 1,
+        chanceToHit: 15,
+        price: 30,
+        title:'Counterweight' 
+      },
+      up3:{
+        skillPoints: 0,
+        damage: 1,
+        weight: 1,
+        price: -30,
+        title:'Cast Iron Head'
+      }
+    },
   },
   sledgehammer: {
     name: 'Sledgehammer',
@@ -91,11 +113,13 @@ const gear: Record<string, RawGearDefinition> = {
         title:'Thick Head'
       },
       up2:{ 
-        chanceToBlock: 5,
+        chanceToBlock: 10,
         weight: -1,
+        price: 20,
         title:'Custom handle' 
       },
       up3:{
+        skillPoints: 0,
         replacePerk: "Armor Tearing",
         changeDescription:'Each hit tears 1 armor',
         title:'Piercing Head'
@@ -1028,9 +1052,10 @@ const gear: Record<string, RawGearDefinition> = {
     xp: [16, 24],
     ups:{
       up1:{
-        skillPoints: -1,
-        attackSkipCount: 1,
-        changeDescription: 'Negates 1 successful enemy hit in each fight',
+        skillPoints: 0,
+        bonusHpPerCategory: { armor: 3 },
+        changeDescription: '+3 health per armor item equipped',
+        weight: 1,
         title:'Chitin-Fiber Dressing'
       },
       up2:{
@@ -1038,7 +1063,7 @@ const gear: Record<string, RawGearDefinition> = {
         title:'Pratice!'
       },
       up3:{
-        skillPoints: -1,
+        skillPoints: 0,
         regenPerKm: 1,
         title:'Collagen Matrix'
       }

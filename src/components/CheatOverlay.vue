@@ -9,10 +9,20 @@
           <button class="btn primary" type="button" @click="openMoleculeEditor">
             Molecule Editor
           </button>
+          <button class="btn primary" type="button" @click="openDevMonsters">
+            Monsters
+          </button>
           <button class="btn primary" type="button" @click="openEditResearchPane">
             Edit Research Pane
           </button>
+          <button class="btn primary" type="button" @click="loadJsonSaveFromClipboard">
+            Load JSON Save From Clipboard
+          </button>
         </div>
+
+        <p v-if="saveLoadStatus" class="cheat-status" :class="{ bad: !saveLoadStatusOk }">
+          {{ saveLoadStatus }}
+        </p>
 
         <div class="window-btn-row" style="margin-top: 6px;">
           <button
@@ -26,7 +36,6 @@
           </button>
         </div>
 
-        <h4 class="section-title">Time</h4>
         <div class="time-cheat-row">
           <span class="time-cheat-label">{{ timeDisplay }}</span>
           <button
@@ -36,9 +45,16 @@
             type="button"
             @click="rewindTime(step.sec)"
           >
-            -{{ step.label }}
+            {{ step.label }}
           </button>
           <span class="time-cheat-divider" />
+          <button
+            class="btn primary time-cheat-btn"
+            type="button"
+            @click="speedUpRefining"
+          >
+            Speed+
+          </button>
           <button
             v-for="step in TIME_STEPS"
             :key="'fwd-' + step.sec"
@@ -47,7 +63,7 @@
             :disabled="!canAdvanceTime"
             @click="advanceTime(step.sec)"
           >
-            +{{ step.label }}
+            {{ step.label }}
           </button>
         </div>
 
@@ -73,7 +89,10 @@
               <button class="btn primary" type="button" @click="unlockAllNexusUpgrades">Unlock all</button>
             </div>
             <div v-for="cg in countableGearEntries" :key="cg.id" class="resource-row">
-              <span class="resource-label">{{ cg.name }}</span>
+              <span class="resource-label gear-label">
+                <span v-if="cg.image" class="gear-cheat-sprite" :style="gearSpriteStyle(cg.image) ?? {}" />
+                <span class="gear-label-text">{{ cg.name }}</span>
+              </span>
               <button class="btn" type="button" @click="setCountableGear(cg.id, 0)">0</button>
               <button class="btn" type="button" @click="grantCountableGear(cg.id, 1)">+1</button>
               <button class="btn" type="button" @click="grantCountableGear(cg.id, 10)">+10</button>
@@ -189,18 +208,25 @@
           v-else-if="devMoleculeEditorOpen"
           @close="closeAll"
         />
+        <DevMonsters
+          v-else-if="devMonstersOpen"
+          @close="closeAll"
+        />
       </section>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { getGameState, uiState, getGameStateMutable, timeDisplay } from '../logic/UIState';
+import { computed, ref } from 'vue';
+import { getGameState, uiState, getGameStateMutable, replaceGameState, timeDisplay } from '../logic/UIState';
 import { Raid } from '../logic/GameState';
 import { EvtTimeAdvance } from '../logic/evt/Evt';
+import { globalInputQueue } from '../logic/Model';
+import { CmdSpeedUpRefining } from '../logic/input/InputCommands';
 import DevAtlasView from './DevAtlasView.vue';
 import DevMoleculeEditor from './DevMoleculeEditor.vue';
+import DevMonsters from './DevMonsters.vue';
 import { listAtlasKeys, type AtlasKey } from '../logic/AtlasStorage';
 import { RESOURCE_SPECS, type ResourceKey } from '../logic/Resources';
 import { DISCOVERY, type DiscoveryId } from '../logic/DiscoveryLib';
@@ -209,11 +235,17 @@ import { REWARD_UI_KEYS } from './rewardUI/RewardUIRegistry';
 import { CheatCompleteSignatures, CheatUnlockAllNexusUpgrades } from '../logic/cheat/CheatCommands';
 import gearData from '../data/gear';
 import { processCheats } from '../logic/cheat/CheatProcessor';
+import atlasStorage from '../logic/AtlasStorage';
+import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 import { getMazeOracleNodeIdAtCell } from '../logic/Maze';
 import { getOracleSealSolutionCellColors } from '../logic/Oracle';
 import { getSignatureAtlasVars, getSignatureSpriteStyle } from '../logic/signatureVisuals';
+import { cancelPendingAutosave, flushAutosave, loadFromJson } from '../logic/SaveLoad';
+import { rebuildTimelineEventsAfterRewind } from '../logic/Timeline';
 
 const open = computed(() => uiState.cheatOpen);
+const saveLoadStatus = ref('');
+const saveLoadStatusOk = ref(true);
 
 const atlasVars = getSignatureAtlasVars();
 
@@ -352,7 +384,14 @@ function setNexusUpgradeOpportunities(amount: number): void {
 
 const countableGearEntries = Object.entries(gearData)
   .filter(([, d]) => d.countable)
-  .map(([id, d]) => ({ id, name: d.name }));
+  .map(([id, d]) => ({ id, name: d.name, image: d.image }));
+
+function gearSpriteStyle(imageKey: string): Record<string, string> | null {
+  const source = atlasStorage.getItemsSource();
+  const frame = atlasStorage.getItemsFrame(imageKey);
+  if (!source || !frame) return null;
+  return atlasSpriteStyle(source, frame, { size: 20, mode: 'fit', allowUpscale: false }) as Record<string, string>;
+}
 
 function grantCountableGear(id: string, amount: number): void {
   const gs = getGameStateMutable();
@@ -422,8 +461,12 @@ const TIME_STEPS: Array<{ label: string; sec: number }> = [
   { label: '1m', sec: 60 },
   { label: '10m', sec: 600 },
   { label: '1h', sec: 3600 },
+  { label: '3h', sec: 3 * 3600 },
   { label: '6h', sec: 6 * 3600 },
+  { label: '12h', sec: 12 * 3600 },
   { label: '1d', sec: 24 * 3600 },
+  { label: '2d', sec: 2 *24 * 3600 },
+  { label: '3d', sec: 3 *24 * 3600 },
   { label: '1w', sec: 7 * 24 * 3600 },
 ];
 
@@ -432,6 +475,7 @@ const canAdvanceTime = computed(() => !uiState.hasPendingEvt);
 function rewindTime(deltaSec: number): void {
   const gs = getGameStateMutable();
   gs.gameTime = Math.max(0, gs.gameTime - deltaSec);
+  rebuildTimelineEventsAfterRewind(gs, gs.gameTime);
 }
 
 function advanceTime(deltaSec: number): void {
@@ -439,6 +483,10 @@ function advanceTime(deltaSec: number): void {
   if (gs.nextEvt) return;
   gs.nextEvt = new EvtTimeAdvance({ at: gs.gameTime + deltaSec });
   gs.timeActive = true;
+}
+
+function speedUpRefining(): void {
+  globalInputQueue.push(new CmdSpeedUpRefining());
 }
 
 function toggleRaidUnlock(id: string): void {
@@ -468,17 +516,26 @@ function formatDiscoveryLabel(id: DiscoveryId): string {
 
 const selectedAtlas = computed(() => uiState.devAtlasKey as AtlasKey | '');
 const devMoleculeEditorOpen = computed(() => uiState.devMoleculeEditorOpen);
-const hasFullscreen = computed(() => !!selectedAtlas.value || devMoleculeEditorOpen.value);
+const devMonstersOpen = computed(() => uiState.devMonstersOpen);
+const hasFullscreen = computed(() => !!selectedAtlas.value || devMoleculeEditorOpen.value || devMonstersOpen.value);
 const atlasKeys = computed<AtlasKey[]>(() => listAtlasKeys());
 
 function openAtlas(key: AtlasKey) {
   uiState.devAtlasKey = key;
   uiState.devMoleculeEditorOpen = false;
+  uiState.devMonstersOpen = false;
 }
 
 function openMoleculeEditor() {
   uiState.devAtlasKey = '';
   uiState.devMoleculeEditorOpen = true;
+  uiState.devMonstersOpen = false;
+}
+
+function openDevMonsters() {
+  uiState.devAtlasKey = '';
+  uiState.devMoleculeEditorOpen = false;
+  uiState.devMonstersOpen = true;
 }
 
 function openEditResearchPane() {
@@ -487,10 +544,44 @@ function openEditResearchPane() {
   uiState.cheatOpen = false;
 }
 
+function setSaveLoadStatus(text: string, ok: boolean): void {
+  saveLoadStatus.value = text;
+  saveLoadStatusOk.value = ok;
+}
+
+async function loadJsonSaveFromClipboard(): Promise<void> {
+  if (!navigator.clipboard || !window.isSecureContext) {
+    setSaveLoadStatus('Clipboard API unavailable.', false);
+    return;
+  }
+
+  let json: string;
+  try {
+    json = await navigator.clipboard.readText();
+  } catch {
+    setSaveLoadStatus('Clipboard read failed.', false);
+    return;
+  }
+
+  const loaded = loadFromJson(json);
+  if (loaded === false) {
+    setSaveLoadStatus('Clipboard JSON save failed to load.', false);
+    return;
+  }
+
+  cancelPendingAutosave();
+  replaceGameState(loaded);
+  flushAutosave(loaded);
+  setSaveLoadStatus('Loaded JSON save from clipboard.', true);
+}
+
 function triggerUIModal(uiKey: string) {
   const gs = getGameStateMutable();
-  if (!gs.pendingUIModals.some(m => m.ui === uiKey)) {
+  const idx = gs.pendingUIModals.findIndex(m => m.ui === uiKey);
+  if (idx === -1) {
     gs.pendingUIModals.push({ ui: uiKey });
+  } else {
+    gs.pendingUIModals.splice(idx, 1);
   }
   uiState.cheatOpen = false;
 }
@@ -503,6 +594,7 @@ function closeAll() {
   uiState.cheatOpen = false;
   uiState.devAtlasKey = '';
   uiState.devMoleculeEditorOpen = false;
+  uiState.devMonstersOpen = false;
 }
 </script>
 
@@ -553,6 +645,15 @@ function closeAll() {
 }
 .window-btn-row .btn { flex: 0 0 auto; }
 
+.cheat-status {
+  margin: 4px 0 0;
+  color: var(--accent);
+  font-size: 12px;
+}
+.cheat-status.bad {
+  color: #f87171;
+}
+
 .viewer { margin-top: 4px; overflow: auto; }
 .viewer.fill { margin-top: 0; flex: 1; min-height: 0; }
 
@@ -590,8 +691,8 @@ function closeAll() {
   font-variant-numeric: tabular-nums;
 }
 .time-cheat-btn {
-  min-width: 44px;
-  padding: 3px 6px;
+  min-width: 34px;
+  padding: 5px 8px;
   font-size: 11px;
 }
 .time-cheat-btn:disabled {
@@ -657,6 +758,16 @@ function closeAll() {
 }
 .resource-glyph {
   font-size: 13px;
+}
+.gear-cheat-sprite {
+  display: inline-block;
+  flex-shrink: 0;
+}
+.gear-label-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 76px;
 }
 .discovery-title {
   margin: 0 0 4px;

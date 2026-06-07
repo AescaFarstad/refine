@@ -67,6 +67,7 @@ export function undoReward(gs: GameState, reward: Reward): boolean {
     case 'show_ui':
     case 'timeline_deteriorate_random_raid':
     case 'timeline_deteriorate_all_raids':
+    case 'death_due_touniversecollapse':
       return false;
   }
 }

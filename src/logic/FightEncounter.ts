@@ -3,6 +3,7 @@ import { createFightEncounterLogEntry, type FightEncounterLogEntry, type FightEv
 import Perks from './Perks';
 import { FEATURE_SUMMON, FEATURE_SUMMON2, FEATURE_SELF_DESTRUCT, SUMMON_CHANCE_PER_ROUND, SUMMON_CHANCE_PER_ROUND2 } from './MonsterFeatures';
 import { REGEN_INTERVAL_SEC } from './Const';
+import { applySignedHpRegen } from './Regen';
 
 function clamp(v: number, lo: number, hi: number): number { return Math.max(lo, Math.min(hi, v)); }
 
@@ -25,21 +26,21 @@ function applyTimeRegen(
   let hpAfter = 0;
   let ticksCrossed = 0;
 
-  if (regenPer10Minutes > 0 && r.hp > 0) {
-    if (nextRegenThresholdSec === 0 && r.hp < r.maxHp) {
-      nextRegenThresholdSec = totalElapsedAfterRound + REGEN_INTERVAL_SEC;
+  if (regenPer10Minutes !== 0 && r.hp > 0) {
+    if (nextRegenThresholdSec === 0 && (regenPer10Minutes < 0 || r.hp < r.maxHp)) {
+      nextRegenThresholdSec = regenPer10Minutes < 0 ? REGEN_INTERVAL_SEC : totalElapsedAfterRound + REGEN_INTERVAL_SEC;
     }
     while (nextRegenThresholdSec > 0 && nextRegenThresholdSec <= totalElapsedAfterRound) {
-      if (r.hp < r.maxHp) {
+      if (regenPer10Minutes < 0 || r.hp < r.maxHp) {
         if (healed === 0) {
           hpBefore = r.hp;
         }
-        const missing = r.maxHp - r.hp;
-        const healAmount = Math.min(regenPer10Minutes, missing);
-        r.hp += healAmount;
-        healed += healAmount;
+        const hpBeforeTick = r.hp;
+        r.hp = applySignedHpRegen(r.hp, r.maxHp, regenPer10Minutes);
+        healed += r.hp - hpBeforeTick;
         hpAfter = r.hp;
         ticksCrossed++;
+        if (r.hp <= 0) break;
       }
       nextRegenThresholdSec += REGEN_INTERVAL_SEC;
     }

@@ -313,6 +313,7 @@ export interface Shard {
 export interface TimelineScheduledEvent {
   eventId: string;
   archetypeId: string;
+  requestedAt: number;
   at: number;
   repeat: number;
   executed: boolean;

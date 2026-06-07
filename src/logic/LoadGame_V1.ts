@@ -161,6 +161,11 @@ function parseSavedTimelineEvents(value: unknown): TimelineScheduledEvent[] | fa
       console.warn("[LoadGame_V1] Invalid timelineEvents entry: at is not a finite number.", { index: i, rawEntry });
       return false;
     }
+    const requestedAt = rawEntry.requestedAt === undefined ? rawEntry.at : rawEntry.requestedAt;
+    if (typeof requestedAt !== "number" || !Number.isFinite(requestedAt)) {
+      console.warn("[LoadGame_V1] Invalid timelineEvents entry: requestedAt is not a finite number.", { index: i, rawEntry });
+      return false;
+    }
     if (typeof rawEntry.repeat !== "number" || !Number.isFinite(rawEntry.repeat)) {
       console.warn("[LoadGame_V1] Invalid timelineEvents entry: repeat is not a finite number.", { index: i, rawEntry });
       return false;
@@ -188,6 +193,7 @@ function parseSavedTimelineEvents(value: unknown): TimelineScheduledEvent[] | fa
     out.push({
       eventId: rawEntry.eventId,
       archetypeId: rawEntry.archetypeId,
+      requestedAt,
       at: rawEntry.at,
       repeat: rawEntry.repeat,
       executed: rawEntry.executed,
@@ -469,6 +475,9 @@ function rehydrateGameState(input: AnonymousObject): GameState | false {
   }
 
   if (typeof input.version !== "number") return failLoad("version is not a number.", { version: input.version });
+  if (typeof input.gameTime !== "number" || !Number.isFinite(input.gameTime)) {
+    return failLoad("gameTime is not a finite number.", { gameTime: input.gameTime });
+  }
   const ownedResearchCells = parseOwnedResearchCells(input[RESEARCH_OWNED_CELLS_KEY]);
   if (ownedResearchCells === false) return failLoad("invalid researchOwnedCells.", { value: input[RESEARCH_OWNED_CELLS_KEY] });
   const savedWafer = parseSavedWafer(input.wafer);
@@ -487,9 +496,14 @@ function rehydrateGameState(input: AnonymousObject): GameState | false {
   if (savedTimelineCursor === false) return failLoad("invalid timelineCursor.", { timelineCursor: input.timelineCursor, eventCount: savedTimelineEvents.length });
 
   const gameState = new GameState();
+  gameState.gameTime = input.gameTime;
   if (!applySavedRawNexusLib(gameState, savedRawNexusLib)) return failLoad("saved rawNexusLib references an unknown nexus item.");
   if (inputHasSavedTimeline && !assignSavedTimeline(gameState, savedTimelineEvents, savedTimelineCursor)) {
-    return failLoad("saved timeline references unknown or mismatched timeline definitions.");
+    console.warn("[LoadGame_V1] Saved timeline references unknown or mismatched timeline definitions; regenerating timeline from current definitions.", {
+      timelineEvents: savedTimelineEvents,
+      timelineCursor: savedTimelineCursor,
+    });
+    assignImplicitTimeline(gameState);
   }
   const mutableGameState = gameState as unknown as AnonymousObject;
 

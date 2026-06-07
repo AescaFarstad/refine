@@ -175,4 +175,6 @@ export const paneStats: ResearchPlacementInput[] = [
   { archetypeId: 'stat_weight', cells: { x: 10, y: 13 } },
   { archetypeId: 'res_skillPoint', cells: { x: 7, y: 18 } },
   { archetypeId: 'stat_speed', cells: { x: 8, y: 15 } },
+  { archetypeId: 'res_skillPoint', cells: { x: 40, y: -27 } },
+  { archetypeId: 'res_skillPoint', cells: { x: 42, y: -18 } },
 ];

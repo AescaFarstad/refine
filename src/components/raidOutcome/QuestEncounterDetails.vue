@@ -1,7 +1,7 @@
 <template>
   <div class="note-row">{{ questLine(entry.questId) }}</div>
   <div class="note-row time-regen" v-if="hasTimeRegen">
-    Regenerated {{ timeRegenAmount }} hp: {{ entry.timeRegenHpBefore }} → <b>{{ entry.timeRegenHpAfter }}</b> over the last {{ formatDuration(entry.timeRegenDurationSec) }}
+    {{ timeRegenAmount > 0 ? 'Regenerated' : 'Lost' }} {{ Math.abs(timeRegenAmount) }} hp: {{ entry.timeRegenHpBefore }} → <b>{{ entry.timeRegenHpAfter }}</b> over the last {{ formatDuration(entry.timeRegenDurationSec) }}
   </div>
 </template>
 
@@ -21,7 +21,7 @@ function questLine(id?: string): string {
   return s || (id || '');
 }
 
-const hasTimeRegen = computed(() => (props.entry.timeRegenHpAfter || 0) > (props.entry.timeRegenHpBefore || 0));
+const hasTimeRegen = computed(() => (props.entry.timeRegenHpAfter || 0) !== (props.entry.timeRegenHpBefore || 0));
 const timeRegenAmount = computed(() => (props.entry.timeRegenHpAfter || 0) - (props.entry.timeRegenHpBefore || 0));
 
 function formatDuration(sec: number): string {

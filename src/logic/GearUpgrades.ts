@@ -15,6 +15,12 @@ type GearUpgradeSelectionState = {
   readonly gearUpgradeIdsById: Readonly<Record<string, readonly string[] | undefined>>;
 };
 
+function addCategoryBonuses(target: Record<string, number>, bonus: Readonly<Record<string, number>>): void {
+  for (const [categoryId, value] of Object.entries(bonus)) {
+    target[categoryId] = (target[categoryId] ?? 0) + value;
+  }
+}
+
 export function getGearUpgradeThresholds(gear: GearDefinition): number[] {
   let total = 0;
   return gear.xp.map(cost => {
@@ -56,12 +62,18 @@ export function buildEffectiveGear(base: Readonly<GearDefinition>, upgrades: rea
     ...base,
     xp: base.xp.slice(),
     ups: { ...base.ups },
+    bonusDamagePerCategory: { ...base.bonusDamagePerCategory },
+    bonusHpPerCategory: { ...base.bonusHpPerCategory },
+    bonusBlockChancePerCategory: { ...base.bonusBlockChancePerCategory },
   };
 
   for (const upgrade of upgrades) {
     for (const key of GEAR_UPGRADE_STAT_KEYS) {
       effective[key] += upgrade[key];
     }
+    addCategoryBonuses(effective.bonusDamagePerCategory, upgrade.bonusDamagePerCategory);
+    addCategoryBonuses(effective.bonusHpPerCategory, upgrade.bonusHpPerCategory);
+    addCategoryBonuses(effective.bonusBlockChancePerCategory, upgrade.bonusBlockChancePerCategory);
     if (upgrade.removePerk) {
       effective.perk = '';
       effective.description = '';
@@ -110,7 +122,11 @@ export function getUpgradeSkillPointsCost(gs: GameState, gearId: string, upgrade
   return upgrade.skillPoints; // -1 = costs 1, 0 = free, 1 = grants 1
 }
 
-export function canApplyGearUpgrade(gs: GameState, gearId: string, upgradeId: string): boolean {
+export function canApplyGearUpgrade(
+  gs: GearUpgradeXpState & GearUpgradeSelectionState & { readonly skillPoints: number },
+  gearId: string,
+  upgradeId: string,
+): boolean {
   const gear = gs.lib.gear.get(gearId)!;
   if (!gear.ups[upgradeId]) return false;
   const spCost = gear.ups[upgradeId].skillPoints;

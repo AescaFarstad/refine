@@ -67,6 +67,11 @@ export function update(gs: GameState, deltaTime: number): void {
     gs.gameTime += timeDelta;
     accumulateRaidResources(gs, timeDelta);
     processDueTimelineEvents(gs);
+    if (!gs.timeActive) {
+      gs.timeSpeed = TIME_SPEED_MIN;
+      gs.timeSpeedMaxBoost = 1;
+      return;
+    }
 
     // exponential ramp: multiply by MAX^(dt/T)
     const effectiveMax = TIME_SPEED_MAX * (gs.timeSpeedMaxBoost || 1);

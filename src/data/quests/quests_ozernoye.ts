@@ -72,6 +72,7 @@ const quests: Record<string, RawQuestDefinition> = {
     raidRestriction: ['ozernoye'],
     requiresRaidSuccesses: 6,
     encounterTimeMin: 70,
+    gearRequired: ['spice'],
     encounters: [
       { kind: 'AddMonsterMutation', monsterId: 'stalker', count: 2 },
     ],
@@ -86,6 +87,7 @@ const quests: Record<string, RawQuestDefinition> = {
     raidRestriction: ['ozernoye'],
     requiresRaidSuccesses: 4,
     encounterTimeMin: 60,
+    gearRequired: ['spice'],
     encounters: [
       { kind: 'AddMonsterMutation', monsterId: 'flower', count: 3 },
     ],
@@ -100,6 +102,7 @@ const quests: Record<string, RawQuestDefinition> = {
     raidRestriction: ['ozernoye'],
     requiresQuestIds: ['ozernoye_raise_the_dome'],
     encounterTimeMin: 100,
+    gearRequired: ['spice'],
     encounters: [
       { kind: 'AddMonsterMutation', monsterId: 'flower', count: 4 },
     ],
@@ -116,6 +119,7 @@ const quests: Record<string, RawQuestDefinition> = {
     requiresRaidSuccesses: 7,
     requiresRaidQuestCompletions: 3,
     encounterTimeMin: 30,
+    gearRequired: ['spice'],
     encounters: [
       { kind: 'AddMonsterMutation', monsterId: 'arch_hound', count: 10 },
     ],

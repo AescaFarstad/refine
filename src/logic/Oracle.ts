@@ -221,14 +221,19 @@ export function submitOracleSeal(
   return { ...evaluation, submitted: true };
 }
 
+export function getOracleActivationCost(gs: ReadonlyGameState): number {
+  return Object.values(gs.mazeOracleStateByNodeId).filter(state => state !== 'inert').length + 1;
+}
+
 export function activateOracle(gs: GameState, nodeId: number): boolean {
   const key = String(nodeId);
   if (gs.mazeOracleStateByNodeId[key] !== 'inert') return false;
 
   const currentCount = gs.countableGear.philosophers_stone ?? 0;
-  if (currentCount <= 0) return false;
+  const cost = getOracleActivationCost(gs);
+  if (currentCount < cost) return false;
 
-  gs.countableGear.philosophers_stone = currentCount - 1;
+  gs.countableGear.philosophers_stone = currentCount - cost;
   if (gs.countableGear.philosophers_stone <= 0) {
     delete gs.countableGear.philosophers_stone;
   }

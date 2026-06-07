@@ -159,10 +159,9 @@ const walkingTime = computed(() => {
     const kmh = speedKmHFor(curHp);
     const sec = Math.round(3600 / Math.max(MIN_WALK_SPEED, kmh));
     timeSec += sec;
-    const regen = Math.max(0, regenPerKm.value);
-    const missing = Math.max(0, maxHp.value - curHp);
-    const healed = Math.min(regen, missing);
-    curHp += healed;
+    const regen = regenPerKm.value;
+    if (regen > 0) curHp += Math.min(regen, Math.max(0, maxHp.value - curHp));
+    if (regen < 0) curHp = Math.max(0, curHp + regen);
   }
   const h = Math.floor(timeSec / 3600);
   const m = Math.floor((timeSec % 3600) / 60);

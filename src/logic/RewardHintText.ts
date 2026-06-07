@@ -90,6 +90,8 @@ export function formatRewardHintText(reward: DeepReadonly<Reward>, lib: Readonly
       return 'All raid zones deteriorate';
     case 'global_monsters_buff_hp':
       return `All monsters gain ${signed(reward.amount)} health`;
+    case 'death_due_touniversecollapse':
+      return 'The multiverse collapses (you perish)';
   }
 }
 

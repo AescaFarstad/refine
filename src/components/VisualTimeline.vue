@@ -8,7 +8,7 @@
     </div>
     <div v-if="hasTimelineDiscovery" class="timeline-now">
       <span class="now-line"></span>
-      <span class="now-label">Now</span>
+      <span v-if="showNowLabel" class="now-label">Now</span>
     </div>
     <div v-if="hasTimelineDiscovery" class="timeline-track">
       <div v-if="raidTimePreview" class="raid-time-preview">
@@ -19,6 +19,12 @@
         <span
           class="raid-time-preview-fade"
           :style="{ left: `${raidTimePreview.fadeLeftPct}%`, width: `${raidTimePreview.fadeWidthPct}%` }"
+        ></span>
+      </div>
+      <div v-if="refiningTimePreview" class="refining-time-preview">
+        <span
+          class="refining-time-preview-solid"
+          :style="{ width: `${refiningTimePreview.solidWidthPct}%` }"
         ></span>
       </div>
       <div class="track-line"></div>
@@ -54,6 +60,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { TIMELINE_MIN_SEPARATION_SEC, TIMELINE_VISIBLE_SPAN_SEC } from '../logic/Const';
+import { computeRefinePreviewChem } from '../logic/RefinePreview';
 import { getGameLib, getGameState, timeDisplay, uiState } from '../logic/UIState';
 import TimelineEvent from './TimelineEvent.vue';
 import TimelineLogDropdown from './TimelineLogDropdown.vue';
@@ -73,6 +80,15 @@ const selectedRaid = computed(() => {
 });
 
 const isRaidTabTimeline = computed(() => hasTimelineDiscovery.value && uiState.activeTab === 'raid');
+const isRefineTabTimeline = computed(() => hasTimelineDiscovery.value && uiState.activeTab === 'refine');
+
+const showNowLabel = computed(() => {
+  uiState.timeMinutes;
+  uiState.timelineVersion;
+  const gs = getGameState();
+  const now = gs.gameTime;
+  return !gs.timelineEvents.some(entry => !entry.executed && entry.at >= now && entry.at <= now + 7200);
+});
 
 const raidTimePreview = computed(() => {
   if (!isRaidTabTimeline.value) return null;
@@ -87,6 +103,33 @@ const raidTimePreview = computed(() => {
     fadeLeftPct: lowerPct,
     fadeWidthPct: Math.max(0, upperPct - lowerPct),
     upperSec,
+  };
+});
+
+const refiningTimePreview = computed(() => {
+  if (!isRefineTabTimeline.value) return null;
+
+  uiState.timeMinutes;
+  uiState.waferVersion;
+  uiState.refinePreviewVersion;
+  uiState.discoveryCounter;
+
+  const activeRefinery = uiState.refinery;
+  let durationSec = 0;
+
+  if (activeRefinery?.timeRemainingSec !== undefined) {
+    durationSec = activeRefinery.timeRemainingSec;
+  } else {
+    const gs = getGameState();
+    const hasPlacedItem = gs.wafer.items.some(item => item !== null);
+    if (!hasPlacedItem || uiState.shards.length > 0) return null;
+    durationSec = computeRefinePreviewChem(gs).timeSec;
+  }
+
+  if (durationSec <= 0) return null;
+
+  return {
+    solidWidthPct: clampPct((durationSec / TIMELINE_VISIBLE_SPAN_SEC) * 100),
   };
 });
 
@@ -264,6 +307,8 @@ const dayMarkers = computed(() => {
   flex: 1 1 auto;
   position: relative;
   overflow: visible;
+  container-type: inline-size;
+  container-name: timeline-track;
 }
 
 .track-line {
@@ -277,7 +322,8 @@ const dayMarkers = computed(() => {
   background: linear-gradient(90deg, rgba(34, 211, 238, 0.58), rgba(148, 163, 184, 0.2));
 }
 
-.raid-time-preview {
+.raid-time-preview,
+.refining-time-preview {
   position: absolute;
   left: 0;
   right: 0;
@@ -288,19 +334,28 @@ const dayMarkers = computed(() => {
 }
 
 .raid-time-preview-solid,
-.raid-time-preview-fade {
+.raid-time-preview-fade,
+.refining-time-preview-solid {
   position: absolute;
   top: 0;
   bottom: 0;
 }
 
-.raid-time-preview-solid {
+.raid-time-preview-solid,
+.refining-time-preview-solid {
   left: 0;
+}
+
+.raid-time-preview-solid {
   background: rgba(234, 179, 8, 0.23);
 }
 
 .raid-time-preview-fade {
   background: linear-gradient(90deg, rgba(234, 179, 8, 0.23), rgba(234, 179, 8, 0));
+}
+
+.refining-time-preview-solid {
+  background: rgba(34, 211, 238, 0.22);
 }
 
 .zone-collapse-marker {

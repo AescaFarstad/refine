@@ -19,6 +19,12 @@ let autosaveTimerId: number | null = null;
 let pendingAutosaveJson: string = "";
 let autosaveEnabled = true;
 
+declare global {
+  interface Window {
+    __lastFailedSaveJson: string;
+  }
+}
+
 interface SavedWaferCell {
   x: number;
   y: number;
@@ -221,6 +227,12 @@ function loadByVersion(version: number, input: unknown): GameState | false {
   }
 }
 
+function dumpFailedSaveJson(json: string): void {
+  window.__lastFailedSaveJson = json;
+  console.warn("[SaveLoad] Failed save JSON dumped to window.__lastFailedSaveJson.");
+  console.warn("[SaveLoad] Failed save JSON:", json);
+}
+
 export function loadFromObject(input: unknown): GameState | false {
   if (!isObjectRecord(input)) {
     console.warn("[SaveLoad] Load failed: parsed save is not an object.", { input });
@@ -239,9 +251,12 @@ export function loadFromObject(input: unknown): GameState | false {
 
 export function loadFromJson(json: string): GameState | false {
   try {
-    return loadFromObject(JSON.parse(json));
+    const loaded = loadFromObject(JSON.parse(json));
+    if (loaded === false) dumpFailedSaveJson(json);
+    return loaded;
   } catch (err) {
     console.warn("[SaveLoad] Load failed: invalid JSON.", err);
+    dumpFailedSaveJson(json);
     return false;
   }
 }

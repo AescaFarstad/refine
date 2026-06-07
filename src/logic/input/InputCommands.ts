@@ -286,6 +286,10 @@ export class CmdMazeActivateOracle implements CmdInput {
   }
 }
 
+export class CmdMazeShowOraclePossibilities implements CmdInput {
+  readonly name = 'CmdMazeShowOraclePossibilities';
+}
+
 export class CmdTransmutate implements CmdInput {
   readonly name = 'CmdTransmutate';
   readonly transmutationId: string;

@@ -38,7 +38,7 @@
               free: !upgrade.purchased && upgrade.skillPoints === 0,
             }]"
             @click="upgradeGear(entry.id, upgrade.id)"
-            @mouseenter="hoverUpgrade(upgrade, entry.maskLevel)"
+            @mouseenter="hoverUpgrade(entry, upgrade)"
             @mouseleave="unhoverUpgrade()"
           >
             <div v-if="entry.maskLevel !== 'none' && !upgrade.purchased" :class="['xp-upgrade-mask', { 'has-title': upgrade.title && entry.maskLevel !== 'full' }]">?</div>
@@ -67,7 +67,7 @@
               <div v-if="upgrade.description" class="xp-upgrade-description">{{ upgrade.description }}</div>
               <div v-else-if="upgrade.rows.length === 0" class="xp-upgrade-forgo">forgo upgrade</div>
             </div>
-            <div v-if="entry.isLastUpgrade && !upgrade.purchased && hoveredUpgradeId && hoveredUpgradeId !== upgrade.id" class="xp-upgrade-cross" :ref="el => setCrossAngle(el as HTMLElement)" />
+            <div v-if="entry.isLastUpgrade && !upgrade.purchased && hoveredUpgrade?.gearId === entry.id && hoveredUpgrade.upgradeId !== upgrade.id" class="xp-upgrade-cross" :ref="el => setCrossAngle(el as HTMLElement)" />
           </button>
         </div>
       </div>
@@ -124,7 +124,7 @@ type GearEntry = {
 };
 
 const hoveredGearId = ref<string | null>(null);
-const hoveredUpgradeId = ref<string | null>(null);
+const hoveredUpgrade = ref<{ gearId: string; upgradeId: string } | null>(null);
 
 function showHint(_event: MouseEvent, entry: GearEntry): void {
   hoveredGearId.value = entry.id;
@@ -300,23 +300,23 @@ function setCrossAngle(el: HTMLElement | null): void {
   el.style.setProperty('--cross-angle', `${angle}deg`);
 }
 
-function hoverUpgrade(upgrade: UpgradeEntry, maskLevel: GearEntry['maskLevel']): void {
+function hoverUpgrade(entry: GearEntry, upgrade: UpgradeEntry): void {
   if (upgrade.purchased) return;
-  if (maskLevel !== 'none') return;
+  if (entry.maskLevel !== 'none') return;
   if (!upgrade.available) return;
-  hoveredUpgradeId.value = upgrade.id;
+  hoveredUpgrade.value = { gearId: entry.id, upgradeId: upgrade.id };
   uiState.gearUpgradeHoveredSkillPoints = upgrade.skillPoints;
 }
 
 function unhoverUpgrade(): void {
-  hoveredUpgradeId.value = null;
+  hoveredUpgrade.value = null;
   uiState.gearUpgradeHoveredSkillPoints = 0;
 }
 
 function upgradeGear(gearId: string, upgradeId: string): void {
   const gs = getGameState();
   if (!canApplyGearUpgrade(gs, gearId, upgradeId)) return;
-  hoveredUpgradeId.value = null;
+  hoveredUpgrade.value = null;
   globalInputQueue.push(new CmdUpgradeGearItem({ gearId, upgradeId }));
 }
 

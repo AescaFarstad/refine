@@ -14,6 +14,7 @@ import { buildEffectiveGearForId, cacheActiveRaidEffectiveGear, getCachedActiveR
 import { getEffectiveLootVolume } from './LootVolume';
 import { discover } from './Discover';
 import { DISCOVERY } from './DiscoveryLib';
+import { applySignedHpRegen } from './Regen';
 
 export interface RaidRunResult {
   success: boolean;
@@ -46,7 +47,8 @@ function stampEntry<T extends RaidEventLogEntry>(entry: T, raid: ActiveRaid): T 
 
 /**
  * Applies time-based regen using threshold approach.
- * Regen timer starts when HP first drops below maximum.
+ * Positive regen timer starts when HP first drops below maximum.
+ * Negative regen timer starts immediately and damages the player each tick.
  * Regen ticks every 600 seconds after the timer starts.
  * If HP is full when threshold is crossed, regen is wasted (threshold still advances).
  * Returns the new nextRegenThresholdSec value to be tracked across encounters.
@@ -58,13 +60,13 @@ function applyTimeBasedRegen<T extends RaidEventLogEntry>(
   totalElapsedSec: number,
   nextRegenThresholdSec: number
 ): number {
-  if (raid.regenPer10Minutes <= 0 || totalElapsedSec <= 0) return nextRegenThresholdSec;
+  if (raid.regenPer10Minutes === 0 || totalElapsedSec <= 0 || raid.hp <= 0) return nextRegenThresholdSec;
 
   // If timer hasn't started yet (0), check if HP is below max to activate it
   if (nextRegenThresholdSec === 0) {
-    if (raid.hp < raid.maxHp) {
-      // Start the timer - first tick will be 600 seconds from now
-      nextRegenThresholdSec = totalElapsedSec + 600;
+    if (raid.regenPer10Minutes < 0 || raid.hp < raid.maxHp) {
+      // Negative regen is raid-wide damage over time, so it ticks from raid start.
+      nextRegenThresholdSec = raid.regenPer10Minutes < 0 ? 600 : totalElapsedSec + 600;
     }
     return nextRegenThresholdSec;
   }
@@ -75,17 +77,17 @@ function applyTimeBasedRegen<T extends RaidEventLogEntry>(
 
   while (nextRegenThresholdSec <= totalElapsedSec) {
     // Threshold crossed - heal if HP is missing, otherwise wasted
-    if (raid.hp < raid.maxHp) {
-      const missing = raid.maxHp - raid.hp;
-      const healed = Math.min(raid.regenPer10Minutes, missing);
-      raid.hp += healed;
-      totalHealed += healed;
+    if (raid.regenPer10Minutes < 0 || raid.hp < raid.maxHp) {
+      const hpBeforeTick = raid.hp;
+      raid.hp = applySignedHpRegen(raid.hp, raid.maxHp, raid.regenPer10Minutes);
+      totalHealed += raid.hp - hpBeforeTick;
       ticksCrossed++;
+      if (raid.hp <= 0) break;
     }
     nextRegenThresholdSec += 600;
   }
 
-  if (totalHealed > 0) {
+  if (totalHealed !== 0) {
     entry.timeRegenHpBefore = hpBefore;
     entry.timeRegenHpAfter = raid.hp;
     entry.timeRegenDurationSec = ticksCrossed * 600;
@@ -389,6 +391,25 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
   let lootChanceDeltaApplied = 0;
   let lootingRarityBuffDeltaApplied = 0;
   let gatheredCredits = 0;
+  const failFromHpLoss = (): RaidRunResult => ({
+    success: false,
+    log,
+    bagItemCounts,
+    discardedItemCounts,
+    timeSpentSec,
+    timeBreakdownSec,
+    plannedEncounters,
+    barelyInTime: false,
+    questsCompleted,
+    rewardsApplied,
+    raidMutationsApplied,
+    raidItemsAdded,
+    lootChanceDeltaApplied,
+    lootingRarityBuffDeltaApplied,
+    reimbursedCredits: 0,
+    diedToMonster: false,
+    diedToZoneCollapse: false,
+  });
 
   const activeQuestIdsAtStart = new Set<string>();
   if (!dryRun) {
@@ -520,6 +541,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         entry.elapsedTotalSec = timeSpentSec;
         nextRegenThresholdSec = applyTimeBasedRegen(entry, raid, timeSpentSec, nextRegenThresholdSec);
         log.entries.push(stampEntry(entry, raid));
+        if (raid.hp <= 0) return failFromHpLoss();
         break;
       }
       case 'ResourcesEncounter': {
@@ -565,6 +587,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         entry.elapsedTotalSec = timeSpentSec;
         nextRegenThresholdSec = applyTimeBasedRegen(entry, raid, timeSpentSec, nextRegenThresholdSec);
         log.entries.push(stampEntry(entry, raid));
+        if (raid.hp <= 0) return failFromHpLoss();
         if (hasSaferRoutes) justWalked = true;
         break;
       }
@@ -578,6 +601,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         entry.elapsedTotalSec = timeSpentSec;
         nextRegenThresholdSec = applyTimeBasedRegen(entry, raid, timeSpentSec, nextRegenThresholdSec);
         log.entries.push(stampEntry(entry, raid));
+        if (raid.hp <= 0) return failFromHpLoss();
         break;
       }
       case 'LootEncounter': {
@@ -593,6 +617,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         entry.elapsedTotalSec = timeSpentSec;
         nextRegenThresholdSec = applyTimeBasedRegen(entry, raid, timeSpentSec, nextRegenThresholdSec);
         log.entries.push(stampEntry(entry, raid));
+        if (raid.hp <= 0) return failFromHpLoss();
         break;
       }
       case 'FightEncounter': {
@@ -661,13 +686,15 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
             diedToZoneCollapse: false,
           };
         }
-        if (raid.regenAfterCombat > 0 && !fight.entry.skipped) {
+        if (raid.regenAfterCombat !== 0 && !fight.entry.skipped) {
           const hpBefore = raid.hp;
-          raid.hp = Math.min(raid.maxHp, raid.hp + raid.regenAfterCombat);
+          raid.hp = applySignedHpRegen(raid.hp, raid.maxHp, raid.regenAfterCombat);
           const hpAfter = raid.hp;
           fight.entry.hpBeforeRegen = hpBefore;
           fight.entry.hpAfterRegen = hpAfter;
         }
+        stampEntry(fight.entry, raid);
+        if (raid.hp <= 0) return failFromHpLoss();
         // Time-based regen is applied during the fight itself in handleFightEncounter
         break;
       }
@@ -683,6 +710,7 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         entry.injected = injected ?? false;
         nextRegenThresholdSec = applyTimeBasedRegen(entry, raid, timeSpentSec, nextRegenThresholdSec);
         log.entries.push(stampEntry(entry, raid));
+        if (raid.hp <= 0) return failFromHpLoss();
         break;
       }
     }

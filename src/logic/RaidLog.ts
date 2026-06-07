@@ -38,7 +38,7 @@ export interface WalkEncounterLogEntry extends RaidLogEntryBase {
   maxSpeedKmH: number;  // speed at full health (for comparison)
   maxHp: number;
   hasPainkiller: boolean;
-  hpHealed: number;
+  hpHealed: number; // signed HP delta from per-km regen
 }
 
 export interface ResourcesEncounterLogEntry extends RaidLogEntryBase {
@@ -82,7 +82,7 @@ export interface FightEvent {
   attackSkipTriggered: boolean; // true when an incoming hit was negated by attackSkipCount
   summonTriggered: boolean; // true when monster summons another of its kind
   selfDestructed: boolean;  // true when monster self-destructs on successful attack
-  timeRegenHealed: number;  // HP healed by time-based regen after this round (0 if none)
+  timeRegenHealed: number;  // signed HP delta from time-based regen after this round (0 if none)
   timeRegenHpBefore: number;  // HP before time-based regen this round
   timeRegenHpAfter: number;   // HP after time-based regen this round
   timeRegenDurationSec: number; // Total elapsed time when regen triggered

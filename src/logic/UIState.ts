@@ -127,6 +127,7 @@ function createDefaultUIState() {
     cheatOpen: false,
     devAtlasKey: '' as '' | 'items' | 'locations' | 'molecules' | 'nexus',
     devMoleculeEditorOpen: false,
+    devMonstersOpen: false,
     editResearchOpen: false,
 
     refinery: null as UIRefinery | null,
@@ -155,6 +156,7 @@ function createDefaultUIState() {
     hasDiscoveredFractalEssenceYield: false,
     hasDiscoveredSpiceEssenceYield: false,
     hasDiscoveredSignatureInfo: false,
+    hasDiscoveredOracleHints: false,
     hasVisitedRefineTab: false,
     hasVisitedResearchTab: false,
     hasVisitedMazeTab: false,
@@ -547,6 +549,7 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.hasDiscoveredFractalEssenceYield = game.discoveries[DISCOVERY.FRACTAL_ESSENCE_YIELD] === true;
   uiState.hasDiscoveredSpiceEssenceYield = game.discoveries[DISCOVERY.SPICE_ESSENCE_YIELD] === true;
   uiState.hasDiscoveredSignatureInfo = game.discoveries[DISCOVERY.UI_SIGNATURE_INFO] === true;
+  uiState.hasDiscoveredOracleHints = game.discoveries[DISCOVERY.ORACLE_HINTS] === true;
   uiState.hasVisitedRefineTab = game.discoveries[DISCOVERY.TAB_REFINE_VISITED] === true;
   uiState.hasVisitedResearchTab = game.discoveries[DISCOVERY.TAB_RESEARCH_VISITED] === true;
   uiState.hasVisitedMazeTab = game.discoveries[DISCOVERY.TAB_MAZE_VISITED] === true;

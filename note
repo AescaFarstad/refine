@@ -107,7 +107,7 @@ may 1
 may 17
   timeline visuals, kilifi raid
 may 31
-  kilava items, images
+  kilava items, images, balancing, oracle hint, timeline visuals, balancing
 
 npx tsc --noEmit
 npx vue-tsc --noEmit
@@ -387,3 +387,96 @@ mwiko
 jiko
 Kiondo bag
 kenyan painting
+
+oracle quest:
+mine 1000 chrono from maze [3000]
+mine 2000 credits from maze [7000]
+visit 100 nodes in maze [200]
+pay 5000 shard dust [12000]
+earn 2000 chrono via refining [5000]
+earn 3000 credits via refining [7000]
+pay 100 zone crystals
+
+
+
+
+oracle bonuses
+reds +1 [6]
+blue +1 [3]
+gold +1 [3]
+green +1 [1]
+cyan +10% yield [1]
+magenta +20% yield [1]
+unique item % +1 [3]
+charge bonus x2 [1]
+refining chance +5%
+
+
+
+
+completing an oracle needs an animation, message, reward
+
+timeline discovery hint
+animate timeline buttton when it appears
+
+Skill Points: 0 ◌-1 for no reason when gear xp isn't unlocked yet gearxp-1
+
+Resources banked - should show income
+
+Add a quest to shegolskoye which requires a fractal - to make maze more meaningful
+
+add one-time bonus items which can be looted from some raids
+
+essence which doubles shards if refining fails
+
+day 5.5 octopus enters kilava
+
+unused item bans
+
++1 should work on white
+
+charge doesn't react to mouse when picking up shards
+
+when hovering over void in maze path to the nearest cell instead of nothing
+
+red essence node failed to reveal other essences
+
+every new oracle costs 1 philosopher's stone more
+
+research: +1% loot in maze for every visited node
+
+is sparking there just before the zone collapse
+
+all monsters gain health - remove severity
+
+NEW - above the molecule overlay
+
+research - increased item odds
+
+event: guaranteed failure
+
+incremental - by type
+
+эссенция, которую можно получить только окрашиванием
+
+пересчитывать оддс после мутации (от таймлайна)
+
+quests to cancel timeline event
+
+cant place range boost on the right side next to chronotraces
+
+hanoi packing needs to be stronger
+
+helmet looks weird in xp upgrade
+
+zone crystal weight +1?
+
+collagen matrix doesn'r require SP?
+
+fiber dressing increases price?
+
+something must point at an oracle as the means of progressing the game
+
+"insert philosopher's stone" how many do I have?
+
+inserting stone closes the menu

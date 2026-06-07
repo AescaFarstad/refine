@@ -254,5 +254,11 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     spawnResource: 'zone_crystal',
   },
 
+  gear_spice: {
+    type: 'gear',
+    rewards: [{ kind: 'countable_gear', gearId: 'spice', amount: 5 }],
+    spawnResource: 'spice',
+  },
+
   // Gear archetypes are auto-generated from gear definitions in ResearchLib.load()
 };

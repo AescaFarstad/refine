@@ -80,13 +80,50 @@
         </div>
       </div>
 
+      <div v-if="oracleState === 'riddling'" class="oracle-possibilities-section" :style="oracleRiddleStyle">
+        <button
+          v-if="!uiState.hasDiscoveredOracleHints"
+          type="button"
+          class="oracle-possibilities-btn"
+          :disabled="!canShowPossibilities"
+          @click="onShowPossibilities"
+        >
+          <span>Show possibilities</span>
+          <span class="oracle-possibilities-cost" :class="{ insufficient: !canShowPossibilities }">
+            <span class="oracle-possibilities-icon" :style="philosophersStoneStyle" />
+            {{ philosophersStoneCount }} / {{ ORACLE_POSSIBILITIES_COST }}
+          </span>
+        </button>
+
+        <div v-else class="oracle-signature-grid" :style="signatureAtlasVars">
+          <div
+            v-for="signature in oraclePossibilitySignatures"
+            :key="signature.id"
+            class="oracle-signature-entry"
+            :class="{
+              learned: isSignatureCompleted(signature.id),
+              discovered: isSignatureDiscovered(signature.id),
+              completed: isOracleSignatureCompleted(signature.id),
+            }"
+          >
+            <div class="oracle-signature-sprite-wrap">
+              <div class="oracle-signature-sprite" :style="oracleSignatureSpriteStyle(signature.id)" />
+              <div v-if="isOracleSignatureCompleted(signature.id)" class="oracle-signature-cross" />
+            </div>
+            <div class="oracle-signature-name">{{ oracleSignatureName(signature.id, signature.name) }}</div>
+          </div>
+        </div>
+      </div>
+
       <template v-else-if="oracleState === 'inert'">
         <div class="oracle-header">ORACLE</div>
         <div class="oracle-inert">
           <button type="button" class="oracle-activate-btn" :disabled="!canActivateOracle" @click="onActivateOracle">
             <span class="oracle-activate-icon" :style="philosophersStoneStyle" />
             <span>Insert philosopher's stone</span>
+            <span class="oracle-activate-cost">{{ philosophersStoneCount }} / {{ oracleActivationCost }}</span>
           </button>
+          <div class="oracle-stone-count">You have {{ philosophersStoneCount }}</div>
           <div class="oracle-inert-text">Solve the Oracle's riddle to learn how to escape the time loop</div>
         </div>
       </template>
@@ -114,18 +151,23 @@ import { globalInputQueue } from '../logic/Model';
 import {
   compactOracleSealColors,
   evaluateOracleSeal,
+  getOracleActivationCost,
   getOracleRiddle,
+  getOracleSignature,
   ORACLE_VALIDATE_COST,
   type OracleSealColor,
   type OracleSealAttempt,
   type OracleSealCellColors,
 } from '../logic/Oracle';
+import type { ReadonlySignatureDefinition } from '../logic/SignatureLib';
 import { ESSENCE_COLORS } from '../logic/RenderConstants';
 import { getResourceSpec } from '../logic/Resources';
 import { getGameState, uiState, type DeepReadonly } from '../logic/UIState';
-import { CmdMazeActivateOracle, CmdMazeValidateOracleSeal } from '../logic/input/InputCommands';
+import { CmdMazeActivateOracle, CmdMazeShowOraclePossibilities, CmdMazeValidateOracleSeal } from '../logic/input/InputCommands';
 import atlasStorage from '../logic/AtlasStorage';
 import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
+import { getSignatureAtlasVars, getSignatureSpriteStyle } from '../logic/signatureVisuals';
+import { ORACLE_POSSIBILITIES_COST } from '../logic/Const';
 
 defineProps<{
   visible: boolean;
@@ -149,6 +191,7 @@ const oracleTopRowWidth = ref(0);
 const hoveredLastFailedSealAttempt = ref<DeepReadonly<OracleSealAttempt> | null>(null);
 const chronotracesSpec = getResourceSpec('chronotraces');
 const itemsAtlasSource = atlasStorage.getItemsSource();
+const signatureAtlasVars = getSignatureAtlasVars();
 
 const currentOracleNode = computed(() => {
   uiState.lib;
@@ -183,7 +226,21 @@ const canValidateSeal = computed(() => {
 
 const canActivateOracle = computed(() => {
   uiState.countableGear;
-  return oracleState.value === 'inert' && (uiState.countableGear.philosophers_stone ?? 0) > 0;
+  return oracleState.value === 'inert' && (uiState.countableGear.philosophers_stone ?? 0) >= oracleActivationCost.value;
+});
+
+const philosophersStoneCount = computed(() => {
+  uiState.countableGear;
+  return uiState.countableGear.philosophers_stone ?? 0;
+});
+
+const oracleActivationCost = computed(() => {
+  uiState.mazeVersion;
+  return getOracleActivationCost(getGameState());
+});
+
+const canShowPossibilities = computed(() => {
+  return philosophersStoneCount.value >= ORACLE_POSSIBILITIES_COST;
 });
 
 const philosophersStoneStyle = computed<Record<string, string>>(() => {
@@ -206,6 +263,31 @@ const oraclesTotal = computed(() => {
 const oraclesOpened = computed(() => {
   uiState.mazeVersion;
   return Object.values(getGameState().mazeOracleStateByNodeId).filter(s => s === 'riddlePassed').length;
+});
+
+const oraclePossibilitySignatures = computed<ReadonlySignatureDefinition[]>(() => {
+  uiState.lib;
+  const signatures = Array.from(getGameState().lib.signatures.values());
+  signatures.sort((a, b) => a.level - b.level || a.difficulty - b.difficulty || a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+  return signatures;
+});
+
+const discoveredSignatureIdSet = computed(() => new Set(uiState.learnedSignatureIds));
+const completedSignatureIdSet = computed(() => new Set(uiState.completedSignatureIds));
+
+const oracleSignatureStateSets = computed(() => {
+  uiState.mazeVersion;
+  const completed = new Set<string>();
+  const gs = getGameState();
+
+  for (const [nodeIdText, state] of Object.entries(gs.mazeOracleStateByNodeId)) {
+    const signature = getOracleSignature(gs, Number(nodeIdText));
+    if (state === 'riddlePassed') {
+      completed.add(signature.id);
+    }
+  }
+
+  return { completed };
 });
 
 const oracleRiddleStyle = computed(() => {
@@ -267,6 +349,51 @@ function onActivateOracle() {
   const node = currentOracleNode.value;
   if (!node || !canActivateOracle.value) return;
   globalInputQueue.push(new CmdMazeActivateOracle({ nodeId: node.nodeId }));
+}
+
+function onShowPossibilities() {
+  if (!canShowPossibilities.value) return;
+  globalInputQueue.push(new CmdMazeShowOraclePossibilities());
+}
+
+function isSignatureDiscovered(id: string): boolean {
+  return discoveredSignatureIdSet.value.has(id);
+}
+
+function isSignatureCompleted(id: string): boolean {
+  return completedSignatureIdSet.value.has(id);
+}
+
+function isOracleSignatureCompleted(id: string): boolean {
+  return oracleSignatureStateSets.value.completed.has(id);
+}
+
+function oracleSignatureName(id: string, name: string): string {
+  return isSignatureCompleted(id) ? name : '???';
+}
+
+function oracleSignatureSpriteStyle(id: string): Record<string, string> {
+  if (isSignatureCompleted(id)) {
+    return getSignatureSpriteStyle(id, 'completed');
+  }
+
+  if (isSignatureDiscovered(id)) {
+    return getSignatureSpriteStyle(id, 'hidden');
+  }
+
+  const signature = getGameState().lib.signatures.get(id)!;
+  const frame = atlasStorage.getMoleculesFrame(`sig:card:unknownColor:${signature.color}`)!;
+  const source = atlasStorage.getMoleculesSource()!;
+  const targetHeight = 54;
+  const scale = targetHeight / frame.h;
+  return {
+    width: `${Math.round(frame.w * scale)}px`,
+    height: `${Math.round(frame.h * scale)}px`,
+    backgroundImage: `url(${source.src})`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: `-${frame.x * scale}px -${frame.y * scale}px`,
+    backgroundSize: `${source.naturalWidth * scale}px ${source.naturalHeight * scale}px`,
+  };
 }
 
 function bindOracleTopRowObserver() {
@@ -429,6 +556,17 @@ onUnmounted(() => {
   width: 20px;
   height: 20px;
   flex: 0 0 20px;
+}
+
+.oracle-activate-cost {
+  color: rgba(253, 186, 116, 0.95);
+}
+
+.oracle-stone-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(148, 163, 184, 0.55);
+  letter-spacing: 0.02em;
 }
 
 .oracle-inert-text {
@@ -632,6 +770,153 @@ onUnmounted(() => {
   font-weight: 600;
   line-height: 1.5;
   color: rgba(148, 163, 184, 0.7);
+}
+
+.oracle-possibilities-section {
+  background: var(--panel-bg);
+  border-radius: 8px;
+  box-sizing: border-box;
+  max-width: calc(100vw - 24px);
+  padding: 10px 12px;
+  margin-bottom: 6px;
+}
+
+.oracle-possibilities-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid rgba(251, 113, 133, 0.35);
+  border-radius: 4px;
+  background: rgba(30, 41, 59, 0.88);
+  color: rgba(255, 241, 242, 0.96);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.oracle-possibilities-btn:hover {
+  background: rgba(51, 65, 85, 0.95);
+}
+
+.oracle-possibilities-btn:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.oracle-possibilities-btn:disabled:hover {
+  background: rgba(30, 41, 59, 0.88);
+}
+
+.oracle-possibilities-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: rgba(255, 241, 242, 0.96);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.oracle-possibilities-cost.insufficient {
+  color: rgba(248, 113, 113, 0.98);
+  text-shadow: 0 0 8px rgba(127, 29, 29, 0.55);
+}
+
+.oracle-possibilities-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+}
+
+.oracle-signature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 8px 6px;
+  align-items: start;
+  justify-items: center;
+  overflow: hidden;
+}
+
+.oracle-signature-entry {
+  position: relative;
+  display: grid;
+  grid-template-rows: 54px auto;
+  justify-items: center;
+  gap: 3px;
+  min-width: 0;
+  width: 100%;
+  opacity: 0.72;
+}
+
+.oracle-signature-entry.learned,
+.oracle-signature-entry.discovered {
+  opacity: 1;
+}
+
+.oracle-signature-entry.completed {
+  opacity: 0.68;
+}
+
+.oracle-signature-sprite-wrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 63px;
+  height: 54px;
+}
+
+.oracle-signature-sprite {
+  display: block;
+}
+
+.oracle-signature-name {
+  width: 100%;
+  min-width: 0;
+  color: rgba(148, 163, 184, 0.82);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.05;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.oracle-signature-entry:not(.learned) .oracle-signature-name {
+  color: rgba(251, 146, 60, 0.88);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.oracle-signature-cross {
+  position: absolute;
+  inset: 1px;
+  pointer-events: none;
+}
+
+.oracle-signature-cross::before,
+.oracle-signature-cross::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -4px;
+  width: 4px;
+  height: 62px;
+  border-radius: 999px;
+  background: rgba(248, 113, 113, 0.92);
+  box-shadow: 0 0 5px rgba(127, 29, 29, 0.85);
+  transform-origin: center;
+}
+
+.oracle-signature-cross::before {
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.oracle-signature-cross::after {
+  transform: translateX(-50%) rotate(-45deg);
 }
 
 .oracle-help-section {

@@ -5,11 +5,11 @@
       (down from {{ entry.maxSpeedKmH.toFixed(2) }} because health is {{ entry.hpBefore }}/{{ entry.maxHp }})
     </span>
   </div>
-  <div class="walk-row" v-if="entry.hpAfter > entry.hpBefore">
-    Regenerated health: {{ entry.hpBefore }} -> <b>{{ entry.hpAfter }}</b>
+  <div class="walk-row" v-if="entry.hpAfter !== entry.hpBefore">
+    {{ entry.hpAfter > entry.hpBefore ? 'Regenerated health' : 'Lost health from negative regen' }}: {{ entry.hpBefore }} -> <b>{{ entry.hpAfter }}</b>
   </div>
   <div class="walk-row time-regen" v-if="hasTimeRegen">
-    Regenerated {{ timeRegenAmount }} hp: {{ entry.timeRegenHpBefore }} → <b>{{ entry.timeRegenHpAfter }}</b> over the last {{ formatDuration(entry.timeRegenDurationSec) }}
+    {{ timeRegenAmount > 0 ? 'Regenerated' : 'Lost' }} {{ Math.abs(timeRegenAmount) }} hp: {{ entry.timeRegenHpBefore }} → <b>{{ entry.timeRegenHpAfter }}</b> over the last {{ formatDuration(entry.timeRegenDurationSec) }}
   </div>
 </template>
 
@@ -26,7 +26,7 @@ const speedReduced = computed(() => {
   return !props.entry.hasPainkiller && props.entry.speedKmH < props.entry.maxSpeedKmH - 0.01;
 });
 
-const hasTimeRegen = computed(() => (props.entry.timeRegenHpAfter || 0) > (props.entry.timeRegenHpBefore || 0));
+const hasTimeRegen = computed(() => (props.entry.timeRegenHpAfter || 0) !== (props.entry.timeRegenHpBefore || 0));
 const timeRegenAmount = computed(() => (props.entry.timeRegenHpAfter || 0) - (props.entry.timeRegenHpBefore || 0));
 
 function formatDuration(sec: number): string {

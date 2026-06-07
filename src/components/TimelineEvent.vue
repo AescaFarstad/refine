@@ -1,23 +1,39 @@
 <template>
   <div
     class="timeline-event"
-    :class="[`timeline-event-${archetype.sentiment}`, { 'timeline-event-faded': faded }]"
+    :class="[`timeline-event-${archetype.sentiment}`, { 'timeline-event-faded': faded, 'timeline-event-fatal': archetype.severity === 5, 'timeline-event-fatal-danger': archetype.severity === 5 && !fatalCanBypass }]"
     :style="eventStyle"
     @mouseenter="hovered = true"
     @mouseleave="hovered = false"
   >
     <button class="event-marker" type="button" :aria-label="eventLabel">
       <span class="event-border"></span>
+      <span v-if="severityDotCount > 0" class="severity-dots" aria-hidden="true">
+        <span v-for="dot in severityDotCount" :key="dot" class="severity-dot"></span>
+      </span>
       <span v-if="archetype.icon.kind === 'glyph'" class="event-glyph" :style="glyphStyle">{{ archetype.icon.glyph }}</span>
       <span v-else-if="archetype.icon.kind === 'itemImage'" class="event-sprite" :style="spriteStyle"></span>
     </button>
 
     <div v-if="hovered" class="event-hint" role="tooltip">
       <div class="hint-time">In {{ timeUntil }}</div>
+      <div v-if="archetype.severity === 5" class="hint-severity">Severity: {{ severityLabel }}</div>
       <div v-if="optionEntries.length === 1" class="single-option">
         <span :style="{ color: optionEntries[0]!.affordable ? '' : '#fca5a5' }">{{ optionEntries[0]!.line }}</span>
         <span v-if="!optionEntries[0]!.affordable" class="unaffordable-note">Not enough resources right now</span>
         <span v-if="optionEntries[0]!.note" class="effect-note">{{ optionEntries[0]!.note }}</span>
+      </div>
+      <div v-else-if="archetype.severity === 5" class="hint-options">
+        <div class="choice-title">Possible outcomes:</div>
+        <div v-for="entry in optionEntries" :key="entry.idx" class="fatal-option">
+          <span class="fatal-bullet">&bull;</span>
+          <span class="fatal-option-text">
+            <span :style="{ color: entry.affordable ? '' : '#fca5a5' }">{{ entry.line }}</span>
+            <span v-if="!entry.affordable" class="unaffordable-note">Not enough resources</span>
+            <span v-if="entry.note" class="effect-note">{{ entry.note }}</span>
+          </span>
+          <span v-if="selectedOptionIndex === entry.idx" class="fatal-active-arrow">&#9664;</span>
+        </div>
       </div>
       <div v-else class="hint-options">
         <div class="choice-title">Choose the preferred outcome:</div>
@@ -110,6 +126,15 @@ const timeUntil = computed(() => {
 
 const repeatEvery = computed(() => formatDurationHM(props.event.repeat));
 
+const severityLabels = ['positive', 'minor', 'medium', 'major', 'maximum', 'fatal'];
+
+const severityLabel = computed(() => severityLabels[props.archetype.severity]!);
+
+const severityDotCount = computed(() => {
+  if (props.archetype.severity <= 1 || props.archetype.severity >= 5) return 0;
+  return props.archetype.severity - 1;
+});
+
 function optionIsAffordable(idx: number): boolean {
   const reward = props.archetype.options[idx]!;
   if (reward.kind !== 'resource') return true;
@@ -153,9 +178,23 @@ const preferredOptionIndex = computed(() => {
   return props.event.preferredOptionIndex;
 });
 
+const fatalCanBypass = computed(() => {
+  if (props.archetype.severity !== 5) return false;
+  let hasResourceCost = false;
+  for (let i = 0; i < props.archetype.options.length; i++) {
+    const reward = props.archetype.options[i]!;
+    if (reward.kind !== 'resource' || reward.amount >= 0) continue;
+    hasResourceCost = true;
+    if (uiState[reward.resource] >= -reward.amount) return true;
+  }
+  return !hasResourceCost;
+});
+
 const selectedOptionIndex = computed(() => {
   const preferred = preferredOptionIndex.value;
   if (preferred >= 0) return preferred;
+  const forcedDefault = props.archetype.forcedDefaultOptionIndex;
+  if (forcedDefault >= 0 && forcedDefault < props.archetype.options.length) return forcedDefault;
   for (let i = 0; i < props.archetype.options.length; i++) {
     if (optionIsAffordable(i)) return i;
   }
@@ -194,6 +233,28 @@ function chooseOption(optionIndex: number): void {
   --event-line-glow: rgba(74, 222, 128, 0.45);
 }
 
+.timeline-event-fatal {
+  --event-bg-strong: rgba(220, 38, 38, 0.48);
+  --event-bg-mid: rgba(185, 28, 28, 0.42);
+  --event-bg-soft: rgba(127, 29, 29, 0.2);
+  --event-line: rgba(248, 113, 113, 1);
+  --event-line-glow: rgba(239, 68, 68, 0.9);
+}
+
+.timeline-event-fatal-danger {
+  animation: fatal-pulse 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.5));
+}
+
+@keyframes fatal-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 14px rgba(239, 68, 68, 0.85));
+  }
+}
+
 .event-marker {
   width: 42px;
   height: 34px;
@@ -205,6 +266,57 @@ function chooseOption(optionIndex: number): void {
   place-items: center;
   position: relative;
   cursor: default;
+}
+
+.timeline-event-fatal .event-marker {
+  background: linear-gradient(90deg, rgba(127, 29, 29, 0.78) 0%, var(--event-bg-strong) 35%, var(--event-bg-mid) 68%, rgba(127, 29, 29, 0) 100%);
+}
+
+.timeline-event-fatal-danger .event-marker {
+  animation: fatal-marker-pulse 2s ease-in-out infinite;
+}
+
+@keyframes fatal-marker-pulse {
+  0%, 100% {
+    background: linear-gradient(90deg, rgba(127, 29, 29, 0.78) 0%, rgba(220, 38, 38, 0.48) 35%, rgba(185, 28, 28, 0.42) 68%, rgba(127, 29, 29, 0) 100%);
+  }
+  50% {
+    background: linear-gradient(90deg, rgba(153, 27, 27, 0.92) 0%, rgba(239, 68, 68, 0.62) 35%, rgba(220, 38, 38, 0.52) 68%, rgba(153, 27, 27, 0.08) 100%);
+  }
+}
+
+@container timeline-track (max-width: 500px) {
+  .timeline-event {
+    width: 24px;
+    height: 36px;
+  }
+
+  .event-marker {
+    width: 24px;
+    height: 30px;
+    background: linear-gradient(90deg, var(--event-bg-strong) 0%, var(--event-bg-mid) 48%, var(--event-bg-soft) 78%, rgba(34, 211, 238, 0) 100%);
+  }
+
+  .event-glyph {
+    font-size: 18px;
+  }
+
+  .timeline-event-fatal .event-marker {
+    background: linear-gradient(90deg, rgba(127, 29, 29, 0.78) 0%, var(--event-bg-strong) 42%, var(--event-bg-mid) 74%, rgba(127, 29, 29, 0) 100%);
+  }
+
+  .timeline-event-fatal-danger .event-marker {
+    animation: fatal-marker-pulse-narrow 2s ease-in-out infinite;
+  }
+
+  @keyframes fatal-marker-pulse-narrow {
+    0%, 100% {
+      background: linear-gradient(90deg, rgba(127, 29, 29, 0.78) 0%, rgba(220, 38, 38, 0.48) 42%, rgba(185, 28, 28, 0.42) 74%, rgba(127, 29, 29, 0) 100%);
+    }
+    50% {
+      background: linear-gradient(90deg, rgba(153, 27, 27, 0.92) 0%, rgba(239, 68, 68, 0.62) 42%, rgba(220, 38, 38, 0.52) 74%, rgba(153, 27, 27, 0.08) 100%);
+    }
+  }
 }
 
 .timeline-event-faded .event-marker {
@@ -224,6 +336,42 @@ function chooseOption(optionIndex: number): void {
   border-radius: 3px;
   background: var(--event-line);
   box-shadow: 0 0 8px var(--event-line-glow);
+}
+
+.timeline-event-fatal .event-border {
+  width: 4px;
+}
+
+.timeline-event-fatal-danger .event-border {
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.7), 0 0 20px rgba(239, 68, 68, 0.3);
+  animation: fatal-border-pulse 2s ease-in-out infinite;
+}
+
+@keyframes fatal-border-pulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.7), 0 0 20px rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.95), 0 0 28px rgba(239, 68, 68, 0.5);
+  }
+}
+
+.severity-dots {
+  position: absolute;
+  left: -3px;
+  top: 50%;
+  display: grid;
+  gap: 4px;
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+.severity-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--event-line);
+  box-shadow: 0 0 7px var(--event-line-glow);
 }
 
 .event-sprite,
@@ -263,6 +411,17 @@ function chooseOption(optionIndex: number): void {
 .hint-time {
   font-size: 11px;
   color: #94a3b8;
+}
+
+.hint-severity {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #cbd5e1;
+  font-weight: 800;
+}
+
+.timeline-event-fatal .hint-severity {
+  color: #f87171;
 }
 
 .single-option,
@@ -340,6 +499,33 @@ function chooseOption(optionIndex: number): void {
 .radio-text {
   display: grid;
   gap: 2px;
+}
+
+.fatal-option {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  align-items: start;
+  gap: 6px;
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.fatal-bullet {
+  color: #f87171;
+  line-height: 1.4;
+}
+
+.fatal-option-text {
+  display: grid;
+  gap: 2px;
+}
+
+.fatal-active-arrow {
+  color: #f87171;
+  font-size: 10px;
+  line-height: 1.6;
+  align-self: center;
 }
 
 .unaffordable-note {

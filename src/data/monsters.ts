@@ -157,6 +157,8 @@ const monsters: Record<string, RawMonsterDefinition> = {
     damage: 2,
     lootItemId: 'hive_remains',
     damageCap: 1,
+    strengthMult: 2.5,
+    upgrade: "mother_hive",
   },
   mother_hive: {
     name: 'The Mother Hive',
@@ -166,6 +168,7 @@ const monsters: Record<string, RawMonsterDefinition> = {
     damage: 3,
     lootItemId: 'hive_remains',
     damageCap: 1,
+    strengthMult: 2.5,
   },
   finger: {
     name: 'Devil\'s Finger',

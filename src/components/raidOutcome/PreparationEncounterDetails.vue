@@ -17,7 +17,7 @@
       <span class="value">{{ signed(blockDelta, '%') }}</span>
     </div>
     <div class="row time-regen" v-if="hasTimeRegen">
-      <span class="value" style="grid-column: 1 / -1">Regenerated {{ timeRegenAmount }} hp: {{ entry.timeRegenHpBefore }} → <b>{{ entry.timeRegenHpAfter }}</b> over the last {{ formatDuration(entry.timeRegenDurationSec) }}</span>
+      <span class="value" style="grid-column: 1 / -1">{{ timeRegenAmount > 0 ? 'Regenerated' : 'Lost' }} {{ Math.abs(timeRegenAmount) }} hp: {{ entry.timeRegenHpBefore }} → <b>{{ entry.timeRegenHpAfter }}</b> over the last {{ formatDuration(entry.timeRegenDurationSec) }}</span>
     </div>
   </div>
 </template>
@@ -48,7 +48,7 @@ const damageDelta = computed(() => Math.trunc((entry.value?.damageAfter || 0) - 
 const hpDelta = computed(() => Math.trunc((entry.value?.maxHpAfter || 0) - (entry.value?.maxHpBefore || 0)));
 const blockDelta = computed(() => Math.trunc((entry.value?.blockChanceAfter || 0) - (entry.value?.blockChanceBefore || 0)));
 
-const hasTimeRegen = computed(() => (entry.value?.timeRegenHpAfter || 0) > (entry.value?.timeRegenHpBefore || 0));
+const hasTimeRegen = computed(() => (entry.value?.timeRegenHpAfter || 0) !== (entry.value?.timeRegenHpBefore || 0));
 const timeRegenAmount = computed(() => (entry.value?.timeRegenHpAfter || 0) - (entry.value?.timeRegenHpBefore || 0));
 
 function formatDuration(sec: number): string {

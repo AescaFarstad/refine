@@ -4,7 +4,9 @@
       <div class="modal-body">
         <div class="signatures-grid" :class="gridClass">
           <div v-for="sig in completedSignatures" :key="sig.id" class="signature-display">
-            <div class="sig-wafer" :style="sigWaferStyle(sig.id)" />
+            <div class="sig-wafer-cell">
+              <div class="sig-wafer" :style="sigWaferStyle(sig.id)" />
+            </div>
             <div class="sig-info">
               <span class="sig-name">{{ sig.name }}</span>
             </div>
@@ -140,22 +142,23 @@ function close() {
   display: grid;
   gap: 16px;
   justify-items: center;
+  justify-content: center;
 }
 
 .signatures-grid.grid-1 {
-  grid-template-columns: 1fr;
+  grid-template-columns: auto;
 }
 
 .signatures-grid.grid-2 {
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, auto);
 }
 
 .signatures-grid.grid-2x2 {
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, auto);
 }
 
 .signatures-grid.grid-3 {
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, auto);
 }
 
 .signature-display {
@@ -163,6 +166,15 @@ function close() {
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  width: 160px;
+}
+
+.sig-wafer-cell {
+  width: 128px;
+  height: 128px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
 }
 
 .sig-wafer {

@@ -33,12 +33,12 @@
         </template>
 
         <div class="note-row summon-note" v-if="ev.summonTriggered"><b>Another {{ entry.monsterName }} joins the fray!</b></div>
-        <div class="note-row time-regen-note" v-if="ev.timeRegenHealed > 0">Regenerated {{ ev.timeRegenHealed }} hp: {{ ev.timeRegenHpBefore }} → <b>{{ ev.timeRegenHpAfter }}</b> over the last {{ formatDuration(ev.timeRegenDurationSec) }}</div>
+        <div class="note-row time-regen-note" v-if="ev.timeRegenHealed !== 0">{{ ev.timeRegenHealed > 0 ? 'Regenerated' : 'Lost' }} {{ Math.abs(ev.timeRegenHealed) }} hp: {{ ev.timeRegenHpBefore }} → <b>{{ ev.timeRegenHpAfter }}</b> over the last {{ formatDuration(ev.timeRegenDurationSec) }}</div>
       </template>
     </template>
   </div>
   <div class="note-row regen-note" v-if="hasRegen && shownStep >= regenStep">
-    Regenerated health: {{ entry.hpBeforeRegen }} → <b>{{ entry.hpAfterRegen }}</b>
+    {{ entry.hpAfterRegen > entry.hpBeforeRegen ? 'Regenerated health' : 'Lost health from negative regen' }}: {{ entry.hpBeforeRegen }} → <b>{{ entry.hpAfterRegen }}</b>
   </div>
   <div class="note-row" v-show="entry.dieFromOvertime && shownStep >= overtimeStep">You die of overexertion.</div>
   <div class="note-row biopsy-note" v-show="useBiopsy && shownStep >= biopsyStep">You examine their body...</div>
@@ -56,7 +56,7 @@ const props = defineProps<{
 
 const shownStep = computed(() => Math.max(0, props.shownStep || 0));
 const rounds = computed(() => Math.max(0, props.entry?.fightLog?.length || 0));
-const hasRegen = computed(() => (props.entry?.hpAfterRegen || 0) > (props.entry?.hpBeforeRegen || 0));
+const hasRegen = computed(() => (props.entry?.hpAfterRegen || 0) !== (props.entry?.hpBeforeRegen || 0));
 const useBiopsy = computed(() => biopsyUsed(props.entry));
 
 const regenStep = computed(() => rounds.value + 1);

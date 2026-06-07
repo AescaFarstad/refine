@@ -151,13 +151,13 @@ function getFightSubStepHp(entry: FightEncounterLogEntry, step: number, index: n
     : getFightStartHp(entry, index);
   let cursor = rounds;
 
-  if (entry.hpAfterRegen > entry.hpBeforeRegen) {
+  if (entry.hpAfterRegen !== entry.hpBeforeRegen) {
     cursor += 1;
     hp = entry.hpAfterRegen;
     if (step === cursor) return hp;
   }
 
-  if (entry.timeRegenHpAfter > entry.timeRegenHpBefore) {
+  if (entry.timeRegenHpAfter !== entry.timeRegenHpBefore) {
     cursor += 1;
     hp = entry.timeRegenHpAfter;
     if (step === cursor) return hp;
@@ -271,9 +271,9 @@ function buildTimeline() {
       const rounds = Math.max(0, (e.fightLog?.length || 0));
       for (let j = 1; j <= rounds; j++) timeline.push({ kind: 'fight_sub', index: i, step: j });
       let step = rounds;
-      const hasRegen = e.hpAfterRegen > e.hpBeforeRegen;
+      const hasRegen = e.hpAfterRegen !== e.hpBeforeRegen;
       if (hasRegen) timeline.push({ kind: 'fight_sub', index: i, step: ++step });
-      const hasTimeRegen = (e.timeRegenHpAfter || 0) > (e.timeRegenHpBefore || 0);
+      const hasTimeRegen = (e.timeRegenHpAfter || 0) !== (e.timeRegenHpBefore || 0);
       if (hasTimeRegen) timeline.push({ kind: 'fight_sub', index: i, step: ++step });
       if (e.dieFromOvertime) timeline.push({ kind: 'fight_sub', index: i, step: ++step });
       const hasBiopsy = fightHasBiopsy(e);

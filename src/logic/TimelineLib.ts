@@ -6,10 +6,14 @@ export type TimelineArchetypeIcon =
   | { kind: 'glyph'; glyph: string; scale: number; offset: Point2 }
   | { kind: 'itemImage'; key: string; scale: number; offset: Point2 };
 
+export type TimelineSeverity = 0 | 1 | 2 | 3 | 4 | 5;
+
 export interface TimelineArchetypeDefinition {
   id: string;
   sentiment: 'positive' | 'negative';
+  severity: TimelineSeverity;
   options: Reward[];
+  forcedDefaultOptionIndex: number;
   icon: TimelineArchetypeIcon;
 }
 
@@ -22,7 +26,9 @@ export interface TimelineEventDefinition {
 
 export interface RawTimelineArchetypeDefinition {
   sentiment?: 'positive' | 'negative';
+  severity?: TimelineSeverity;
   options?: Reward[];
+  forcedDefaultOptionIndex?: number;
   icon?: {
     kind?: 'none' | 'glyph' | 'itemImage';
     glyph?: string;
@@ -69,6 +75,10 @@ function parseTimelineIcon(input?: RawTimelineArchetypeDefinition['icon']): Time
   };
 }
 
+function defaultTimelineSeverity(sentiment: 'positive' | 'negative'): TimelineSeverity {
+  return sentiment === 'positive' ? 0 : 1;
+}
+
 export function parseTimelineTimeToSeconds(input: [number, number, number] | undefined): number {
   const [days, hours, minutes] = normalizeTriplet(input);
   return days * 24 * 3600 + hours * 3600 + minutes * 60;
@@ -79,10 +89,13 @@ export function parseTimelineArchetypeDefinitions(
 ): Map<string, TimelineArchetypeDefinition> {
   const map = new Map<string, TimelineArchetypeDefinition>();
   for (const [id, input] of Object.entries(raw)) {
+    const sentiment = input.sentiment ?? 'negative';
     map.set(id, {
       id,
-      sentiment: input.sentiment ?? 'negative',
+      sentiment,
+      severity: input.severity ?? defaultTimelineSeverity(sentiment),
       options: [...(input.options ?? [])],
+      forcedDefaultOptionIndex: input.forcedDefaultOptionIndex ?? -1,
       icon: parseTimelineIcon(input.icon),
     });
   }

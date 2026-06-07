@@ -3,7 +3,7 @@ import { TIMELINE_MIN_SEPARATION_SEC, TIMELINE_VISIBLE_SPAN_SEC } from './Const'
 import type { Reward } from './Reward';
 import { applyReward } from './Reward';
 import { describeMutation } from './RaidMutation';
-import type { TimelineEventDefinition } from './TimelineLib';
+import type { TimelineArchetypeDefinition, TimelineEventDefinition } from './TimelineLib';
 
 const TIMELINE_GENERATION_LOOKAHEAD_SEC = TIMELINE_VISIBLE_SPAN_SEC + 24 * 3600;
 
@@ -13,10 +13,19 @@ function isTimelineRewardAffordable(gs: GameState, reward: Reward): boolean {
   return gs[reward.resource] >= -reward.amount;
 }
 
-function selectTimelineRewardIndex(gs: GameState, entry: TimelineScheduledEvent, options: Reward[]): number {
+function selectTimelineRewardIndex(gs: GameState, entry: TimelineScheduledEvent, archetype: TimelineArchetypeDefinition): number {
+  const options = archetype.options;
   const preferredIndex = entry.preferredOptionIndex;
   if (preferredIndex >= 0 && preferredIndex < options.length && isTimelineRewardAffordable(gs, options[preferredIndex]!)) {
     return preferredIndex;
+  }
+  if (
+    preferredIndex < 0
+    && archetype.forcedDefaultOptionIndex >= 0
+    && archetype.forcedDefaultOptionIndex < options.length
+    && isTimelineRewardAffordable(gs, options[archetype.forcedDefaultOptionIndex]!)
+  ) {
+    return archetype.forcedDefaultOptionIndex;
   }
   for (let i = 0; i < options.length; i++) {
     if (isTimelineRewardAffordable(gs, options[i]!)) {
@@ -35,7 +44,7 @@ function insertTimelineEventSorted(gs: GameState, entry: TimelineScheduledEvent)
   }
   gs.timelineEvents.splice(idx, 0, entry);
   gs.timelineVersion++;
-  if (idx <= gs.timelineCursor) {
+  if (idx < gs.timelineCursor) {
     gs.timelineCursor++;
   }
 }
@@ -49,10 +58,11 @@ function resolveTimelineEventAt(gs: GameState, requestedAt: number): number {
   return at;
 }
 
-function createTimelineScheduledEvent(eventDef: TimelineEventDefinition, at: number): TimelineScheduledEvent {
+function createTimelineScheduledEvent(eventDef: TimelineEventDefinition, requestedAt: number, at: number): TimelineScheduledEvent {
   return {
     eventId: eventDef.id,
     archetypeId: eventDef.type,
+    requestedAt,
     at,
     repeat: eventDef.repeat,
     executed: false,
@@ -64,31 +74,59 @@ function createTimelineScheduledEvent(eventDef: TimelineEventDefinition, at: num
 
 function scheduleTimelineEvent(gs: GameState, eventDef: TimelineEventDefinition, requestedAt: number): void {
   const at = resolveTimelineEventAt(gs, requestedAt);
-  insertTimelineEventSorted(gs, createTimelineScheduledEvent(eventDef, at));
+  insertTimelineEventSorted(gs, createTimelineScheduledEvent(eventDef, requestedAt, at));
 }
 
-export function ensureTimelineEventsGenerated(gs: GameState): void {
-  const horizon = gs.gameTime + TIMELINE_GENERATION_LOOKAHEAD_SEC;
-  for (const eventDef of gs.lib.timeline.events) {
-    let generatedCount = 0;
-    for (const entry of gs.timelineEvents) {
-      if (entry.eventId === eventDef.id) generatedCount++;
-    }
+function hasTimelineOccurrence(gs: GameState, eventDef: TimelineEventDefinition, requestedAt: number): boolean {
+  return gs.timelineEvents.some(entry =>
+    entry.eventId === eventDef.id
+    && entry.archetypeId === eventDef.type
+    && entry.repeat === eventDef.repeat
+    && entry.requestedAt === requestedAt
+  );
+}
 
+function scheduleTimelineOccurrenceIfMissing(gs: GameState, eventDef: TimelineEventDefinition, requestedAt: number): void {
+  if (hasTimelineOccurrence(gs, eventDef, requestedAt)) return;
+  scheduleTimelineEvent(gs, eventDef, requestedAt);
+}
+
+function firstRepeatingOccurrenceAfter(eventDef: TimelineEventDefinition, timeSec: number): number {
+  if (eventDef.time > timeSec) return eventDef.time;
+  return eventDef.time + Math.floor((timeSec - eventDef.time) / eventDef.repeat + 1) * eventDef.repeat;
+}
+
+function scheduleTimelineOccurrencesInWindow(gs: GameState, startExclusiveSec: number, endInclusiveSec: number): void {
+  for (const eventDef of gs.lib.timeline.events) {
     if (eventDef.repeat <= 0) {
-      if (generatedCount === 0 && eventDef.time <= horizon) {
-        scheduleTimelineEvent(gs, eventDef, eventDef.time);
+      if (eventDef.time > startExclusiveSec && eventDef.time <= endInclusiveSec) {
+        scheduleTimelineOccurrenceIfMissing(gs, eventDef, eventDef.time);
       }
       continue;
     }
 
-    let requestedAt = eventDef.time + generatedCount * eventDef.repeat;
-    while (requestedAt <= horizon) {
-      scheduleTimelineEvent(gs, eventDef, requestedAt);
-      generatedCount++;
-      requestedAt = eventDef.time + generatedCount * eventDef.repeat;
+    let requestedAt = firstRepeatingOccurrenceAfter(eventDef, startExclusiveSec);
+    while (requestedAt <= endInclusiveSec) {
+      scheduleTimelineOccurrenceIfMissing(gs, eventDef, requestedAt);
+      requestedAt += eventDef.repeat;
     }
   }
+}
+
+function syncTimelineCursor(gs: GameState): void {
+  gs.timelineCursor = gs.timelineEvents.findIndex(entry => !entry.executed);
+  if (gs.timelineCursor === -1) {
+    gs.timelineCursor = gs.timelineEvents.length;
+  }
+}
+
+export function ensureTimelineEventsGenerated(gs: GameState): void {
+  scheduleTimelineOccurrencesInWindow(
+    gs,
+    gs.gameTime,
+    gs.gameTime + TIMELINE_GENERATION_LOOKAHEAD_SEC
+  );
+  syncTimelineCursor(gs);
 }
 
 function formatTimelineRaidMutation(gs: GameState, raidId: string): string {
@@ -123,16 +161,37 @@ function applyTimelineReward(gs: GameState, reward: Reward): string {
 
 function executeTimelineEvent(gs: GameState, entry: TimelineScheduledEvent): void {
   const archetype = gs.lib.timeline.archetypes.get(entry.archetypeId)!;
-  const selectedRewardIndex = selectTimelineRewardIndex(gs, entry, archetype.options);
+  const selectedRewardIndex = selectTimelineRewardIndex(gs, entry, archetype);
   entry.resolvedOptionIndex = selectedRewardIndex;
   if (selectedRewardIndex >= 0) {
     entry.resolvedDescription = applyTimelineReward(gs, archetype.options[selectedRewardIndex]!);
+  } else {
+    entry.resolvedDescription = 'No affordable option';
+    console.error('[Timeline] Failed to resolve timeline event: no affordable option.', {
+      event: entry,
+      archetype,
+      resources: {
+        credits: gs.credits,
+        chronotraces: gs.chronotraces,
+        timeFlux: gs.timeFlux,
+        shardDust: gs.shardDust,
+        skillPoints: gs.skillPoints,
+      },
+    });
   }
   gs.timelineVersion++;
 }
 
 export function processDueTimelineEvents(gs: GameState): void {
   ensureTimelineEventsGenerated(gs);
+
+  for (const entry of gs.timelineEvents) {
+    if (!entry.executed) continue;
+    if (entry.at > gs.gameTime) continue;
+    if (entry.resolvedOptionIndex >= 0 || entry.resolvedDescription) continue;
+    console.error('[Timeline] Reprocessing previously unresolved timeline event.', { event: entry });
+    executeTimelineEvent(gs, entry);
+  }
 
   while (gs.timelineCursor < gs.timelineEvents.length) {
     const entry = gs.timelineEvents[gs.timelineCursor]!;
@@ -151,4 +210,12 @@ export function processDueTimelineEvents(gs: GameState): void {
   }
 
   ensureTimelineEventsGenerated(gs);
+}
+
+export function rebuildTimelineEventsAfterRewind(gs: GameState, timeSec: number): void {
+  gs.timelineEvents = gs.timelineEvents.filter(entry => entry.at <= timeSec);
+  syncTimelineCursor(gs);
+  scheduleTimelineOccurrencesInWindow(gs, timeSec, timeSec + TIMELINE_GENERATION_LOOKAHEAD_SEC);
+  syncTimelineCursor(gs);
+  gs.timelineVersion++;
 }

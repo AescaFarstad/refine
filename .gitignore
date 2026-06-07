@@ -10,9 +10,11 @@ dist
 !/.vscode/tasks.json
 
 /data/*
+/saves/*
 !/data/img/
 /data/img/*
 !/data/img/pipeline*
 /public/
 /history/
 .claude/.fuse_hidden*
+save

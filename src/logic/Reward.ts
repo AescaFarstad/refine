@@ -57,6 +57,7 @@ export type Reward =
   | { kind: 'timeline_deteriorate_random_raid' }
   | { kind: 'timeline_deteriorate_all_raids' }
   | { kind: 'global_monsters_buff_hp'; amount: number }
+  | { kind: 'death_due_touniversecollapse' }
 
   // UI interactions
   | { kind: 'show_ui'; ui: string; params?: Record<string, unknown> }
@@ -233,6 +234,15 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
 
     case 'global_monsters_buff_hp':
       gs.additionalMonsterHp += reward.amount;
+      break;
+
+    case 'death_due_touniversecollapse':
+      gs.timeActive = false;
+      gs.timeSpeed = 300;
+      gs.timeSpeedMaxBoost = 1;
+      if (!gs.pendingUIModals.some(m => m.ui === 'death_due_touniversecollapse')) {
+        gs.pendingUIModals.push({ ui: 'death_due_touniversecollapse' });
+      }
       break;
   }
 }

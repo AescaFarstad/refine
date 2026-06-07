@@ -1,7 +1,7 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdReviewQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdUpgradeGearItem, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro, CmdPickupShard, CmdSpeedUpRefining, CmdSetTimelinePreferredOption, CmdClearShardPickupGrace, CmdMazeMoveTo, CmdMazePrepareUpgradeOffer, CmdMazeSelectNexusUpgrade, CmdMazePlaceNexusItem, CmdMazeActivateNexusSpecialUpgrade, CmdMazeResetHighMovement, CmdMazeValidateOracleSeal, CmdMazeActivateOracle, CmdTransmutate } from './InputCommands';
+import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdReviewQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdUpgradeGearItem, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro, CmdPickupShard, CmdSpeedUpRefining, CmdSetTimelinePreferredOption, CmdClearShardPickupGrace, CmdMazeMoveTo, CmdMazePrepareUpgradeOffer, CmdMazeSelectNexusUpgrade, CmdMazePlaceNexusItem, CmdMazeActivateNexusSpecialUpgrade, CmdMazeResetHighMovement, CmdMazeValidateOracleSeal, CmdMazeActivateOracle, CmdMazeShowOraclePossibilities, CmdTransmutate } from './InputCommands';
 import { SHARD_PICKUP_DELAY_SEC } from '../Model';
 import { discover, discoverRefineTab, ensureSignatureDiscoveryFromWafer, hasDiscovered } from '../Discover';
 import { DISCOVERY } from '../DiscoveryLib';
@@ -21,6 +21,7 @@ import { uiState } from '../UIState';
 import { activateOracle, submitOracleSeal } from '../Oracle';
 import { addGearXp, applyGearUpgrade, getPendingGearUpgradeCount } from '../GearUpgrades';
 import { cycleItemImage, getItemImageKey } from '../ItemVisuals';
+import { ORACLE_POSSIBILITIES_COST } from '../Const';
 
 
 type Handler = (gs: GameState, cmd: CmdInput) => void;
@@ -528,7 +529,7 @@ handlersByName.set('CmdPickupShard', (gs, cmd) => {
 });
 
 handlersByName.set('CmdSpeedUpRefining', (gs) => {
-  if (!gs.nextEvt || gs.nextEvt.name !== 'EvtRefineryDone') return;
+  if (!gs.timeActive || !gs.nextEvt) return;
   gs.timeSpeed = (gs.timeSpeed || 1) * 2;
   gs.timeSpeedMaxBoost = (gs.timeSpeedMaxBoost || 1) * 1.2;
 });
@@ -620,6 +621,18 @@ handlersByName.set('CmdMazeActivateOracle', (gs, cmd) => {
   if (!activated) return;
   gs.maze.version++;
   uiState.mazeVersion = gs.maze.version;
+  saveAutosave(gs);
+});
+
+handlersByName.set('CmdMazeShowOraclePossibilities', (gs, cmd) => {
+  if (gs.discoveries[DISCOVERY.ORACLE_HINTS] === true) return;
+  if ((gs.countableGear.philosophers_stone ?? 0) < ORACLE_POSSIBILITIES_COST) return;
+
+  gs.countableGear.philosophers_stone -= ORACLE_POSSIBILITIES_COST;
+  if (gs.countableGear.philosophers_stone <= 0) {
+    delete gs.countableGear.philosophers_stone;
+  }
+  discover(gs, DISCOVERY.ORACLE_HINTS);
   saveAutosave(gs);
 });
 

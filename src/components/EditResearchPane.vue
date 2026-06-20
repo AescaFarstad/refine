@@ -70,6 +70,10 @@
         <button type="button" class="btn radius-btn" @click="decrementRadius">−</button>
         <span class="radius-value">{{ placementRadius }}</span>
         <button type="button" class="btn radius-btn" @click="incrementRadius">+</button>
+        <label class="oracle-toggle" :class="{ active: placementOracle }" title="Place as oracle slot">
+          <input type="checkbox" v-model="placementOracle" />
+          <div class="gear-sprite oracle-toggle-sprite" :style="getGearSpriteStyle('tetrahedron_inv')" />
+        </label>
         <div class="radius-row-right">
           <button
             type="button"
@@ -212,6 +216,14 @@ const placementRadius = computed({
   get: () => (uiState as any).researchPlacementRadius || 0,
   set: (value) => {
     (uiState as any).researchPlacementRadius = value;
+  }
+});
+
+// Whether newly placed nodes are flagged as oracle slots - synced with UIState
+const placementOracle = computed({
+  get: () => (uiState as any).researchPlacementOracle === true,
+  set: (value) => {
+    (uiState as any).researchPlacementOracle = value;
   }
 });
 
@@ -497,6 +509,9 @@ const newlyPlacedCode = computed(() => {
     if (node.radius > 0) {
       line += `, radius: ${node.radius}`;
     }
+    if (node.oracleSlot) {
+      line += ', oracleSlot: true';
+    }
     line += ' },';
     lines.push(line);
   }
@@ -686,7 +701,7 @@ async function saveToFiles() {
 
   // Second pass: remaining cells (user-painted) — use researchNewlyPlaced entries
   // to preserve radius info instead of treating each cell individually.
-  const newlyPlaced: Array<{ archetypeId: string; cells: Array<{ x: number; y: number }>; radius: number }> =
+  const newlyPlaced: Array<{ archetypeId: string; cells: Array<{ x: number; y: number }>; radius: number; oracleSlot?: boolean }> =
     (uiState as any).researchNewlyPlaced || [];
 
   const usedByNewlyPlaced = new Set<string>();
@@ -709,6 +724,7 @@ async function saveToFiles() {
       cells: validCenters,
       radius: entry.radius,
       type: archetype.type,
+      oracleSlot: entry.oracleSlot || undefined,
     });
 
     // Mark all cells covered by this entry (centers + expanded radius) as used
@@ -937,6 +953,37 @@ function getArchetypeIconStyle(
   font-weight: 700;
   font-size: 16px;
   color: var(--accent);
+}
+
+.oracle-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin-left: 4px;
+  border-radius: 5px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.6);
+  cursor: pointer;
+  opacity: 0.45;
+  filter: grayscale(1);
+  transition: opacity 0.1s, filter 0.1s, border-color 0.1s;
+}
+
+.oracle-toggle.active {
+  opacity: 1;
+  filter: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.oracle-toggle input {
+  display: none;
+}
+
+.oracle-toggle-sprite {
+  pointer-events: none;
 }
 
 .archetype-section {

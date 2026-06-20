@@ -471,3 +471,18 @@ something must point at an oracle as the means of progressing the game
 inserting stone closes the menu
 
 hide weight and zone collapse time until more ites were researched (also items weight)
+
+show next zone deterioration
+
+
+
+At first oracle should display the info and tracked achi to open it.
+Then it allows inserting stones
+When solved, it plays animation and allows choosing bonus and challenge
+spreads corruption when bonus is chosen
+gives bliss upgrade
+
+some raids give credits, some give shards, some give chronotraces
+
+The goal is to get all oracles to the last stage and visit them all in a single run in a particular order.
+Visiting them is possible in before the last stage, but the order is unknown

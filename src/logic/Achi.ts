@@ -1,5 +1,6 @@
 import type { GameState, RaidOutcome } from './GameState';
 import type { AchiDefinition } from './AchiLib';
+import { applyReward } from './Reward';
 import type { MazeResourceKey } from './pane/MazeOverlayState';
 import type { GameNotif, NotifMazeMoveCommitted, NotifMazeRunDone, NotifNexusUpgradePlaced, NotifNexusUpgradesRefunded, NotifRefiningComplete, NotifRaidComplete } from './GameNotif';
 import type { FightEncounterLogEntry } from './RaidLog';
@@ -79,10 +80,17 @@ function deductAchiPayTarget(gs: GameState, def: AchiDefinition): void {
   }
 }
 
+function grantAchiRewards(gs: GameState, def: AchiDefinition): void {
+  for (const reward of def.rewards) {
+    applyReward(gs, reward);
+  }
+}
+
 export function acknowledgeAchi(gs: GameState, id: string): boolean {
   const state = gs.achi[id];
   if (!state || state.state !== ACHI_STATE_COMPLETE) return false;
   state.state = ACHI_STATE_ACKNOWLEDGED;
+  grantAchiRewards(gs, gs.lib.achi.items.get(id)!);
   gs.achiVersion++;
   return true;
 }
@@ -99,6 +107,7 @@ export function payAchi(gs: GameState, id: string): boolean {
   state.state = ACHI_STATE_ACKNOWLEDGED;
   state.best = def.paramNum;
   state.projectedValue = 0;
+  grantAchiRewards(gs, def);
   gs.achiVersion++;
   return true;
 }

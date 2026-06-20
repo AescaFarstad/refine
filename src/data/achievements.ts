@@ -1,4 +1,5 @@
 import type { RawAchiDefinition } from '../logic/AchiLib';
+import { DISCOVERY } from '../logic/DiscoveryLib';
 
 const achievements: Record<string, RawAchiDefinition> = {
   maze_chrono_t0: {
@@ -9,6 +10,7 @@ const achievements: Record<string, RawAchiDefinition> = {
     symbol: '⧖',
     symbolColor: '#4299e1',
     description: 'in a single maze run',
+    rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.ORACLE_STAGE_1 }],
   },
   maze_chrono_t1: {
     type: 'earn',

@@ -158,7 +158,6 @@ function createDefaultUIState() {
     hasDiscoveredFractalEssenceYield: false,
     hasDiscoveredSpiceEssenceYield: false,
     hasDiscoveredSignatureInfo: false,
-    hasDiscoveredOracleHints: false,
     hasVisitedRefineTab: false,
     hasVisitedResearchTab: false,
     hasVisitedMazeTab: false,
@@ -180,11 +179,13 @@ function createDefaultUIState() {
     researchEditMode: '' as string,
     researchEditVersion: 0,
     researchPlacementRadius: 0,
+    researchPlacementOracle: false,
     researchPlacementTemplate: [{ x: 0, y: 0 }] as Array<{ x: number; y: number }>,
     researchNewlyPlaced: [] as Array<{
       archetypeId: string;
       cells: Array<{ x: number; y: number }>;
       radius: number;
+      oracleSlot?: boolean;
     }>,
 
     mazeMovementUsed: 0,
@@ -562,7 +563,6 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.hasDiscoveredFractalEssenceYield = game.discoveries[DISCOVERY.FRACTAL_ESSENCE_YIELD] === true;
   uiState.hasDiscoveredSpiceEssenceYield = game.discoveries[DISCOVERY.SPICE_ESSENCE_YIELD] === true;
   uiState.hasDiscoveredSignatureInfo = game.discoveries[DISCOVERY.UI_SIGNATURE_INFO] === true;
-  uiState.hasDiscoveredOracleHints = game.discoveries[DISCOVERY.ORACLE_HINTS] === true;
   uiState.hasVisitedRefineTab = game.discoveries[DISCOVERY.TAB_REFINE_VISITED] === true;
   uiState.hasVisitedResearchTab = game.discoveries[DISCOVERY.TAB_RESEARCH_VISITED] === true;
   uiState.hasVisitedMazeTab = game.discoveries[DISCOVERY.TAB_MAZE_VISITED] === true;

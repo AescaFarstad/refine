@@ -3,8 +3,12 @@
     <template v-if="!entranceOwned">
       <div class="maze-locked">
         <div class="locked-text">This is the Maze of Time.</div>
-        <div class="locked-text">You will have to navigate it to return home.</div>
-        <div class="locked-text">Yet there seems to be no entrance.</div>
+        <div class="locked-text">
+          The oracles
+          <span class="oracle-sprite" :style="oracleSpriteStyle" />
+          inside can guide you home.
+        </div>
+        <div class="locked-text">But where is the entrance?</div>
       </div>
     </template>
     <template v-else>
@@ -46,6 +50,15 @@ import { globalInputQueue } from '../logic/Model';
 import { CmdMazeResetHighMovement } from '../logic/input/InputCommands';
 import { getOwnedMazeEntrances, isMazeNexusCell, isMazeTransmutationCell } from '../logic/Maze';
 import type { MazeResourceHoverHint, MazeResourceKey, MazeResourceTotals } from '../logic/pane/MazeOverlayState';
+import atlasStorage from '../logic/AtlasStorage';
+import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
+
+const oracleSpriteStyle = computed(() => {
+  const source = atlasStorage.getItemsSource();
+  const frame = atlasStorage.getItemsFrame('tetrahedron_inv');
+  if (!source || !frame) return {};
+  return atlasSpriteStyle(source, frame, { size: 40, mode: 'fit', allowUpscale: true });
+});
 
 const entranceOwned = computed(() => {
   // Re-evaluate when research changes
@@ -223,5 +236,17 @@ const remainingPool = computed(() => {
   font-weight: 700;
   color: var(--text-secondary);
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0 12px;
+}
+.oracle-sprite {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 8px rgba(125, 211, 252, 0.5));
 }
 </style>

@@ -37,6 +37,7 @@ const ids = [
   'MAZE_NEXUS',
   'ORACLE_HINTS',
   'ORACLE_STAGE_0',
+  'ORACLE_STAGE_1',
   'REFINEMENT_FAILED',
   'YOU_WON_SEEN',
   'DEV',

@@ -556,12 +556,13 @@ function rehydrateGameState(input: AnonymousObject): GameState | false {
   }
   for (const enabled of savedWafer.enabledCells) {
     const cell = getCell(gameState.wafer, enabled);
-    if (!cell) return failLoad("saved wafer enabled cell is outside the wafer.", { enabled });
+    if (!cell) return failLoad("saved wafer enabled cell is outside the wafer.", { enabled, waferCellCount: gameState.wafer.cells.size });
     cell.enabled = true;
   }
   clearWafer(gameState.wafer);
   for (const placedItem of savedWafer.placedItems) {
-    const itemDef = gameState.lib.items.get(placedItem.id)!;
+    const itemDef = gameState.lib.items.get(placedItem.id);
+    if (!itemDef) return failLoad("saved wafer item references an unknown item.", { placedItem });
     const rotatedMolecule = rotateMolecule(itemDef.molecule, placedItem.rotation);
     const pivot = getPivotHex(rotatedMolecule);
     const translatedMolecule = translateMolecule(rotatedMolecule, {
@@ -569,7 +570,9 @@ function rehydrateGameState(input: AnonymousObject): GameState | false {
       y: placedItem.y - pivot.y,
     });
     const placed = placeMolecule(gameState.wafer, placedItem.id, translatedMolecule, placedItem.rotation, placedItem.imageKey);
-    if (!placed) return failLoad("saved wafer item could not be placed.", { placedItem });
+    if (!placed) {
+      return failLoad("saved wafer item could not be placed.", { placedItem });
+    }
   }
   computeEffectiveEssences(gameState.wafer);
 
@@ -579,9 +582,22 @@ function rehydrateGameState(input: AnonymousObject): GameState | false {
     if (!cell.blocked) cell.owned = false;
   }
   for (const idx of ownedResearchCells) {
-    if (idx < 0 || idx >= gameState.researchCells.length) return failLoad("saved owned research cell index is out of bounds.", { idx });
+    if (idx < 0 || idx >= gameState.researchCells.length) {
+      return failLoad("saved owned research cell index is out of bounds.", { idx, cellCount: gameState.researchCells.length });
+    }
     const cell = gameState.researchCells[idx]!;
-    if (cell.blocked) return failLoad("saved owned research cell is blocked.", { idx });
+    if (cell.blocked) {
+      console.warn("[LoadGame_V1] Saved owned research cell is now blocked; dropping ownership.", {
+        idx,
+        axial: indexToAxial(idx),
+        nodeId: cell.nodeId,
+        archetypeId: cell.archetypeId,
+        nexusId: cell.nexusId,
+        revealed: cell.revealed,
+        filledByAntiVoid: cell.filledByAntiVoid,
+      });
+      continue;
+    }
     cell.owned = true;
   }
   let ownedPaidCount = 0;
@@ -592,11 +608,18 @@ function rehydrateGameState(input: AnonymousObject): GameState | false {
 
   let maxPlacementId = 0;
   for (const placement of nexusPlacements) {
-    if (placement.idx >= 0 && placement.idx < gameState.researchCells.length) {
-      applyMazeNexusPlacementAtCell(gameState, placement.nexusId, placement.placementId, indexToAxial(placement.idx));
-      if (placement.placementId > maxPlacementId) {
-        maxPlacementId = placement.placementId;
-      }
+    if (placement.idx < 0 || placement.idx >= gameState.researchCells.length) {
+      console.warn("[LoadGame_V1] Saved nexus placement index is out of bounds; skipping.", {
+        idx: placement.idx,
+        nexusId: placement.nexusId,
+        placementId: placement.placementId,
+        cellCount: gameState.researchCells.length,
+      });
+      continue;
+    }
+    applyMazeNexusPlacementAtCell(gameState, placement.nexusId, placement.placementId, indexToAxial(placement.idx));
+    if (placement.placementId > maxPlacementId) {
+      maxPlacementId = placement.placementId;
     }
   }
   gameState.mazeNextNexusPlacementId = maxPlacementId + 1;

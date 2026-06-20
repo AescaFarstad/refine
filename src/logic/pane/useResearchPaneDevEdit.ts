@@ -15,6 +15,7 @@ interface ResearchNewlyPlacedEntry {
   archetypeId: string;
   cells: Point2[];
   radius: number;
+  oracleSlot?: boolean;
 }
 
 export interface UseResearchPaneDevEditOptions {
@@ -128,7 +129,8 @@ export function useResearchPaneDevEdit(options: UseResearchPaneDevEditOptions) {
       }
       if (!changed) return;
       const newlyPlaced = (uiState as any).researchNewlyPlaced as ResearchNewlyPlacedEntry[];
-      newlyPlaced.push({ archetypeId: mode, cells: centerCells, radius });
+      const oracleSlot = (uiState as any).researchPlacementOracle === true;
+      newlyPlaced.push({ archetypeId: mode, cells: centerCells, radius, oracleSlot: oracleSlot || undefined });
       (uiState as any).researchNewlyPlaced = newlyPlaced;
     } else {
       const idx = axialToIndex(axial.x, axial.y);

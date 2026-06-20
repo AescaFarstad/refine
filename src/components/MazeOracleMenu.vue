@@ -1,6 +1,12 @@
 <template>
   <div v-if="visible" class="maze-oracle-menu" @click.stop>
     <div class="oracle-panel">
+      <template v-if="showStage0Challenge">
+        <div class="oracle-header">ORACLE</div>
+        <AchiItem :achi="stage0Achi" :achi-version="uiState.achiVersion" />
+      </template>
+
+      <template v-else>
       <div v-if="oracleState === 'riddling'" class="oracle-header">ORACLE</div>
 
       <div v-if="oracleState === 'riddling'" class="oracle-body">
@@ -82,7 +88,7 @@
 
       <div v-if="oracleState === 'riddling'" class="oracle-possibilities-section" :style="oracleRiddleStyle">
         <button
-          v-if="!uiState.hasDiscoveredOracleHints"
+          v-if="!hasDiscoveredOracleHints"
           type="button"
           class="oracle-possibilities-btn"
           :disabled="!canShowPossibilities"
@@ -139,6 +145,7 @@
         <span class="oracle-help-label">How to crack the oracle</span>
         <span class="oracle-help-detail">Guess the missing word in [...] and find a way to express it on the wafer. <br>Offset doesn't matter.<br>Rotation does.</span>
       </div>
+      </template>
     </div>
   </div>
 </template>
@@ -146,6 +153,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
 import OracleWafer from './OracleWafer.vue';
+import AchiItem from './AchiItem.vue';
 import { getMazeOracleState } from '../logic/Maze';
 import { globalInputQueue } from '../logic/Model';
 import {
@@ -206,6 +214,20 @@ const currentOracleRiddle = computed(() => {
   const nodeId = uiState.mazeVisitedOracleNodeId;
   if (nodeId < 0) return '';
   return getOracleRiddle(getGameState(), nodeId);
+});
+
+const stage0Achi = getGameState().lib.achi.items.get('maze_chrono_t0')!;
+
+const showStage0Challenge = computed(() => {
+  uiState.discoveryCounter;
+  const discoveries = getGameState().discoveries;
+  return discoveries[DISCOVERY.ORACLE_STAGE_0] === true
+    && discoveries[DISCOVERY.ORACLE_STAGE_1] !== true;
+});
+
+const hasDiscoveredOracleHints = computed(() => {
+  uiState.discoveryCounter;
+  return getGameState().discoveries[DISCOVERY.ORACLE_HINTS] === true;
 });
 
 const oracleState = computed(() => {

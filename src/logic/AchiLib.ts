@@ -1,3 +1,5 @@
+import type { Reward } from './Reward';
+
 export type AchiType = 'earn' | 'pay';
 
 export interface AchiDefinition {
@@ -12,9 +14,11 @@ export interface AchiDefinition {
   symbolColor: string;
   color: string;
   description: string;
+  // Rewards granted when the achievement is acknowledged (see acknowledgeAchi / payAchi).
+  rewards: readonly Reward[];
 }
 
-export type RawAchiDefinition = Omit<AchiDefinition, 'id' | 'order' | 'paramStr' | 'symbol' | 'symbolColor' | 'color'> & { paramStr?: string; symbol?: string; symbolColor?: string; color?: string };
+export type RawAchiDefinition = Omit<AchiDefinition, 'id' | 'order' | 'paramStr' | 'symbol' | 'symbolColor' | 'color' | 'rewards'> & { paramStr?: string; symbol?: string; symbolColor?: string; color?: string; rewards?: readonly Reward[] };
 
 export function parseAchiDefinitions(raw: Record<string, RawAchiDefinition>): Map<string, AchiDefinition> {
   const map = new Map<string, AchiDefinition>();
@@ -32,6 +36,7 @@ export function parseAchiDefinitions(raw: Record<string, RawAchiDefinition>): Ma
       symbolColor: def.symbolColor ?? '',
       color: def.color ?? '',
       description: def.description,
+      rewards: def.rewards ?? [],
     });
   }
   return map;

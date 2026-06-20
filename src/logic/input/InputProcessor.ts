@@ -607,6 +607,7 @@ handlersByName.set('CmdMazeResetHighMovement', (gs) => {
 
 handlersByName.set('CmdMazeValidateOracleSeal', (gs, cmd) => {
   const c = cmd as CmdMazeValidateOracleSeal;
+  // return // tmp hack to test the oracle animation
   const result = submitOracleSeal(gs, c.nodeId, c.cellColors);
   if (!result.submitted) return;
   if (result.success) {

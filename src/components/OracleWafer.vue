@@ -27,10 +27,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { axialToPixel } from '../logic/HexMath';
-import { type Point2 } from '../logic/core/math';
-import { getOracleWaferCells, getOracleWaferCellKey, type OracleSealCellColors } from '../logic/Oracle';
+import { type OracleSealCellColors } from '../logic/Oracle';
 import { ESSENCE_COLORS } from '../logic/RenderConstants';
+import { oracleWaferSvg as sealSvg, oracleWaferVisualCells as waferCells } from './OracleWaferGeometry';
 
 const props = withDefaults(defineProps<{
   cellColors: Readonly<OracleSealCellColors>;
@@ -45,62 +44,7 @@ const emit = defineEmits<{
   toggleCell: [key: string];
 }>();
 
-const SEAL_HEX_SIZE = 16;
-const SEAL_STROKE_PADDING = 2;
-
 const markerKeySet = computed(() => new Set(props.markerKeys));
-
-const sealSvg = computed(() => {
-  const centers = getOracleWaferCells().map((point) => axialToPixel(point, SEAL_HEX_SIZE));
-  let minX = Number.POSITIVE_INFINITY;
-  let minY = Number.POSITIVE_INFINITY;
-  let maxX = Number.NEGATIVE_INFINITY;
-  let maxY = Number.NEGATIVE_INFINITY;
-
-  for (const center of centers) {
-    for (const corner of hexCorners(center)) {
-      if (corner.x < minX) minX = corner.x;
-      if (corner.y < minY) minY = corner.y;
-      if (corner.x > maxX) maxX = corner.x;
-      if (corner.y > maxY) maxY = corner.y;
-    }
-  }
-
-  return {
-    minX,
-    minY,
-    width: maxX - minX + SEAL_STROKE_PADDING * 2,
-    height: maxY - minY + SEAL_STROKE_PADDING * 2,
-  };
-});
-
-const waferCells = computed(() => {
-  return getOracleWaferCells().map((point) => {
-    const center = axialToPixel(point, SEAL_HEX_SIZE);
-    const shiftedCenter = {
-      x: center.x - sealSvg.value.minX + SEAL_STROKE_PADDING,
-      y: center.y - sealSvg.value.minY + SEAL_STROKE_PADDING,
-    };
-
-    return {
-      key: getOracleWaferCellKey(point),
-      center: shiftedCenter,
-      points: hexCorners(shiftedCenter).map((corner) => `${corner.x},${corner.y}`).join(' '),
-    };
-  });
-});
-
-function hexCorners(center: Point2): Point2[] {
-  const points: Point2[] = [];
-  for (let i = 0; i < 6; i++) {
-    const angle = ((60 * i) - 30) * (Math.PI / 180);
-    points.push({
-      x: center.x + SEAL_HEX_SIZE * Math.cos(angle),
-      y: center.y + SEAL_HEX_SIZE * Math.sin(angle),
-    });
-  }
-  return points;
-}
 
 function sealCellFill(key: string): string {
   const color = props.cellColors[key];

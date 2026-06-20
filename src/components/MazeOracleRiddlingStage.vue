@@ -33,6 +33,12 @@
           :interactive="!isValidating"
           @toggle-cell="toggleSealCell"
         />
+        <OracleWaferValidationAnimation
+          v-if="isValidating"
+          :elapsed-ms="validationElapsedMs"
+          :success="validationWillSucceed"
+          :cell-colors="validationCellColors"
+        />
       </div>
 
       <div class="oracle-controls">
@@ -131,6 +137,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import OracleWafer from './OracleWafer.vue';
+import OracleWaferValidationAnimation from './OracleWaferValidationAnimation.vue';
 import atlasStorage from '../logic/AtlasStorage';
 import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 import { ORACLE_POSSIBILITIES_COST } from '../logic/Const';
@@ -174,6 +181,9 @@ const hoveredLastFailedSealAttempt = ref<DeepReadonly<OracleSealAttempt> | null>
 const sealFailed = ref(false);
 const isValidating = ref(false);
 const validationProgress = ref(0);
+const validationElapsedMs = ref(0);
+const validationWillSucceed = ref(false);
+const validationCellColors = ref<Record<string, OracleSealColor>>({});
 const displayedMismatchMarkerKeys = computed(() => isValidating.value ? [] : mismatchMarkerKeys.value);
 const chronotracesSpec = getResourceSpec('chronotraces');
 const signatureAtlasVars = getSignatureAtlasVars();
@@ -259,9 +269,13 @@ function startValidation() {
 
   isValidating.value = true;
   validationProgress.value = 0;
+  validationElapsedMs.value = 0;
+  validationWillSucceed.value = prediction.success;
+  validationCellColors.value = cellColors;
 
   const animate = (timestamp: number) => {
-    validationProgress.value = Math.min(1, (timestamp - startedAt) / duration);
+    validationElapsedMs.value = Math.min(duration, timestamp - startedAt);
+    validationProgress.value = validationElapsedMs.value / duration;
     if (validationProgress.value < 1) {
       validationAnimationFrameId = requestAnimationFrame(animate);
       return;
@@ -284,6 +298,7 @@ function cancelValidation() {
   validationAnimationFrameId = null;
   isValidating.value = false;
   validationProgress.value = 0;
+  validationElapsedMs.value = 0;
 }
 
 function onShowPossibilities() {

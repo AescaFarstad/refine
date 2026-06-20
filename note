@@ -495,16 +495,31 @@ Power-up the oracle and it will present its riddle.
 
 
 
-The oracle is activated and can be used to break out of the time loop.
+Implement the next stage which comes after the oracle's riddle was solved.
 
-For that you need to light up all the oracles in the correct order.
+It displays text:
 
-You have activated 1 / 16 oracles.
+"The oracle is activated and can be used to break out of the time loop.
 
-[Light up] [Put off]
-This will place it #7 in the sequence.
+For that you need to illuminate all the oracles in the correct order.
+
+You have activated 1 / 16 oracles."
+
+It displays a button:
+[Illuminate] / [Dim]
+
+In case of Illuminating:
+"This will place it #X in the sequence."
+
+Then a button which for the time being doesn't do anything:
 
 [Try to learn more from the oracle.]
+
+
+
+
+Illuminating mechanic:
+
 
 
 You can reach inside the oracle, corrupting it.

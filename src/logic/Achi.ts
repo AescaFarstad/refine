@@ -153,11 +153,9 @@ function setTrackedEarnAchi(gs: GameState, handler: string, value: number): void
       changed = true;
     }
     if (state.best >= def.paramNum) {
-      if (state.state !== ACHI_STATE_COMPLETE) {
-        state.state = ACHI_STATE_COMPLETE;
-        state.projectedValue = 0;
-        changed = true;
-      }
+      state.state = ACHI_STATE_COMPLETE;
+      state.projectedValue = 0;
+      changed = true;
     }
   }
   if (changed) {

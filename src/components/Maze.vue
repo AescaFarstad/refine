@@ -48,7 +48,7 @@ import MazeOverlay from './MazeOverlay.vue';
 import { uiState, getGameState } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
 import { CmdMazeResetHighMovement } from '../logic/input/InputCommands';
-import { getOwnedMazeEntrances, isMazeNexusCell, isMazeTransmutationCell } from '../logic/Maze';
+import { getOwnedMazeEntrances, isMazeNexusCell, isMazeTransmutationCell, getMazeOracleNodeIdAtCell } from '../logic/Maze';
 import type { MazeResourceHoverHint, MazeResourceKey, MazeResourceTotals } from '../logic/pane/MazeOverlayState';
 import atlasStorage from '../logic/AtlasStorage';
 import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
@@ -108,8 +108,9 @@ watch(
     const gs = getGameState();
     uiState.mazeNexusMenuOpen = isMazeNexusCell(gs, gs.maze.avatarCell);
     uiState.mazeTransmutationMenuOpen = isMazeTransmutationCell(gs, gs.maze.avatarCell);
-    uiState.mazeOracleMenuOpen = false;
-    uiState.mazeVisitedOracleNodeId = -1;
+    const oracleNodeId = getMazeOracleNodeIdAtCell(gs, gs.maze.avatarCell);
+    uiState.mazeOracleMenuOpen = oracleNodeId >= 0;
+    uiState.mazeVisitedOracleNodeId = oracleNodeId;
   }
 );
 

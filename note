@@ -478,6 +478,7 @@ show next zone deterioration
 
 At first oracle should display the info and tracked achi to open it.
 Then it allows inserting stones
+
 When solved, it plays animation and allows choosing bonus and challenge
 spreads corruption when bonus is chosen
 gives bliss upgrade
@@ -486,3 +487,34 @@ some raids give credits, some give shards, some give chronotraces
 
 The goal is to get all oracles to the last stage and visit them all in a single run in a particular order.
 Visiting them is possible in before the last stage, but the order is unknown
+
+
+Gather more information about the maze to learn how to approach the oracles.
+
+Power-up the oracle and it will present its riddle.
+
+
+
+The oracle is activated and can be used to break out of the time loop.
+
+For that you need to light up all the oracles in the correct order.
+
+You have activated 1 / 16 oracles.
+
+[Light up] [Put off]
+This will place it #7 in the sequence.
+
+[Try to learn more from the oracle.]
+
+
+You can reach inside the oracle, corrupting it.
+This will give you bonuses, but the oracle will start spreading the corruption when you move in the maze.
+
+Bonuses:
+[] [] [] [] [] []
+
+Complete the obstacle challenge to stop the corruption and learn the oracle's index in the light-up sequence.
+
+The oracle light-up sequence was incomplete (5/16)
+
+The oracle light-up sequence was incorrect.

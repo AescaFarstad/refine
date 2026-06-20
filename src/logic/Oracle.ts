@@ -186,7 +186,7 @@ export function getOracleSealSolutionCellColors(gs: ReadonlyGameState, nodeId: n
   return cellColors;
 }
 
-export function evaluateOracleSeal(
+export function predictOracleSealValidation(
   gs: ReadonlyGameState,
   nodeId: number,
   cellColors: Readonly<Record<string, OracleSealColor | null | undefined>>
@@ -205,7 +205,7 @@ export function submitOracleSeal(
   nodeId: number,
   cellColors: Readonly<Record<string, OracleSealColor | null | undefined>>
 ): OracleSealSubmissionResult {
-  const evaluation = evaluateOracleSeal(gs, nodeId, cellColors);
+  const evaluation = predictOracleSealValidation(gs, nodeId, cellColors);
   const oracleState = gs.mazeOracleStateByNodeId[String(nodeId)];
   if (oracleState !== 'riddling' || gs.chronotraces < ORACLE_VALIDATE_COST) {
     return { ...evaluation, submitted: false };

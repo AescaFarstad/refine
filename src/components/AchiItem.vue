@@ -302,6 +302,34 @@ function acknowledge(): void {
   cursor: pointer;
 }
 
+.achi-complete-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 35%,
+    color-mix(in srgb, var(--achi-color, rgb(134, 239, 172)) 45%, transparent) 50%,
+    transparent 65%
+  );
+  transform: translateX(-100%);
+  animation: achi-complete-sweep 2.8s ease-in-out infinite;
+}
+
+@keyframes achi-complete-sweep {
+  0% { transform: translateX(-100%); }
+  60%, 100% { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .achi-complete-btn::before {
+    animation: none;
+    opacity: 0;
+  }
+}
+
 .achi-complete-btn:hover {
   background: color-mix(in srgb, var(--achi-color, rgb(34, 197, 94)) 25%, var(--panel-bg));
   border-color: color-mix(in srgb, var(--achi-color, rgb(74, 222, 128)) 65%, transparent);

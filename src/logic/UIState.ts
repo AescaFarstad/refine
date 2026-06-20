@@ -201,6 +201,8 @@ function createDefaultUIState() {
     mazeNexusUpgradeOpportunityCount: 1,
     mazeNexusUpgradeOfferSeed: -1,
     mazeResetReason: '' as '' | 'warped' | 'banked',
+    mazeResetIlluminatedOracleCount: 0,
+    mazeResetOracleCount: 0,
 
     questPrereqsVersion: 0,
 

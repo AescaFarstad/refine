@@ -107,6 +107,7 @@ export class GameState {
   public mazeNexusRefundResetRegretUsed: boolean = false;
   public mazeOracleStateByNodeId: Record<string, MazeOracleState> = {};
   public mazeOracleLastFailedSealAttemptByNodeId: Record<string, OracleSealAttempt> = {};
+  public mazeOracleIlluminationSolution: string[] = [];
   public mazeResetEntranceCell: Point2 = { x: 0, y: 0 };
   public mazeIncrementalBonusPerPickup: number = 0;
   public mazeHasShardsRefresherPanel: boolean = false;
@@ -193,6 +194,8 @@ export class GameState {
     }
     initResearchCells(this, this.lib.research);
     randomizeOracles(this);
+    this.mazeOracleIlluminationSolution = Array.from(this.lib.oracles.keys());
+    new SeededRandom((normalizedSeed ^ 0xc2b2ae35) >>> 0).shuffleInPlace(this.mazeOracleIlluminationSolution);
     computeMazeResourceSpawns(this, this.lib.research);
 
     ensureTimelineEventsGenerated(this);
@@ -354,6 +357,7 @@ export interface MazeTransient {
   collectedSpice: number;
   collectedTransmutationCore: number;
   takenCells: Point2[];
+  illuminatedOracleIds: string[];
   version: number;
 }
 
@@ -379,6 +383,7 @@ export function createMazeTransient(avatarCell: Point2 = { x: 0, y: 0 }): MazeTr
     collectedSpice: 0,
     collectedTransmutationCore: 0,
     takenCells: [],
+    illuminatedOracleIds: [],
     version: 0,
   };
 }

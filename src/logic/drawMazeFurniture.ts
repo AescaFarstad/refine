@@ -15,6 +15,7 @@ import { indexToAxial } from './Research';
 import { traceSmoothHexBoundary } from './drawSmoothBoundary';
 import { drawNexusItemVisuals, type NexusVisualCell } from './drawNexusItemVisuals';
 import { drawMazeResourceMarker } from './drawMazeResourceMarker';
+import { getOracleId } from './Oracle';
 
 const RESOURCE_GLOW_RADIUS_SCALE = 1.8;
 const RESOURCE_GLOW_ALPHA = 0.18;
@@ -151,6 +152,7 @@ function drawMazeItemImageSymbol(
   hexSize: number,
   imageKey: string,
   iconScaleBase: number,
+  filter: string = 'none',
 ): void {
   const source = atlasStorage.getItemsSource();
   const frame = atlasStorage.getItemsFrame(imageKey)!;
@@ -158,6 +160,8 @@ function drawMazeItemImageSymbol(
   const scale = Math.min(iconMaxSize / frame.w, iconMaxSize / frame.h);
   const drawW = frame.w * scale;
   const drawH = frame.h * scale;
+  ctx.save();
+  ctx.filter = filter;
   ctx.drawImage(
     source,
     frame.x,
@@ -169,6 +173,7 @@ function drawMazeItemImageSymbol(
     drawW,
     drawH,
   );
+  ctx.restore();
 }
 
 function buildTakenSet(
@@ -486,12 +491,14 @@ export function renderMazeFurnitureLayer(
     const hovered = hoveredCell !== null && oracle.cells.some(cell => isSameCell(cell, hoveredCell));
     const oracleState = getMazeOracleState(game, oracle.nodeId);
     const imageKey = oracleState === 'riddlePassed' ? 'tetrahedron_strict' : 'tetrahedron_inv';
+    const illuminated = game.maze.illuminatedOracleIds.includes(getOracleId(game, oracle.nodeId));
     drawMazeItemImageSymbol(
       ctx,
       center,
       hexSize,
       imageKey,
       ORACLE_ICON_SCALE * (hovered ? SPECIAL_ICON_HOVER_SCALE : 1),
+      illuminated ? 'sepia(1) saturate(5) hue-rotate(5deg) brightness(1.15)' : 'none',
     );
   }
 

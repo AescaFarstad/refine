@@ -134,6 +134,9 @@
         <div class="reset-subtitle">
           {{ bannerReasonSnapshot === 'warped' ? '(You ran out of movement)' : 'Resources banked' }}
         </div>
+        <div v-if="bannerIlluminatedOracleCount > 0" class="reset-subtitle">
+          Illumination sequence incomplete ({{ bannerIlluminatedOracleCount }}/{{ bannerOracleCount }})
+        </div>
       </div>
     </div>
 
@@ -257,6 +260,8 @@ const depositPreviewEntryRows = computed(() => buildEntryRows(depositPreviewEntr
 const showResetBanner = ref(false);
 const bannerFading = ref(false);
 const bannerReasonSnapshot = ref<'warped' | 'banked'>('warped');
+const bannerIlluminatedOracleCount = ref(0);
+const bannerOracleCount = ref(0);
 let bannerFadeTimer: ReturnType<typeof setTimeout> | null = null;
 let bannerHideTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -269,6 +274,8 @@ watch(() => props.resetReason, (reason) => {
   clearBannerTimers();
   if (reason) {
     bannerReasonSnapshot.value = reason;
+    bannerIlluminatedOracleCount.value = uiState.mazeResetIlluminatedOracleCount;
+    bannerOracleCount.value = uiState.mazeResetOracleCount;
     showResetBanner.value = true;
     bannerFading.value = false;
     bannerFadeTimer = setTimeout(() => {

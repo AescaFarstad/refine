@@ -369,6 +369,110 @@
   color: rgba(148, 163, 184, 0.7);
 }
 
+.oracle-activated-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  width: min(420px, calc(100vw - 24px));
+  box-sizing: border-box;
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--panel-bg);
+}
+
+.oracle-activated-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: rgba(226, 232, 240, 0.86);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.oracle-activated-copy p {
+  margin: 0;
+}
+
+.oracle-inline-sprite {
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 2px;
+}
+
+.oracle-illuminated-sprite {
+  filter: sepia(1) saturate(5) hue-rotate(5deg) brightness(1.15);
+}
+
+.oracle-illumination-control {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+}
+
+.oracle-illumination-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.oracle-illuminate-btn,
+.oracle-learn-more-btn {
+  min-height: 40px;
+  padding: 10px 14px;
+  border: 1px solid rgba(103, 232, 249, 0.38);
+  border-radius: 4px;
+  background: rgba(8, 145, 178, 0.18);
+  color: rgba(207, 250, 254, 0.96);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.oracle-illuminate-btn:hover,
+.oracle-learn-more-btn:hover {
+  background: rgba(8, 145, 178, 0.28);
+  border-color: rgba(103, 232, 249, 0.58);
+}
+
+.oracle-illuminate-btn:disabled {
+  border-color: rgba(148, 163, 184, 0.18);
+  background: rgba(51, 65, 85, 0.28);
+  color: rgba(148, 163, 184, 0.42);
+  cursor: default;
+}
+
+.oracle-illuminate-btn:disabled:hover {
+  border-color: rgba(148, 163, 184, 0.18);
+  background: rgba(51, 65, 85, 0.28);
+}
+
+.oracle-illumination-sequence-hint {
+  color: rgba(165, 243, 252, 0.72);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.oracle-illumination-error {
+  color: rgba(252, 165, 165, 0.95);
+}
+
+.oracle-learn-more-btn {
+  align-self: stretch;
+  border-color: rgba(148, 163, 184, 0.28);
+  background: rgba(51, 65, 85, 0.6);
+  color: rgba(226, 232, 240, 0.88);
+}
+
+.oracle-learn-more-btn:hover {
+  background: rgba(71, 85, 105, 0.72);
+  border-color: rgba(148, 163, 184, 0.42);
+}
+
 .oracle-possibilities-section {
   background: var(--panel-bg);
   border-radius: 8px;

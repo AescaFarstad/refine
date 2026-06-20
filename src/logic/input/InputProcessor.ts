@@ -1,7 +1,7 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdReviewQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdUpgradeGearItem, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro, CmdPickupShard, CmdSpeedUpRefining, CmdSetTimelinePreferredOption, CmdClearShardPickupGrace, CmdMazeMoveTo, CmdMazePrepareUpgradeOffer, CmdMazeSelectNexusUpgrade, CmdMazePlaceNexusItem, CmdMazeActivateNexusSpecialUpgrade, CmdMazeResetHighMovement, CmdMazeValidateOracleSeal, CmdMazeActivateOracle, CmdMazeShowOraclePossibilities, CmdTriggerOracleStage0, CmdPayAchi, CmdAcknowledgeAchi, CmdTransmutate } from './InputCommands';
+import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdReviewQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdUpgradeGearItem, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro, CmdPickupShard, CmdSpeedUpRefining, CmdSetTimelinePreferredOption, CmdClearShardPickupGrace, CmdMazeMoveTo, CmdMazePrepareUpgradeOffer, CmdMazeSelectNexusUpgrade, CmdMazePlaceNexusItem, CmdMazeActivateNexusSpecialUpgrade, CmdMazeResetHighMovement, CmdMazeValidateOracleSeal, CmdMazeActivateOracle, CmdMazeToggleOracleIllumination, CmdMazeShowOraclePossibilities, CmdTriggerOracleStage0, CmdPayAchi, CmdAcknowledgeAchi, CmdTransmutate } from './InputCommands';
 import { SHARD_PICKUP_DELAY_SEC } from '../Model';
 import { discover, discoverRefineTab, ensureSignatureDiscoveryFromWafer, hasDiscovered } from '../Discover';
 import { DISCOVERY } from '../DiscoveryLib';
@@ -17,7 +17,7 @@ import { handleMazeMoveTo, computeMazeResourceSpawns, syncMazeResetEntranceCell,
 import { prepareMazeNexusUpgradeOffer, selectMazeNexusUpgrade, onMazeNexusUpgradePlaced, activateMazeNexusSpecialUpgrade } from '../MazeNexusUpgradeProgress';
 import { transmutate } from '../Transmutation';
 import { uiState } from '../UIState';
-import { activateOracle, submitOracleSeal } from '../Oracle';
+import { activateOracle, submitOracleSeal, toggleOracleIllumination } from '../Oracle';
 import { addGearXp, applyGearUpgrade, getPendingGearUpgradeCount } from '../GearUpgrades';
 import { cycleItemImage, getItemImageKey } from '../ItemVisuals';
 import { ORACLE_POSSIBILITIES_COST } from '../Const';
@@ -549,6 +549,7 @@ handlersByName.set('CmdClearShardPickupGrace', (gs) => {
 
 handlersByName.set('CmdMazeMoveTo', (gs, cmd) => {
   const c = cmd as CmdMazeMoveTo;
+  const illuminatedOracleCount = gs.maze.illuminatedOracleIds.length;
   const moveResult = handleMazeMoveTo(gs, c.target);
   if (moveResult.success) {
     uiState.mazeNexusMenuOpen = moveResult.nexusReached;
@@ -556,8 +557,12 @@ handlersByName.set('CmdMazeMoveTo', (gs, cmd) => {
     uiState.mazeOracleMenuOpen = moveResult.oracleReached;
     uiState.mazeVisitedOracleNodeId = moveResult.oracleReached ? moveResult.oracleNodeId : -1;
     if (moveResult.forcedReset) {
+      uiState.mazeResetIlluminatedOracleCount = illuminatedOracleCount;
+      uiState.mazeResetOracleCount = gs.mazeOracleIlluminationSolution.length;
       uiState.mazeResetReason = 'warped';
     } else if (moveResult.payout) {
+      uiState.mazeResetIlluminatedOracleCount = illuminatedOracleCount;
+      uiState.mazeResetOracleCount = gs.mazeOracleIlluminationSolution.length;
       uiState.mazeResetReason = 'banked';
     }
   }
@@ -625,6 +630,16 @@ handlersByName.set('CmdMazeActivateOracle', (gs, cmd) => {
   if (!activated) return;
   gs.maze.version++;
   uiState.mazeVersion = gs.maze.version;
+  gs.dirty = true;
+});
+
+handlersByName.set('CmdMazeToggleOracleIllumination', (gs, cmd) => {
+  const c = cmd as CmdMazeToggleOracleIllumination;
+  const result = toggleOracleIllumination(gs, c.nodeId);
+  if (result === 'unchanged') return;
+  gs.maze.version++;
+  uiState.mazeVersion = gs.maze.version;
+  if (result === 'correct') gs.pendingUIModals.push({ ui: 'you_won' });
   gs.dirty = true;
 });
 

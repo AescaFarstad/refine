@@ -149,7 +149,7 @@ function getBestOracleSealSolutionOffset(signature: Pick<ReadonlySignatureDefini
   return bestOffset;
 }
 
-function getOracleId(gs: ReadonlyGameState, nodeId: number): string {
+export function getOracleId(gs: ReadonlyGameState, nodeId: number): string {
   const node = gs.lib.research.nodes.get(nodeId)!;
   const firstCell = node.cells[0]!;
   const idx = axialToIndex(firstCell.x, firstCell.y);
@@ -240,4 +240,25 @@ export function activateOracle(gs: GameState, nodeId: number): boolean {
 
   gs.mazeOracleStateByNodeId[key] = 'riddling';
   return true;
+}
+
+export type OracleIlluminationResult = 'unchanged' | 'dimmed' | 'illuminated' | 'correct';
+
+export function toggleOracleIllumination(gs: GameState, nodeId: number): OracleIlluminationResult {
+  if (gs.mazeOracleStateByNodeId[String(nodeId)] !== 'riddlePassed') return 'unchanged';
+
+  const oracleId = getOracleId(gs, nodeId);
+  const currentIndex = gs.maze.illuminatedOracleIds.indexOf(oracleId);
+  if (currentIndex >= 0) {
+    gs.maze.illuminatedOracleIds.splice(currentIndex, 1);
+    return 'dimmed';
+  }
+
+  gs.maze.illuminatedOracleIds.push(oracleId);
+  if (gs.maze.illuminatedOracleIds.length !== gs.mazeOracleIlluminationSolution.length) return 'illuminated';
+
+  const correct = gs.maze.illuminatedOracleIds.every(
+    (illuminatedId, index) => illuminatedId === gs.mazeOracleIlluminationSolution[index],
+  );
+  return correct ? 'correct' : 'illuminated';
 }

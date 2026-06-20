@@ -110,6 +110,8 @@ may 31
   kilava items, images, balancing, oracle hint, timeline visuals, balancing
 june 6-7
   balancing, fixes, oracles, achievements
+june 20
+  oracle illumination
 
 npx tsc --noEmit
 npx vue-tsc --noEmit
@@ -516,10 +518,23 @@ Then a button which for the time being doesn't do anything:
 [Try to learn more from the oracle.]
 
 
+For now don't wire it up to anything as teh illumination mechanic is not implemented yet.
+
+
 
 
 Illuminating mechanic:
+Only activated oracles can be illuminated (the ones with the solved riddle)
+illumination persists for the duration of the maze run. If the run is reset for any reason the illumination resets as well.
+When illuminating and oracle it is placed at the end of the current illumination sequence.
+The correct sequence is derrived from the game's starting seed (it is memorized). it is a permutation of all existing oracles.
+When illuminating the last oracle, the sequence is verified. 
+If incorrect - under the Dim button it shows:
+"The illumination sequence is complete, but it is incorrect"
+If correct, RUIYouWon is shown.
 
+If the run is reset for any reason while some oracles were illuminated, the 'Resources banked' panel also shows:
+"Illumination sequence incomplete (X/Y)"
 
 
 You can reach inside the oracle, corrupting it.

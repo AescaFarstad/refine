@@ -1,7 +1,6 @@
 import { axialToPixel } from './HexMath';
 import { MAZE_RESOURCE_SPECS } from './MazeResourceVisuals';
 import {
-  getMazeOracleState,
   getOwnedMazeEntrances,
   getOwnedMazeNexuses,
   getOwnedMazeOracles,
@@ -34,6 +33,13 @@ const ENTRANCE_ICON_SCALE = 0.72;
 const NEXUS_ICON_SCALE = 1.1;
 const TRANSMUTATION_ICON_SCALE = 1;
 const ORACLE_ICON_SCALE = 1.25;
+const ORACLE_ILLUMINATION_COLOR = '#ffd43b';
+const ORACLE_ILLUMINATION_CORRECT_COLOR = '#62d96b';
+const ORACLE_ILLUMINATION_WRONG_COLOR = '#ff5252';
+const ORACLE_ILLUMINATION_LINE_END_OFFSET = 1.5;
+const ORACLE_ILLUMINATION_LINE_WIDTH_SCALE = 0.16;
+const ORACLE_ILLUMINATION_LABEL_OFFSET = { x: 1.15, y: -1.05 };
+const ORACLE_ILLUMINATION_LABEL_SIZE_SCALE = 0.8;
 const SPECIAL_ICON_HOVER_SCALE = 1.25;
 const NEXUS_ITEM_COLOR = 'rgba(248, 250, 252, 0.96)';
 const NEXUS_ITEM_GLOW_COLOR = '#e2e8f0';
@@ -233,6 +239,103 @@ function getGroupCenterUnit(cells: readonly Point2[]): Point2 {
     cy += p.y;
   }
   return { x: cx / cells.length, y: cy / cells.length };
+}
+
+type IlluminatedOracle = {
+  center: Point2;
+  order: number;
+  orderState: 'unknown' | 'correct' | 'wrong';
+};
+
+function getIlluminatedOracles(
+  game: ReadonlyGameState,
+  ownedOracles: ReturnType<typeof getOwnedMazeOracles>,
+  origin: Point2,
+  hexSize: number,
+): IlluminatedOracle[] {
+  const centersById = new Map<string, Point2>();
+  for (const oracle of ownedOracles) {
+    const centerUnit = getGroupCenterUnit(oracle.cells);
+    centersById.set(getOracleId(game, oracle.nodeId), {
+      x: origin.x + centerUnit.x * hexSize,
+      y: origin.y + centerUnit.y * hexSize,
+    });
+  }
+
+  return game.maze.illuminatedOracleIds.map((oracleId, index) => {
+    const corruption = game.mazeOracleByOracleId[oracleId]!.corruption;
+    const orderRevealed = corruption !== null && !corruption.corrupted;
+    const correctOrder = game.mazeOracleIlluminationSolution.indexOf(oracleId) + 1;
+    const order = index + 1;
+    return {
+      center: centersById.get(oracleId)!,
+      order,
+      orderState: !orderRevealed ? 'unknown' : order === correctOrder ? 'correct' : 'wrong',
+    };
+  });
+}
+
+function drawOracleIlluminationOrder(
+  ctx: CanvasRenderingContext2D,
+  illuminatedOracles: readonly IlluminatedOracle[],
+  hexSize: number,
+): void {
+  if (illuminatedOracles.length <= 1) return;
+
+  const endOffset = hexSize * ORACLE_ILLUMINATION_LINE_END_OFFSET;
+  ctx.save();
+  ctx.strokeStyle = ORACLE_ILLUMINATION_COLOR;
+  ctx.lineWidth = Math.max(2, hexSize * ORACLE_ILLUMINATION_LINE_WIDTH_SCALE);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.shadowColor = ORACLE_ILLUMINATION_COLOR;
+  ctx.shadowBlur = hexSize * 0.35;
+
+  ctx.beginPath();
+  for (let i = 1; i < illuminatedOracles.length; i++) {
+    const from = illuminatedOracles[i - 1]!.center;
+    const to = illuminatedOracles[i]!.center;
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const distance = Math.hypot(dx, dy);
+    const ux = dx / distance;
+    const uy = dy / distance;
+    ctx.moveTo(from.x + ux * endOffset, from.y + uy * endOffset);
+    ctx.lineTo(to.x - ux * endOffset, to.y - uy * endOffset);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawOracleIlluminationLabels(
+  ctx: CanvasRenderingContext2D,
+  illuminatedOracles: readonly IlluminatedOracle[],
+  hexSize: number,
+): void {
+  if (illuminatedOracles.length <= 1) return;
+
+  const fontSize = Math.max(12, hexSize * ORACLE_ILLUMINATION_LABEL_SIZE_SCALE);
+  ctx.save();
+  ctx.font = `bold ${fontSize}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = Math.max(3, fontSize * 0.24);
+  ctx.strokeStyle = 'rgba(15, 18, 20, 0.9)';
+
+  for (const oracle of illuminatedOracles) {
+    const x = oracle.center.x + hexSize * ORACLE_ILLUMINATION_LABEL_OFFSET.x;
+    const y = oracle.center.y + hexSize * ORACLE_ILLUMINATION_LABEL_OFFSET.y;
+    const label = `#${oracle.order}${oracle.orderState === 'wrong' ? ' wrong!' : ''}`;
+    ctx.fillStyle = oracle.orderState === 'correct'
+      ? ORACLE_ILLUMINATION_CORRECT_COLOR
+      : oracle.orderState === 'wrong'
+        ? ORACLE_ILLUMINATION_WRONG_COLOR
+        : ORACLE_ILLUMINATION_COLOR;
+    ctx.strokeText(label, x, y);
+    ctx.fillText(label, x, y);
+  }
+  ctx.restore();
 }
 
 function drawPassableItemGlow(
@@ -482,6 +585,8 @@ export function renderMazeFurnitureLayer(
   }
 
   const ownedOracles = getOwnedMazeOracles(game);
+  const illuminatedOracles = getIlluminatedOracles(game, ownedOracles, origin, hexSize);
+  drawOracleIlluminationOrder(ctx, illuminatedOracles, hexSize);
   for (const oracle of ownedOracles) {
     const centerUnit = getGroupCenterUnit(oracle.cells);
     const center = {
@@ -489,9 +594,10 @@ export function renderMazeFurnitureLayer(
       y: origin.y + centerUnit.y * hexSize,
     };
     const hovered = hoveredCell !== null && oracle.cells.some(cell => isSameCell(cell, hoveredCell));
-    const oracleState = getMazeOracleState(game, oracle.nodeId);
+    const oracleId = getOracleId(game, oracle.nodeId);
+    const oracleState = game.mazeOracleByOracleId[oracleId]!.state;
     const imageKey = oracleState === 'riddlePassed' ? 'tetrahedron_strict' : 'tetrahedron_inv';
-    const illuminated = game.maze.illuminatedOracleIds.includes(getOracleId(game, oracle.nodeId));
+    const illuminated = game.maze.illuminatedOracleIds.includes(oracleId);
     drawMazeItemImageSymbol(
       ctx,
       center,
@@ -586,4 +692,6 @@ export function renderMazeFurnitureLayer(
       takenSet,
     });
   }
+
+  drawOracleIlluminationLabels(ctx, illuminatedOracles, hexSize);
 }

@@ -294,6 +294,18 @@ export class CmdMazeToggleOracleIllumination implements CmdInput {
   }
 }
 
+export class CmdCorruptOracle implements CmdInput {
+  readonly name = 'CmdCorruptOracle';
+  readonly nodeId: number;
+  readonly bonusId: string;
+  readonly challengeAchiId: string;
+  constructor(args: { nodeId: number; bonusId: string; challengeAchiId: string }) {
+    this.nodeId = args.nodeId;
+    this.bonusId = args.bonusId;
+    this.challengeAchiId = args.challengeAchiId;
+  }
+}
+
 export class CmdMazeShowOraclePossibilities implements CmdInput {
   readonly name = 'CmdMazeShowOraclePossibilities';
 }

@@ -12,6 +12,8 @@ import type { SignatureDefinition } from './SignatureLib';
 import { parseSignatureDefinitions } from './SignatureLib';
 import type { OracleDefinition } from './OracleLib';
 import { parseOracleDefinitions } from './OracleLib';
+import type { OracleBonusDefinition } from './OracleBonusLib';
+import { parseOracleBonusDefinitions } from './OracleBonusLib';
 import type { MonsterDefinition } from './MonsterLib';
 import { parseMonsterDefinitions } from './MonsterLib';
 import type { NexusItemDefinition } from './NexusLib';
@@ -28,6 +30,7 @@ import gearCategoriesData from '../data/gear_categories';
 import itemsData from '../data/items';
 import signaturesData from '../data/signatures';
 import oracleRiddlesData from '../data/oracle_riddles';
+import oracleBonusesData from '../data/oracle_bonuses';
 import nexusData from '../data/nexus';
 import signatureLayoutsData from '../data/signature_layouts';
 import transmutationData from '../data/transmutation';
@@ -54,6 +57,7 @@ export class Lib {
   public items: Map<string, ItemDefinition> = new Map();
   public signatures: Map<string, SignatureDefinition> = new Map();
   public oracles: Map<string, OracleDefinition> = new Map();
+  public oracleBonuses: Map<string, OracleBonusDefinition> = new Map();
   public monsters: Map<string, MonsterDefinition> = new Map();
   public nexusItems: Map<string, NexusItemDefinition> = new Map();
   public transmutations: Map<string, TransmutationDefinition> = new Map();
@@ -135,6 +139,7 @@ export class Lib {
       this.items = parseItemDefinitionsWithOrder(itemsData, this.raids.values());
       this.signatures = parseSignatureDefinitions(signaturesData, signatureLayoutsData);
       this.oracles = parseOracleDefinitions(oracleRiddlesData);
+      this.oracleBonuses = parseOracleBonusDefinitions(oracleBonusesData);
 
       for (const raid of this.raidSources.values()) {
         raid.itemPoolsByRarity = this.buildItemPoolsByRarity(raid.items);

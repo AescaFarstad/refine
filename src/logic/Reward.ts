@@ -58,6 +58,7 @@ export type Reward =
   | { kind: 'timeline_deteriorate_all_raids' }
   | { kind: 'global_monsters_buff_hp'; amount: number }
   | { kind: 'death_due_touniversecollapse' }
+  | { kind: 'endCorruption' }
 
   // UI interactions
   | { kind: 'show_ui'; ui: string; params?: Record<string, unknown> }
@@ -71,6 +72,7 @@ export interface UIModalEntry {
 export interface RewardContext {
   activeRaidId?: string;
   raidEntry?: { lootingRarityBuff: number };
+  achiId?: string;
 }
 
 function unlockGear(gs: GameState, gearId: string): void {
@@ -242,6 +244,13 @@ export function applyReward(gs: GameState, reward: Reward, context: RewardContex
       gs.timeSpeedMaxBoost = 1;
       if (!gs.pendingUIModals.some(m => m.ui === 'death_due_touniversecollapse')) {
         gs.pendingUIModals.push({ ui: 'death_due_touniversecollapse' });
+      }
+      break;
+
+    case 'endCorruption':
+      for (const oracle of Object.values(gs.mazeOracleByOracleId)) {
+        const corruption = oracle.corruption;
+        if (corruption !== null && corruption.challengeAchiId === context.achiId) corruption.corrupted = false;
       }
       break;
   }

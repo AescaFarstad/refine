@@ -1,11 +1,13 @@
 import type { Reward } from './Reward';
 
 export type AchiType = 'earn' | 'pay';
+export type AchiRewardTiming = 'acknowledge' | 'complete';
 
 export interface AchiDefinition {
   id: string;
   order: number;
   type: AchiType;
+  rewardTiming: AchiRewardTiming;
   handler: string;
   tier: number;
   paramNum: number;
@@ -14,11 +16,11 @@ export interface AchiDefinition {
   symbolColor: string;
   color: string;
   description: string;
-  // Rewards granted when the achievement is acknowledged (see acknowledgeAchi / payAchi).
+  // Rewards granted when the achievement enters rewardTiming's state.
   rewards: readonly Reward[];
 }
 
-export type RawAchiDefinition = Omit<AchiDefinition, 'id' | 'order' | 'paramStr' | 'symbol' | 'symbolColor' | 'color' | 'rewards'> & { paramStr?: string; symbol?: string; symbolColor?: string; color?: string; rewards?: readonly Reward[] };
+export type RawAchiDefinition = Omit<AchiDefinition, 'id' | 'order' | 'rewardTiming' | 'paramStr' | 'symbol' | 'symbolColor' | 'color' | 'rewards'> & { rewardTiming?: AchiRewardTiming; paramStr?: string; symbol?: string; symbolColor?: string; color?: string; rewards?: readonly Reward[] };
 
 export function parseAchiDefinitions(raw: Record<string, RawAchiDefinition>): Map<string, AchiDefinition> {
   const map = new Map<string, AchiDefinition>();
@@ -28,6 +30,7 @@ export function parseAchiDefinitions(raw: Record<string, RawAchiDefinition>): Ma
       id,
       order: order++,
       type: def.type,
+      rewardTiming: def.rewardTiming ?? 'acknowledge',
       handler: def.handler,
       tier: def.tier,
       paramNum: def.paramNum,

@@ -33,6 +33,19 @@ export const MIN_WALK_SPEED: number = 1; // km/h
 
 export type MazeOracleState = 'inert' | 'riddling' | 'riddlePassed';
 
+export interface MazeOracleCorruptionState {
+  corrupted: boolean;
+  bonusId: string;
+  challengeAchiId: string;
+}
+
+export interface MazeOracleProgress {
+  state: MazeOracleState;
+  lastFailedSealAttempt: OracleSealAttempt | null;
+  level: number;
+  corruption: MazeOracleCorruptionState | null;
+}
+
 export class GameState {
   public lib: Lib = new Lib();
   public readonly version: number = 1; // game state version for serialization
@@ -105,8 +118,7 @@ export class GameState {
   public mazeNexusUpgradeOfferSeed: number = -1;
   public mazeNexusUpgradeSeedCursor: number = 0;
   public mazeNexusRefundResetRegretUsed: boolean = false;
-  public mazeOracleStateByNodeId: Record<string, MazeOracleState> = {};
-  public mazeOracleLastFailedSealAttemptByNodeId: Record<string, OracleSealAttempt> = {};
+  public mazeOracleByOracleId: Record<string, MazeOracleProgress> = {};
   public mazeOracleIlluminationSolution: string[] = [];
   public mazeResetEntranceCell: Point2 = { x: 0, y: 0 };
   public mazeIncrementalBonusPerPickup: number = 0;

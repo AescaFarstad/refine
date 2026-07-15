@@ -145,8 +145,8 @@ import { DISCOVERY } from '../logic/DiscoveryLib';
 import { globalInputQueue } from '../logic/Model';
 import {
   compactOracleSealColors,
+  getOracleProgressAtNode,
   getOracleRiddle,
-  getOracleSignature,
   ORACLE_VALIDATE_COST,
   predictOracleSealValidation,
   type OracleSealAttempt,
@@ -203,7 +203,7 @@ const canValidateSeal = computed(() => {
 const validateProgressStyle = computed(() => ({ width: `${validationProgress.value * 100}%` }));
 const lastFailedSealAttempt = computed(() => {
   uiState.mazeVersion;
-  return getGameState().mazeOracleLastFailedSealAttemptByNodeId[String(currentNodeId.value)] ?? null;
+  return getOracleProgressAtNode(getGameState(), currentNodeId.value).lastFailedSealAttempt;
 });
 const oracleSectionStyle = computed(() => oracleTopRowWidth.value > 0
   ? { width: `${oracleTopRowWidth.value}px` }
@@ -233,8 +233,8 @@ const completedOracleSignatureIdSet = computed(() => {
   uiState.mazeVersion;
   const completed = new Set<string>();
   const gs = getGameState();
-  for (const [nodeIdText, state] of Object.entries(gs.mazeOracleStateByNodeId)) {
-    if (state === 'riddlePassed') completed.add(getOracleSignature(gs, Number(nodeIdText)).id);
+  for (const [oracleId, progress] of Object.entries(gs.mazeOracleByOracleId)) {
+    if (progress.state === 'riddlePassed') completed.add(gs.lib.oracles.get(oracleId)!.signatureId);
   }
   return completed;
 });
@@ -311,7 +311,7 @@ function colorButtonStyle(hex: string) {
 }
 
 function showLastFailedSealAttempt() {
-  hoveredLastFailedSealAttempt.value = getGameState().mazeOracleLastFailedSealAttemptByNodeId[String(currentNodeId.value)] ?? null;
+  hoveredLastFailedSealAttempt.value = getOracleProgressAtNode(getGameState(), currentNodeId.value).lastFailedSealAttempt;
 }
 
 function hideLastFailedSealAttempt() {

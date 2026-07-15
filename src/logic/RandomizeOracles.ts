@@ -169,4 +169,20 @@ export function randomizeOracles(gs: GameState): void {
       gs.researchCells[idx]!.oracleId = oracleId;
     }
   }
+
+  syncOracleProgressLevels(gs, slots, slotOracleIds);
+}
+
+// getOracleSlots already ranks slots by distance and breaks ties by node id.
+function syncOracleProgressLevels(gs: GameState, slots: readonly OracleSlotInfo[], slotOracleIds: readonly string[]): void {
+  const half = slots.length / 2;
+  const next: typeof gs.mazeOracleByOracleId = {};
+  slotOracleIds.forEach((oracleId, slotIndex) => {
+    const level = slotIndex < half ? 0 : 1;
+    const existing = gs.mazeOracleByOracleId[oracleId];
+    next[oracleId] = existing
+      ? { ...existing, level }
+      : { state: 'inert', lastFailedSealAttempt: null, level, corruption: null };
+  });
+  gs.mazeOracleByOracleId = next;
 }

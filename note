@@ -112,6 +112,8 @@ june 6-7
   balancing, fixes, oracles, achievements
 june 20
   oracle illumination
+july 15
+  oracle bonuses and challenges
 
 npx tsc --noEmit
 npx vue-tsc --noEmit
@@ -537,7 +539,19 @@ If the run is reset for any reason while some oracles were illuminated, the 'Res
 "Illumination sequence incomplete (X/Y)"
 
 
-You can reach inside the oracle, corrupting it.
+You can reach inside the oracle, gaining a bonus and learning the order of this oracle in the illumination sequence.
+However this will defile it — the oracle will spread curruption when you move in the maze.
+
+Bonuses:
+[] [] [] [] [] []
+
+To stop the corruption, choose a challange to complete:
+
+Challenges:
+[] [] [] [] [] []
+
+
+This will also reveal the order of this oracle in the illumination sequence.
 This will give you bonuses, but the oracle will start spreading the corruption when you move in the maze.
 
 Bonuses:
@@ -548,3 +562,7 @@ Complete the obstacle challenge to stop the corruption and learn the oracle's in
 The oracle light-up sequence was incomplete (5/16)
 
 The oracle light-up sequence was incorrect.
+
+
+implement missing bonuses
+redesign bonus visuals

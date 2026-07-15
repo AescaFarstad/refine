@@ -463,14 +463,70 @@
 
 .oracle-learn-more-btn {
   align-self: stretch;
-  border-color: rgba(148, 163, 184, 0.28);
-  background: rgba(51, 65, 85, 0.6);
-  color: rgba(226, 232, 240, 0.88);
+  border-color: rgba(45, 212, 191, 0.34);
+  background: rgba(15, 118, 110, 0.24);
+  color: rgba(204, 251, 241, 0.92);
 }
 
 .oracle-learn-more-btn:hover {
-  background: rgba(71, 85, 105, 0.72);
-  border-color: rgba(148, 163, 184, 0.42);
+  background: rgba(15, 118, 110, 0.36);
+  border-color: rgba(94, 234, 212, 0.56);
+}
+
+.oracle-learn-more-btn-level-1 {
+  border-color: rgba(125, 211, 252, 0.42);
+  background: rgba(2, 132, 199, 0.28);
+  color: rgba(224, 242, 254, 0.96);
+}
+
+.oracle-learn-more-btn-level-1:hover {
+  background: rgba(2, 132, 199, 0.42);
+  border-color: rgba(186, 230, 253, 0.62);
+}
+
+.oracle-corruption-state {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(248, 113, 113, 0.28);
+  border-radius: 4px;
+  background: rgba(127, 29, 29, 0.16);
+}
+
+.oracle-bonus-state {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding: 12px 10px;
+  box-sizing: border-box;
+  border-radius: 4px;
+  background: var(--raid-item-bg, rgba(255, 255, 255, 0.08));
+  font-size: 13px;
+}
+
+.oracle-corruption-state.cleansed {
+  border: none;
+  background: rgba(15, 118, 110, 0.14);
+}
+
+.oracle-corruption-status {
+  color: rgba(254, 202, 202, 0.96);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.oracle-corruption-state.cleansed .oracle-corruption-status {
+  color: rgba(153, 246, 228, 0.95);
+}
+
+.oracle-illumination-order {
+  color: rgba(153, 246, 228, 0.95);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
 }
 
 .oracle-possibilities-section {

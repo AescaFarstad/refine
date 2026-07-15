@@ -1,10 +1,12 @@
 import type { ReadonlyGameState } from './UIState';
-import type { GameState } from './GameState';
+import type { GameState, MazeOracleProgress } from './GameState';
 import { axialDistance, axialRange } from './HexMath';
 import type { Point2 } from './core/math';
 import type { ReadonlySignatureDefinition } from './SignatureLib';
 import { findBestSignatureFit, type BestSignatureFit } from './findBestSignatureFit';
 import { axialToIndex } from './Research';
+import { applyReward } from './Reward';
+import { trackAchi } from './Achi';
 
 export const ORACLE_VALIDATE_COST = 100;
 
@@ -156,7 +158,11 @@ export function getOracleId(gs: ReadonlyGameState, nodeId: number): string {
   if (idx === -1) {
     throw new Error(`Oracle node ${nodeId} has out-of-bounds cell (${firstCell.x}, ${firstCell.y})`);
   }
-  return gs.researchCells[idx]!.oracleId;
+  const oracleId = gs.researchCells[idx]!.oracleId;
+  if (oracleId === '') {
+    throw new Error(`Missing oracle id for node ${nodeId}`);
+  }
+  return oracleId;
 }
 
 export function getOracleSignature(gs: ReadonlyGameState, nodeId: number): ReadonlySignatureDefinition {
@@ -167,6 +173,64 @@ export function getOracleSignature(gs: ReadonlyGameState, nodeId: number): Reado
 export function getOracleRiddle(gs: ReadonlyGameState, nodeId: number): string {
   const oracleId = getOracleId(gs, nodeId);
   return gs.lib.oracles.get(oracleId)!.riddle;
+}
+
+export function getOracleLevel(gs: ReadonlyGameState, nodeId: number): number {
+  return getOracleProgressAtNode(gs, nodeId).level;
+}
+
+export function getOracleProgressAtNode(gs: GameState, nodeId: number): MazeOracleProgress;
+export function getOracleProgressAtNode(gs: ReadonlyGameState, nodeId: number): ReadonlyGameState['mazeOracleByOracleId'][string];
+export function getOracleProgressAtNode(gs: GameState | ReadonlyGameState, nodeId: number) {
+  const oracleId = getOracleId(gs, nodeId);
+  return gs.mazeOracleByOracleId[oracleId]!;
+}
+
+export function getOracleBonusUsedCount(gs: ReadonlyGameState, bonusId: string): number {
+  return Object.values(gs.mazeOracleByOracleId)
+    .filter(oracle => oracle.corruption?.bonusId === bonusId)
+    .length;
+}
+
+function canStartOracleCorruption(gs: ReadonlyGameState, nodeId: number): boolean {
+  const progress = getOracleProgressAtNode(gs, nodeId);
+  return progress.state === 'riddlePassed' && progress.corruption === null;
+}
+
+export function isOracleCorruptionBonusEligible(gs: ReadonlyGameState, nodeId: number, bonusId: string): boolean {
+  if (!canStartOracleCorruption(gs, nodeId)) return false;
+  const bonus = gs.lib.oracleBonuses.get(bonusId)!;
+  return bonus.tier === getOracleLevel(gs, nodeId) + 1
+    && getOracleBonusUsedCount(gs, bonusId) < bonus.count;
+}
+
+export function isOracleCorruptionChallengeEligible(gs: ReadonlyGameState, nodeId: number, challengeAchiId: string): boolean {
+  if (!canStartOracleCorruption(gs, nodeId)) return false;
+  const challenge = gs.lib.achi.items.get(challengeAchiId)!;
+  return challenge.tier === getOracleLevel(gs, nodeId) + 1
+    && !gs.achi[challengeAchiId];
+}
+
+export function canCorruptOracle(gs: ReadonlyGameState, nodeId: number, bonusId: string, challengeAchiId: string): boolean {
+  return isOracleCorruptionBonusEligible(gs, nodeId, bonusId)
+    && isOracleCorruptionChallengeEligible(gs, nodeId, challengeAchiId);
+}
+
+export function corruptOracle(gs: GameState, nodeId: number, bonusId: string, challengeAchiId: string): boolean {
+  if (!canCorruptOracle(gs, nodeId, bonusId, challengeAchiId)) return false;
+
+  const tracked = trackAchi(gs, challengeAchiId);
+  if (!tracked) return false;
+
+  const progress = getOracleProgressAtNode(gs, nodeId);
+  const bonus = gs.lib.oracleBonuses.get(bonusId)!;
+  applyReward(gs, bonus.reward);
+  progress.corruption = {
+    corrupted: true,
+    bonusId,
+    challengeAchiId,
+  };
+  return true;
 }
 
 export function getOracleSealSolutionCellColors(gs: ReadonlyGameState, nodeId: number): Record<string, OracleSealColor> {
@@ -206,28 +270,28 @@ export function submitOracleSeal(
   cellColors: Readonly<Record<string, OracleSealColor | null | undefined>>
 ): OracleSealSubmissionResult {
   const evaluation = predictOracleSealValidation(gs, nodeId, cellColors);
-  const oracleState = gs.mazeOracleStateByNodeId[String(nodeId)];
-  if (oracleState !== 'riddling' || gs.chronotraces < ORACLE_VALIDATE_COST) {
+  const progress = getOracleProgressAtNode(gs, nodeId);
+  if (progress.state !== 'riddling' || gs.chronotraces < ORACLE_VALIDATE_COST) {
     return { ...evaluation, submitted: false };
   }
 
   gs.chronotraces -= ORACLE_VALIDATE_COST;
   if (evaluation.success) {
-    gs.mazeOracleStateByNodeId[String(nodeId)] = 'riddlePassed';
+    progress.state = 'riddlePassed';
   } else {
-    gs.mazeOracleLastFailedSealAttemptByNodeId[String(nodeId)] = createOracleSealAttempt(cellColors, evaluation.fit);
+    progress.lastFailedSealAttempt = createOracleSealAttempt(cellColors, evaluation.fit);
   }
 
   return { ...evaluation, submitted: true };
 }
 
 export function getOracleActivationCost(gs: ReadonlyGameState): number {
-  return Object.values(gs.mazeOracleStateByNodeId).filter(state => state !== 'inert').length + 1;
+  return Object.values(gs.mazeOracleByOracleId).filter(oracle => oracle.state !== 'inert').length + 1;
 }
 
 export function activateOracle(gs: GameState, nodeId: number): boolean {
-  const key = String(nodeId);
-  if (gs.mazeOracleStateByNodeId[key] !== 'inert') return false;
+  const progress = getOracleProgressAtNode(gs, nodeId);
+  if (progress.state !== 'inert') return false;
 
   const currentCount = gs.countableGear.philosophers_stone ?? 0;
   const cost = getOracleActivationCost(gs);
@@ -238,14 +302,14 @@ export function activateOracle(gs: GameState, nodeId: number): boolean {
     delete gs.countableGear.philosophers_stone;
   }
 
-  gs.mazeOracleStateByNodeId[key] = 'riddling';
+  progress.state = 'riddling';
   return true;
 }
 
 export type OracleIlluminationResult = 'unchanged' | 'dimmed' | 'illuminated' | 'correct';
 
 export function toggleOracleIllumination(gs: GameState, nodeId: number): OracleIlluminationResult {
-  if (gs.mazeOracleStateByNodeId[String(nodeId)] !== 'riddlePassed') return 'unchanged';
+  if (getOracleProgressAtNode(gs, nodeId).state !== 'riddlePassed') return 'unchanged';
 
   const oracleId = getOracleId(gs, nodeId);
   const currentIndex = gs.maze.illuminatedOracleIds.indexOf(oracleId);

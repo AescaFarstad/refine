@@ -1,5 +1,19 @@
 <template>
-  <button v-if="isComplete" type="button" class="achi-complete-btn" :style="earnItemVars" @click="acknowledge">
+  <div v-if="isUntracked && achi.type === 'pay'" class="achi-pay-btn achi-pay-preview" :style="payBtnVars">
+    <span>Pay {{ achi.paramNum }}</span>
+    <span v-if="paySpec.iconImage.length === 0" class="achi-resource-glyph" :style="{ color: paySpec.color }">{{ paySpec.glyph }}</span>
+    <span v-else class="achi-resource-icon" :style="payIconStyle" />
+    <span class="achi-owned">(you have {{ ownedAmount }})</span>
+  </div>
+
+  <div v-else-if="isUntracked" class="achi-item achi-item-preview" :style="earnItemVars">
+    <div class="achi-content">
+      <span v-if="achi.type === 'earn'" class="achi-progress-label">{{ achi.paramNum }}<span v-if="achi.symbol" class="achi-progress-symbol" :style="{ color: achi.symbolColor }">{{ achi.symbol }}</span></span>
+      <span class="achi-description">{{ achi.description }}</span>
+    </div>
+  </div>
+
+  <button v-else-if="isComplete" type="button" class="achi-complete-btn" :style="earnItemVars" @click="acknowledge">
     <span class="achi-complete-label">COMPLETE</span>
     <span class="achi-progress-label">{{ achi.paramNum }}<span v-if="achi.symbol" class="achi-progress-symbol" :style="{ color: achi.symbolColor }">{{ achi.symbol }}</span></span>
     <span class="achi-description">{{ achi.description }}</span>
@@ -37,21 +51,37 @@ import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 const props = defineProps<{
   achi: AchiDefinition;
   achiVersion: number;
+  expectedState: 'tracked' | 'untracked';
 }>();
 
 const state = computed(() => {
   const achiVersion = props.achiVersion;
   if (achiVersion < 0) throw new Error(`Invalid achi version: ${achiVersion}`);
-  return getGameState().achi[props.achi.id]!;
+  const gameState = getGameState().achi[props.achi.id];
+  if (props.expectedState === 'tracked' && !gameState) {
+    throw new Error(`Expected tracked achievement state for ${props.achi.id}`);
+  }
+  if (props.expectedState === 'untracked' && gameState) {
+    throw new Error(`Expected untracked achievement state for ${props.achi.id}`);
+  }
+  // GameState is intentionally non-reactive. Return a new snapshot when its
+  // reactive version changes so downstream computed values are invalidated.
+  return gameState ? { ...gameState } : undefined;
 });
 
-const isComplete = computed(() => { props.achiVersion; return state.value.state === ACHI_STATE_COMPLETE; });
+const isUntracked = computed(() => {
+  state.value;
+  return props.expectedState === 'untracked';
+});
+const trackedState = computed(() => state.value!);
+
+const isComplete = computed(() => props.expectedState === 'tracked' && trackedState.value.state === ACHI_STATE_COMPLETE);
 
 const payTarget = computed(() => props.achi.paramStr as MazeResourceKey);
 const paySpec = computed(() => MAZE_RESOURCE_SPECS[payTarget.value]);
 
-const progressValue = computed(() => { props.achiVersion; return Math.min(state.value.best, props.achi.paramNum); });
-const projectedValue = computed(() => { props.achiVersion; return state.value.projectedValue; });
+const progressValue = computed(() => props.expectedState === 'untracked' ? 0 : Math.min(trackedState.value.best, props.achi.paramNum));
+const projectedValue = computed(() => props.expectedState === 'untracked' ? 0 : trackedState.value.projectedValue);
 const showProjectedValue = computed(() => props.achi.type === 'earn' && projectedValue.value > 0);
 
 const displayedProjectedValue = ref(projectedValue.value);
@@ -254,6 +284,11 @@ function acknowledge(): void {
   font-size: 15px;
   font-weight: 800;
   cursor: pointer;
+}
+
+.achi-pay-preview {
+  width: max-content;
+  cursor: default;
 }
 
 .achi-pay-btn:hover {

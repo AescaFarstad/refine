@@ -68,6 +68,7 @@ export function undoReward(gs: GameState, reward: Reward): boolean {
     case 'timeline_deteriorate_random_raid':
     case 'timeline_deteriorate_all_raids':
     case 'death_due_touniversecollapse':
+    case 'endCorruption':
       return false;
   }
 }

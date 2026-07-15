@@ -1,7 +1,7 @@
 import type { GameState } from '../GameState';
 import { globalInputQueue } from '../Model';
 import type { CmdInput } from './InputCommands';
-import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdReviewQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdUpgradeGearItem, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro, CmdPickupShard, CmdSpeedUpRefining, CmdSetTimelinePreferredOption, CmdClearShardPickupGrace, CmdMazeMoveTo, CmdMazePrepareUpgradeOffer, CmdMazeSelectNexusUpgrade, CmdMazePlaceNexusItem, CmdMazeActivateNexusSpecialUpgrade, CmdMazeResetHighMovement, CmdMazeValidateOracleSeal, CmdMazeActivateOracle, CmdMazeToggleOracleIllumination, CmdMazeShowOraclePossibilities, CmdTriggerOracleStage0, CmdPayAchi, CmdAcknowledgeAchi, CmdTransmutate } from './InputCommands';
+import { CmdStartRaid, CmdAdvanceTime, CmdAcknowledgeOutcome, CmdConsumeOutcomeRewards, CmdAcknowledgeSignatureLearn, CmdAcknowledgeSignaturePlacementDiscovery, CmdPreviewSignature, CmdStartRefining, CmdSelectRaid, CmdToggleGear, CmdToggleQuest, CmdReviewQuest, CmdGrowWafer, CmdResearchNode, CmdUpgradeGearCategory, CmdUpgradeGearItem, CmdPlaceMolecule, CmdRemoveMolecule, CmdOpenGearUpgradeModal, CmdDiscover, CmdMarkEssencesSeen, CmdSwitchTab, CmdDismissUIModal, CmdToggleItemBan, CmdDismissIntro, CmdPickupShard, CmdSpeedUpRefining, CmdSetTimelinePreferredOption, CmdClearShardPickupGrace, CmdMazeMoveTo, CmdMazePrepareUpgradeOffer, CmdMazeSelectNexusUpgrade, CmdMazePlaceNexusItem, CmdMazeActivateNexusSpecialUpgrade, CmdMazeResetHighMovement, CmdMazeValidateOracleSeal, CmdMazeActivateOracle, CmdMazeToggleOracleIllumination, CmdCorruptOracle, CmdMazeShowOraclePossibilities, CmdTriggerOracleStage0, CmdPayAchi, CmdAcknowledgeAchi, CmdTransmutate } from './InputCommands';
 import { SHARD_PICKUP_DELAY_SEC } from '../Model';
 import { discover, discoverRefineTab, ensureSignatureDiscoveryFromWafer, hasDiscovered } from '../Discover';
 import { DISCOVERY } from '../DiscoveryLib';
@@ -17,7 +17,7 @@ import { handleMazeMoveTo, computeMazeResourceSpawns, syncMazeResetEntranceCell,
 import { prepareMazeNexusUpgradeOffer, selectMazeNexusUpgrade, onMazeNexusUpgradePlaced, activateMazeNexusSpecialUpgrade } from '../MazeNexusUpgradeProgress';
 import { transmutate } from '../Transmutation';
 import { uiState } from '../UIState';
-import { activateOracle, submitOracleSeal, toggleOracleIllumination } from '../Oracle';
+import { activateOracle, corruptOracle, submitOracleSeal, toggleOracleIllumination } from '../Oracle';
 import { addGearXp, applyGearUpgrade, getPendingGearUpgradeCount } from '../GearUpgrades';
 import { cycleItemImage, getItemImageKey } from '../ItemVisuals';
 import { ORACLE_POSSIBILITIES_COST } from '../Const';
@@ -640,6 +640,15 @@ handlersByName.set('CmdMazeToggleOracleIllumination', (gs, cmd) => {
   gs.maze.version++;
   uiState.mazeVersion = gs.maze.version;
   if (result === 'correct') gs.pendingUIModals.push({ ui: 'you_won' });
+  gs.dirty = true;
+});
+
+handlersByName.set('CmdCorruptOracle', (gs, cmd) => {
+  const c = cmd as CmdCorruptOracle;
+  const corrupted = corruptOracle(gs, c.nodeId, c.bonusId, c.challengeAchiId);
+  if (!corrupted) return;
+  gs.maze.version++;
+  uiState.mazeVersion = gs.maze.version;
   gs.dirty = true;
 });
 

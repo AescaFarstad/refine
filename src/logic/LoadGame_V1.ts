@@ -12,6 +12,7 @@ import { randomizeOracles } from "./RandomizeOracles";
 import { syncDerivedGearUnlocks } from "./DiscoveryLib";
 import { ensureTimelineEventsGenerated } from "./Timeline";
 import { ACHI_STATE_ACKNOWLEDGED, ACHI_STATE_COMPLETE, ACHI_STATE_TRACKED, type AchiState } from "./Achi";
+import { applyDetachedSaveRecovery } from "./SaveRecovery";
 
 // This file must not contain fallbacks for anything. Fail fast.
 
@@ -645,5 +646,6 @@ export function loadGame_V1(input: unknown): GameState | false {
   if (!isObjectRecord(input)) return failLoad("input is not an object.", { input });
   const revived = reviveValue(input);
   if (!isObjectRecord(revived)) return failLoad("revived input is not an object.", { revived });
+  applyDetachedSaveRecovery(revived);
   return rehydrateGameState(revived);
 }

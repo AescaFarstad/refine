@@ -8,6 +8,7 @@
           :key="entry.achi.id"
           :achi="entry.achi"
           :achi-version="uiState.achiVersion"
+          expected-state="tracked"
         />
       </div>
     </div>

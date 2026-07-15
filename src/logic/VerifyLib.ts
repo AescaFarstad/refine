@@ -125,6 +125,7 @@ function verifyRewardRefs(reward: Reward, context: string, lib: Lib, errors: Ver
     case 'timeline_deteriorate_all_raids':
     case 'global_monsters_buff_hp':
     case 'death_due_touniversecollapse':
+    case 'endCorruption':
       return;
   }
 }

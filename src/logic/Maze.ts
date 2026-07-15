@@ -1,5 +1,5 @@
 import { copy, type Point2 } from './core/math';
-import type { GameState, MazeOracleState, MazeResourceSpawn } from './GameState';
+import type { GameState, MazeOracleProgress, MazeOracleState, MazeResourceSpawn } from './GameState';
 import { createMazeTransient } from './GameState';
 import type { ResearchLib } from './ResearchLib';
 import { axialDistance } from './HexMath';
@@ -29,6 +29,7 @@ import {
   resolveMazeRefresherStep,
 } from './MazeNexusBonuses';
 import { NotifMazeMoveCommitted, NotifMazeRunDone, NotifNexusUpgradesRefunded } from './GameNotif';
+import { getOracleId } from './Oracle';
 
 export {
   getMazeNexusLimitBlockingDisks,
@@ -174,25 +175,32 @@ export function getMazeOracleNodeIdAtCell(gs: ReadonlyGameState, cell: Point2): 
   return researchCell.nodeId;
 }
 
-export function syncMazeOracleStates(gs: GameState): void {
-  const next: Record<string, MazeOracleState> = {};
+function createMazeOracleProgress(level: number): MazeOracleProgress {
+  return {
+    state: 'inert',
+    lastFailedSealAttempt: null,
+    level,
+    corruption: null,
+  };
+}
+
+export function syncMazeOracleProgress(gs: GameState): void {
+  const next: Record<string, MazeOracleProgress> = {};
   for (const node of gs.lib.research.nodes.values()) {
     const firstCell = node.cells[0]!;
     const firstIdx = axialToIndex(firstCell.x, firstCell.y);
     if (firstIdx === -1) continue;
-    if (gs.researchCells[firstIdx]!.oracleId === '') continue;
-    const key = String(node.nodeId);
-    next[key] = gs.mazeOracleStateByNodeId[key] ?? 'inert';
+    const oracleId = gs.researchCells[firstIdx]!.oracleId;
+    if (oracleId === '') continue;
+    const existing = gs.mazeOracleByOracleId[oracleId];
+    next[oracleId] = existing ?? createMazeOracleProgress(0);
   }
-  gs.mazeOracleStateByNodeId = next;
+  gs.mazeOracleByOracleId = next;
 }
 
 export function getMazeOracleState(gs: ReadonlyGameState, nodeId: number): MazeOracleState {
-  const state = gs.mazeOracleStateByNodeId[String(nodeId)];
-  if (!state) {
-    throw new Error(`Missing oracle state for node ${nodeId}`);
-  }
-  return state;
+  const oracleId = getOracleId(gs, nodeId);
+  return gs.mazeOracleByOracleId[oracleId]!.state;
 }
 
 export function syncMazeResetEntranceCell(gs: GameState) {
@@ -248,7 +256,7 @@ export function computeMazeCellDerivedData(gs: GameState): void {
 }
 
 export function computeMazeResourceSpawns(gs: GameState, lib: ResearchLib): void {
-  syncMazeOracleStates(gs);
+  syncMazeOracleProgress(gs);
   if (applyMazeAntiVoidBonuses(gs)) {
     calculateVisibility(gs, lib);
   }

@@ -82,15 +82,30 @@ function deductAchiPayTarget(gs: GameState, def: AchiDefinition): void {
 
 function grantAchiRewards(gs: GameState, def: AchiDefinition): void {
   for (const reward of def.rewards) {
-    applyReward(gs, reward);
+    applyReward(gs, reward, { achiId: def.id });
+  }
+}
+
+function completeTrackedAchi(gs: GameState, state: AchiState, def: AchiDefinition): void {
+  state.state = ACHI_STATE_COMPLETE;
+  state.projectedValue = 0;
+  if (def.rewardTiming === 'complete') {
+    grantAchiRewards(gs, def);
+  }
+}
+
+function acknowledgeCompletedAchi(gs: GameState, state: AchiState, def: AchiDefinition): void {
+  state.state = ACHI_STATE_ACKNOWLEDGED;
+  if (def.rewardTiming === 'acknowledge') {
+    grantAchiRewards(gs, def);
   }
 }
 
 export function acknowledgeAchi(gs: GameState, id: string): boolean {
   const state = gs.achi[id];
   if (!state || state.state !== ACHI_STATE_COMPLETE) return false;
-  state.state = ACHI_STATE_ACKNOWLEDGED;
-  grantAchiRewards(gs, gs.lib.achi.items.get(id)!);
+  const def = gs.lib.achi.items.get(id)!;
+  acknowledgeCompletedAchi(gs, state, def);
   gs.achiVersion++;
   return true;
 }
@@ -100,14 +115,13 @@ export function payAchi(gs: GameState, id: string): boolean {
   if (def.type !== 'pay') return false;
 
   const state = gs.achi[id];
-  if (!state || state.state >= ACHI_STATE_COMPLETE) return false;
+  if (!state || state.state !== ACHI_STATE_TRACKED) return false;
   if (getAchiPayOwned(gs, def) < def.paramNum) return false;
 
   deductAchiPayTarget(gs, def);
-  state.state = ACHI_STATE_ACKNOWLEDGED;
   state.best = def.paramNum;
-  state.projectedValue = 0;
-  grantAchiRewards(gs, def);
+  completeTrackedAchi(gs, state, def);
+  acknowledgeCompletedAchi(gs, state, def);
   gs.achiVersion++;
   return true;
 }
@@ -129,8 +143,7 @@ function updateTrackedEarnAchi(gs: GameState, handler: string, value: number): v
       changed = true;
     }
     if (state.best >= def.paramNum) {
-      state.state = ACHI_STATE_COMPLETE;
-      state.projectedValue = 0;
+      completeTrackedAchi(gs, state, def);
       changed = true;
     }
   }
@@ -153,8 +166,7 @@ function setTrackedEarnAchi(gs: GameState, handler: string, value: number): void
       changed = true;
     }
     if (state.best >= def.paramNum) {
-      state.state = ACHI_STATE_COMPLETE;
-      state.projectedValue = 0;
+      completeTrackedAchi(gs, state, def);
       changed = true;
     }
   }
@@ -175,8 +187,7 @@ function incrementTrackedEarnAchi(gs: GameState, handler: string, amount: number
     state.best += amount;
     changed = true;
     if (state.best >= def.paramNum) {
-      state.state = ACHI_STATE_COMPLETE;
-      state.projectedValue = 0;
+      completeTrackedAchi(gs, state, def);
     }
   }
   if (changed) {
@@ -226,8 +237,7 @@ function updateTrackedKillMonsterAchi(gs: GameState, outcome: RaidOutcome): void
     if (!raidOutcomeKilledMonster(outcome, def.paramStr)) continue;
 
     state.best = def.paramNum;
-    state.projectedValue = 0;
-    state.state = ACHI_STATE_COMPLETE;
+    completeTrackedAchi(gs, state, def);
     changed = true;
   }
   if (changed) {

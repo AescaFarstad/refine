@@ -92,6 +92,8 @@ export function formatRewardHintText(reward: DeepReadonly<Reward>, lib: Readonly
       return `All monsters gain ${signed(reward.amount)} health`;
     case 'death_due_touniversecollapse':
       return 'The multiverse collapses (you perish)';
+    case 'endCorruption':
+      return 'Cleanse oracle corruption';
   }
 }
 

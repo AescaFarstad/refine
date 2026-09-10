@@ -15,6 +15,7 @@ export interface HexPaneInteractionOptions {
   maxZoom: number;
   zoomStopRenderDebounceMs?: number;
   isPaintMode: (event: MouseEvent) => boolean;
+  resolveTarget?: (axial: Point2, world: Point2) => Point2;
   onHoverChanged: (axial: Point2 | null) => void;
   onPrimaryClick: (axial: Point2, event: MouseEvent) => void;
   onPaintAt: (axial: Point2) => void;
@@ -63,7 +64,9 @@ export function useHexPaneInteraction(options: HexPaneInteractionOptions) {
     const worldX = (px - off.x) / z;
     const worldY = (py - off.y) / z;
 
-    return pixelToAxial({ x: worldX, y: worldY }, options.hexSize, options.origin.value);
+    const world = { x: worldX, y: worldY };
+    const axial = pixelToAxial(world, options.hexSize, options.origin.value);
+    return options.resolveTarget ? options.resolveTarget(axial, world) : axial;
   }
 
   function updateHoverCell(event: MouseEvent): void {

@@ -1,0 +1,118 @@
+october 10
+  base project
+  raid view
+october 12
+  deploy -> advance loop, image generation pipeline, items, leveling up, recipes, refinery loading
+october 13
+  refinement loop
+october 18
+  research, escape time loop concept
+october 19
+  maze, maze gen
+october 25
+  maze animation, raid overall idea, planning
+october 26
+  base encounter implementations
+november 2
+  fight encounter, mutations
+november 4
+  raid UI visuals
+november 9
+  raid outcome UI visuals
+november 16
+  chem refining design
+november 19-21
+  chem refining implementation, UI tweaks
+november 23, 25
+  refining animation, shards, wafer upgrades, negboring bonuses, molecule editor
+november 30
+  gear images using chatgpt, struggling with eroding noise from the images
+december 7
+  fixed noise erorsion for refining images, UI tweaks, research, gear, items
+december 13-14
+  web-style research, core split between projects
+december 27
+  adding molecules, items, monsters...
+december 31
+  balance tuning, adding situational gameplay features
+january 1
+  research editor, balancing, monster abilities
+january 2
+  balancing, html visuals, cyan essence, tactics
+january 3
+  refactoring, defensive programming clean-up, balancing
+january 4
+  quests, images, first raid balance
+january 5
+  discovery, magenta essence, minor features
+january 7
+  rewards, balancing
+january 10
+  raid selection window redesign, raid images, style tweaks
+january 11
+  UI discoveries, fine tunning, signatures, alerts, images
+january 13
+  fixing bugs, implementign feedback, refactoring
+january 17
+  raid outcome progress bars and visuals, countable gear
+january 18
+  item bans, purple refining, quest notifications about signatures, quest logic, deck of cards, item images
+january 21
+  UI tweaks, balancing, testing, refactoring
+january 25
+  goal balancing, tweaks  and fixes, refactoring, lib verification.
+  The balance is pretty good now. The game is worth 4 hours of gameplay.
+february 1
+  regen per 10 minutes, spelling, you won window
+february 6 
+  bugs and tweaks
+february 7
+  playtest
+february 8
+  processing feedback, mostly UI tweaks, research nodes highlighting
+februrary 10
+  save/loading
+february 12
+  re-balance, new perks
+february 13
+  images, balancing, signature rewards
+februrary 14
+  delete ice maze, design tps maze, basic wiring
+february 15
+  Cave Maze rendering, resources, pick-up, nexus
+february 18
+  nexus bonus logic, animations, refactoring
+february 19
+  maze visibility
+february 21
+  maze visuals, refactoring, nexus upgrades
+february 22
+  nexus upgrades
+ferbruary 24
+  starting new balance, research editor wafer and vite plugin
+ferbruary 26, 27
+  research pane and editor improvements
+march 6
+  tesseracts, resource collection
+march 7, 8, 9
+  transmutation, white, black, lava, frozen, lush essences, oracles menu, riddles
+march 15
+  opened oracle info, item upgrades
+april 4
+  gear upgrades
+april 30
+  testing, signature editor
+may 1
+  adaptive random, fixes, transmutation core
+may 17
+  timeline visuals, kilifi raid
+may 31
+  kilava items, images, balancing, oracle hint, timeline visuals, balancing
+june 6-7
+  balancing, fixes, oracles, achievements
+june 20
+  oracle illumination
+july 15
+  oracle bonuses and challenges
+september 10
+  small fixes

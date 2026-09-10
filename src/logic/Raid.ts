@@ -1107,7 +1107,7 @@ export function recomputeActiveRaidParams(gs: GameState, raidId: string): void {
       const g = getCachedActiveRaidGear(gs, gid);
       if (g.volume > 0) count++;
     }
-    gs.raid.bagsVolume += 2 * count;
+    gs.raid.bagsVolume += 4 * count;
   }
 
   gs.raid.maxHp = gs.raid.hp;

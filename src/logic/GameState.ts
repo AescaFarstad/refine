@@ -360,7 +360,7 @@ export interface MazeTransient {
   movementUsed: number;
   uniqueCellsVisitedCount: number;
   visitedNodeCount: number;
-  incrementalBonusCounter: number;
+  incrementalBonusCounters: Record<MazeResourceSpawn['resourceKey'], number>;
   collectedCredits: number;
   collectedChronotraces: number;
   collectedShardDust: number;
@@ -386,7 +386,15 @@ export function createMazeTransient(avatarCell: Point2 = { x: 0, y: 0 }): MazeTr
     movementUsed: 0,
     uniqueCellsVisitedCount: 0,
     visitedNodeCount: 0,
-    incrementalBonusCounter: 0,
+    incrementalBonusCounters: {
+      credits: 0,
+      chronotraces: 0,
+      shardDust: 0,
+      zone_crystal: 0,
+      fractal: 0,
+      spice: 0,
+      philosophers_stone: 0,
+    },
     collectedCredits: 0,
     collectedChronotraces: 0,
     collectedShardDust: 0,

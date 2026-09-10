@@ -173,7 +173,7 @@ watch([bonuses, challenges], () => {
 }
 
 .modal {
-  width: 760px;
+  width: 1000px;
   max-width: 96vw;
   background: linear-gradient(180deg, rgba(20, 28, 40, 0.98), rgba(10, 15, 26, 0.94));
   border: 1px solid var(--panel-border);
@@ -240,13 +240,14 @@ watch([bonuses, challenges], () => {
 .corruption-box {
   box-sizing: border-box;
   flex: 1 0 0;
-  min-width: 0;
+  min-width: 150px;
   min-height: 56px;
   position: relative;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
   border: none;
   border-radius: 4px;

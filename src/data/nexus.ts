@@ -130,7 +130,7 @@ const nexusItems: Record<string, RawNexusItemDefinition> = {
     description: 'Receive a stacking bonus for each resource<br>of the same type you picked-up in this run.<br>Unaffected by multipliers.',
     price: 40,
     priceIncrease: [50],
-    minAcquiredUpgradesForOffer: 99,// off
+    minAcquiredUpgradesForOffer: 9,
     placableInstanceDescription: {
       passable: false,
       button: false,

@@ -614,7 +614,7 @@ const gear: Record<string, RawGearDefinition> = {
       up3:{
         skillPoints: -1,
         replacePerk: "Hanoi Packing",
-        changeDescription: '+2 volume per gear item with volume',
+        changeDescription: '+4 volume per gear item with volume',
         title:'Hanoi Packing'
       }
     },
@@ -982,7 +982,7 @@ const gear: Record<string, RawGearDefinition> = {
     name: 'Zone Crystal',
     category: 'grenades',
     countable:true,
-    weight: 1,
+    weight: 2,
     image: 'quartz',
     zoneBoost: 10 * 60,
     xp: [5, 7],
@@ -1052,9 +1052,9 @@ const gear: Record<string, RawGearDefinition> = {
     xp: [16, 24],
     ups:{
       up1:{
-        skillPoints: 0,
-        bonusHpPerCategory: { armor: 3 },
-        changeDescription: '+3 health per armor item equipped',
+        skillPoints: 1,
+        bonusHpPerCategory: { armor: 4 },
+        changeDescription: '+4 health per armor item equipped',
         weight: 1,
         title:'Chitin-Fiber Dressing'
       },

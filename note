@@ -1,120 +1,3 @@
-october 10
-  base project
-  raid view
-october 12
-  deploy -> advance loop, image generation pipeline, items, leveling up, recipes, refinery loading
-october 13
-  refinement loop
-october 18
-  research, escape time loop concept
-october 19
-  maze, maze gen
-october 25
-  maze animation, raid overall idea, planning
-october 26
-  base encounter implementations
-november 2
-  fight encounter, mutations
-november 4
-  raid UI visuals
-november 9
-  raid outcome UI visuals
-november 16
-  chem refining design
-november 19-21
-  chem refining implementation, UI tweaks
-november 23, 25
-  refining animation, shards, wafer upgrades, negboring bonuses, molecule editor
-november 30
-  gear images using chatgpt, struggling with eroding noise from the images
-december 7
-  fixed noise erorsion for refining images, UI tweaks, research, gear, items
-december 13-14
-  web-style research, core split between projects
-december 27
-  adding molecules, items, monsters...
-december 31
-  balance tuning, adding situational gameplay features
-january 1
-  research editor, balancing, monster abilities
-january 2
-  balancing, html visuals, cyan essence, tactics
-january 3
-  refactoring, defensive programming clean-up, balancing
-january 4
-  quests, images, first raid balance
-january 5
-  discovery, magenta essence, minor features
-january 7
-  rewards, balancing
-january 10
-  raid selection window redesign, raid images, style tweaks
-january 11
-  UI discoveries, fine tunning, signatures, alerts, images
-january 13
-  fixing bugs, implementign feedback, refactoring
-january 17
-  raid outcome progress bars and visuals, countable gear
-january 18
-  item bans, purple refining, quest notifications about signatures, quest logic, deck of cards, item images
-january 21
-  UI tweaks, balancing, testing, refactoring
-january 25
-  goal balancing, tweaks  and fixes, refactoring, lib verification.
-  The balance is pretty good now. The game is worth 4 hours of gameplay.
-february 1
-  regen per 10 minutes, spelling, you won window
-february 6 
-  bugs and tweaks
-february 7
-  playtest
-february 8
-  processing feedback, mostly UI tweaks, research nodes highlighting
-februrary 10
-  save/loading
-february 12
-  re-balance, new perks
-february 13
-  images, balancing, signature rewards
-februrary 14
-  delete ice maze, design tps maze, basic wiring
-february 15
-  Cave Maze rendering, resources, pick-up, nexus
-february 18
-  nexus bonus logic, animations, refactoring
-february 19
-  maze visibility
-february 21
-  maze visuals, refactoring, nexus upgrades
-february 22
-  nexus upgrades
-ferbruary 24
-  starting new balance, research editor wafer and vite plugin
-ferbruary 26, 27
-  research pane and editor improvements
-march 6
-  tesseracts, resource collection
-march 7, 8, 9
-  transmutation, white, black, lava, frozen, lush essences, oracles menu, riddles
-march 15
-  opened oracle info, item upgrades
-april 4
-  gear upgrades
-april 30
-  testing, signature editor
-may 1
-  adaptive random, fixes, transmutation core
-may 17
-  timeline visuals, kilifi raid
-may 31
-  kilava items, images, balancing, oracle hint, timeline visuals, balancing
-june 6-7
-  balancing, fixes, oracles, achievements
-june 20
-  oracle illumination
-july 15
-  oracle bonuses and challenges
-
 npx tsc --noEmit
 npx vue-tsc --noEmit
 npm run build
@@ -350,44 +233,6 @@ timeline event archtype
     ]
 
 
-timeline_lib:
-  events:[
-    {
-      type:credits_or_deterioration
-      time:[1, 10, 40]
-      repeat:[4, 0, 0]
-    }
-    ]
-
-I need to implement timeline feature:
-TimelineLib
-  consists of a list of events and event archtypes (listed in two separate data files)
-  Example of event_archtype:
-  credits_or_deterioration{
-    options:[ //list of Rewards
-      reward that takes away 100 credits
-      reward which causes deterioration of a random available raid //needs to be implemented
-    ]
-    icon: { kind: 'itemImage', key: 'cyan', scale: 1, offset: { x: 0, y: 0 } },
-  }
-  Example of list of events
-  events:[
-    {
-      type:credits_or_deterioration
-      time:[1, 10, 40] //when event accurs - day, hour, minute. needs to be parsed into a float
-      repeat:[4, 0, 0] //how often does it repeat
-    }
-    ]
-
-GameState has a list of timeline events. all events from the list are placed there is a sorted order. repeated events are only placed once. Whenever time advances it checks if an event is due and teh event is executed. If it is a repeated events - its next installment is added to the timeline
-
-executing event:
-the player can choose what happens - which of the Rewards from the options is going to fire. By default the [0] item is chosen. The user choice will be implemented separately, later in UI. If the player doesn't have enough resources, then the next is choosen.
-
-Executed events stay in the timeline. gameState keeps a cursor into it.
-
-Before coding, let's discuss it and iron out what is underspecified.
-
 
 mwiko
 jiko
@@ -395,19 +240,22 @@ Kiondo bag
 kenyan painting
 
 
-oracle bonuses
-reds +1 [6]
-blue +1 [3]
-gold +1 [3]
-green +1 [1]
-cyan +10% yield [1]
-magenta +20% yield [1]
-unique item % +1 [3]
-charge bonus x2 [1]
-refining chance +5%
+!+1 should work on white
+!when hovering over void in maze path to the nearest cell instead of nothing
+!red essence node failed to reveal other essences
+!every new oracle costs 1 philosopher's stone more
+!all monsters gain health - remove severity
+!hanoi packing needs to be stronger
+!helmet looks weird in xp upgrade
+!zone crystal weight +1?
+!collagen matrix doesn'r require SP?
+!fiber dressing increases price?
+!"insert philosopher's stone" how many do I have?
+!inserting stone closes the menu
+!incremental - by type
+!charge doesn't react to mouse when picking up shards
+!day 5.5 octopus enters kilava
 
-
-completing an oracle needs an animation, message, reward
 
 timeline discovery hint
 animate timeline buttton when it appears
@@ -422,33 +270,17 @@ add one-time bonus items which can be looted from some raids
 
 essence which doubles shards if refining fails
 
-day 5.5 octopus enters kilava
-
 unused item bans
-
-+1 should work on white
-
-charge doesn't react to mouse when picking up shards
-
-when hovering over void in maze path to the nearest cell instead of nothing
-
-red essence node failed to reveal other essences
-
-every new oracle costs 1 philosopher's stone more
 
 research: +1% loot in maze for every visited node
 
 is sparking there just before the zone collapse
-
-all monsters gain health - remove severity
 
 NEW - above the molecule overlay
 
 research - increased item odds
 
 event: guaranteed failure
-
-incremental - by type
 
 эссенция, которую можно получить только окрашиванием
 
@@ -458,111 +290,18 @@ quests to cancel timeline event
 
 cant place range boost on the right side next to chronotraces
 
-hanoi packing needs to be stronger
-
-helmet looks weird in xp upgrade
-
-zone crystal weight +1?
-
-collagen matrix doesn'r require SP?
-
-fiber dressing increases price?
-
 something must point at an oracle as the means of progressing the game
 
-"insert philosopher's stone" how many do I have?
-
-inserting stone closes the menu
-
-hide weight and zone collapse time until more ites were researched (also items weight)
+hide weight and zone collapse time until more items were researched (also items weight)
 
 show next zone deterioration
 
 
 
-At first oracle should display the info and tracked achi to open it.
-Then it allows inserting stones
-
-When solved, it plays animation and allows choosing bonus and challenge
-spreads corruption when bonus is chosen
-gives bliss upgrade
-
-some raids give credits, some give shards, some give chronotraces
-
-The goal is to get all oracles to the last stage and visit them all in a single run in a particular order.
-Visiting them is possible in before the last stage, but the order is unknown
-
-
-Gather more information about the maze to learn how to approach the oracles.
-
-Power-up the oracle and it will present its riddle.
-
-
-
-Implement the next stage which comes after the oracle's riddle was solved.
-
-It displays text:
-
-"The oracle is activated and can be used to break out of the time loop.
-
-For that you need to illuminate all the oracles in the correct order.
-
-You have activated 1 / 16 oracles."
-
-It displays a button:
-[Illuminate] / [Dim]
-
-In case of Illuminating:
-"This will place it #X in the sequence."
-
-Then a button which for the time being doesn't do anything:
-
-[Try to learn more from the oracle.]
-
-
-For now don't wire it up to anything as teh illumination mechanic is not implemented yet.
-
-
-
-
-Illuminating mechanic:
-Only activated oracles can be illuminated (the ones with the solved riddle)
-illumination persists for the duration of the maze run. If the run is reset for any reason the illumination resets as well.
-When illuminating and oracle it is placed at the end of the current illumination sequence.
-The correct sequence is derrived from the game's starting seed (it is memorized). it is a permutation of all existing oracles.
-When illuminating the last oracle, the sequence is verified. 
-If incorrect - under the Dim button it shows:
-"The illumination sequence is complete, but it is incorrect"
-If correct, RUIYouWon is shown.
-
-If the run is reset for any reason while some oracles were illuminated, the 'Resources banked' panel also shows:
-"Illumination sequence incomplete (X/Y)"
-
-
-You can reach inside the oracle, gaining a bonus and learning the order of this oracle in the illumination sequence.
-However this will defile it — the oracle will spread curruption when you move in the maze.
-
-Bonuses:
-[] [] [] [] [] []
-
-To stop the corruption, choose a challange to complete:
-
-Challenges:
-[] [] [] [] [] []
-
-
-This will also reveal the order of this oracle in the illumination sequence.
-This will give you bonuses, but the oracle will start spreading the corruption when you move in the maze.
-
-Bonuses:
-[] [] [] [] [] []
-
-Complete the obstacle challenge to stop the corruption and learn the oracle's index in the light-up sequence.
-
-The oracle light-up sequence was incomplete (5/16)
-
-The oracle light-up sequence was incorrect.
-
-
 implement missing bonuses
 redesign bonus visuals
+corruption
+sequence and winning
+
+
+spread corruption from some research nodes which block short paths to valuable items

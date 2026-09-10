@@ -26,7 +26,8 @@ import { uiState, getGameState, getGameStateMutable } from '../logic/UIState';
 import { globalInputQueue } from '../logic/Model';
 import { clearCanvas } from '../logic/DrawHex';
 import { bfsMazePath } from '../logic/MazeBFS';
-import { pixelToAxial } from '../logic/HexMath';
+import { axialNeighbors, axialToPixel, pixelToAxial } from '../logic/HexMath';
+import { axialToIndex } from '../logic/Research';
 import { CmdMazeMoveTo, CmdMazePlaceNexusItem } from '../logic/input/InputCommands';
 import { renderMazeTerrainLayer, renderMazeFurnitureLayer, renderMazeVisibilityOverlay } from '../logic/drawMaze';
 import { renderMazePathOverlay } from '../logic/drawMazePath';
@@ -495,6 +496,36 @@ function renderPath(): void {
   }
 }
 
+function resolveMazeTarget(axial: Point2, world: Point2): Point2 {
+  const gs = getGameState();
+  const isPathCell = (cell: Point2): boolean => {
+    const idx = axialToIndex(cell.x, cell.y);
+    return idx !== -1 && gs.researchCells[idx]!.owned && gs.researchCells[idx]!.passable;
+  };
+  if (isPathCell(axial)) return axial;
+
+  let nearest = axial;
+  // Approximate the cell as a circle, plus two-thirds of a cell of hover tolerance.
+  let nearestDistanceSq = (HEX_SIZE + Math.sqrt(3) * HEX_SIZE * 2 / 3) ** 2;
+  const candidates = new Map<string, Point2>();
+  for (const neighbor of axialNeighbors(axial)) {
+    candidates.set(`${neighbor.x},${neighbor.y}`, neighbor);
+    for (const next of axialNeighbors(neighbor)) {
+      candidates.set(`${next.x},${next.y}`, next);
+    }
+  }
+  for (const neighbor of candidates.values()) {
+    if (!isPathCell(neighbor)) continue;
+    const center = axialToPixel(neighbor, HEX_SIZE, origin.value);
+    const distanceSq = (world.x - center.x) ** 2 + (world.y - center.y) ** 2;
+    if (distanceSq < nearestDistanceSq) {
+      nearest = neighbor;
+      nearestDistanceSq = distanceSq;
+    }
+  }
+  return nearest;
+}
+
 function onHoverChanged(axial: Point2 | null): void {
   recomputeHoverVisibility();
   scheduleFurnitureRender();
@@ -536,6 +567,7 @@ const {
   minZoom: MIN_ZOOM,
   maxZoom: MAX_ZOOM,
   isPaintMode: () => false,
+  resolveTarget: resolveMazeTarget,
   onHoverChanged,
   onPrimaryClick: (axial) => {
     onPrimaryMoveClick(axial);

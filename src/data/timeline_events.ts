@@ -27,6 +27,11 @@ export const timelineEvents: RawTimelineEventDefinition[] = [
     time: [5, 6, 0],
   },
   {
+    id: 'kilava_octopus_add_1',
+    type: 'kilava_octopus_add',
+    time: [5, 12, 0],
+  },
+  {
     id: 'credits_or_deterioration_2_2',
     type: 'credits_or_deterioration_2',
     time: [6, 12, 0],
@@ -54,9 +59,19 @@ export const timelineEvents: RawTimelineEventDefinition[] = [
     repeat: [4, 12, 0],
   },
   {
+    id: 'kilava_octopus_remove_1',
+    type: 'kilava_octopus_remove',
+    time: [9, 12, 0],
+  },
+  {
     id: 'credits_or_deterioration_3_2',
     type: 'credits_or_deterioration_3',
     time: [10, 4, 0],
+  },
+  {
+    id: 'kilava_octopus_add_2',
+    type: 'kilava_octopus_add',
+    time: [11, 12, 0],
   },
   {
     id: 'time_flux_or_die',
@@ -69,15 +84,35 @@ export const timelineEvents: RawTimelineEventDefinition[] = [
     time: [12, 12, 0],
   },
   {
+    id: 'kilava_octopus_remove_2',
+    type: 'kilava_octopus_remove',
+    time: [13, 12, 0],
+  },
+  {
     id: 'credits_or_deterioration_4_1',
     type: 'credits_or_deterioration_4',
     time: [15, 6, 0],
     repeat: [2, 7, 0],
   },
   {
+    id: 'kilava_octopus_add_3',
+    type: 'kilava_octopus_add',
+    time: [19, 12, 0],
+  },
+  {
     id: 'credits_or_deterioration_4_2',
     type: 'credits_or_deterioration_4',
     time: [21, 6, 0],
     repeat: [1, 19, 0],
+  },
+  {
+    id: 'kilava_octopus_remove_3',
+    type: 'kilava_octopus_remove',
+    time: [22, 12, 0],
+  },
+  {
+    id: 'kilava_octopus_add_4',
+    type: 'kilava_octopus_add',
+    time: [26, 12, 0],
   },
 ];

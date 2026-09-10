@@ -442,11 +442,10 @@ onBeforeUnmount(() => {
   background: var(--panel-bg);
   border-radius: 8px;
   padding: 30px 16px 14px;
-  transition: background 0.15s, box-shadow 0.15s ease;
+  transition: box-shadow 0.15s ease;
 }
 
 .tm-recipe:hover {
-  background: rgba(255, 255, 255, 0.08);
   z-index: 10;
 }
 

@@ -25,7 +25,9 @@
     </template>
     <template v-else-if="bonus.reward.kind === 'refining_yield_pct_bonus'">
       <span class="bonus-number">{{ signed(bonus.reward.amount) }}%</span>
-      <span> refining yield</span>
+      <span v-if="yieldEssence" class="ess-icon" :style="essenceIconStyle(yieldEssence)" />
+      <span v-if="yieldEssence"> yield</span>
+      <span v-else> refining yield</span>
     </template>
     <template v-else-if="bonus.reward.kind === 'refining_success_chance_bonus'">
       <span class="bonus-number">{{ signed(bonus.reward.amount) }}%</span>
@@ -36,8 +38,9 @@
       <span> refining speed</span>
     </template>
     <template v-else-if="bonus.reward.kind === 'stat'">
-      <span v-if="bonus.reward.stat === 'waferChargeBonusMult'">
-        <span>Charge bonus </span>
+      <span v-if="bonus.reward.stat === 'waferChargeBonusMult'" class="bonus-stat">
+        <span class="ess-icon" :style="essenceIconStyle('white')" />
+        <span> charge</span>
         <span class="bonus-number">x{{ bonus.reward.value }}</span>
       </span>
       <span v-else-if="bonus.reward.stat === 'uniqueItemsBonusYield'">
@@ -54,16 +57,24 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { OracleBonusDefinition } from '../logic/OracleBonusLib';
 import atlasStorage from '../logic/AtlasStorage';
 import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
 import { getResourceSpec, type ResourceKey } from '../logic/Resources';
 
-defineProps<{
+const props = defineProps<{
   bonus: OracleBonusDefinition;
 }>();
 
 const atlasSource = atlasStorage.getItemsSource();
+
+const YIELD_BONUS_ESSENCE_BY_ID: Record<string, string> = {
+  cyan_yield: 'cyan',
+  magenta_yield: 'magenta',
+};
+
+const yieldEssence = computed(() => YIELD_BONUS_ESSENCE_BY_ID[props.bonus.id]);
 
 function signed(value: number): string {
   return value >= 0 ? `+${value}` : `${value}`;
@@ -104,6 +115,12 @@ function resourceIconStyle(resource: ResourceKey): Record<string, string> {
   color: rgba(255, 255, 255, 0.96);
   font-size: 14px;
   font-weight: 900;
+}
+
+.bonus-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .ess-icon {

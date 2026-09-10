@@ -186,7 +186,7 @@ const accumulatedPickupBonus = computed(() => {
   uiState.mazeMovementUsed;
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   uiState.mazeVersion;
-  return getGameState().maze.incrementalBonusCounter;
+  return { ...getGameState().maze.incrementalBonusCounters };
 });
 
 const pickupBonusPerPickup = computed(() => {

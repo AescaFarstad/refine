@@ -41,7 +41,7 @@
             @mouseenter="hoverUpgrade(entry, upgrade)"
             @mouseleave="unhoverUpgrade()"
           >
-            <div v-if="entry.maskLevel !== 'none' && !upgrade.purchased" :class="['xp-upgrade-mask', { 'has-title': upgrade.title && entry.maskLevel !== 'full' }]">?</div>
+            <div v-if="entry.maskLevel !== 'none' && !upgrade.purchased" class="xp-upgrade-mask">?</div>
             <div v-if="(upgrade.title && entry.maskLevel !== 'full') || (!upgrade.purchased && upgrade.skillPoints !== 0)" :class="['xp-upgrade-title', { 'xp-upgrade-title-cost': !upgrade.purchased && upgrade.skillPoints < 0, 'xp-upgrade-title-grant': !upgrade.purchased && upgrade.skillPoints > 0 }]">
               <span v-if="upgrade.title && entry.maskLevel !== 'full'">{{ upgrade.title }}</span>
               <span v-if="!upgrade.purchased && upgrade.skillPoints < 0" class="xp-upgrade-title-sp">- {{ skillPointsSpec.glyph }}</span>
@@ -509,6 +509,7 @@ function upgradeGear(gearId: string, upgradeId: string): void {
 
 .xp-upgrade-mask {
   position: absolute;
+  grid-row: 2;
   inset: 0;
   display: grid;
   place-items: center;
@@ -520,12 +521,9 @@ function upgradeGear(gearId: string, upgradeId: string): void {
   z-index: 1;
 }
 
-.xp-upgrade-mask.has-title {
-  top: 25px;
-}
-
 .xp-upgrade-title {
   grid-column: 1 / -1;
+  grid-row: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -555,6 +553,7 @@ function upgradeGear(gearId: string, upgradeId: string): void {
 }
 
 .xp-upgrade-content {
+  grid-row: 2;
   display: flex;
   flex-direction: column;
   gap: 6px;

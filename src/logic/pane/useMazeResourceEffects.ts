@@ -370,7 +370,7 @@ export function useMazeResourceEffects(
       s => s.cell.x === targetCell.x && s.cell.y === targetCell.y,
     );
     if (spawn) {
-      const bonusAmount = getMazeNextIncrementalPickupBonus(gs);
+      const bonusAmount = getMazeNextIncrementalPickupBonus(gs, spawn.resourceKey);
       if (bonusAmount > 0) {
         spawnPickupAt(targetCell, spawn, 0, -PICKUP_PAIR_OFFSET_X);
         spawnPickupResourceAmountAt(targetCell, spawn.resourceKey, bonusAmount, 0, PICKUP_PAIR_OFFSET_X);

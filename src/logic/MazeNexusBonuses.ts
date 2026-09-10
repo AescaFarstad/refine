@@ -538,7 +538,9 @@ export function refundMazeNexusPanelPurchase(gs: GameState, itemId: string, coun
       throw new Error(`Negative incremental pickup bonus while refunding "${itemId}"`);
     }
     if (gs.mazeIncrementalBonusPerPickup === 0) {
-      gs.maze.incrementalBonusCounter = 0;
+      for (const key of Object.keys(gs.maze.incrementalBonusCounters) as MazeResourceSpawn['resourceKey'][]) {
+        gs.maze.incrementalBonusCounters[key] = 0;
+      }
     }
     return;
   }
@@ -548,15 +550,15 @@ export function refundMazeNexusPanelPurchase(gs: GameState, itemId: string, coun
   }
 }
 
-export function getMazeNextIncrementalPickupBonus(gs: ReadonlyGameState): number {
+export function getMazeNextIncrementalPickupBonus(gs: ReadonlyGameState, resourceKey: MazeResourceSpawn['resourceKey']): number {
   if (gs.mazeIncrementalBonusPerPickup <= 0) return 0;
-  return gs.maze.incrementalBonusCounter;
+  return gs.maze.incrementalBonusCounters[resourceKey];
 }
 
 export function grantMazeIncrementalPickupBonus(gs: GameState, resourceKey: MazeResourceSpawn['resourceKey']): number {
   if (gs.mazeIncrementalBonusPerPickup <= 0) return 0;
 
-  const bonusAmount = gs.maze.incrementalBonusCounter;
+  const bonusAmount = gs.maze.incrementalBonusCounters[resourceKey];
 
   switch (resourceKey) {
     case 'credits':
@@ -582,6 +584,6 @@ export function grantMazeIncrementalPickupBonus(gs: GameState, resourceKey: Maze
       break;
   }
 
-  gs.maze.incrementalBonusCounter += gs.mazeIncrementalBonusPerPickup;
+  gs.maze.incrementalBonusCounters[resourceKey] += gs.mazeIncrementalBonusPerPickup;
   return bonusAmount;
 }

@@ -86,7 +86,7 @@ export const COLOR_CHANGER_TARGET: Record<string, string> = {
     gold: 'yellow',
 };
 
-const DIRECT_COUNT_ESSENCES = new Set(['red', 'green', 'blue', 'cyan', 'magenta']);
+const DIRECT_COUNT_ESSENCES = new Set(['red', 'green', 'blue', 'cyan', 'magenta', 'white', 'black']);
 
 export interface ColorChangeAffectedCell {
     x: number;
@@ -417,11 +417,9 @@ function computeEffectiveEssenceTotals(wafer: ReadonlyWafer, yellowNeighborBonus
         effectiveTotals[effEssence] = (effectiveTotals[effEssence] || 0) + 1;
     }
 
-    effectiveTotals.red = 0;
-    effectiveTotals.green = 0;
-    effectiveTotals.blue = 0;
-    effectiveTotals.cyan = 0;
-    effectiveTotals.magenta = 0;
+    for (const essence of DIRECT_COUNT_ESSENCES) {
+        effectiveTotals[essence] = 0;
+    }
 
     const redBonus = effectiveTotals.red_s || 0;
     const greenBonus = effectiveTotals.green_s || 0;

@@ -125,8 +125,17 @@
       </div>
       <div v-if="showAccumulatedBonusPanel" class="maze-panel panel-center accumulated-bonus-panel">
         <span>Bonus on resource pick-up:</span>
-        <span class="accumulated-bonus-value">{{ props.accumulatedPickupBonus }}</span>
-        <span class="accumulated-bonus-growth">(+{{ props.pickupBonusPerPickup }} per pick-up)</span>
+        <span
+          v-for="entry in accumulatedBonusEntries"
+          :key="entry.key"
+          class="resource-chip accumulated-bonus-value"
+          :style="resourceChipStyle(entry.key)"
+        >
+          +{{ entry.amount }}
+          <span v-if="entry.spec.iconImage.length === 0">{{ entry.spec.glyph }}</span>
+          <span v-else class="resource-chip-icon" :style="resourceChipIconStyle(entry.key)" />
+        </span>
+        <span class="accumulated-bonus-growth">(+{{ props.pickupBonusPerPickup }} per pick-up of the same type)</span>
       </div>
 
       <div v-if="showResetBanner" class="maze-panel panel-center reset-banner" :class="{ 'banner-fading': bannerFading }">
@@ -185,7 +194,7 @@ const props = defineProps<{
   hoverPathCost: number;
   isHoveringEntrance: boolean;
   highMovementUsed: number;
-  accumulatedPickupBonus: number;
+  accumulatedPickupBonus: MazeResourceTotals;
   pickupBonusPerPickup: number;
   nexusMenuVisible: boolean;
   transmutationMenuVisible: boolean;
@@ -246,7 +255,8 @@ const highEntryRows = computed(() => buildEntryRows(highEntries.value).filter((r
 const hasAttemptResources = computed(() => attemptEntries.value.some((entry) => entry.amount > 0));
 const hasAnyHighResources = computed(() => highEntries.value.some((entry) => entry.amount > 0));
 const showLeftPanel = computed(() => hasAttemptResources.value || hasAnyHighResources.value || props.highMovementUsed > 0);
-const showAccumulatedBonusPanel = computed(() => props.accumulatedPickupBonus > 0);
+const accumulatedBonusEntries = computed(() => buildEntries(props.accumulatedPickupBonus).filter(entry => entry.amount > 0));
+const showAccumulatedBonusPanel = computed(() => accumulatedBonusEntries.value.length > 0);
 const depositPreviewEntries = computed<ResourceEntry[]>(() => MAZE_RESOURCE_KEYS
   .map((key) => ({
     key,

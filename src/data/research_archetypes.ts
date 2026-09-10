@@ -146,7 +146,10 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     title: 'Monochrome inversion',
     description: 'White and black essences swap both their refining effects and their gear yields.',
     icon: { kind: 'glyph', glyph: '⇄', scale: 1.4, offset: { x: 0, y: 0 } },
-    rewards: [{ kind: 'discovery', discoveryId: DISCOVERY.WHITE_BLACK_ESSENCE_SWAP }],
+    rewards: [
+      { kind: 'discovery', discoveryId: DISCOVERY.WHITE_BLACK_ESSENCE_SWAP },
+      { kind: 'discovery', discoveryId: DISCOVERY.ESSENCE_RESEARCH_KNOWLEDGE },
+    ],
   },
   disc_essence_anomaly_red: {
     type: 'refining',
@@ -158,7 +161,10 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     icon: { kind: 'glyph', glyph: '?', scale: 2.2, offset: { x: 0, y: 8 }},
     ownedIcon: { kind: 'itemImage', key: 'red', scale: 1.3, offset: { x: 0, y: 4 } },
     revealedIcon: { kind: 'itemImage', key: 'red', scale: 1.3, offset: { x: 0, y: 4 } },
-    rewards: [{ kind: 'refining_red_essence_resource_bonus', amount: 1 }],
+    rewards: [
+      { kind: 'refining_red_essence_resource_bonus', amount: 1 },
+      { kind: 'discovery', discoveryId: DISCOVERY.ESSENCE_RESEARCH_KNOWLEDGE },
+    ],
   },
   disc_essence_anomaly_green: {
     type: 'refining',
@@ -170,7 +176,10 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     icon: { kind: 'glyph', glyph: '?', scale: 2.2, offset: { x: 0, y: 8 }},
     ownedIcon: { kind: 'itemImage', key: 'green', scale: 1.3, offset: { x: 0, y: 4 } },
     revealedIcon: { kind: 'itemImage', key: 'green', scale: 1.3, offset: { x: 0, y: 4 } },
-    rewards: [{ kind: 'refining_green_essence_resource_bonus', amount: 1 }],
+    rewards: [
+      { kind: 'refining_green_essence_resource_bonus', amount: 1 },
+      { kind: 'discovery', discoveryId: DISCOVERY.ESSENCE_RESEARCH_KNOWLEDGE },
+    ],
   },
   disc_essence_anomaly_blue: {
     type: 'refining',
@@ -182,7 +191,10 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     icon: { kind: 'glyph', glyph: '?', scale: 2.2, offset: { x: 0, y: 8 }},
     ownedIcon: { kind: 'itemImage', key: 'blue', scale: 1.3, offset: { x: 0, y: 4 } },
     revealedIcon: { kind: 'itemImage', key: 'blue', scale: 1.3, offset: { x: 0, y: 4 } },
-    rewards: [{ kind: 'refining_blue_essence_resource_bonus', amount: 1 }],
+    rewards: [
+      { kind: 'refining_blue_essence_resource_bonus', amount: 1 },
+      { kind: 'discovery', discoveryId: DISCOVERY.ESSENCE_RESEARCH_KNOWLEDGE },
+    ],
   },
   disc_essence_anomaly_yellow: {
     type: 'refining',
@@ -194,7 +206,10 @@ export const researchArchetypes: Record<string, ResearchArchetypeDef> = {
     icon: { kind: 'glyph', glyph: '?', scale: 2.2, offset: { x: 0, y: 8 }},
     ownedIcon: { kind: 'itemImage', key: 'yellow', scale: 1.3, offset: { x: 0, y: 4 } },
     revealedIcon: { kind: 'itemImage', key: 'yellow', scale: 1.3, offset: { x: 0, y: 4 } },
-    rewards: [{ kind: 'refining_yellow_neighbor_bonus', amount: 1 }],
+    rewards: [
+      { kind: 'refining_yellow_neighbor_bonus', amount: 1 },
+      { kind: 'discovery', discoveryId: DISCOVERY.ESSENCE_RESEARCH_KNOWLEDGE },
+    ],
   },
   disc_gear_xp: {
     type: 'discovery',

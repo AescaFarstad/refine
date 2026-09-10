@@ -1,5 +1,5 @@
 <template>
-  <div class="panel all-items" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
+  <div class="panel all-items">
     <div v-if="!hideSortingUi" class="essence-header" :class="{ reserved: essenceKeys.length === 0 }" :aria-hidden="essenceKeys.length === 0">
       <button
         class="essence-btn raid-sort-btn"
@@ -19,6 +19,7 @@
         class="essence-btn"
         type="button"
         :aria-pressed="activeSort === k"
+        :aria-label="`Sort by ${k} essence`"
         @click="onSortBy(k)"
       >
         <span class="row-top">
@@ -39,6 +40,8 @@
         class="raid-btn"
         :class="{ active: activeRaidFilter === raid.id }"
         :title="`${raid.name} (${raid.id})`"
+        :aria-label="raid.name"
+        :aria-pressed="activeRaidFilter === raid.id"
         @click="emit('raid-filter', raid.id)"
       >
         {{ raid.order + 1 }}
@@ -51,14 +54,9 @@
         v-else
         :items="sortedItems"
         :dim-ids="dimIds"
-        :draggable-ids="draggableIds"
-        :show-molecule="isHovering"
-        :show-rarity-labels="showRarityLabel"
-        :rarity-labels="rarityLabelsMap"
-        :show-scores="showScores"
         :show-volumes="showVolumes"
         :show-essences="false"
-        clickable
+        :clickable="clickable"
         draggable
         no-tooltip
         @item-click="onPick"
@@ -77,17 +75,14 @@ import EssenceCheatSheet from './EssenceCheatSheet.vue';
 import { uiState } from '../logic/UIState';
 import atlasStorage from '../logic/AtlasStorage';
 import { atlasSpriteStyle } from '../logic/AtlasSpriteStyle';
-import type { ItemDefinition } from '../logic/ItemLib';
 
 const props = defineProps<{
   items: Array<{ id: string; quantity: number }>;
+  clickable?: boolean;
   requiredEssences?: Record<string, number>;
-  copyIdOnClick?: boolean;
   raidFilterMode?: boolean;
   availableRaids?: Array<{ id: string; name: string; order: number }>;
   activeRaidFilter?: string | null;
-  showRarityLabel?: boolean;
-  showScores?: boolean;
   showVolumes?: boolean;
   hideSortingUi?: boolean;
   useCustomGridContent?: boolean;
@@ -97,16 +92,6 @@ const emit = defineEmits<{
   (e: 'drag-end'): void;
   (e: 'raid-filter', raidId: string | null): void;
 }>();
-
-const isHovering = ref(false);
-
-function onMouseEnter() {
-  isHovering.value = true;
-}
-
-function onMouseLeave() {
-  isHovering.value = false;
-}
 
 // Atlas state for essence icons - pre-loaded at app start
 const source = atlasStorage.getItemsSource();
@@ -153,9 +138,9 @@ function essenceInItem(itemId: string, k: string): number {
 }
 
 const sortedItems = computed(() => {
-  const list = [...(props.items || [])];
   const k = activeSort.value;
-  if (!k || !uiState.lib) return list;
+  if (!k || !uiState.lib) return props.items;
+  const list = [...props.items];
 
   if (k === '#') {
     return list.sort((a, b) => {
@@ -170,14 +155,14 @@ const sortedItems = computed(() => {
     const bv = essenceInItem(b.id, k);
     if (av !== bv) return bv - av; // descending
     // Tie-breaker: larger quantity first, then id
-    if ((b.quantity || 0) !== (a.quantity || 0)) return (b.quantity || 0) - (a.quantity || 0);
-    return String(a.id).localeCompare(String(b.id));
+    if (b.quantity !== a.quantity) return b.quantity - a.quantity;
+    return a.id.localeCompare(b.id);
   });
 });
 
 // Dimming logic based on selected recipe's required essences
 const requiredKeys = computed<string[]>(() => {
-  const ing = (props.requiredEssences || {}) as Record<string, number>;
+  const ing = props.requiredEssences ?? {};
   return Object.keys(ing).filter(k => (ing[k] || 0) > 0);
 });
 
@@ -185,22 +170,9 @@ const dimIds = computed<Record<string, boolean>>(() => {
   const out: Record<string, boolean> = {};
   const req = requiredKeys.value;
   if (!req.length) return out; // nothing to dim
-  for (const it of props.items || []) {
+  for (const it of props.items) {
     const hasAny = req.some(k => essenceInItem(it.id, k) > 0);
     if (!hasAny) out[it.id] = true;
-  }
-  return out;
-});
-
-const draggableIds = computed<Record<string, boolean>>(() => {
-  const out: Record<string, boolean> = {};
-  if (!uiState.lib) return out;
-
-  for (const it of props.items || []) {
-    const def = uiState.lib.getItem(it.id);
-    if (def.molecule) {
-      out[it.id] = true;
-    }
   }
   return out;
 });
@@ -209,36 +181,19 @@ function onSortBy(k: string) {
   activeSort.value = k;
 }
 
-async function onPick(id: string) {
-  const it = props.items?.find(x => x.id === id);
-  if (!it || (it.quantity || 0) <= 0) return;
-
-  if (props.copyIdOnClick) {
-    if (navigator.clipboard && navigator.clipboard.writeText)
-      await navigator.clipboard.writeText(id);
-  }
+function onPick(id: string) {
+  const it = props.items.find(x => x.id === id);
+  if (!it || it.quantity <= 0) return;
 
   emit('pick-item', id);
 }
 
-const rarityLabelsMap = computed<Record<string, string>>(() => {
-  if (!props.showRarityLabel || !uiState.lib) return {};
-  const labels: Record<string, string> = {};
-
-  for (const item of sortedItems.value) {
-    const def = uiState.lib.getItem(item.id);
-    labels[item.id] = def.rarity.toUpperCase();
-  }
-
-  return labels;
-});
 </script>
 
 <style scoped>
 .all-items { height: 100%; display: flex; flex-direction: column; }
-.header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
-h3 { margin: 0; font-size: 16px; letter-spacing: 0.04em; }
-.count { font-size: 12px; opacity: 0.8; }
+/* Inherited by both grid layers; hovering never invalidates the item render. */
+.all-items:hover { --item-grid-molecule-opacity: 1; --item-grid-base-opacity: 0.18; }
 .essence-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; min-height: 22px; flex-wrap: wrap; }
 .essence-header.reserved { visibility: hidden; }
 .essence-btn { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; padding: 2px 4px; border-radius: 4px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.03); color: inherit; font-size: 12px; font-weight: 800; cursor: pointer; white-space: nowrap; }

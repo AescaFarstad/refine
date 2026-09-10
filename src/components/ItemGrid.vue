@@ -1,5 +1,5 @@
 <template>
-  <div class="item-grid-wrap" :class="{ 'molecules-visible': showMolecule }" :style="moleculeAtlasVars">
+  <div class="item-grid-wrap" :style="moleculeAtlasVars">
     <div class="item-grid base-grid" :class="{ minor, clickable }">
       <div
         v-for="it in items"
@@ -35,7 +35,6 @@ import { onMounted, onUnmounted } from 'vue';
 import ItemDisplay from './ItemDisplay.vue';
 import itemsData from '../data/items';
 import { startManualDrag, ManualDragEvents } from '../logic/ManualDrag';
-import type { ItemDefinition } from '../logic/ItemLib';
 import atlasStorage from '../logic/AtlasStorage';
 
 const props = defineProps<{
@@ -43,14 +42,9 @@ const props = defineProps<{
   minor?: boolean;
   clickable?: boolean;
   draggable?: boolean;
-  draggableIds?: Record<string, boolean>;
   dimIds?: Record<string, boolean>;
   highlightIds?: Record<string, boolean>;
-  showMolecule?: boolean;
   noTooltip?: boolean;
-  showRarityLabels?: boolean;
-  rarityLabels?: Record<string, string>;
-  showScores?: boolean;
   showVolumes?: boolean;
   showEssences?: boolean;
 }>();
@@ -66,7 +60,7 @@ const moleculesSource = atlasStorage.getMoleculesSource()!;
 const moleculeAtlasVars = {
   '--mol-atlas': `url(${moleculesSource.src})`,
   '--mol-atlas-size': `${moleculesSource.naturalWidth}px ${moleculesSource.naturalHeight}px`,
-} as Record<string, string>;
+};
 
 function hasMolecule(id: string): boolean {
   return !!atlasStorage.getMoleculesFrame(`mol:${id}`);
@@ -76,16 +70,7 @@ function moleculeSpriteStyle(id: string): Record<string, string> {
   const f = atlasStorage.getMoleculesFrame(`mol:${id}`)!;
   return {
     backgroundPosition: `-${f.x}px -${f.y}px`,
-  } as Record<string, string>;
-}
-
-// Drag image handled centrally via RefineUIBehaviour
-
-
-
-function isItemDraggable(id: string): boolean {
-  if (!props.draggableIds) return true;
-  return !!props.draggableIds[id];
+  };
 }
 
 function onItemClick(id: string) {
@@ -103,7 +88,7 @@ function onPointerDown(id: string, event: PointerEvent) {
   // Prevent native drag/select behavior
   event.preventDefault();
 
-  const itemDef = (itemsData as Record<string, ItemDefinition>)[id]!;
+  const itemDef = itemsData[id]!;
   const molecule = itemDef.molecule;
 
   // Kick off manual drag follower
@@ -117,11 +102,11 @@ function onManualDragEnd(_e: Event) {
 }
 
 onMounted(() => {
-  window.addEventListener(ManualDragEvents.End, onManualDragEnd as any);
+  window.addEventListener(ManualDragEvents.End, onManualDragEnd);
 });
 
 onUnmounted(() => {
-  window.removeEventListener(ManualDragEvents.End, onManualDragEnd as any);
+  window.removeEventListener(ManualDragEvents.End, onManualDragEnd);
 });
 </script>
 
@@ -138,8 +123,11 @@ onUnmounted(() => {
   grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
   gap: 6px;
 }
+.base-grid {
+  opacity: var(--item-grid-base-opacity, 1);
+}
 .base-grid.minor {
-  opacity: 0.85;
+  opacity: var(--item-grid-base-opacity, 0.85);
 }
 .grid-item { position: relative; }
 .grid-item.clickable { cursor: pointer; }
@@ -161,15 +149,8 @@ onUnmounted(() => {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0;
+  opacity: var(--item-grid-molecule-opacity, 0);
   transition: opacity 0.05s ease;
-}
-.item-grid-wrap.molecules-visible .molecule-grid {
-  opacity: 1;
-}
-
-.item-grid-wrap.molecules-visible .base-grid {
-  opacity: 0.18;
 }
 
 .mol-sprite {

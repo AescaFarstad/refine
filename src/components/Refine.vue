@@ -1,8 +1,8 @@
 <template>
-  <div class="refine-root" @contextmenu="onContextMenu">
+  <div class="refine-root" :class="{ 'drag-active': draggingItem !== null }" @contextmenu="onContextMenu">
     <div class="main-split">
       <div class="items-bg">
-        <AllItems :items="availableItems" @pick-item="onPickItem" @drag-end="onDragEnd" />
+        <AllItems :items="uiState.items" @pick-item="onPickItem" @drag-end="onDragEnd" />
       </div>
       <div class="center">
         <Wafer
@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import { uiState } from '../logic/UIState';
 import Wafer from './Wafer.vue';
 import AllItems from './AllItems.vue';
@@ -29,13 +29,6 @@ import { globalInputQueue } from '../logic/Model';
 
 const draggingItem = ref<{ id: string; molecule: Molecule; rotation: number } | null>(null);
 const waferRef = ref<InstanceType<typeof Wafer> | null>(null);
-
-const availableItems = computed(() => {
-  return uiState.items.map(it => ({
-    id: it.id,
-    quantity: it.quantity,
-  }));
-});
 
 function onPickItem(id: string) {
   const itemDef = getGameLib().getItem(id);
@@ -79,6 +72,19 @@ function onContextMenu(e: MouseEvent) {
 <style scoped>
 .refine-root { display: flex; flex-direction: column; gap: 14px; padding: 12px; }
 .refine-root :deep(.panel) { background: transparent !important; box-shadow: none !important; border: none !important; }
+
+/* Outlines hint at the source and destination without shifting either panel. */
+.items-bg,
+.refine-root :deep(.wafer-view) {
+  outline: 1px solid transparent;
+  outline-offset: 2px;
+  transition: outline-color 120ms ease;
+}
+
+.drag-active .items-bg,
+.drag-active :deep(.wafer-view) {
+  outline-color: rgba(79, 209, 197, 0.35);
+}
 
 .main-split {
   display: flex;

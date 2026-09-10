@@ -489,7 +489,15 @@ export function SyncUIFromGameState(game: GameState): void {
       refinery.failureChancePct = preview.failureChancePct;
     }
     uiState.refinery = refinery;
-    uiState.items = Object.entries(game.items).map(([id, quantity]) => ({ id, quantity }));
+    const itemIds = Object.keys(game.items);
+    // Keep inventory consumers cached when only unrelated game state changed.
+    const inventoryChanged = itemIds.length !== uiState.items.length || itemIds.some((id, index) => {
+      const item = uiState.items[index];
+      return item.id !== id || item.quantity !== game.items[id];
+    });
+    if (inventoryChanged) {
+      uiState.items = itemIds.map(id => ({ id, quantity: game.items[id] }));
+    }
     {
       const hasUniqueItemsYield = game.uniqueItemsBonusYield > 0;
       const refinedUniqueCount = Object.keys(game.refinedUniqueItemIds).length;

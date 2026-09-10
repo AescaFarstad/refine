@@ -3,14 +3,12 @@
     <div class="editor-body">
       <div class="items-panel">
         <AllItems
+          clickable
           :items="filteredItems"
-          :copy-id-on-click="true"
           :raid-filter-mode="true"
-          :show-scores="true"
           :show-volumes="true"
           :available-raids="availableRaids"
           :active-raid-filter="activeRaidFilter"
-          :show-rarity-label="true"
           :hide-sorting-ui="true"
           :use-custom-grid-content="showSignatures"
           @pick-item="onPickItem"
@@ -276,7 +274,16 @@ const hoverCoords = computed(() => {
   return `Hex: ${p.x}, ${p.y}`;
 });
 
+async function copyItemId(id: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(id);
+  } catch (error) {
+    console.error('Failed to copy developer item ID:', error);
+  }
+}
+
 function onPickItem(id: string) {
+  void copyItemId(id);
   if (giveMode.value) {
     giveItem(id);
     return;

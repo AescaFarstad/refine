@@ -12,8 +12,6 @@ import type { Reward } from './Reward';
 import { Perks } from './Perks';
 import { buildEffectiveGearForId, cacheActiveRaidEffectiveGear, getCachedActiveRaidGear } from './GearUpgrades';
 import { getEffectiveLootVolume } from './LootVolume';
-import { discover } from './Discover';
-import { DISCOVERY } from './DiscoveryLib';
 import { applySignedHpRegen } from './Regen';
 
 export interface RaidRunResult {
@@ -558,9 +556,6 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
         raid.usedVolume = volumeAfter;
         if (!dryRun) {
           raidEntry.uncollectedCredits = afterStored;
-          if (creditsCollected > 0) {
-            discover(gsForRun, DISCOVERY.UI_RAID_RESOURCES_COLLECTED);
-          }
         }
         gatheredCredits += creditsCollected;
 

@@ -90,10 +90,6 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
 
   const result = runRaid(gs, def, false, c.materializationItemId);
 
-  if (result.reimbursedCredits) {
-    gs.credits += result.reimbursedCredits;
-  }
-
   const raidEntry = gs.unlockedRaids.find(r => r.id === c.id)!;
   const loadoutPassiveCreditsPerHour = getLoadoutPassiveCreditsPerHour(gs, c.id);
   const loadoutResourceStorageBonus = getLoadoutResourceStorageBonus(gs, c.id);
@@ -143,42 +139,6 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
     }
   }
 
-  let newlyUpgradableGearIds: string[] = [];
-  if (result.success) {
-    if (hasDiscovered(gs, DISCOVERY.GEAR_XP)) {
-      const pendingUpgradeCountsBefore: Record<string, number> = {};
-      for (const gearId of successfulRaidGearIds) {
-        if (pendingUpgradeCountsBefore[gearId] !== undefined) continue;
-        pendingUpgradeCountsBefore[gearId] = getPendingGearUpgradeCount(gs, gearId);
-      }
-      addGearXp(gs, successfulRaidGearIds, 1);
-      const seenNewlyUpgradable = new Set<string>();
-      for (const gearId of successfulRaidGearIds) {
-        if (seenNewlyUpgradable.has(gearId)) continue;
-        if (getPendingGearUpgradeCount(gs, gearId) <= pendingUpgradeCountsBefore[gearId]) continue;
-        seenNewlyUpgradable.add(gearId);
-        newlyUpgradableGearIds.push(gearId);
-      }
-    }
-
-    let hasLootedItems = false;
-    for (const [id, qty] of Object.entries(result.bagItemCounts)) {
-      const q = qty | 0;
-      if (q <= 0) continue;
-      hasLootedItems = true;
-      const essence = gs.lib.getItem(id).essence;
-      for (const [k, v] of Object.entries(essence)) {
-        if (!v) continue;
-        gs.encounteredEssences[k] = true;
-      }
-      const prevQty = gs.items[id] ?? 0;
-      gs.items[id] = prevQty + q;
-    }
-    if (hasLootedItems) {
-      discoverRefineTab(gs);
-    }
-  }
-
   let zoneChange: { label: string; value: string } | null = null;
   if (result.success && !gs.raid.preventsSuccessZoneDeterioration) {
     const chosen = pickAndApplyRaidSuccessMutation(gs, c.id);
@@ -212,7 +172,8 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
     raidItemsAdded: result.raidItemsAdded,
     lootChanceDeltaApplied: result.lootChanceDeltaApplied,
     lootingRarityBuffDeltaApplied: result.lootingRarityBuffDeltaApplied,
-    newlyUpgradableGearIds: result.success ? newlyUpgradableGearIds : [],
+    gearIdsForXp: result.success && hasDiscovered(gs, DISCOVERY.GEAR_XP) ? successfulRaidGearIds : [],
+    newlyUpgradableGearIds: [],
     newQuestsAvailable,
     zoneChange,
     finalHp: gs.raid.hp,
@@ -223,7 +184,6 @@ handlersByName.set('CmdStartRaid', (gs, cmd) => {
     reimbursedCredits: result.reimbursedCredits || 0,
     zoneCollapseSec: def.zoneCollapseSec,
   };
-  gs.gameNotifs.push(new NotifRaidComplete({ outcome: gs.lastRaidOutcome }));
 
   recomputeActiveRaidParams(gs, c.id);
   recomputeActiveRaidEstimates(gs, 100);
@@ -234,33 +194,70 @@ handlersByName.set('CmdStartRefining', (gs, cmd) => {
   startRefining(gs);
 });
 
-handlersByName.set('CmdAcknowledgeOutcome', (gs, cmd) => {
-  // Safety net
-  if (gs.lastRaidOutcome && !gs.lastRaidOutcome.rewardsConsumed) {
-    const outcome = gs.lastRaidOutcome;
-    const raidId = outcome.id;
-    const raidEntry = gs.unlockedRaids.find(r => r.id === raidId);
-    for (const reward of outcome.rewardsApplied) {
-      applyReward(gs, reward, { activeRaidId: raidId, raidEntry });
+// Apply player-facing raid rewards only once the outcome summary is revealed.
+function consumeOutcomeRewards(gs: GameState): void {
+  const outcome = gs.lastRaidOutcome;
+  if (!outcome || outcome.rewardsConsumed) return;
+
+  if (outcome.success) {
+    if (outcome.gearIdsForXp.length > 0) {
+      const pendingUpgradeCountsBefore: Record<string, number> = {};
+      for (const gearId of outcome.gearIdsForXp) {
+        if (pendingUpgradeCountsBefore[gearId] !== undefined) continue;
+        pendingUpgradeCountsBefore[gearId] = getPendingGearUpgradeCount(gs, gearId);
+      }
+      addGearXp(gs, outcome.gearIdsForXp, 1);
+      const seenNewlyUpgradable = new Set<string>();
+      for (const gearId of outcome.gearIdsForXp) {
+        if (seenNewlyUpgradable.has(gearId)) continue;
+        if (getPendingGearUpgradeCount(gs, gearId) <= pendingUpgradeCountsBefore[gearId]) continue;
+        seenNewlyUpgradable.add(gearId);
+        outcome.newlyUpgradableGearIds.push(gearId);
+      }
     }
-    outcome.rewardsConsumed = true;
+
+    let hasLootedItems = false;
+    for (const { id, quantity: qty } of outcome.looted) {
+      const q = qty | 0;
+      if (q <= 0) continue;
+      hasLootedItems = true;
+      const essence = gs.lib.getItem(id).essence;
+      for (const [k, v] of Object.entries(essence)) {
+        if (!v) continue;
+        gs.encounteredEssences[k] = true;
+      }
+      const prevQty = gs.items[id] ?? 0;
+      gs.items[id] = prevQty + q;
+    }
+    if (hasLootedItems) {
+      discoverRefineTab(gs);
+    }
   }
+
+  gs.credits += outcome.reimbursedCredits;
+  if (outcome.log.entries.some(entry => entry.kind === 'ResourcesEncounter' && entry.creditsCollected > 0)) {
+    discover(gs, DISCOVERY.UI_RAID_RESOURCES_COLLECTED);
+  }
+
+  const raidId = outcome.id;
+  const raidEntry = gs.unlockedRaids.find(r => r.id === raidId)!;
+  for (const reward of outcome.rewardsApplied) {
+    applyReward(gs, reward, { activeRaidId: raidId, raidEntry });
+  }
+  outcome.rewardsConsumed = true;
+  gs.gameNotifs.push(new NotifRaidComplete({ outcome }));
+  gs.dirty = true;
+}
+
+handlersByName.set('CmdAcknowledgeOutcome', (gs, cmd) => {
+  consumeOutcomeRewards(gs);
   gs.acknowledgedRaidOutcome = gs.lastRaidOutcome;
   gs.lastRaidOutcome = null;
   gs.dirty = true;
 });
 
 handlersByName.set('CmdConsumeOutcomeRewards', (gs, cmd) => {
-  const outcome = gs.lastRaidOutcome;
-  if (!outcome || outcome.rewardsConsumed) return;
-
-  const raidId = outcome.id;
-  const raidEntry = gs.unlockedRaids.find(r => r.id === raidId);
-  for (const reward of outcome.rewardsApplied) {
-    applyReward(gs, reward, { activeRaidId: raidId, raidEntry });
-  }
-  outcome.rewardsConsumed = true;
-  gs.dirty = true;
+  consumeOutcomeRewards(gs);
 });
 
 handlersByName.set('CmdAcknowledgeSignatureLearn', (gs, cmd) => {

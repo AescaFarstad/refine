@@ -222,7 +222,11 @@ watch(timeBarFlashingCondition, (shouldFlash) => {
 
 const newQuestsAvailableCount = computed(() => outcome.value.newQuestsAvailable.length);
 const gainedItemsCount = computed(() => outcome.value.looted.filter(it => it.quantity > 0).length);
-const firstNewlyUpgradableGearId = computed(() => outcome.value.newlyUpgradableGearIds[0] ?? '');
+const firstNewlyUpgradableGearId = computed(() => {
+  // XP is synced after the summary reveals and consumes the outcome rewards.
+  uiState.gearXpById;
+  return outcome.value.newlyUpgradableGearIds[0] ?? '';
+});
 const canUpgradeGearFromOutcome = computed(() => !readonlyView.value && timelineComplete.value && firstNewlyUpgradableGearId.value !== '');
 
 function clearFlashTimeouts() {
@@ -280,6 +284,10 @@ const raidAgainDisabledReason = computed(() => raidAgainApi?.raidAgainDisabledRe
 function closeModal() {
   if (readonlyView.value) {
     emit('close');
+    return;
+  }
+  if (!timelineComplete.value) {
+    fastForward();
     return;
   }
   globalInputQueue.push(new CmdAcknowledgeOutcome());

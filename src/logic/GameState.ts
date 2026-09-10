@@ -290,6 +290,7 @@ export class RaidOutcome {
   public raidItemsAdded: string[] = [];
   public lootChanceDeltaApplied: number = 0;
   public lootingRarityBuffDeltaApplied: number = 0;
+  public gearIdsForXp: string[] = [];
   public newlyUpgradableGearIds: string[] = [];
   public newQuestsAvailable: string[] = [];
   public zoneChange: MutationDescription | null = null;

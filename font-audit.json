@@ -1,0 +1,1087 @@
+{
+  "snapshots": [
+    {
+      "url": "http://localhost:5175/",
+      "capturedAt": "2026-09-11T19:36:03.526Z"
+    },
+    {
+      "url": "http://localhost:5175/?cheat&nosave",
+      "capturedAt": "2026-09-11T19:39:13.499Z"
+    },
+    {
+      "url": "http://localhost:5175/?cheat&nosave",
+      "capturedAt": "2026-09-11T19:39:24.265Z"
+    },
+    {
+      "url": "http://localhost:5175/?cheat&nosave",
+      "capturedAt": "2026-09-11T19:39:50.019Z"
+    },
+    {
+      "url": "http://localhost:5175/?cheat&nosave",
+      "capturedAt": "2026-09-11T19:40:07.521Z"
+    }
+  ],
+  "fonts": [
+    {
+      "family": "Arial",
+      "postScriptName": "Arial-BoldMT",
+      "source": "system",
+      "usages": [
+        {
+          "weight": "600",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "span.tab-title"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "span.label"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "span.chevron"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "button.btn.primary"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "span.highlight-glyph"
+        },
+        {
+          "weight": "600",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "button.btn"
+        },
+        {
+          "weight": "600",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "button.btn.mode-btn"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "button.btn.radius-btn"
+        },
+        {
+          "weight": "600",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "button.btn.btn-small"
+        },
+        {
+          "weight": "600",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "button.btn.btn-small.save-btn"
+        },
+        {
+          "weight": "600",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "span.archetype-label"
+        },
+        {
+          "weight": "600",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "span.archetype-icon"
+        },
+        {
+          "weight": "900",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "span.ess-letter14"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "span.sort-arrow"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "span.ess-total"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "button.start-btn"
+        },
+        {
+          "weight": "900",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "button.upgrade-btn.upgrade-btn-overlay.hover-only"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "div.g-name"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "span.g-weight-num"
+        },
+        {
+          "weight": "900",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "div.g-price"
+        },
+        {
+          "weight": "900",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "div.g-count"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "button.deploy-btn"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "button.btn.green"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "button.btn.primary"
+        }
+      ]
+    },
+    {
+      "family": "Arial",
+      "postScriptName": "ArialMT",
+      "source": "system",
+      "usages": [
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "span.tab-label"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "button.reset-btn"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "button.trigger"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.hp-their"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.note-row.regen-note"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.hp-your"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.note-row.time-regen-note"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.walk-row.time-regen"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.note-row.time-regen"
+        }
+      ]
+    },
+    {
+      "family": "DejaVu Sans",
+      "postScriptName": "DejaVuSans",
+      "source": "system",
+      "usages": [
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.value"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace",
+          "element": "span.tab-value"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.movement-value"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.movement-value.movement-pool-value"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.maze-panel.panel-center.movement-cost-panel.is-hidden"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.nexus-item-price-glyph"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "span.highlight-glyph"
+        },
+        {
+          "weight": "600",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "button.btn.close"
+        },
+        {
+          "weight": "600",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "span.archetype-icon"
+        },
+        {
+          "weight": "600",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.stat-value.hl"
+        },
+        {
+          "weight": "900",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.slots"
+        },
+        {
+          "weight": "900",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "div.g-price"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, sans-serif",
+          "element": "span.cell-value.cost-value"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.dot.done"
+        }
+      ]
+    },
+    {
+      "family": "DejaVu Sans Mono",
+      "postScriptName": "DejaVuSansMono",
+      "source": "system",
+      "usages": [
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "monospace",
+          "element": "div#placeholder"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "monospace",
+          "element": "div"
+        }
+      ]
+    },
+    {
+      "family": "DejaVu Sans Mono",
+      "postScriptName": "DejaVuSansMono-Bold",
+      "source": "system",
+      "usages": [
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace",
+          "element": "span.tab-value"
+        }
+      ]
+    },
+    {
+      "family": "FreeSerif",
+      "postScriptName": "FreeSerif",
+      "source": "system",
+      "usages": [
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace",
+          "element": "span.tab-value"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span"
+        },
+        {
+          "weight": "600",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "span.archetype-icon"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.resource-price"
+        },
+        {
+          "weight": "600",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.stat-value.hl"
+        }
+      ]
+    },
+    {
+      "family": "Liberation Mono",
+      "postScriptName": "LiberationMono-Bold",
+      "source": "system",
+      "usages": [
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace",
+          "element": "span.tab-value"
+        },
+        {
+          "weight": "600",
+          "style": "normal",
+          "requestedFamily": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace",
+          "element": "span.time-value"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace",
+          "element": "span.cell-value"
+        }
+      ]
+    },
+    {
+      "family": "Noto Sans CJK JP",
+      "postScriptName": "NotoSansCJKjp-Regular",
+      "source": "system",
+      "usages": [
+        {
+          "weight": "600",
+          "style": "normal",
+          "requestedFamily": "Arial",
+          "element": "span.archetype-icon"
+        }
+      ]
+    },
+    {
+      "family": "Ubuntu",
+      "postScriptName": "Ubuntu",
+      "source": "system",
+      "usages": [
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.label.stat-caption.stat-caption--hintable"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.label.stat-caption"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.panel-title"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.deposit-hint"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.journey-cost-line"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.movement-value"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.movement-label.tooltip-label"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.movement-value.movement-pool-value"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.maze-panel.panel-center.movement-cost-panel.is-hidden"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.nexus-header"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.nexus-header-sep"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.remove-cross"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.modifier-segment"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.stat-source"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "td"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.ability-label"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.scavenge-label"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.rarity-val.common"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.rarity-sep"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.rarity-val.uncommon"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.rarity-val.rare"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.rarity-val.legendary"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.cell-label.tooltip-label"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.raiding"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.enc-time"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.line.outcome"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.line.bags"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.vol"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.line.outcome.dimmed"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.roll-info"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.roll-target"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.roll-vs"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.roll-self"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.enc-monster"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.cell.who"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.hp-their"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.note-row.regen-note"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.walk-row.speed-row"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.speed-reduced"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.walk-row"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.hp-your"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.note-row.time-regen-note"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.note-row.stun-note"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.walk-row.time-regen"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.note-row.time-regen"
+        },
+        {
+          "weight": "400",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.rc-pill.negative"
+        }
+      ]
+    },
+    {
+      "family": "Ubuntu",
+      "postScriptName": "Ubuntu-Bold",
+      "source": "system",
+      "usages": [
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.hint-label"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.hint-value"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.value"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.resource-chip"
+        },
+        {
+          "weight": "600",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.item-text"
+        },
+        {
+          "weight": "600",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.nexus-item-name"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.nexus-item-price"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.hint-value.hint-value-price-increase"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.nexus-add-upgrade"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "h3"
+        },
+        {
+          "weight": "600",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.mode-label"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.radius-value"
+        },
+        {
+          "weight": "600",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.code-header"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.resource-price"
+        },
+        {
+          "weight": "900",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.new-band"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.qty"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.rarity-label.rarity-common"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.rarity-label.rarity-uncommon"
+        },
+        {
+          "weight": "900",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.rarity-label.rarity-legendary"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.rarity-label.rarity-rare"
+        },
+        {
+          "weight": "600",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.stat-value.yield-bonus"
+        },
+        {
+          "weight": "600",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.stat-value.hl"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "th"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.dist"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.wlabel"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.speed-label"
+        },
+        {
+          "weight": "600",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.hint-label"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.hint-value"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.section-heading"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.time"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.section-title"
+        },
+        {
+          "weight": "900",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.q-name"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.name"
+        },
+        {
+          "weight": "900",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.slots"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, sans-serif",
+          "element": "span.cell-value.cost-value"
+        },
+        {
+          "weight": "600",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "td.tt-label"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.hint-muted"
+        },
+        {
+          "weight": "900",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "td.max"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "h3.modal-title"
+        },
+        {
+          "weight": "600",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.bar-label"
+        },
+        {
+          "weight": "600",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.bar-max"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.enc-name-text"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "b"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.enc-type"
+        },
+        {
+          "weight": "700",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "strong"
+        },
+        {
+          "weight": "900",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "b"
+        },
+        {
+          "weight": "900",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.summary-cap"
+        },
+        {
+          "weight": "900",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div.rc-cap"
+        },
+        {
+          "weight": "800",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.rc-value"
+        }
+      ]
+    },
+    {
+      "family": "Ubuntu",
+      "postScriptName": "Ubuntu-Medium",
+      "source": "system",
+      "usages": [
+        {
+          "weight": "500",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "p.intro-part.visible"
+        },
+        {
+          "weight": "500",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "p.intro-part"
+        },
+        {
+          "weight": "500",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "div"
+        },
+        {
+          "weight": "500",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.stat-label"
+        },
+        {
+          "weight": "500",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "span.stat-value.danger"
+        },
+        {
+          "weight": "500",
+          "style": "normal",
+          "requestedFamily": "system-ui, -apple-system, \"Segoe UI\", Roboto, Ubuntu, Cantarell, \"Noto Sans\", \"Helvetica Neue\", Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
+          "element": "::after"
+        }
+      ]
+    }
+  ]
+}

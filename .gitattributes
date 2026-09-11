@@ -1,0 +1,20 @@
+# Normalize all text to LF in the repo and on checkout, on every platform.
+# Without this, git-for-windows defaults to core.autocrlf=true and rewrites
+# every file to CRLF on checkout, turning the next commit into a whole-file
+# line-ending diff against the Linux machine.
+* text=auto eol=lf
+
+# Binaries: never touch.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.mp3   binary
+*.ogg   binary
+*.wav   binary

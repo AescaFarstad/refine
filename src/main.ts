@@ -1,4 +1,5 @@
 import { createApp } from 'vue';
+import './fonts.css';
 import App from './App.vue';
 import { GameState } from './logic/GameState';
 import { processInputs } from './logic/input/InputProcessor';
@@ -46,6 +47,17 @@ getHypRepresentation(2000);
   //     flushAutosave();
   //   });
   // }
+
+  // Canvas atlases cache their text, so load the bundled faces before drawing.
+  await Promise.all([
+    document.fonts.load('700 16px "Refine Symbols"', '❤︎⌞⌝◌'),
+    ...['400', '500', '700'].flatMap(weight => [
+      document.fonts.load(`${weight} 16px "Refine Ubuntu"`),
+      document.fonts.load(`italic ${weight} 16px "Refine Ubuntu"`),
+    ]),
+    ...['Refine Sans', 'Refine Mono'].flatMap(family =>
+      ['400', '700'].map(weight => document.fonts.load(`${weight} 16px "${family}"`))),
+  ]);
 
   await atlasStorage.loadItemsAtlas();
   await atlasStorage.loadLocationsAtlas();

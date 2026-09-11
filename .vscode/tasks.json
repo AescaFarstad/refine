@@ -115,27 +115,16 @@
     {
       "label": "run dev",
       "type": "shell",
-      "command": "gnome-terminal",
-      "args": [
-        "--",
-        "bash",
-        "-c",
-        "cd '${workspaceFolder}' && npm run dev; exec bash"
-      ],
+      "command": "npm run dev",
       "problemMatcher": [],
+      "isBackground": true,
       "options": {
         "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
       }
-    },
-    {
-      "label": "mount",
-      "type": "shell",
-      "command": "gnome-terminal",
-      "args": [
-        "--",
-        "${workspaceFolder}/.vscode/mount-and-notify.sh"
-      ],
-      "problemMatcher": []
     },
     {
       "label": "Vercel",

@@ -298,7 +298,7 @@ td {
   margin-top: 1px;
   color: var(--text-secondary);
   font-size: 11px;
-  font-family: monospace;
+  font-family: var(--font-mono);
 }
 
 @media (max-width: 760px) {

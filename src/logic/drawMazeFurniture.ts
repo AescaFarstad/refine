@@ -115,7 +115,7 @@ function drawMazeResearchSymbol(
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = `bold ${glyphSize}px sans-serif`;
+    ctx.font = `bold ${glyphSize}px "Refine Symbols", "Refine Sans", sans-serif`;
     ctx.fillStyle = 'rgba(248, 250, 252, 0.96)';
     ctx.fillText(icon.glyph, center.x + iconOffset.x, center.y + iconOffset.y + 2);
     ctx.restore();
@@ -316,7 +316,7 @@ function drawOracleIlluminationLabels(
 
   const fontSize = Math.max(12, hexSize * ORACLE_ILLUMINATION_LABEL_SIZE_SCALE);
   ctx.save();
-  ctx.font = `bold ${fontSize}px sans-serif`;
+  ctx.font = `bold ${fontSize}px "Refine Symbols", "Refine Sans", sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.lineJoin = 'round';

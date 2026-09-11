@@ -14,7 +14,8 @@ dist
 !/data/img/
 /data/img/*
 !/data/img/pipeline*
-/public/
+/public/*
+!/public/fonts/
 /history/
 .claude/.fuse_hidden*
 save

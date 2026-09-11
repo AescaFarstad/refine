@@ -15,6 +15,7 @@
         :class="`highlight-cell-${entry.kind}`"
       >
         <span v-if="entry.icon.kind === 'glyph'" class="highlight-glyph">{{ entry.icon.key }}</span>
+        <CarryVolumeIcon v-else-if="entry.icon.kind === 'carryVolume'" class="highlight-glyph" />
         <div v-else class="highlight-sprite" :style="getSpriteStyle(entry.icon.key)" />
       </button>
     </div>
@@ -22,6 +23,7 @@
 </template>
 
 <script setup lang="ts">
+import CarryVolumeIcon from './CarryVolumeIcon.vue';
 import { computed, ref, watch } from 'vue';
 import { getGameLib, getGameState, uiState } from '../logic/UIState';
 import { getStatIcon } from '../logic/drawResearch';
@@ -35,7 +37,8 @@ type HighlightNodeKind = 'resource' | 'stat' | 'discovery';
 
 type HighlightIcon =
   | { kind: 'glyph'; key: string }
-  | { kind: 'itemImage'; key: string };
+  | { kind: 'itemImage'; key: string }
+  | { kind: 'carryVolume'; key: string };
 
 interface HighlightEntry {
   id: string;
@@ -113,9 +116,7 @@ const entries = computed<HighlightEntry[]>(() => {
       statEntries.push({
         id: `stat-${archetypeId}`,
         kind: 'stat',
-        icon: statIcon.kind === 'glyph'
-          ? { kind: 'glyph', key: statIcon.key }
-          : { kind: 'itemImage', key: statIcon.key },
+        icon: statIcon,
         gapBefore: false,
         hoverTarget: { kind: 'stat', archetypeId },
       });

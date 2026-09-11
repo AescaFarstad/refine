@@ -49,7 +49,7 @@ export function drawMazeResourceMarker(
   }
 
   ctx.save();
-  ctx.font = `bold ${glyphSizePx}px sans-serif`;
+  ctx.font = `bold ${glyphSizePx}px "Refine Symbols", "Refine Sans", sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = color;

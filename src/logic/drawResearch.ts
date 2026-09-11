@@ -1,3 +1,4 @@
+import { drawCarryVolumeIcon } from './CarryVolumeIcon';
 import { isResearchArchetypeRevealedByDiscovery } from './ResearchLib';
 import { RESEARCH_PANE_SIZE } from './Const';
 import { indexToAxial } from './Research';
@@ -26,7 +27,7 @@ interface StatIconSpec {
   offsetY: number;
 }
 
-type ResearchStatIconKind = 'glyph' | 'itemImage';
+type ResearchStatIconKind = 'glyph' | 'itemImage' | 'carryVolume';
 
 interface ResearchStatIconSpec extends StatIconSpec {
   kind: ResearchStatIconKind;
@@ -37,7 +38,7 @@ interface ResearchStatIconSpec extends StatIconSpec {
 const RESEARCH_STAT_ICON_SPECS: Record<string, ResearchStatIconSpec> = {
   damage: { kind: 'glyph', key: '✴', offsetX: 0.5, offsetY: 2, scale: 1.0 },
   health: { kind: 'glyph', key: '❤︎', offsetX: 0, offsetY: 3, scale: 1.0 },
-  volume: { kind: 'glyph', key: '⌞ ⌝', offsetX: 0, offsetY: 2, scale: 1.0 },
+  volume: { kind: 'carryVolume', key: 'volume', offsetX: 0, offsetY: 0, scale: 1.0 },
   baseMaxWeight: { kind: 'itemImage', key: 'weight', offsetX: 0.5, offsetY: 0, scale: 1.0 },
   researchRevealRadius: { kind: 'itemImage', key: 'eye', offsetX: 0, offsetY: 0, scale: 1.3 },
   speed: { kind: 'itemImage', key: 'hermes_shoe', offsetX: 0, offsetY: 0, scale: 1.3 },
@@ -65,7 +66,8 @@ export function getResourceGlyph(resourceKey: string): string {
 
 export type ResearchStatIcon =
   | { kind: 'glyph'; key: string }
-  | { kind: 'itemImage'; key: string };
+  | { kind: 'itemImage'; key: string }
+  | { kind: 'carryVolume'; key: string };
 
 export function getStatIcon(statKey: string): ResearchStatIcon {
   const spec = RESEARCH_STAT_ICON_SPECS[statKey];
@@ -311,7 +313,7 @@ function drawCenteredGlyph(
   }
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = `bold ${fontSize}px sans-serif`;
+  ctx.font = `bold ${fontSize}px "Refine Symbols", "Refine Sans", sans-serif`;
   ctx.fillText(glyph, 0, 0);
   ctx.restore();
 }
@@ -660,6 +662,12 @@ function drawStatIconForNode(
 
   centerX += spec.offsetX;
   centerY += spec.offsetY;
+
+  if (spec.kind === 'carryVolume') {
+    drawCarryVolumeIcon(ctx, centerX, centerY,
+      (layoutMaxIconSize ?? hexSize * 1.1) * spec.scale, getNodeIconAlpha(owned, 0.95));
+    return;
+  }
 
   if (spec.kind === 'glyph') {
     const glyphSize = layoutMaxIconSize != null ? layoutMaxIconSize : hexSize * 1.1;

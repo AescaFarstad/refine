@@ -12,10 +12,9 @@ export default defineConfig({
     port: 5175,
     strictPort: true,
     fs: {
-      // Allow serving files from one level up and the external repo path
+      // Allow serving files from one level up.
       allow: [
         '..',
-        '/mnt/WoB/WOB/web_rep/mhq',
       ],
     },
   },

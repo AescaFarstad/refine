@@ -108,7 +108,7 @@ onBeforeUnmount(() => {
 html, body, #app { height: 100%; }
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Noto Sans", "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  font-family: var(--font-ui);
   color: var(--text-primary);
   background: radial-gradient(1400px 700px at 75% 10%, rgba(15, 25, 40, 0.8), transparent),
               linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 50%, var(--bg-0) 100%);

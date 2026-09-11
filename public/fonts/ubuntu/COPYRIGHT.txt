@@ -1,0 +1,3 @@
+Copyright 2011 Canonical Ltd. Licensed under the Ubuntu Font Licence 1.0.
+
+This notice is also embedded in the original font files. See UFL.txt.

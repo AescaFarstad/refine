@@ -257,7 +257,7 @@ const dayMarkers = computed(() => {
   text-align: center;
   white-space: nowrap;
   font-weight: 600;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: var(--font-mono);
   text-decoration-line: underline;
   text-decoration-style: dashed;
   text-decoration-color: rgba(148, 163, 184, 0.7);

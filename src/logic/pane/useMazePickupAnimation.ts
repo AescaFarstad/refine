@@ -158,7 +158,7 @@ export function useMazePickupAnimation(
 
       // Amount text
       const amountText = `+${p.amount}`;
-      ctx.font = `bold ${glyphSize * 0.7}px sans-serif`;
+      ctx.font = `bold ${glyphSize * 0.7}px "Refine Symbols", "Refine Sans", sans-serif`;
       ctx.fillStyle = p.color;
       ctx.fillText(amountText, glyphSize * 0.9, 0);
 

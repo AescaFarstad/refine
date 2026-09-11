@@ -203,7 +203,7 @@ watch(() => uiState.shardDust, (newVal, oldVal) => {
   font-size: 1rem; /* match metrics value size */
   color: #e2e8f0;  /* match metrics value brightness */
   font-weight: 700; /* make highlighted number bolder */
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: var(--font-mono);
 }
 .tab-sub .tab-label {
   font-size: 12px;

@@ -1,0 +1,87 @@
+/* Original font files and redistribution licenses are shipped in public/fonts. */
+@font-face {
+  font-family: 'Refine Ubuntu';
+  src: url('/fonts/ubuntu/Ubuntu-Regular.ttf') format('truetype');
+  font-weight: 100 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Refine Ubuntu';
+  src: url('/fonts/ubuntu/Ubuntu-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Refine Ubuntu';
+  src: url('/fonts/ubuntu/Ubuntu-Bold.ttf') format('truetype');
+  font-weight: 600 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Refine Ubuntu';
+  src: url('/fonts/ubuntu/Ubuntu-Italic.ttf') format('truetype');
+  font-weight: 100 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Refine Ubuntu';
+  src: url('/fonts/ubuntu/Ubuntu-MediumItalic.ttf') format('truetype');
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Refine Ubuntu';
+  src: url('/fonts/ubuntu/Ubuntu-BoldItalic.ttf') format('truetype');
+  font-weight: 600 900;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Refine Sans';
+  src: url('/fonts/liberation/LiberationSans-Regular.ttf') format('truetype');
+  font-weight: 100 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Refine Sans';
+  src: url('/fonts/liberation/LiberationSans-Bold.ttf') format('truetype');
+  font-weight: 600 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Refine Mono';
+  src: url('/fonts/liberation/LiberationMono-Regular.ttf') format('truetype');
+  font-weight: 100 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Refine Mono';
+  src: url('/fonts/liberation/LiberationMono-Bold.ttf') format('truetype');
+  font-weight: 600 900;
+  font-display: swap;
+}
+
+/* Linux used DejaVu Sans Regular for these symbols, even in bold labels.
+   Limit this face to the symbols so it cannot replace ordinary UI text. */
+@font-face {
+  font-family: 'Refine Symbols';
+  src: url('/fonts/dejavu/DejaVuSans.ttf') format('truetype');
+  font-weight: 100 900;
+  font-display: swap;
+  unicode-range: U+231E-231F, U+25CC, U+2764;
+}
+
+:root {
+  --font-ui: 'Refine Symbols', 'Refine Ubuntu', sans-serif;
+  --font-controls: 'Refine Symbols', 'Refine Sans', sans-serif;
+  --font-mono: 'Refine Symbols', 'Refine Mono', monospace;
+}
+
+button, input, select, textarea {
+  font-family: var(--font-controls);
+}

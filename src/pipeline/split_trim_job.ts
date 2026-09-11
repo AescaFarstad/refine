@@ -2,6 +2,7 @@ import { mkdir, access } from 'node:fs/promises';
 import { constants as fsConstants } from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
+import { assertPipelineCanSpawn } from './platform_guard.ts';
 import type { PipelineJob, PipelineItem } from './pipeline_parse.ts';
 import { getSplitRects } from './split_algo.ts';
 
@@ -17,6 +18,7 @@ const EDGE_AREA_LIMIT = 300; // Sum of 3x3 alpha must be < this to remove
 
 async function runCmd(bin: string, args: string[], cwd?: string): Promise<{ code: number; stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
+    assertPipelineCanSpawn(bin);
     const p = spawn(bin, args, { cwd });
     let stdout = '';
     let stderr = '';

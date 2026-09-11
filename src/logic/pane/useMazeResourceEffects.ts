@@ -245,7 +245,7 @@ export function useMazeResourceEffects(
 
       const amountText = `+${p.amount}`;
       ctx.fillStyle = p.color;
-      ctx.font = `bold ${amountSizePx}px sans-serif`;
+      ctx.font = `bold ${amountSizePx}px "Refine Symbols", "Refine Sans", sans-serif`;
       ctx.fillText(amountText, sx + amountOffsetPx, sy);
 
       ctx.restore();

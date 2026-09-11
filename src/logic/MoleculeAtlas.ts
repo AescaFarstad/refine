@@ -1,5 +1,6 @@
 import { itemDefinitions } from '../data/items';
 import atlasStorage from './AtlasStorage';
+import { CARRY_VOLUME_FRAME, renderCarryVolumeSprite } from './CarryVolumeIcon';
 import { drawMolecule } from './DrawMolecule';
 import { axialToPixel } from './HexMath';
 import { ESSENCE_COLORS, ESSENCE_SIZE, HEX_SIZE } from './RenderConstants';
@@ -62,6 +63,12 @@ export async function ensureMoleculeAtlas(): Promise<void> {
     const baseScale = Math.min(VIEW_SIZE / REF_W, VIEW_SIZE / REF_H);
 
     const packed: PackedEntry[] = [];
+    packed.push({
+      key: CARRY_VOLUME_FRAME,
+      w: 96,
+      h: 96,
+      draw: (ctx, x, y) => renderCarryVolumeSprite(ctx, x, y, 96),
+    });
 
     for (const [id, def] of Object.entries(itemDefinitions)) {
       if (!def.molecule) continue;
@@ -158,7 +165,7 @@ export async function ensureMoleculeAtlas(): Promise<void> {
           ctx.save();
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.font = '800 46px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
+          ctx.font = '800 46px "Refine Symbols", "Refine Ubuntu", sans-serif';
           ctx.fillStyle = color;
           ctx.shadowColor = color;
           ctx.shadowBlur = 14;

@@ -33,7 +33,7 @@
     <div class="stat-shell">
       <div :class="['stat', bagsFlashClass]">
         <span :class="['label', 'stat-caption', { 'stat-caption--hintable': bagsHintRows.length > 0 }]">Bags</span>
-        <span class="value">{{ bagsCapacity }} ⌞ ⌝</span>
+        <span class="value">{{ bagsCapacity }} <CarryVolumeIcon /></span>
       </div>
       <div v-if="bagsHintRows.length > 0" class="stat-hint" role="tooltip" aria-hidden="true">
         <div v-for="(row, i) in bagsHintRows" :key="`bags-${i}`" class="hint-row">
@@ -46,6 +46,7 @@
 </template>
 
 <script setup lang="ts">
+import CarryVolumeIcon from './CarryVolumeIcon.vue';
 import { computed, ref, watch, type Ref } from 'vue';
 import { uiState, getGameState } from '../logic/UIState';
 import atlasStorage from '../logic/AtlasStorage';

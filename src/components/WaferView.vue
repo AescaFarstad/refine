@@ -310,7 +310,7 @@ function renderOverlay() {
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = 'bold 14px sans-serif';
+    ctx.font = 'bold 14px "Refine Symbols", "Refine Sans", sans-serif';
     for (const [key, count] of Object.entries(props.cellEffectiveCounts)) {
       if (!count || count <= 1) continue;
       const [sx, sy] = key.split(',');
@@ -345,7 +345,7 @@ function renderOverlay() {
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = '10px sans-serif';
+    ctx.font = '10px "Refine Symbols", "Refine Sans", sans-serif';
     for (const buff of waferBuffCells) {
       const cell = getCell(props.wafer, { x: buff.x, y: buff.y });
       // Only show buff labels on enabled, empty cells.

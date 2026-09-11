@@ -398,7 +398,7 @@ function drawPurchasePathPreview(
       ctx.fillStyle = RESEARCH_PATH_OBSTACLE_ICON_COLOR;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.font = `bold ${HEX_SIZE * 1.2}px system-ui, -apple-system, Segoe UI, sans-serif`;
+      ctx.font = `bold ${HEX_SIZE * 1.2}px "Refine Symbols", "Refine Ubuntu", sans-serif`;
       ctx.fillText(chronotracesSpec.glyph, center.x, center.y);
       ctx.restore();
     }

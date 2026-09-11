@@ -70,7 +70,7 @@ function drawNexusItemGlyph(
 ): void {
   ctx.save();
   ctx.globalAlpha *= opacity;
-  ctx.font = `bold ${glyphSize}px sans-serif`;
+  ctx.font = `bold ${glyphSize}px "Refine Symbols", "Refine Sans", sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = color;

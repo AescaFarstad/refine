@@ -370,11 +370,11 @@ const timeEstSampleCount = computed(() => uiState.raidTimeBreakdownSimulations);
 }
 :deep(.cell-value) { 
   font-weight: 700; 
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: var(--font-mono);
 }
 :deep(.cost-value) {
   font-weight: 800;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--font-ui);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
 }

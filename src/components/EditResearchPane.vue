@@ -122,7 +122,8 @@
               @mouseenter="onHoverStart(arch.archetype, $event)"
               @mouseleave="onHoverEnd"
             >
-              <div v-if="arch.icon.kind === 'itemImage'" class="gear-sprite-wrap">
+              <CarryVolumeIcon v-if="arch.icon.kind === 'carryVolume'" class="archetype-icon" />
+              <div v-else-if="arch.icon.kind === 'itemImage'" class="gear-sprite-wrap">
                 <div class="gear-sprite" :style="getGearSpriteStyle(arch.icon.key)" />
               </div>
               <span
@@ -180,6 +181,7 @@
 </template>
 
 <script setup lang="ts">
+import CarryVolumeIcon from './CarryVolumeIcon.vue';
 import { computed, onBeforeUnmount, ref } from 'vue';
 import { uiState, getGameState, getGameLib, getGameStateMutable } from '../logic/UIState';
 import { indexToAxial } from '../logic/Research';
@@ -916,7 +918,7 @@ function getArchetypeIconStyle(
   width: 100%;
   min-height: 60px;
   resize: vertical;
-  font-family: monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
   background: rgba(15, 23, 42, 0.9);
   color: #e5e7eb;

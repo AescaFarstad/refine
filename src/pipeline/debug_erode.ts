@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { assertPipelineCanSpawn } from './platform_guard.ts';
 import path from 'node:path';
 
 // Hardcoded paths as requested
@@ -15,6 +16,7 @@ const EDGE_AREA_LIMIT = 300; // Sum of 3x3 alpha must be < this to remove
 
 async function runCmd(bin: string, args: string[], cwd?: string): Promise<{ code: number; stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
+    assertPipelineCanSpawn(bin);
     const p = spawn(bin, args, { cwd });
     let stdout = '';
     let stderr = '';

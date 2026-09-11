@@ -778,7 +778,7 @@ function onRotate() {
   resize: none;
   min-height: 0;
   flex: 1 1 auto;
-  font-family: monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   background: rgba(15, 23, 42, 0.9);
   color: #e5e7eb;

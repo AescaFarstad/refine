@@ -1,10 +1,12 @@
 import { mkdir, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
+import { assertPipelineCanSpawn } from './platform_guard.ts';
 import type { PipelineJob } from './pipeline_parse.ts';
 
 async function runCmd(bin: string, args: string[], cwd?: string): Promise<{ code: number; stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
+    assertPipelineCanSpawn(bin);
     const p = spawn(bin, args, { cwd });
     let stdout = '';
     let stderr = '';

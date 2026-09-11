@@ -60,7 +60,7 @@ export function drawMolecule(
       ctx.arc(pixel.x, pixel.y, drawSize / 2, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 14px sans-serif';
+      ctx.font = 'bold 14px "Refine Symbols", "Refine Sans", sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(color[0].toUpperCase(), pixel.x, pixel.y);
@@ -150,7 +150,7 @@ export function createMoleculeCanvasWithAnchor(
       ctx.fill();
 
       ctx.fillStyle = '#fff';
-      ctx.font = `bold ${Math.floor(drawSize * 0.5)}px sans-serif`;
+      ctx.font = `bold ${Math.floor(drawSize * 0.5)}px "Refine Symbols", "Refine Sans", sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(ap.color[0].toUpperCase(), centerX, centerY);

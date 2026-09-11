@@ -407,7 +407,7 @@ function getShardSprite(
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
 
-  ctx.font = `bold ${fontSize}px sans-serif`;
+  ctx.font = `bold ${fontSize}px "Refine Symbols", "Refine Sans", sans-serif`;
   const metrics = ctx.measureText(symbol);
   const textWidth = metrics.width;
   const padding = 4;
@@ -420,7 +420,7 @@ function getShardSprite(
   const ctx2 = canvas.getContext('2d');
   if (!ctx2) return null;
 
-  ctx2.font = `bold ${fontSize}px sans-serif`;
+  ctx2.font = `bold ${fontSize}px "Refine Symbols", "Refine Sans", sans-serif`;
   ctx2.textAlign = 'center';
   ctx2.textBaseline = 'middle';
   ctx2.fillStyle = color;

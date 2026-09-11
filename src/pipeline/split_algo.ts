@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { assertPipelineCanSpawn } from './platform_guard.ts';
 
 const DEBUG_ENABLED = false;
 
@@ -12,6 +13,7 @@ export interface Rect {
 // Internal: run a command and capture binary stdout
 async function runCmdBuffer(bin: string, args: string[]): Promise<{ code: number; stdout: Uint8Array; stderr: string }> {
   return new Promise((resolve, reject) => {
+    assertPipelineCanSpawn(bin);
     const p = spawn(bin, args);
     const chunks: Buffer[] = [];
     let stderr = '';

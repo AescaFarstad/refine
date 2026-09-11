@@ -430,7 +430,7 @@ onBeforeUnmount(() => {
   border-radius: 6px;
   color: rgba(255, 255, 255, 0.92);
   padding: 8px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
   line-height: 1.3;
   scrollbar-width: thin;

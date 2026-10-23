@@ -99,11 +99,12 @@ const monsters: Record<string, RawMonsterDefinition> = {
   },
   octopus: {
     name: 'Violet Octopus',
-    hp: 100,
+    hp: 150,
     dodge: 55,
     accuracy: 10,
     damage: 3,
     biopsyBuff: 80,
+    features: ['grip'],
     lootItemId: 'octopus_remains',
   },
   lightning: {

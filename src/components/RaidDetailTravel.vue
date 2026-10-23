@@ -1,6 +1,6 @@
 <template>
   <div v-if="hasDiscoveredMonsters">
-    <template v-if="!hasDiscoveredSpeed">
+    <template v-if="!hasDiscoveredSpeed && uiState.firstRaidSuccesses >= SPEED_DISCOVERY_MIN_RAIDS">
       <div class="discover-container">
         <button class="discover-btn" @click="discoverSpeed">Review travel distance and speed</button>
       </div>
@@ -23,7 +23,7 @@
               <span class="hint-value">{{ baseSpeed.toFixed(2) }} km/h</span>
             </div>
             <div v-if="hasSpeedBonusPct" class="hint-row">
-              <span class="hint-label">Bonus:</span>
+              <span class="hint-label">Multiplier:</span>
               <span class="hint-value">{{ speedBonusPct.toFixed(0) }}%</span>
             </div>
             <div v-if="hasSpeedBonusFlat" class="hint-row">
@@ -34,12 +34,20 @@
               <span class="hint-label">Remaining free weight:</span>
               <span class="hint-value">{{ freeWeightPct }}%</span>
             </div>
+            <div class="hint-section">
+              <div class="section-heading">Formula</div>
+              <div class="formula formula-sym">{{ speedFormula.sym }}</div>
+              <div class="formula">{{ speedFormula.num }}</div>
+            </div>
             <div class="hint-section speed-rules">
               <div class="section-heading">Rules</div>
               <div class="hint-item">
                 <span class="item-text">Speed can't fall below {{ MIN_WALK_SPEED.toFixed(2) }} km/h</span>
               </div>
-              <div class="hint-item" v-if="hasPainkiller">
+              <div class="hint-item" v-if="hasAgonySpur">
+                <span class="item-text">Agony Spur active: missing health increases speed (up to {{ AGONY_SPUR_MAX_MULT }}x)</span>
+              </div>
+              <div class="hint-item" v-else-if="hasPainkiller">
                 <span class="item-text">Painkiller active: health does not reduce speed</span>
               </div>
               <div class="hint-item" v-else>
@@ -73,6 +81,7 @@ import type { RaidDefinition } from '../logic/RaidLib';
 import GearStatsHint from './GearStatsHint.vue';
 import { MIN_WALK_SPEED } from '../logic/GameState';
 import { Perks } from '../logic/Perks';
+import { hpSpeedMultiplier, AGONY_SPUR_MAX_MULT } from '../logic/WalkEncounter';
 
 const props = defineProps<{
   raid: RaidDefinition;
@@ -82,6 +91,7 @@ const raid = computed(() => props.raid);
 
 const hasDiscoveredMonsters = computed(() => uiState.hasDiscoveredRaidMonsters);
 const hasDiscoveredSpeed = computed(() => uiState.hasDiscoveredRaidSpeed);
+const SPEED_DISCOVERY_MIN_RAIDS = 4;
 
 function discoverSpeed(): void {
   globalInputQueue.push(new CmdDiscover({ discoveryId: DISCOVERY.UI_RAID_SPEED }));
@@ -125,9 +135,7 @@ const distanceKm = computed(() => {
 });
 
 function speedKmHFor(hpNow: number): number {
-  const gs = getGameState();
-  const hasPainkiller = gs.raid.perks.includes(Perks.PAINKILLER);
-  const hpM = hasPainkiller ? 1 : Math.max(0, hpNow) / Math.max(1e-9, maxHp.value);
+  const hpM = hpSpeedMultiplier(hpNow, maxHp.value, getGameState().raid.perks);
   const wM = Math.max(0, maxWeight.value - weight.value) / Math.max(1e-9, maxWeight.value);
   const baseExcess = Math.max(0, Math.max(MIN_WALK_SPEED, baseSpeed.value) - MIN_WALK_SPEED);
   const scaledExcess = baseExcess * hpM * wM * (1 + speedBonusPct.value / 100);
@@ -139,10 +147,38 @@ const hasPainkiller = computed(() => {
   uiState.raidKey;
   return getGameState().raid.perks.includes(Perks.PAINKILLER);
 });
+const hasAgonySpur = computed(() => {
+  uiState.raidKey;
+  return getGameState().raid.perks.includes(Perks.AGONY_SPUR);
+});
 const hasSpeedBonusPct = computed(() => Math.abs(speedBonusPct.value) > 1e-9);
 const hasSpeedBonusFlat = computed(() => Math.abs(speedBonusFlat.value) > 1e-9);
 const wM = computed(() => Math.max(0, maxWeight.value - weight.value) / Math.max(1e-9, maxWeight.value));
 const freeWeightPct = computed(() => Math.round(wM.value * 100));
+function fmt(n: number): string {
+  return String(Math.round(n * 100) / 100);
+}
+// Mirrors speedKmH in WalkEncounter.ts: max(MIN, (MIN + (base - MIN) * hp * weight) * (1 + bonus) + flat)
+// Health is always full where this UI is shown, so it's displayed as a word rather than a number.
+const speedFormula = computed(() => {
+  const min = MIN_WALK_SPEED;
+  const hpM = hpSpeedMultiplier(hp.value, maxHp.value, getGameState().raid.perks);
+  const bonusM = 1 + speedBonusPct.value / 100;
+  let sym = 'min + (base − min) * free weight';
+  let num = `${fmt(min)} + (${fmt(baseSpeed.value)} − ${fmt(min)}) * ${fmt(wM.value)}`;
+  if (hasSpeedBonusPct.value) {
+    sym = `(${sym}) * multiplier`;
+    num = `(${num}) * ${fmt(bonusM)}`;
+  }
+  if (hasSpeedBonusFlat.value) {
+    const sign = speedBonusFlat.value < 0 ? '−' : '+';
+    sym += ` ${sign} flat`;
+    num += ` ${sign} ${fmt(Math.abs(speedBonusFlat.value))}`;
+  }
+  const raw = (min + (baseSpeed.value - min) * hpM * wM.value) * bonusM + speedBonusFlat.value;
+  if (raw < min) num = `max(${fmt(min)}, ${num})`;
+  return { sym: `speed = ${sym}`, num: `${fmt(speedKmH.value)} = ${num}` };
+});
 const weightPct = computed(() => Math.max(0, Math.min(100, Math.round((weight.value / Math.max(1, maxWeight.value)) * 100))));
 const overweight = computed(() => weight.value > maxWeight.value);
 const overweightGear = computed(() => {
@@ -182,7 +218,7 @@ const walkingTime = computed(() => {
   flex-direction: column;
   gap: 8px;
   position: absolute;
-  bottom: calc(100% + 10px);
+  top: calc(100% + 10px);
   left: 50%;
   transform: translateX(-50%);
   visibility: hidden;
@@ -207,14 +243,14 @@ const walkingTime = computed(() => {
 .speed-hint::before {
   content: '';
   position: absolute;
-  top: 100%;
+  bottom: 100%;
   left: 50%;
   width: 10px;
   height: 10px;
   background: var(--hint-bg, rgba(10, 14, 20, 0.95));
-  border-right: 1px solid var(--hint-border, rgba(255, 255, 255, 0.15));
-  border-bottom: 1px solid var(--hint-border, rgba(255, 255, 255, 0.15));
-  transform: translate(-50%, -50%) rotate(45deg);
+  border-left: 1px solid var(--hint-border, rgba(255, 255, 255, 0.15));
+  border-top: 1px solid var(--hint-border, rgba(255, 255, 255, 0.15));
+  transform: translate(-50%, 50%) rotate(45deg);
 }
 .speed-cell:hover .speed-hint { visibility: visible; opacity: 1; }
 .hint-row {
@@ -238,6 +274,16 @@ const walkingTime = computed(() => {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+.formula {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.formula-sym {
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 600;
 }
 .speed-rules {
   margin-top: 2px;

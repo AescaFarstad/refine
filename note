@@ -274,8 +274,6 @@ unused item bans
 
 research: +1% loot in maze for every visited node
 
-is sparking there just before the zone collapse
-
 NEW - above the molecule overlay
 
 research - increased item odds
@@ -305,3 +303,26 @@ sequence and winning
 
 
 spread corruption from some research nodes which block short paths to valuable items
+
+highlight serious zone deteriorations
+research should begin more intuitively
+aknowleging oracle challenge should tell what's unlocked
+if you have no philocpher stones "Where do I get one" button
+goal tracking
+!church inscriptions should hint that signatures are connected to 
+speed hint should display formula
+purchasing next upgrade in nexus cost increasing amount of time flux
+placed nexus upgrades which are obstacles should display a hint about what they do
+GearXP gives philosopher stone
+Philosopher stones much more expensive in nexsus
+Correct oracle riddle should display "Correct!"
+Pay philosopher stones to stop corruption
+!open wafer bonuses slower
+!decrease multipliers even further
+!more philosopher stones in Dyatlovsk
+!safe routes - skip only if not the strongest enemy in the raid
+
+
+reserach cost growth vs flat chronotraces timed event
+quests for "zone resource gain multiplier + 1"
+early in timeline allow choosing specific zone deterioration

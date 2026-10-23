@@ -68,7 +68,7 @@
                   </div>
                 </div>
 
-                <div v-if="itemBansMax > 0" class="ov ov-bans" :style="bansPositionStyle">
+                <div v-if="itemBansMax > 0" class="ov ov-bans" :class="{ 'has-unused-bans': hasUnusedBans }" :style="bansPositionStyle">
                   <div class="ban-panel-label">Items blocked</div>
                   <div class="ban-panel-value">{{ bannedCount }} / {{ itemBansMax }}</div>
                 </div>
@@ -363,6 +363,10 @@ const bannedCount = computed(() => {
 
 const canBanMore = computed(() => {
   return bannedCount.value < itemBansMax.value;
+});
+
+const hasUnusedBans = computed(() => {
+  return itemBansMax.value > 0 && bannedCount.value < itemBansMax.value;
 });
 
 function isItemBanned(itemId: string): boolean {
@@ -691,6 +695,36 @@ function onItemMouseLeave(itemId: string) {
   align-items: baseline;
   min-width: 180px;
   font-size: 13px;
+}
+.ov-bans.has-unused-bans {
+  overflow: hidden;
+}
+.ov-bans.has-unused-bans::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 60%;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(250, 204, 21, 0.06) 35%,
+    rgba(250, 204, 21, 0.28) 50%,
+    rgba(250, 204, 21, 0.06) 65%,
+    transparent 100%
+  );
+  animation: ban-flash-travel 2.2s ease-in-out infinite;
+}
+@keyframes ban-flash-travel {
+  0% { transform: translateX(-100%); }
+  60%, 100% { transform: translateX(270%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ov-bans.has-unused-bans::after {
+    animation: none;
+  }
 }
 .ban-panel-label {
   font-weight: 800;

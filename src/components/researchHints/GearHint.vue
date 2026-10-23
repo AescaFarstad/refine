@@ -67,7 +67,7 @@ const categoryName = computed(() => {
 });
 
 const isNewCategory = computed(() => {
-  if (!gear.value) return false;
+  if (!gear.value || props.cell.owned) return false;
   return !uiState.unlockedGearCategories.includes(gear.value.category);
 });
 </script>

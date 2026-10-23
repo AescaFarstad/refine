@@ -1,6 +1,6 @@
 <template>
   <div class="research-tab" ref="researchTab">
-    <ResearchParallax :offset="parallaxOffset" :zoom="parallaxZoom" />
+    <ResearchParallax v-if="backgroundStrength > 0" :offset="parallaxOffset" :zoom="parallaxZoom" :strength="backgroundStrength" />
     <ResearchPane ref="researchPane" :panel-highlight="hoveredHighlight" @hover-cell="onHoverCell" />
     <ResearchHighlight @entry-hover="onHighlightEntryHover" @entry-click="onHighlightEntryClick" />
     <EditResearchPane v-if="editResearchOpen" />
@@ -99,7 +99,7 @@ import EditResearchPane from './EditResearchPane.vue';
 import ResearchNodeHint from './researchHints/ResearchNodeHint.vue';
 import type { ReadonlyResearchArchetype, ReadonlyResearchCell, ReadonlyResearchNodeInstance } from '../logic/UIState';
 import { axialToPixel } from '../logic/HexMath';
-import { RESEARCH_OBSTACLE_PRICE, RESEARCH_OBSTACLE_PRICE_GROWTH } from '../logic/Const';
+import { RESEARCH_OBSTACLE_PRICE, RESEARCH_OBSTACLE_PRICE_GROWTH, RESEARCH_BACKGROUND_FADE_START_OWNED_COUNT, RESEARCH_BACKGROUND_FADE_END_OWNED_COUNT } from '../logic/Const';
 import { getResourceSpec } from '../logic/Resources';
 import CardDeck from './CardDeck.vue';
 import SignatureCard from './SignatureCard.vue';
@@ -113,6 +113,11 @@ const researchTab = ref<HTMLElement | null>(null);
 const hoveredHighlight = ref<ResearchHighlightHover | null>(null);
 
 const editResearchOpen = computed(() => uiState.editResearchOpen);
+
+const backgroundStrength = computed(() => 1 - Math.max(0, Math.min(1,
+  (uiState.researchOwnedCount - RESEARCH_BACKGROUND_FADE_START_OWNED_COUNT)
+    / (RESEARCH_BACKGROUND_FADE_END_OWNED_COUNT - RESEARCH_BACKGROUND_FADE_START_OWNED_COUNT)
+)));
 
 const parallaxOffset = computed<Point2>(() => {
   const pane = researchPane.value;

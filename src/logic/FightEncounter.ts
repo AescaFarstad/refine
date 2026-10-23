@@ -1,7 +1,7 @@
 import type { ActiveRaid, GameState } from './GameState';
 import { createFightEncounterLogEntry, type FightEncounterLogEntry, type FightEvent, type LootEncounterLogEntry } from './RaidLog';
 import Perks from './Perks';
-import { FEATURE_SUMMON, FEATURE_SUMMON2, FEATURE_SELF_DESTRUCT, SUMMON_CHANCE_PER_ROUND, SUMMON_CHANCE_PER_ROUND2 } from './MonsterFeatures';
+import { FEATURE_SUMMON, FEATURE_SUMMON2, FEATURE_SELF_DESTRUCT, FEATURE_GRIP, SUMMON_CHANCE_PER_ROUND, SUMMON_CHANCE_PER_ROUND2, GRIP_CHANCE_PER_ROUND } from './MonsterFeatures';
 import { REGEN_INTERVAL_SEC } from './Const';
 import { applySignedHpRegen } from './Regen';
 
@@ -97,6 +97,7 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
   const canSummon = m.features.includes(FEATURE_SUMMON);
   const canSummon2 = m.features.includes(FEATURE_SUMMON2);
   const canSelfDestruct = m.features.includes(FEATURE_SELF_DESTRUCT);
+  const canGrip = m.features.includes(FEATURE_GRIP);
   const hasArmorTearing = r.perks.includes(Perks.ARMOR_TEARING);
   const hasArmorCrushing = r.perks.includes(Perks.ARMOR_CRUSHING);
   const hasFanTheHammer = r.perks.includes(Perks.FAN_THE_HAMMER);
@@ -119,6 +120,7 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
   let summonedMonsterId: string | null = null;
   let monsterSelfDestructed = false;
   let remainingAttackSkips = r.attackSkipCount;
+  let playerHeld: boolean = false; // Grip: held players skip their attack and can't block
 
   let fightTimeSec = 0; // Time elapsed during this fight only
   let nextRegenThresholdSec = inputNextThreshold;
@@ -127,10 +129,12 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
     const myHpBefore = r.hp;
     const theirHpBefore = monsterHp;
 
+    const heldThisRound: boolean = playerHeld;
+    playerHeld = false;
     const hitCheck = clamp(baseHit - theirDodge, 0, 100);
-    const myRoll = Math.floor(gs.random.get() * 100);
+    const myRoll = heldThisRound ? 0 : Math.floor(gs.random.get() * 100);
 
-    if (myRoll <= hitCheck) {
+    if (!heldThisRound && myRoll <= hitCheck) {
       // Hit landed
       let dmg = r.damage;
       // Fan the Hammer: item contributes double damage on odd rounds (1,3,5…), zero on even (2,4,6…)
@@ -175,6 +179,8 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         summonedMonsterId = monsterId;
         summonJustTriggered = true;
       }
+      const gripJustTriggered: boolean = canGrip && monsterAttacked && myHpAfter > 0 && Math.floor(gs.random.get() * 100) < GRIP_CHANCE_PER_ROUND;
+      playerHeld = gripJustTriggered;
       const thisRoundTime = roundTime + (monsterAttacked ? 60 : 0);
       const totalElapsedAfterRound = elapsedTimeBeforeFight + fightTimeSec + thisRoundTime;
       const regen = applyTimeRegen(r, regenPer10Minutes, totalElapsedAfterRound, nextRegenThresholdSec);
@@ -201,6 +207,8 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         attackSkipTriggered,
         summonTriggered: summonJustTriggered,
         selfDestructed: false,
+        gripTriggered: gripJustTriggered,
+        playerHeld: false,
         timeRegenHealed: regen.healed,
         timeRegenHpBefore: regen.hpBefore,
         timeRegenHpAfter: regen.hpAfter,
@@ -229,11 +237,11 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         break;
       }
     } else {
-      // Missed; they counter-attack, we attempt to block
-      const blockCheck = clamp(baseBlock - theirAccuracy, 0, 100);
+      // Missed (or held by grip); they counter-attack, we attempt to block unless held
+      const blockCheck: number = heldThisRound ? 0 : clamp(baseBlock - theirAccuracy, 0, 100);
       const theirHit = Math.floor(gs.random.get() * 100);
-      const blocked = (theirHit <= blockCheck);
-      let received = blocked ? 0 : Math.max(0, theirDamage - r.armor);
+      const blocked: boolean = !heldThisRound && (theirHit <= blockCheck);
+      let received: number = blocked ? 0 : Math.max(0, theirDamage - r.armor);
       let attackSkipTriggered = false;
       if (received > 0 && remainingAttackSkips > 0) {
         received = 0;
@@ -259,12 +267,12 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
       }
       const theirHpAfterReflect = theirHpBefore - reflect;
       // Self-destruct: monster dies after successful attack (not blocked)
-      const selfDestructTriggered = canSelfDestruct && !blocked && received > 0;
+      const selfDestructTriggered: boolean = canSelfDestruct && !blocked && received > 0;
       if (selfDestructTriggered) {
         monsterHp = 0;
         monsterSelfDestructed = true;
       }
-      const theirHpFinal = selfDestructTriggered ? 0 : theirHpAfterReflect;
+      const theirHpFinal: number = selfDestructTriggered ? 0 : theirHpAfterReflect;
       // Check for summon at end of round (only if both combatants survive and not already summoned)
       let summonJustTriggered = false;
       const summonChance = canSummon2 ? SUMMON_CHANCE_PER_ROUND2 : SUMMON_CHANCE_PER_ROUND;
@@ -272,8 +280,11 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         summonedMonsterId = monsterId;
         summonJustTriggered = true;
       }
+      const gripJustTriggered: boolean = canGrip && myHpAfter > 0 && theirHpFinal > 0 && Math.floor(gs.random.get() * 100) < GRIP_CHANCE_PER_ROUND;
+      playerHeld = gripJustTriggered;
       r.hp = myHpAfter;
-      const thisRoundTime = roundTime + 60; // monster always counter-attacks on miss
+      // Monster always counter-attacks on miss; a held player spends no time attacking
+      const thisRoundTime = (heldThisRound ? 0 : roundTime) + 60;
       const totalElapsedAfterRound = elapsedTimeBeforeFight + fightTimeSec + thisRoundTime;
       const regen = applyTimeRegen(r, regenPer10Minutes, totalElapsedAfterRound, nextRegenThresholdSec);
       nextRegenThresholdSec = regen.nextRegenThresholdSec;
@@ -300,6 +311,8 @@ export function handleFightEncounter(gs: GameState, r: ActiveRaid, ctx: FightEnc
         attackSkipTriggered,
         summonTriggered: summonJustTriggered,
         selfDestructed: selfDestructTriggered,
+        gripTriggered: gripJustTriggered,
+        playerHeld: heldThisRound,
         timeRegenHealed: regen.healed,
         timeRegenHpBefore: regen.hpBefore,
         timeRegenHpAfter: regen.hpAfter,

@@ -149,6 +149,7 @@ function createDefaultUIState() {
     hasDiscoveredRaidMonsters: false,
     hasDiscoveredRaidLoot: false,
     hasDiscoveredRaidSpeed: false,
+    firstRaidSuccesses: 0,
     hasDiscoveredRaidSelection: false,
     hasDiscoveredRaidResourcesCollected: false,
     hasDiscoveredTimeline: false,
@@ -565,6 +566,7 @@ export function SyncUIFromGameState(game: GameState): void {
   uiState.hasDiscoveredRaidMonsters = game.discoveries[DISCOVERY.UI_RAID_MONSTERS] === true;
   uiState.hasDiscoveredRaidLoot = game.discoveries[DISCOVERY.UI_RAID_LOOT] === true;
   uiState.hasDiscoveredRaidSpeed = game.discoveries[DISCOVERY.UI_RAID_SPEED] === true;
+  uiState.firstRaidSuccesses = game.unlockedRaids[0]!.successes;
   uiState.hasDiscoveredRaidSelection = game.discoveries[DISCOVERY.UI_RAID_SELECTION] === true;
   uiState.hasDiscoveredRaidResourcesCollected = game.discoveries[DISCOVERY.UI_RAID_RESOURCES_COLLECTED] === true;
   uiState.hasDiscoveredTimeline = game.discoveries[DISCOVERY.TIMELINE_DISCOVERY] === true;

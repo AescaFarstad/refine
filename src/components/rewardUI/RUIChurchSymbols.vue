@@ -9,7 +9,7 @@
           :class="{ clickable: !isMaximized }"
           @click="isMaximized = !isMaximized"
         />
-        <p class="symbols-text">The walls are strewn with refinement symbols.</p>
+        <p class="symbols-text">The walls are strewn with refinement symbols. A couple of cryptic clues are next to them.</p>
 
         <div v-if="newSignatures.length > 0" class="signatures-section">
           <p class="signatures-label">
@@ -28,7 +28,7 @@
         </div>
       </div>
       <footer class="modal-actions">
-        <button class="btn primary" @click="close">Hm...</button>
+        <button class="btn primary" @click="close">Oracle riddles?..</button>
       </footer>
     </div>
   </div>

@@ -456,6 +456,12 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
   // Track if we just completed a walk encounter (for Safer Routes perk)
   let justWalked = false;
   const hasSaferRoutes = raid.perks.includes(Perks.SAFER_ROUTES);
+  let strongestMonsterStrength = -Infinity;
+  for (const step of raidDef.encounters) {
+    if (step.encounter.type !== 'FightEncounter') continue;
+    const s = gsForRun.lib.monsters.get((step.encounter as FightEncounterDef).monsterId)!.strength;
+    if (s > strongestMonsterStrength) strongestMonsterStrength = s;
+  }
 
   while (queue.length > 0) {
     const enc = queue.shift()!;
@@ -618,9 +624,10 @@ export function runRaid(gs: GameState, raidDef: RaidDefinition, dryRun: boolean 
       case 'FightEncounter': {
         const monsterId = enc.monsterId;
         const injected = (enc as FightEncounterDef).injected ?? false;
-        // Safer Routes: skip first fight after a walk
-        if (justWalked) {
-          justWalked = false;
+        // Safer Routes: skip first fight after a walk, unless it's the strongest monster in the raid
+        const skipBySaferRoutes = justWalked && gsForRun.lib.monsters.get(monsterId)!.strength < strongestMonsterStrength;
+        justWalked = false;
+        if (skipBySaferRoutes) {
           const monster = gsForRun.lib.monsters.get(monsterId)!;
           const skippedEntry = createFightEncounterLogEntry({
             monsterId,

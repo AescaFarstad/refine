@@ -49,7 +49,7 @@ import { globalInputQueue } from '../logic/Model';
 import { CmdDiscover } from '../logic/input/InputCommands';
 import { DISCOVERY } from '../logic/DiscoveryLib';
 import type { RaidDefinition } from '../logic/RaidLib';
-import { FEATURE_SUMMON, FEATURE_SUMMON2, FEATURE_SELF_DESTRUCT, SUMMON_CHANCE_PER_ROUND, SUMMON_CHANCE_PER_ROUND2 } from '../logic/MonsterFeatures';
+import { FEATURE_SUMMON, FEATURE_SUMMON2, FEATURE_SELF_DESTRUCT, FEATURE_GRIP, SUMMON_CHANCE_PER_ROUND, SUMMON_CHANCE_PER_ROUND2, GRIP_CHANCE_PER_ROUND } from '../logic/MonsterFeatures';
 import Perks from '../logic/Perks';
 
 const props = defineProps<{
@@ -77,6 +77,7 @@ interface MonsterRow {
   canSummon: boolean;
   canSummon2: boolean;
   canSelfDestruct: boolean;
+  canGrip: boolean;
   armor: number;
   damageCap: number;
   blockPctRaw: number;
@@ -107,6 +108,7 @@ const monsterRows = computed<MonsterRow[]>(() => {
     const canSummon = m.features.includes(FEATURE_SUMMON);
     const canSummon2 = m.features.includes(FEATURE_SUMMON2);
     const canSelfDestruct = m.features.includes(FEATURE_SELF_DESTRUCT);
+    const canGrip = m.features.includes(FEATURE_GRIP);
     const hasArmorPiercing = gs.raid.perks.includes(Perks.ARMOR_CRUSHING);
     const armor = hasArmorPiercing ? Math.floor(m.armor / 2) : m.armor;
     const damageCap = m.damageCap;
@@ -121,6 +123,7 @@ const monsterRows = computed<MonsterRow[]>(() => {
       canSummon,
       canSummon2,
       canSelfDestruct,
+      canGrip,
       armor,
       damageCap,
       blockPctRaw: blockRaw,
@@ -142,6 +145,9 @@ function getAbilities(row: MonsterRow): Ability[] {
   }
   if (row.canSelfDestruct) {
     abilities.push({ name: 'Explodes', tooltip: 'When this monster successfully attacks, it explodes' });
+  }
+  if (row.canGrip) {
+    abilities.push({ name: 'Grip', tooltip: `${GRIP_CHANCE_PER_ROUND}% chance to hold you still for 1 round: you can't attack or block` });
   }
   if (row.armor > 0) {
     abilities.push({ name: `Armor\u00A0${row.armor}`, tooltip: `All incoming damage is decreased by ${row.armor}` });

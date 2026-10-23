@@ -76,8 +76,9 @@ const raids: Record<string, RawRaidDefinition> = {
     ],
     encounters: [
       { count: 4, encounter: { type: 'WalkEncounter' } },
-      { count: 2, encounter: { type: 'FightEncounter', monsterId: 'hound' } },
-      { count: 4, encounter: { type: 'FightEncounter', monsterId: 'spikder' } },
+      // { count: 2, encounter: { type: 'FightEncounter', monsterId: 'hound' } },
+      // { count: 4, encounter: { type: 'FightEncounter', monsterId: 'spikder' } },
+      { count: 4, encounter: { type: 'FightEncounter', monsterId: 'mortiflower' } },
       { count: 15, encounter: { type: 'LootEncounter' } }
     ],
   },
@@ -86,7 +87,7 @@ const raids: Record<string, RawRaidDefinition> = {
     locationImageId: 'dyatlovsk',
     description: 'A closed city in eastern Siberia, rumored to host a biological laboratory.',
     baseLootChance: 40,
-    zoneCollapseSec: 10400,
+    zoneCollapseSec: 5960,
     zoneCollapseStepPerMutation: 360,
     items: [
       'aluminium_bowl',

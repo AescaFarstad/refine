@@ -5,6 +5,7 @@ export class Perks {
   static readonly BIOPSY = 'Biopsy';
   static readonly STUN = 'Stun';
   static readonly PAINKILLER = 'Painkiller';
+  static readonly AGONY_SPUR = 'Agony Spur';
   static readonly HACK_AND_SLASH = 'Hack and Slash';
   static readonly SAFER_ROUTES = 'Safer Routes';
   static readonly XENO_HOUND_BAIT = 'Xeno hound Bait';

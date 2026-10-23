@@ -170,7 +170,7 @@ export class GameState {
   public gearXpById: Record<string, number> = {};
   public gearUpgradeIdsById: Record<string, string[]> = {};
   public unlockedGear: string[] = [
-    'brass_knuckles', 'bandage', 'pouches', 'no_scavenging',
+    'brass_knuckles', 'bandage', 'pouches',
   ];
   public loadouts: Record<string, string[]> = {
     shegolskoe: [],

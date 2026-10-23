@@ -26,7 +26,7 @@
     </div>
 
     <!-- Bottom-right weight label (no special background); hidden when zero -->
-    <div class="g-weight" v-if="effectiveWeight > 0">
+    <div class="g-weight" v-if="uiState.hasDiscoveredRaidSpeed && effectiveWeight > 0">
       <span class="g-weight-num">{{ effectiveWeight }}</span>
       <span class="g-weight-icon" :style="weightIconStyle" aria-hidden="true" />
     </div>

@@ -127,6 +127,21 @@
       }
     },
     {
+      "label": "run dev (Windows)",
+      "type": "process",
+      "command": "npm.cmd",
+      "args": ["run", "dev"],
+      "problemMatcher": [],
+      "isBackground": true,
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
       "label": "Vercel",
       "type": "shell",
       "command": "npm run build && cd dist && vercel --yes --prod",

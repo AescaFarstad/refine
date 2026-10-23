@@ -129,7 +129,7 @@
     <span class="oracle-help-label">How to crack the oracle</span>
     <span class="oracle-help-detail">
       Guess the missing word in [...] and find a way to express it on the wafer.
-      <br>Offset doesn't matter.<br>Rotation does.
+      <br>Offset doesn't matter, but the rotation does.
     </span>
   </div>
 </template>

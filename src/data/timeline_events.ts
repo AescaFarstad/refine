@@ -17,6 +17,11 @@ export const timelineEvents: RawTimelineEventDefinition[] = [
     time: [3, 11, 0],
   },
   {
+    id: 'shegolskoe_zone_time_or_loot_chance_1',
+    type: 'shegolskoe_zone_time_or_loot_chance',
+    time: [3, 16, 0],
+  },
+  {
     id: 'credits_or_deterioration_1_2',
     type: 'credits_or_deterioration',
     time: [4, 8, 0],
@@ -45,6 +50,11 @@ export const timelineEvents: RawTimelineEventDefinition[] = [
     id: 'credits_or_deterioration_3_1',
     type: 'credits_or_deterioration_3',
     time: [7, 10, 0],
+  },
+  {
+    id: 'shegolskoe_zone_time_or_arch_hounds_1',
+    type: 'shegolskoe_zone_time_or_arch_hounds',
+    time: [7, 18, 0],
   },
   {
     id: 'chronotraces_or_mass_deterioration_1',

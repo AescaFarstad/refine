@@ -515,6 +515,7 @@ function encounterIconStyle(entry: RaidEventLogEntry): Record<string, string> {
 .raid-outcome-playback .fr-grid .cell.who { font-weight: 400; opacity: 0.95; }
 .raid-outcome-playback .reflect-note { opacity: 0.95; }
 .raid-outcome-playback .summon-note { color: #f36d7b; margin-top: 6px; }
+.raid-outcome-playback .grip-note { color: #c084fc; margin-top: 6px; }
 .raid-outcome-playback .hit-you { color: #7fd17f; }
 .raid-outcome-playback .miss-you { color: #7f8790; opacity: 0.8; }
 .raid-outcome-playback .hit-they { color: #f36d7b; }

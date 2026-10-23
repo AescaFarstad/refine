@@ -10,6 +10,14 @@ import { ReadonlyGameState } from './UIState';
 // Center of the grid (0,0 in axial) maps to (OFFSET, OFFSET) in the array
 const GRID_OFFSET = Math.floor(RESEARCH_PANE_SIZE / 2);
 
+// Only retain the latest target: the pane, tooltip and click handler share it.
+// Keep this outside GameState so derived paths are never serialized.
+const purchasePathCache = new WeakMap<ReadonlyGameState, {
+  cells: ReadonlyGameState['researchCells'];
+  targetIndex: number;
+  result: ResearchPathResult;
+}>();
+
 export function axialToIndex(x: number, y: number): number {
   const col = x + GRID_OFFSET;
   const row = y + GRID_OFFSET;
@@ -119,6 +127,9 @@ export function initResearchCells(gs: GameState, lib: ResearchLib): void {
 }
 
 export function calculateVisibility(gs: GameState, lib: ResearchLib): void {
+  // Purchases (including free ones), edits, loading, reveal-radius changes and
+  // anti-void changes all refresh visibility after changing the research graph.
+  purchasePathCache.delete(gs);
   const distances = calculateResearchDistances(gs);
   const totalCells = gs.researchCells.length;
 
@@ -227,7 +238,21 @@ export function findCheapestPath(gs: ReadonlyGameState, targetX: number, targetY
   const row = Math.floor(idx / RESEARCH_PANE_SIZE);
   const col = idx % RESEARCH_PANE_SIZE;
 
-  return calculateResearchPath(gs, row, col);
+  const cached = purchasePathCache.get(gs);
+  if (cached && cached.cells === gs.researchCells && cached.targetIndex === idx) {
+    return cached.result;
+  }
+
+  const path = calculateResearchPath(gs, row, col);
+  // The pathfinder reuses its result object and typed array for every search.
+  const result: ResearchPathResult = {
+    cost: path.cost,
+    pathLength: path.pathLength,
+    reachable: path.reachable,
+    pathCells: path.pathCells.slice(0, path.pathLength),
+  };
+  purchasePathCache.set(gs, { cells: gs.researchCells, targetIndex: idx, result });
+  return result;
 }
 
 export interface ResearchPurchaseResult {

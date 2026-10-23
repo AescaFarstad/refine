@@ -98,6 +98,40 @@ export const timelineArchetypes: Record<string, RawTimelineArchetypeDefinition> 
     ],
     icon: { kind: 'glyph', glyph: '⧗', scale: 1, offset: { x: 0, y: 1 } },
   },
+  shegolskoe_zone_time_or_loot_chance: {
+    sentiment: 'positive',
+    severity: 0,
+    options: [
+      {
+        kind: 'raid_mutation',
+        targetRaidId: 'shegolskoe',
+        mutation: { kind: 'ZoneCollapseTimeMutation', amount: 600 },
+      },
+      {
+        kind: 'raid_mutation',
+        targetRaidId: 'shegolskoe',
+        mutation: { kind: 'LootDifficultyMutation', amount: 5 },
+      },
+    ],
+    icon: { kind: 'glyph', glyph: '?', scale: 1, offset: { x: 0, y: 1 } },
+  },
+  shegolskoe_zone_time_or_arch_hounds: {
+    sentiment: 'positive',
+    severity: 0,
+    options: [
+      {
+        kind: 'raid_mutation',
+        targetRaidId: 'shegolskoe',
+        mutation: { kind: 'ZoneCollapseTimeMutation', amount: 600 },
+      },
+      {
+        kind: 'raid_mutation',
+        targetRaidId: 'shegolskoe',
+        mutation: { kind: 'AddMonsterMutation', monsterId: 'arch_hound', count: -2 },
+      },
+    ],
+    icon: { kind: 'glyph', glyph: '?', scale: 1, offset: { x: 0, y: 1 } },
+  },
   kilava_raid_access: {
     sentiment: 'positive',
     severity: 0,

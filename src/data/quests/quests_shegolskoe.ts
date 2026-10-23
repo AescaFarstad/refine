@@ -7,7 +7,7 @@ const quests: Record<string, RawQuestDefinition> = {
     raidRestriction: ['shegolskoe'],
     requiresRaidSuccesses: 1,
     encounters: [
-      { kind: 'WalkMutation', count: 3 },
+      { kind: 'AddMonsterMutation', monsterId: 'hound', count: 1 },
     ],
   },
   shegolskoe_break_spikder: {
@@ -86,7 +86,7 @@ const quests: Record<string, RawQuestDefinition> = {
   },
   shegolskoe_powerstation: {
     name: 'Power station',
-    description: 'The step-down transformer is sparking there just before the zone collapse.',
+    description: 'The step-down transformer is sparking just before the zone collapse.',
     requiresRaidQuestCompletions: 4,
     requiresRaidSuccesses: 22,
     raidRestriction: ['shegolskoe'],

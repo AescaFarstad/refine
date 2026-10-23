@@ -5,8 +5,9 @@
       <template v-if="shownStep >= (Number(j) + 1)">
         <div class="fr-grid">
           <div class="cell who">You</div>
-          <div class="cell outcome" :class="ev.hitLanded ? 'hit-you' : 'miss-you'"><strong>{{ ev.hitLanded ? 'HIT!' : 'MISS!' }}</strong></div>
-          <div class="cell roll">
+          <div class="cell outcome" :class="ev.hitLanded ? 'hit-you' : 'miss-you'"><strong>{{ ev.playerHeld ? 'HELD!' : ev.hitLanded ? 'HIT!' : 'MISS!' }}</strong></div>
+          <div class="cell roll" v-if="ev.playerHeld"></div>
+          <div class="cell roll" v-else>
             <span class="roll-target">{{ ev.theirDodgeValue }}</span>
             <span class="roll-vs">vs</span>
             <span class="roll-self">{{ ev.myHitRoll }}</span>
@@ -32,6 +33,7 @@
           <div class="note-row reflect-note" v-if="ev.reflectedDamage > 0" v-html="reflectLine(ev)"></div>
         </template>
 
+        <div class="note-row grip-note" v-if="ev.gripTriggered"><b>The {{ entry.monsterName }} grips you! You can't act or block next round.</b></div>
         <div class="note-row summon-note" v-if="ev.summonTriggered"><b>Another {{ entry.monsterName }} joins the fray!</b></div>
         <div class="note-row time-regen-note" v-if="ev.timeRegenHealed !== 0">{{ ev.timeRegenHealed > 0 ? 'Regenerated' : 'Lost' }} {{ Math.abs(ev.timeRegenHealed) }} hp: {{ ev.timeRegenHpBefore }} → <b>{{ ev.timeRegenHpAfter }}</b> over the last {{ formatDuration(ev.timeRegenDurationSec) }}</div>
       </template>

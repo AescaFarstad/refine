@@ -24,19 +24,30 @@ export function getMoleculeEssences(molecule: Molecule): Record<string, number> 
   return essences;
 }
 
-export function getMoleculeCentroid(molecule: Molecule): Point2 {
-  if (molecule.atoms.length === 0) return { x: 0, y: 0 };
+// export function getMoleculeCentroid(molecule: Molecule): Point2 {
+//   if (molecule.atoms.length === 0) return { x: 0, y: 0 };
+//   let sumX = 0;
+//   let sumY = 0;
+//   for (const atom of molecule.atoms) {
+//     sumX += atom.x;
+//     sumY += atom.y;
+//   }
+//   return { x: sumX / molecule.atoms.length, y: sumY / molecule.atoms.length };
+// }
+
+// Rounds the centroid relative to the first atom so the result is translation-invariant.
+// Centroids that land exactly on a hex vertex (e.g. 3-atom triangles) are rounding ties
+// resolved by float noise, which would otherwise depend on absolute position.
+export function getPivotHex(molecule: Molecule): Point2 {
+  const anchor = molecule.atoms[0]!;
   let sumX = 0;
   let sumY = 0;
   for (const atom of molecule.atoms) {
-    sumX += atom.x;
-    sumY += atom.y;
+    sumX += atom.x - anchor.x;
+    sumY += atom.y - anchor.y;
   }
-  return { x: sumX / molecule.atoms.length, y: sumY / molecule.atoms.length };
-}
-
-export function getPivotHex(molecule: Molecule): Point2 {
-  return axialRound(getMoleculeCentroid(molecule));
+  const rel = axialRound({ x: sumX / molecule.atoms.length, y: sumY / molecule.atoms.length });
+  return { x: anchor.x + rel.x, y: anchor.y + rel.y };
 }
 
 // Geometry helpers for snapping/translation (no DOM/canvas side-effects)

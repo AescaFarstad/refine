@@ -1,6 +1,6 @@
 import { drawCarryVolumeIcon } from './CarryVolumeIcon';
 import { isResearchArchetypeRevealedByDiscovery } from './ResearchLib';
-import { RESEARCH_PANE_SIZE } from './Const';
+import { RESEARCH_MAX_MERGED_NODE_SPAN_HEXES, RESEARCH_PANE_SIZE } from './Const';
 import { indexToAxial } from './Research';
 import { axialToPixel } from './HexMath';
 import { drawHexagon } from './DrawHex';
@@ -103,6 +103,17 @@ export function renderResearchBaseLayer(
 
   const totalCells = RESEARCH_PANE_SIZE * RESEARCH_PANE_SIZE;
 
+  // The current transform targets the entire padded buffer, not the viewport.
+  // Keep a conservative margin for the complete node and its icon around any
+  // representative cell. Camera transforms here contain only scale/translation.
+  const transform = ctx.getTransform();
+  const margin = (RESEARCH_MAX_MERGED_NODE_SPAN_HEXES + 1) * hexSize * 2;
+  const minX = -transform.e / transform.a - margin;
+  const minY = -transform.f / transform.d - margin;
+  const maxX = (ctx.canvas.width - transform.e) / transform.a + margin;
+  const maxY = (ctx.canvas.height - transform.f) / transform.d + margin;
+  const visibleNodes = new Map<number, boolean>();
+
   const nodeGroups = new Map<number, ResearchCellInfo[]>();
   const singleCells: ResearchCellInfo[] = [];
 
@@ -110,11 +121,22 @@ export function renderResearchBaseLayer(
     const cell = cells[idx];
     if (!cell || !cell.revealed) continue;
 
+    const axial = indexToAxial(idx);
+    let visible = cell.nodeId >= 0 ? visibleNodes.get(cell.nodeId) : undefined;
+    if (visible === undefined) {
+      const center = axialToPixel(axial, hexSize, origin);
+      visible = center.x >= minX && center.x <= maxX
+        && center.y >= minY && center.y <= maxY;
+      // Decide once per node so culling never truncates a merged shape or
+      // changes the cells used to compute its outline and icon placement.
+      if (cell.nodeId >= 0) visibleNodes.set(cell.nodeId, visible);
+    }
+    if (!visible) continue;
+
     const archetype = lib.research.archetypes.get(cell.archetypeId) || null;
     // Void nodes are never drawn.
     if (archetype && archetype.type === 'void') continue;
 
-    const axial = indexToAxial(idx);
     const nodeInstance = cell.nodeId != null && cell.nodeId >= 0
       ? lib.research.nodes.get(cell.nodeId)
       : null;

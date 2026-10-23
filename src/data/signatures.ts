@@ -7,7 +7,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     layout: 'insipre',
     difficulty: 2,
     colors: ['red'],
-    rewards: [{ kind: 'refining_yield_pct_bonus', amount: 25 }],
+    rewards: [{ kind: 'refining_yield_pct_bonus', amount: 15 }],
   },
   s2: {
     name: 'Delineate',
@@ -16,8 +16,8 @@ const signatures: Record<string, RawSignatureDefinition> = {
     difficulty: 3,
     colors: ['gray'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 20 },
-      { kind: 'refining_speed_pct_bonus', amount: 20 },
+      { kind: 'refining_yield_pct_bonus', amount: 15 },
+      { kind: 'refining_speed_pct_bonus', amount: 15 },
       { kind: 'refining_success_chance_bonus', amount: 1 },
     ],
   },
@@ -28,7 +28,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     difficulty: 0,
     colors: ['blue'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 20 },
+      { kind: 'refining_yield_pct_bonus', amount: 5 },
       { kind: 'refining_speed_pct_bonus', amount: 5 },
     ],
   },
@@ -39,7 +39,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     difficulty: 2,
     colors: ['red'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 15 },
+      { kind: 'refining_yield_pct_bonus', amount: 5 },
       { kind: 'refining_speed_pct_bonus', amount: 15 },
     ],
   },
@@ -50,7 +50,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     difficulty: 0,
     colors: ['blue'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 15 },
+      { kind: 'refining_yield_pct_bonus', amount: 10 },
       { kind: 'refining_speed_pct_bonus', amount: 10 },
     ],
   },
@@ -73,7 +73,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     difficulty: 2,
     colors: ['green'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 15 },
+      { kind: 'refining_yield_pct_bonus', amount: 5 },
       { kind: 'refining_speed_pct_bonus', amount: 15 },
       { kind: 'refining_success_chance_bonus', amount: 1 },
     ],
@@ -85,7 +85,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     difficulty: 3,
     colors: ['gray'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 25 },
+      { kind: 'refining_yield_pct_bonus', amount: 15 },
       { kind: 'refining_success_chance_bonus', amount: 1 },
       { kind: 'refining_speed_pct_bonus', amount: 15 },
     ],
@@ -99,7 +99,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     difficulty: 1,
     colors: ['blue'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 15 },
+      { kind: 'refining_yield_pct_bonus', amount: 5 },
       { kind: 'refining_speed_pct_bonus', amount: 15 },
     ],
   },
@@ -110,7 +110,8 @@ const signatures: Record<string, RawSignatureDefinition> = {
     difficulty: 0,
     colors: ['red'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 25 },
+      { kind: 'refining_yield_pct_bonus', amount: 5 },
+      { kind: 'refining_speed_pct_bonus', amount: 5 },
     ],
   },
   s11: {
@@ -120,7 +121,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     difficulty: 0,
     colors: ['green'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 25 },
+      { kind: 'refining_yield_pct_bonus', amount: 10 },
     ],
   },
   s12: {
@@ -140,7 +141,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     difficulty: 3,
     colors: ['green'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 20 },
+      { kind: 'refining_yield_pct_bonus', amount: 10 },
       { kind: 'refining_speed_pct_bonus', amount: 5 },
     ],
   },
@@ -151,7 +152,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     difficulty: 1,
     colors: ['blue'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 20 },
+      { kind: 'refining_yield_pct_bonus', amount: 5 },
       { kind: 'refining_speed_pct_bonus', amount: 5 },
     ],
   },
@@ -162,7 +163,7 @@ const signatures: Record<string, RawSignatureDefinition> = {
     difficulty: 1,
     colors: ['red'],
     rewards: [
-      { kind: 'refining_yield_pct_bonus', amount: 20 },
+      { kind: 'refining_yield_pct_bonus', amount: 5 },
       { kind: 'refining_speed_pct_bonus', amount: 5 },
       { kind: 'refining_success_chance_bonus', amount: 1 },
     ],

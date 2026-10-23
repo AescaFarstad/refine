@@ -6,9 +6,10 @@ const quests: Record<string, RawQuestDefinition> = {
     raidRestriction: ['dyatlovsk'],
     requiresRaidSuccesses: 1,
     encounters: [
-      { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 3 },
+      { kind: 'AddMonsterMutation', monsterId: 'scorch', count: 3 },
     ],
     rewards: [
+      { kind: 'countable_gear', gearId: 'philosophers_stone', amount: 2 },
       { kind: 'raid_loot_chance', delta: 5 },
       { kind: 'raid_mutation', mutation: { kind: 'LootMutation', count: 2 } },
       { kind: 'raid_mutation', mutation: { kind: 'WalkMutation', count: 1 } },
@@ -19,9 +20,10 @@ const quests: Record<string, RawQuestDefinition> = {
     raidRestriction: ['dyatlovsk'],
     requiresQuestIds: ['dyatlovsk_explore_hospital'],
     encounters: [
-      { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 4 },
+      { kind: 'AddMonsterMutation', monsterId: 'scorch', count: 4 },
     ],
     rewards: [
+      { kind: 'countable_gear', gearId: 'philosophers_stone', amount: 2 },
       { kind: 'raid_loot_chance', delta: 10 },
       { kind: 'raid_mutation', mutation: { kind: 'LootMutation', count: 3 } },
       { kind: 'raid_mutation', mutation: { kind: 'WalkMutation', count: 2 } },
@@ -32,9 +34,10 @@ const quests: Record<string, RawQuestDefinition> = {
     raidRestriction: ['dyatlovsk'],
     requiresQuestIds: ['dyatlovsk_explore_morgue'],
     encounters: [
-      { kind: 'AddMonsterMutation', monsterId: 'distorted', count: 6 },
+      { kind: 'AddMonsterMutation', monsterId: 'scorch', count: 6 },
     ],
     rewards: [
+      { kind: 'countable_gear', gearId: 'philosophers_stone', amount: 2 },
       { kind: 'raid_rarity_buff', delta: 20 },
       { kind: 'raid_mutation', mutation: { kind: 'LootMutation', count: 3 } },
       { kind: 'raid_mutation', mutation: { kind: 'WalkMutation', count: 2 } },
@@ -48,8 +51,44 @@ const quests: Record<string, RawQuestDefinition> = {
       { kind: 'AddMonsterMutation', monsterId: 'hive', count: 4 },
     ],
     rewards: [
+      { kind: 'countable_gear', gearId: 'philosophers_stone', amount: 2 },
       { kind: 'raid_loot_chance', delta: 10 },
       { kind: 'raid_rarity_buff', delta: 30 },
+    ],
+  },
+  dyatlovsk_hive_hunting: {
+    name: 'Hunt for more Hives',
+    raidRestriction: ['dyatlovsk'],
+    requiresQuestIds: ['dyatlovsk_defeat_the_hive'],
+    encounters: [
+      { kind: 'AddMonsterMutation', monsterId: 'hive', count: 6 },
+      { kind: 'AddMonsterMutation', monsterId: 'mortiflower', count: 5 },
+    ],
+    rewards: [
+      { kind: 'countable_gear', gearId: 'philosophers_stone', amount: 1 },
+    ],
+  },
+  dyatlovsk_hive_hunting_2: {
+    name: 'Hunt for even more Hives',
+    raidRestriction: ['dyatlovsk'],
+    requiresQuestIds: ['dyatlovsk_hive_hunting'],
+    encounters: [
+      { kind: 'AddMonsterMutation', monsterId: 'hive', count: 8 },
+      { kind: 'AddMonsterMutation', monsterId: 'dendroid', count: 5 },
+    ],
+    rewards: [
+      { kind: 'countable_gear', gearId: 'philosophers_stone', amount: 1 },
+    ],
+  },
+  dyatlovsk_hive_hunting_3: {
+    name: 'Exterminate Hives',
+    raidRestriction: ['dyatlovsk'],
+    requiresQuestIds: ['dyatlovsk_hive_hunting_2'],
+    encounters: [
+      { kind: 'AddMonsterMutation', monsterId: 'hive', count: 10 },
+    ],
+    rewards: [
+      { kind: 'countable_gear', gearId: 'philosophers_stone', amount: 1 },
     ],
   },
   dyatlovsk_portal_flower: {
@@ -58,9 +97,9 @@ const quests: Record<string, RawQuestDefinition> = {
     requiresQuestIds: ['dyatlovsk_defeat_the_hive'],
     encounters: [
       { kind: 'AddMonsterMutation', monsterId: 'burdock', count: 25 },
-      { kind: 'AddMonsterMutation', monsterId: 'flower', count: 15 },
-      { kind: 'AddMonsterMutation', monsterId: 'mortiflower', count: 10 },
-      { kind: 'AddMonsterMutation', monsterId: 'dendroid', count: 5 },
+      { kind: 'AddMonsterMutation', monsterId: 'mortiflower', count: 15 },
+      { kind: 'AddMonsterMutation', monsterId: 'dendroid', count: 10 },
+      { kind: 'AddMonsterMutation', monsterId: 'hive', count: 1 },
     ],
     rewards: [
       { kind: 'unlock_raid', raidId: 'birdmundshire' },

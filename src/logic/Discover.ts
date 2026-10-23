@@ -25,6 +25,10 @@ export function discover(gs: GameState, id: DiscoveryId): boolean {
     discover(gs, DISCOVERY.ESSENCE_RESEARCH_KNOWLEDGE);
   }
 
+  if (id === DISCOVERY.UI_RAID_SPEED) {
+    gs.unlockedGear.push('no_scavenging');
+  }
+
   if (id === DISCOVERY.GEAR_XP) {
     delete gs.discoveries[DISCOVERY.UI_GEAR_UPGRADE_MODAL_OPENED];
   }

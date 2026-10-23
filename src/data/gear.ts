@@ -23,7 +23,6 @@ const gear: Record<string, RawGearDefinition> = {
         title:'Pratice!' 
       },
       up3:{
-        price: 10,
         weight: -1,
         title:'Carbon alloy'
       }
@@ -260,6 +259,7 @@ const gear: Record<string, RawGearDefinition> = {
     name: 'Assault Rifle',
     category: 'ranged_weapons',
     damage: 7,
+    chanceToHit: -10,
     price: 300,
     weight: 4,
     image: 'ak_rifle',
@@ -332,7 +332,7 @@ const gear: Record<string, RawGearDefinition> = {
       },
       up3:{
         skillPoints: 0,
-        price: -10,
+        price: -20,
         title:'Streamlined'
       }
     },
@@ -355,13 +355,14 @@ const gear: Record<string, RawGearDefinition> = {
       },
       up2:{ 
         skillPoints: -1,
-        maxWeight: 4,
-        price: 15,
+        maxWeight: 6,
+        price: 25,
         title:'Support Harness' 
       },
       up3:{
-        skillPoints: -1,
-        price: -20,
+        skillPoints: 0,
+        price: -60,
+        weight: 1,
         title:'Riveted Assembly'
       }
     },
@@ -377,8 +378,9 @@ const gear: Record<string, RawGearDefinition> = {
     xp: [8, 12],
     ups:{
       up1:{
-        skillPoints: -1,
+        skillPoints: 0,
         weight: -1,
+        price: 30,
         title:'Closed-Cycle'
       },
       up2:{ 
@@ -386,7 +388,7 @@ const gear: Record<string, RawGearDefinition> = {
         title:'Pratice!' 
       },
       up3:{
-        skillPoints: -1,
+        skillPoints: 0,
         weight: 1,
         hp: 7,
         price: 20,
@@ -422,8 +424,7 @@ const gear: Record<string, RawGearDefinition> = {
       },
       up2:{ 
         skillPoints: -1,
-        rarityBuff: 15,
-        price: 20,
+        rarityBuff: 20,
         title:'Infrared Filter' 
       },
       up3:{
@@ -444,9 +445,9 @@ const gear: Record<string, RawGearDefinition> = {
   combat_stims: {
     name: 'Combat Stims',
     category: 'accessories',
-    hp: 5,
+    hp: 8,
     chanceToHit: 25,
-    speedPercent: 50,
+    speedPercent: 75,
     regenAfterCombat: -2,
     regenPerKm: -1,
     price: 90,
@@ -1027,9 +1028,10 @@ const gear: Record<string, RawGearDefinition> = {
     xp: [16, 24],
     ups:{
       up1:{
-        skillPoints: -1,
-        hp: 6,
-        title:'Marrow Catalyst'
+        skillPoints: 0,
+        speedPercent: 50,
+        regenPerKm: -1,
+        title:'Adrenaline Surge'
       },
       up2:{
         skillPoints: 1,
@@ -1037,8 +1039,9 @@ const gear: Record<string, RawGearDefinition> = {
       },
       up3:{
         skillPoints: -1,
-        regenPerKm: 1,
-        title:'Extended Half-Life'
+        replacePerk: "Agony Spur",
+        changeDescription: 'Missing health boosts speed instead (up to 3x)',
+        title:'Agony Spur'
       }
     },
   },
@@ -1052,7 +1055,7 @@ const gear: Record<string, RawGearDefinition> = {
     xp: [16, 24],
     ups:{
       up1:{
-        skillPoints: 1,
+        skillPoints: 0,
         bonusHpPerCategory: { armor: 4 },
         changeDescription: '+4 health per armor item equipped',
         weight: 1,
@@ -1221,7 +1224,7 @@ const gear: Record<string, RawGearDefinition> = {
     price: 0,
     weight: 0,
     image: 'safe_routes',
-    description: 'Skip the first enemy after walking',
+    description: 'Skip the first enemy after walking,\nif it\'s not the strongest enemy in the raid',
   },
   no_scavenging: {
     name: 'No Scavenging',

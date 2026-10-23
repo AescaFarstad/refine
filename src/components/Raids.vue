@@ -110,8 +110,8 @@ onMounted(async () => {
   position: relative;
   z-index: 1;
 }
-/* Allow gear hints to float above the deploy panel below */
-.raid-main-bg:has(.gear-item:hover) {
+/* Allow hints (gear, speed, etc.) to float above the deploy panel below */
+.raid-main-bg:hover {
   z-index: 2;
 }
 </style>

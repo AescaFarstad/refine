@@ -1,7 +1,7 @@
 <template>
   <div ref="container" class="parallax-container">
     <canvas
-      v-for="(layer, index) in layers"
+      v-for="(layer, index) in activeLayers"
       :key="index"
       :ref="el => setCanvasRef(el, index)"
       class="parallax-layer"
@@ -11,7 +11,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, reactive } from 'vue';
+import { ref, onMounted, onUnmounted, watch, reactive, computed, nextTick } from 'vue';
 import type { Point2 } from '../logic/ItemLib';
 
 interface ParallaxLayer {
@@ -32,11 +32,14 @@ interface ParallaxHex {
 const props = defineProps<{
   offset: Point2;
   zoom: number;
+  strength: number;
 }>();
 
 const container = ref<HTMLDivElement | null>(null);
 const canvasRefs: (HTMLCanvasElement | null)[] = [];
 const layers = reactive<ParallaxLayer[]>([]);
+// Fade one layer at a time, removing its canvas and animation work at zero.
+const activeLayers = computed(() => layers.slice(0, Math.ceil(layers.length * props.strength)));
 let animationRafId: number | null = null;
 let lastAnimationTime = 0;
 let canvasWidth = 0;
@@ -145,9 +148,9 @@ function getActivityMultiplier(): number {
 }
 
 function updateFloatOffsets(deltaTime: number): void {
-  const activityMultiplier = getActivityMultiplier();
+  const activityMultiplier = getActivityMultiplier() * props.strength;
 
-  for (const layer of layers) {
+  for (const layer of activeLayers.value) {
     layer.floatOffset.x += layer.floatVelocity.x * deltaTime * activityMultiplier;
     layer.floatOffset.y += layer.floatVelocity.y * deltaTime * activityMultiplier;
 
@@ -235,7 +238,7 @@ function renderLayerToCanvas(layerIndex: number): void {
 }
 
 function renderAllLayers(): void {
-  for (let i = 0; i < layers.length; i++) {
+  for (let i = 0; i < activeLayers.value.length; i++) {
     renderLayerToCanvas(i);
   }
 }
@@ -259,6 +262,7 @@ function getLayerStyle(index: number): Record<string, string> {
   const ty = -padding + py;
 
   return {
+    opacity: String(Math.min(1, layers.length * props.strength - index)),
     transform: `translate(${tx}px, ${ty}px) scale(${effectiveZoom})`,
     transformOrigin: `${canvasWidth / 2 + padding}px ${canvasHeight / 2 + padding}px`,
   };
@@ -293,8 +297,8 @@ function setupCanvas(): void {
     generateLayers(w, h);
 
     // Wait for Vue to create canvas elements, then render
-    requestAnimationFrame(() => {
-      renderAllLayers();
+    nextTick(() => {
+      if (container.value) renderAllLayers();
     });
   }
 }
@@ -337,6 +341,12 @@ onUnmounted(() => {
     animationRafId = null;
   }
 });
+
+watch(
+  () => activeLayers.value.length,
+  () => renderAllLayers(),
+  { flush: 'post' }
+);
 
 watch(
   () => [props.offset.x, props.offset.y, props.zoom],

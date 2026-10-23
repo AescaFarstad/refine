@@ -12,29 +12,29 @@ export interface WaferBuffCell {
 
 
 export const waferBuffCells: WaferBuffCell[] = [
-  { x: 2, y: -3, add: 1 },
+  { x: 1, y: -3, add: 1 },
   { x: -1, y: -2, add: 1 },
   { x: 3, y: -1, add: 1 },
-  { x: 2, y: 1, add: 1 },
+  { x: 1, y: 2, add: 1 },
   { x: -3, y: 2, add: 1 },
   { x: -2, y: 3, add: 1 },
 
-  { x: 2, y: 2, add: 2 },
-  { x: -2, y: -2, add: 2 },
+  { x: 3, y: 2, add: 2 },
+  // { x: -3, y: -2, add: 2 },
 
-  { x: 1, y: -4, mul: 2 },
+  { x: 1, y: -5, mul: 2 },
   { x: 4, y: -4, mul: 2 },
-  { x: 4, y: 0, mul: 2 },
+  { x: 6, y: 0, mul: 2 },
   { x: -4, y: 0, mul: 2 },
-  { x: -1, y: 4, mul: 2 },
-  { x: -4, y: 4, mul: 2 },
+  { x: 1, y: 5, mul: 2 },
+  { x: -6, y: 5, mul: 2 },
 
   { x: 5, y: -2, add: 3 },
-  { x: -5, y: 2, add: 3 },
-  { x: 1, y: 4, add: 3 },
-  { x: -1, y: -4, add: 3 },
-  { x: -3, y: 5, add: 2 },
-  { x: 3, y: -5, add: 2 },
+  { x: -6, y: 0, add: 3 },
+  { x: 0, y: 4, add: 3 },
+  { x: -2, y: -4, add: 3 },
+  { x: -4, y: 6, add: 2 },
+  { x: 4, y: -6, add: 2 },
 ];
 
 interface InternalBuff {

@@ -82,6 +82,8 @@ export interface FightEvent {
   attackSkipTriggered: boolean; // true when an incoming hit was negated by attackSkipCount
   summonTriggered: boolean; // true when monster summons another of its kind
   selfDestructed: boolean;  // true when monster self-destructs on successful attack
+  gripTriggered: boolean;   // true when monster grips you at the end of this round (you are held next round)
+  playerHeld: boolean;      // true when you were held this round: no attack, no block
   timeRegenHealed: number;  // signed HP delta from time-based regen after this round (0 if none)
   timeRegenHpBefore: number;  // HP before time-based regen this round
   timeRegenHpAfter: number;   // HP after time-based regen this round
@@ -295,6 +297,8 @@ export function createFightEvent(init: Partial<FightEvent> = {}): FightEvent {
     attackSkipTriggered: false,
     summonTriggered: false,
     selfDestructed: false,
+    gripTriggered: false,
+    playerHeld: false,
     timeRegenHealed: 0,
     timeRegenHpBefore: 0,
     timeRegenHpAfter: 0,

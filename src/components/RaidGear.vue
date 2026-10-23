@@ -1,7 +1,7 @@
 <template>
   <div class="gear panel">
-    <!-- Show button only when speed is discovered but gear is not -->
-    <template v-if="hasDiscoveredSpeed && !hasDiscoveredGear">
+    <!-- Show button only when loot is discovered but gear is not -->
+    <template v-if="hasDiscoveredLoot && !hasDiscoveredGear">
       <div class="discover-gear-container">
         <button class="discover-gear-btn" @click="discoverGear">Review available gear</button>
       </div>
@@ -55,7 +55,7 @@
         </div>
       </div>
     </template>
-    <!-- Show nothing when speed is not yet discovered -->
+    <!-- Show nothing when loot is not yet discovered -->
   </div>
 </template>
 
@@ -73,7 +73,7 @@ import { getCachedActiveRaidGear } from '../logic/GearUpgrades';
 const activeRaidId = computed(() => uiState.activeRaidId || (uiState.raidOrder[0] || ''));
 const selectedRaid = computed<RaidDefinition | null>(() => uiState.raids.find(r => r.id === activeRaidId.value) || null);
 const hasDiscoveredGear = computed(() => uiState.hasDiscoveredGear);
-const hasDiscoveredSpeed = computed(() => uiState.hasDiscoveredRaidSpeed);
+const hasDiscoveredLoot = computed(() => uiState.hasDiscoveredRaidLoot);
 
 function discoverGear(): void {
   globalInputQueue.push(new CmdDiscover({ discoveryId: DISCOVERY.UI_GEAR }));
